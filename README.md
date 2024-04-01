@@ -1,3 +1,5 @@
+![GitHub CI](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/github-ci.yml/badge.svg)
+
 # libedhoc: A C implementation of the Ephemeral Diffie-Hellman Over COSE (RFC-9528)
 
 ABOUT LIBEDHOC

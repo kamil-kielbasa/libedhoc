@@ -1,0 +1,37 @@
+name: github pipeline
+
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Tools versions
+      run: |
+        sudo apt-get update
+        gcc --version
+        make --version
+        sudo apt install valgrind
+        valgrind --version
+        sudo apt install cppcheck
+        cppcheck --version
+    - name: Checkout submodules
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+    - name: Run build
+      run: |
+        make clean
+        make format
+        make -j
+    - name: Run unit tests
+      run: ./testedhoc.out
+    - name: Run valgrind
+      run: |
+        valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./testedhoc.out
+        valgrind --tool=drd --show-stack-usage=yes -s ./testedhoc.out | tail -n 1
+    - name: Run cppcheck
+      run: make cppcheck
+    - name: Run clean-up
+      run: make clean
