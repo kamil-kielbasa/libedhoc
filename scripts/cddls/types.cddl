@@ -1,0 +1,11 @@
+; Primitive types
+
+byte_string_type =
+(
+    bstr_type: bstr,
+)
+
+integer_type =
+(
+    int_type: int,
+)

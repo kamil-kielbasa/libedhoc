@@ -1,0 +1,46 @@
+; https://datatracker.ietf.org/doc/html/draft-ietf-lake-edhoc-22#name-cddl-definitions
+
+suites = [ 2** int ] / int
+
+ead = 1* (
+  ead_label : int,
+  ? ead_value : bstr,
+)
+
+message_1 =
+(
+  METHOD    : int,
+  SUITES_I  : suites,
+  G_X       : bstr,
+  C_I       : bstr / -24..23,
+  ? EAD_1   : ead,
+)
+
+message_2 =
+(
+  G_Y_CIPHERTEXT_2 : bstr,
+  C_R : bstr / -24..23,
+)
+
+message_3 =
+(
+  CIPHERTEXT_3 : bstr,
+)
+
+message_4 =
+(
+  CIPHERTEXT_4 : bstr,
+)
+
+error =
+(
+  ERR_CODE : int,
+  ERR_INFO : any,
+)
+
+info =
+(
+  info_label    : int,
+  context       : bstr,
+  length        : uint,
+)

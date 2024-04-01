@@ -1,0 +1,33 @@
+; https://datatracker.ietf.org/doc/html/rfc9360#name-x509-cose-header-parameters
+
+; x5chain:
+; * If a single certificate is conveyed, it is placed in a CBOR byte string.
+; * If multiple certificates are conveyed, a CBOR array of byte strings is used, with each certificate being in its own byte string.
+
+id_cred_x =
+{
+    ? kid       : 4  => int / bstr,
+    ? x5bag     : 32 => bstr,
+    ? x5chain   : 33 => bstr,
+    ? x5t       : 34 => [alg: (int / bstr), hash: bstr],
+}
+
+ead_x = 1* (
+  ead_label : int,
+  ? ead_value : bstr,
+)
+
+map =
+{
+    ? kid       : 4  => int / bstr,
+    ? x5bag     : 32 => bstr,
+    ? x5chain   : 33 => bstr,
+    ? x5t       : 34 => [alg: (int / bstr), hash: bstr],
+}
+
+plaintext_x =
+(
+  ID_CRED             : int / bstr / map,
+  Signature_or_MAC    : bstr,
+  ? EAD               : ead_x,
+)

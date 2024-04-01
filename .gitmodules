@@ -1,0 +1,6 @@
+[submodule "externals/mbedtls"]
+	path = externals/mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git
+[submodule "externals/zcbor"]
+	path = externals/zcbor
+	url = https://github.com/NordicSemiconductor/zcbor.git

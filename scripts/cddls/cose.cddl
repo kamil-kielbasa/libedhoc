@@ -1,0 +1,17 @@
+; https://datatracker.ietf.org/doc/html/rfc8152
+; https://datatracker.ietf.org/doc/html/draft-ietf-lake-edhoc-22#name-message-formatting-and-proc
+
+sig_structure =
+[
+	context         : "Signature1",
+	protected       : bstr,
+	external_aad    : bstr,
+	payload         : bstr,
+]
+
+enc_structure =
+[
+	context         : "Encrypt0",
+	protected       : bstr,
+	external_aad    : bstr,
+]
