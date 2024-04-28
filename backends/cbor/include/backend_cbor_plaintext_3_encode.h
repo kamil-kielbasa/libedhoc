@@ -4,14 +4,14 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef BACKEND_CBOR_PLAINTEXT_X_DECODE_H__
-#define BACKEND_CBOR_PLAINTEXT_X_DECODE_H__
+#ifndef BACKEND_CBOR_PLAINTEXT_3_ENCODE_H__
+#define BACKEND_CBOR_PLAINTEXT_3_ENCODE_H__
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include "backend_cbor_plaintext_x_types.h"
+#include "backend_cbor_plaintext_3_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,9 +22,9 @@ extern "C" {
 #endif
 
 
-int cbor_decode_plaintext_x(
-		const uint8_t *payload, size_t payload_len,
-		struct plaintext_x *result,
+int cbor_encode_plaintext_3(
+		uint8_t *payload, size_t payload_len,
+		const struct plaintext_3 *input,
 		size_t *payload_len_out);
 
 
@@ -32,4 +32,4 @@ int cbor_decode_plaintext_x(
 }
 #endif
 
-#endif /* BACKEND_CBOR_PLAINTEXT_X_DECODE_H__ */
+#endif /* BACKEND_CBOR_PLAINTEXT_3_ENCODE_H__ */

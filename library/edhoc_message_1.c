@@ -1,8 +1,8 @@
 /**
  * \file    edhoc_message_1.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC message 1 compose & process.
- * \version 0.1
+ * \brief   EDHOC message 1.
+ * \version 0.2
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -10,6 +10,7 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -26,27 +27,7 @@
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
-
-/** 
- * \brief Check if integer might be encoded as CBOR one byte. 
- *
- * \param len		        Length of buffer.
- * \param val                   Value for cbor encoding.
- *
- * \retval True if might be encoded as one byte cbor integer,
- *         otherwise false.
- */
-static inline bool is_cbor_one_byte(size_t len, int8_t val);
-
 /* Static function definitions --------------------------------------------- */
-
-static inline bool is_cbor_one_byte(size_t len, int8_t val)
-{
-	return (ONE_BYTE_CBOR_INT_LEN == len &&
-		ONE_BYTE_CBOR_INT_MIN_VALUE <= val &&
-		ONE_BYTE_CBOR_INT_MAX_VALUE >= val);
-}
-
 /* Module interface function definitions ----------------------------------- */
 
 /*
@@ -70,11 +51,12 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	    NULL == msg_1_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (START != ctx->status || EDHOC_TH_STATE_INVALID != ctx->th_state ||
+	if (EDHOC_SM_START != ctx->status ||
+	    EDHOC_TH_STATE_INVALID != ctx->th_state ||
 	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
 		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->status = ABORTED;
+	ctx->status = EDHOC_SM_ABORTED;
 
 	/* 1. Choose most preferred cipher suite. */
 	if (0 == ctx->csuite_len)
@@ -86,29 +68,34 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	/* 2. Generate ephemeral Diffie-Hellmann key pair. */
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_MAKE_KEY_PAIR, NULL, 0,
-					key_id);
+	ret = ctx->keys.generate_key(EDHOC_KT_MAKE_KEY_PAIR, NULL, 0, key_id);
 
 	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_DIFFIE_HELLMAN_FAILURE;
+		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 
-	uint8_t dh_pub_key[csuite.ecc_key_len];
+	uint8_t dh_pub_key[csuite.ecc_key_length];
 	memset(dh_pub_key, 0, sizeof(dh_pub_key));
 
 	size_t dh_priv_key_len = 0;
 	size_t dh_pub_key_len = 0;
-	ret = ctx->crypto_cb.make_key_pair(key_id, ctx->dh_priv_key,
-					   ARRAY_SIZE(ctx->dh_priv_key),
-					   &dh_priv_key_len, dh_pub_key,
-					   ARRAY_SIZE(dh_pub_key),
-					   &dh_pub_key_len);
-	ctx->keys_cb.destroy_key(key_id);
+	ret = ctx->crypto.make_key_pair(key_id, ctx->dh_priv_key,
+					ARRAY_SIZE(ctx->dh_priv_key),
+					&dh_priv_key_len, dh_pub_key,
+					ARRAY_SIZE(dh_pub_key),
+					&dh_pub_key_len);
+	ctx->keys.destroy_key(key_id);
 
-	if (EDHOC_SUCCESS != ret || csuite.ecc_key_len != dh_priv_key_len ||
-	    csuite.ecc_key_len != dh_pub_key_len)
-		return EDHOC_ERROR_DIFFIE_HELLMAN_FAILURE;
+	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != dh_priv_key_len ||
+	    csuite.ecc_key_length != dh_pub_key_len)
+		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 
 	ctx->dh_priv_key_len = dh_priv_key_len;
+
+	if (NULL != ctx->logger) {
+		ctx->logger(ctx->user_ctx, "G_X", dh_pub_key, dh_pub_key_len);
+		ctx->logger(ctx->user_ctx, "X", ctx->dh_priv_key,
+			    ctx->dh_priv_key_len);
+	}
 
 	struct message_1 cbor_enc_msg_1 = { 0 };
 
@@ -141,18 +128,25 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	cbor_enc_msg_1._message_1_G_X.len = ARRAY_SIZE(dh_pub_key);
 
 	/* 3d. Fill CBOR structure for message 1 - connection identifier. */
-	if (is_cbor_one_byte(ctx->cid_len, (int8_t)ctx->cid[0])) {
+	switch (ctx->cid.encode_type) {
+	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
 		cbor_enc_msg_1._message_1_C_I_choice = _message_1_C_I_int;
-		cbor_enc_msg_1._message_1_C_I_int = (int8_t)ctx->cid[0];
-	} else {
+		cbor_enc_msg_1._message_1_C_I_int = ctx->cid.int_value;
+		break;
+
+	case EDHOC_CID_TYPE_BYTE_STRING:
 		cbor_enc_msg_1._message_1_C_I_choice = _message_1_C_I_bstr;
-		cbor_enc_msg_1._message_1_C_I_bstr.value = ctx->cid;
-		cbor_enc_msg_1._message_1_C_I_bstr.len = ctx->cid_len;
+		cbor_enc_msg_1._message_1_C_I_bstr.value = ctx->cid.bstr_value;
+		cbor_enc_msg_1._message_1_C_I_bstr.len = ctx->cid.bstr_length;
+		break;
+
+	default:
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	/* 3e. Fill CBOR structure for message 1 - external authorization data if present. */
-	if (NULL != ctx->ead_compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->ead_compose(ctx->user_ctx, EDHOC_MSG_1,
+	if (NULL != ctx->ead.compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
+		ret = ctx->ead.compose(ctx->user_ctx, EDHOC_MSG_1,
 				       ctx->ead_token,
 				       ARRAY_SIZE(ctx->ead_token) - 1,
 				       &ctx->nr_of_ead_tokens);
@@ -189,20 +183,23 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	/* 5. Compute H(cbor(msg_1)) and cache it. */
-	ctx->th_len = csuite.hash_len;
-	size_t hash_len = 0;
-	ret = ctx->crypto_cb.hash(msg_1, *msg_1_len, ctx->th, ctx->th_len,
-				  &hash_len);
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "message_1", msg_1, *msg_1_len);
 
-	if (EDHOC_SUCCESS != ret || csuite.hash_len != hash_len)
+	/* 5. Compute H(cbor(msg_1)) and cache it. */
+	ctx->th_len = csuite.hash_length;
+	size_t hash_len = 0;
+	ret = ctx->crypto.hash(msg_1, *msg_1_len, ctx->th, ctx->th_len,
+			       &hash_len);
+
+	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_len)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	ctx->nr_of_ead_tokens = 0;
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
 	ctx->th_state = EDHOC_TH_STATE_1;
-	ctx->status = WAIT_M2;
+	ctx->status = EDHOC_SM_WAIT_M2;
 	return EDHOC_SUCCESS;
 }
 
@@ -223,11 +220,12 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	if (NULL == ctx || msg_1 == NULL || 0 == msg_1_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (START != ctx->status || EDHOC_TH_STATE_INVALID != ctx->th_state ||
+	if (EDHOC_SM_START != ctx->status ||
+	    EDHOC_TH_STATE_INVALID != ctx->th_state ||
 	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
 		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->status = ABORTED;
+	ctx->status = EDHOC_SM_ABORTED;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -277,37 +275,39 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	/* 3c. Verify ephemeral public key. */
-	if (cbor_dec_msg_1._message_1_G_X.len != csuite.ecc_key_len)
+	if (cbor_dec_msg_1._message_1_G_X.len != csuite.ecc_key_length)
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 
 	ctx->dh_peer_pub_key_len = cbor_dec_msg_1._message_1_G_X.len;
 	memcpy(ctx->dh_peer_pub_key, cbor_dec_msg_1._message_1_G_X.value,
-	       csuite.ecc_key_len);
+	       csuite.ecc_key_length);
 
 	/* 3d. Verify connection identifier. */
 	switch (cbor_dec_msg_1._message_1_C_I_choice) {
-	case _message_1_C_I_bstr: {
-		if (ARRAY_SIZE(ctx->peer_cid) <
-		    cbor_dec_msg_1._message_1_C_I_bstr.len)
-			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
-
-		ctx->peer_cid_len = cbor_dec_msg_1._message_1_C_I_bstr.len;
-		memcpy(ctx->cid, cbor_dec_msg_1._message_1_C_I_bstr.value,
-		       cbor_dec_msg_1._message_1_C_I_bstr.len);
-		break;
-	}
-
 	case _message_1_C_I_int: {
 		if (ONE_BYTE_CBOR_INT_MIN_VALUE >
 			    cbor_dec_msg_1._message_1_C_I_int ||
 		    ONE_BYTE_CBOR_INT_MAX_VALUE <
-			    cbor_dec_msg_1._message_1_C_I_int) {
-			ctx->status = ABORTED;
+			    cbor_dec_msg_1._message_1_C_I_int)
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
-		}
 
-		ctx->peer_cid_len = ONE_BYTE_CBOR_INT_LEN;
-		ctx->peer_cid[0] = (int8_t)cbor_dec_msg_1._message_1_C_I_int;
+		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		ctx->peer_cid.int_value =
+			(int8_t)cbor_dec_msg_1._message_1_C_I_int;
+		break;
+	}
+
+	case _message_1_C_I_bstr: {
+		if (ARRAY_SIZE(ctx->peer_cid.bstr_value) <
+		    cbor_dec_msg_1._message_1_C_I_bstr.len)
+			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
+
+		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
+		ctx->peer_cid.bstr_length =
+			cbor_dec_msg_1._message_1_C_I_bstr.len;
+		memcpy(ctx->cid.bstr_value,
+		       cbor_dec_msg_1._message_1_C_I_bstr.value,
+		       cbor_dec_msg_1._message_1_C_I_bstr.len);
 		break;
 	}
 
@@ -315,9 +315,27 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 
+	if (NULL != ctx->logger) {
+		switch (ctx->peer_cid.encode_type) {
+		case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+			ctx->logger(ctx->user_ctx, "C_I",
+				    (const uint8_t *)&ctx->peer_cid.int_value,
+				    sizeof(ctx->peer_cid.int_value));
+			break;
+		case EDHOC_CID_TYPE_BYTE_STRING:
+			ctx->logger(ctx->user_ctx, "C_I",
+				    ctx->peer_cid.bstr_value,
+				    ctx->peer_cid.bstr_length);
+			break;
+
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+	}
+
 	/* 4. Process EAD if present. */
 	if (true == cbor_dec_msg_1._message_1_EAD_1_present &&
-	    NULL != ctx->ead_process) {
+	    NULL != ctx->ead.process) {
 		if (ARRAY_SIZE(ctx->ead_token) - 1 <
 		    cbor_dec_msg_1._message_1_EAD_1._ead_count)
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
@@ -336,7 +354,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 					._ead_value.len;
 		}
 
-		ret = ctx->ead_process(ctx->user_ctx, EDHOC_MSG_1,
+		ret = ctx->ead.process(ctx->user_ctx, EDHOC_MSG_1,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
 
 		ctx->nr_of_ead_tokens = 0;
@@ -347,15 +365,15 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	/* 5. Compute H(cbor(msg_1)) and cache it. */
-	ctx->th_len = csuite.hash_len;
+	ctx->th_len = csuite.hash_length;
 	size_t hash_len = 0;
-	ret = ctx->crypto_cb.hash(msg_1, msg_1_len, ctx->th, ctx->th_len,
-				  &hash_len);
+	ret = ctx->crypto.hash(msg_1, msg_1_len, ctx->th, ctx->th_len,
+			       &hash_len);
 
-	if (EDHOC_SUCCESS != ret || csuite.hash_len != hash_len)
+	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_len)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	ctx->th_state = EDHOC_TH_STATE_1;
-	ctx->status = VERIFIED_M1;
+	ctx->status = EDHOC_SM_RECEIVED_M1;
 	return EDHOC_SUCCESS;
 }

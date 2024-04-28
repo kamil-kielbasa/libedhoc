@@ -1,8 +1,8 @@
 /**
  * \file    edhoc.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC context and profile.
- * \version 0.1
+ * \brief   EDHOC context.
+ * \version 0.2
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -10,6 +10,7 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 #include <string.h>
 
@@ -78,8 +79,8 @@ int edhoc_set_cipher_suites(struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_set_conn_id(struct edhoc_context *ctx, const int32_t *cid,
-		      size_t cid_len)
+int edhoc_set_connection_id(struct edhoc_context *ctx,
+			    struct edhoc_connection_id cid)
 {
 	if (NULL == ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -87,11 +88,23 @@ int edhoc_set_conn_id(struct edhoc_context *ctx, const int32_t *cid,
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	if (0 == cid_len || ARRAY_SIZE(ctx->cid) < cid_len)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
+	switch (cid.encode_type) {
+	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+		if (ONE_BYTE_CBOR_INT_MIN_VALUE > cid.int_value ||
+		    ONE_BYTE_CBOR_INT_MAX_VALUE < cid.int_value)
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		break;
 
-	ctx->cid_len = cid_len;
-	memcpy(ctx->cid, cid, sizeof(*cid) * cid_len);
+	case EDHOC_CID_TYPE_BYTE_STRING:
+		if (EDHOC_MAX_CID_LEN < cid.bstr_length)
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		break;
+
+	default:
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	ctx->cid = cid;
 
 	return EDHOC_SUCCESS;
 }
@@ -109,9 +122,7 @@ int edhoc_set_user_context(struct edhoc_context *ctx, void *user_ctx)
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_bind_ead(struct edhoc_context *ctx,
-		   const edhoc_ead_compose ead_compose,
-		   const edhoc_ead_process ead_process)
+int edhoc_bind_ead(struct edhoc_context *ctx, struct edhoc_ead ead)
 {
 	if (NULL == ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -119,16 +130,15 @@ int edhoc_bind_ead(struct edhoc_context *ctx,
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	if (NULL == ead_compose && NULL == ead_process)
+	if (NULL == ead.compose && NULL == ead.process)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	ctx->ead_compose = ead_compose;
-	ctx->ead_process = ead_process;
+	ctx->ead = ead;
 
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_bind_keys(struct edhoc_context *ctx, const struct edhoc_keys keys)
+int edhoc_bind_keys(struct edhoc_context *ctx, struct edhoc_keys keys)
 {
 	if (NULL == ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -136,13 +146,12 @@ int edhoc_bind_keys(struct edhoc_context *ctx, const struct edhoc_keys keys)
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->keys_cb = keys;
+	ctx->keys = keys;
 
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_bind_crypto(struct edhoc_context *ctx,
-		      const struct edhoc_crypto crypto)
+int edhoc_bind_crypto(struct edhoc_context *ctx, struct edhoc_crypto crypto)
 {
 	if (NULL == ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -150,13 +159,13 @@ int edhoc_bind_crypto(struct edhoc_context *ctx,
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->crypto_cb = crypto;
+	ctx->crypto = crypto;
 
 	return EDHOC_SUCCESS;
 }
 
 int edhoc_bind_credentials(struct edhoc_context *ctx,
-			   const struct edhoc_credentials creds_cb)
+			   struct edhoc_credentials cred)
 {
 	if (NULL == ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -164,7 +173,7 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->creds_cb = creds_cb;
+	ctx->cred = cred;
 
 	return EDHOC_SUCCESS;
 }

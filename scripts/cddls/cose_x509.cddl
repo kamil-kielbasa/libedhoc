@@ -25,9 +25,22 @@ map =
     ? x5t       : 34 => [alg: (int / bstr), hash: bstr],
 }
 
-plaintext_x =
+plaintext_2 =
 (
-  ID_CRED             : int / bstr / map,
-  Signature_or_MAC    : bstr,
-  ? EAD               : ead_x,
+  C_R                 : bstr / -24..23,
+  ID_CRED_R           : int / bstr / map,
+  Signature_or_MAC_2  : bstr,
+  ? EAD_2             : ead_x,
+)
+
+plaintext_3 =
+(
+  ID_CRED_I           : int / bstr / map,
+  Signature_or_MAC_3  : bstr,
+  ? EAD_3             : ead_x,
+)
+
+plaintext_4 =
+(
+  ? EAD_4             : ead_x,
 )

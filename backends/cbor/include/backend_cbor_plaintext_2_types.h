@@ -4,8 +4,8 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef BACKEND_CBOR_PLAINTEXT_X_TYPES_H__
-#define BACKEND_CBOR_PLAINTEXT_X_TYPES_H__
+#ifndef BACKEND_CBOR_PLAINTEXT_2_TYPES_H__
+#define BACKEND_CBOR_PLAINTEXT_2_TYPES_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -78,24 +78,32 @@ struct ead_x_ {
 	size_t _ead_x_count;
 };
 
-struct plaintext_x {
+struct plaintext_2 {
 	union {
-		int32_t _plaintext_x_ID_CRED_int;
-		struct zcbor_string _plaintext_x_ID_CRED_bstr;
-		struct map _plaintext_x_ID_CRED__map;
+		struct zcbor_string _plaintext_2_C_R_bstr;
+		int32_t _plaintext_2_C_R_int;
 	};
 	enum {
-		_plaintext_x_ID_CRED_int,
-		_plaintext_x_ID_CRED_bstr,
-		_plaintext_x_ID_CRED__map,
-	} _plaintext_x_ID_CRED_choice;
-	struct zcbor_string _plaintext_x_Signature_or_MAC;
-	struct ead_x_ _plaintext_x_EAD;
-	bool _plaintext_x_EAD_present;
+		_plaintext_2_C_R_bstr,
+		_plaintext_2_C_R_int,
+	} _plaintext_2_C_R_choice;
+	union {
+		int32_t _plaintext_2_ID_CRED_R_int;
+		struct zcbor_string _plaintext_2_ID_CRED_R_bstr;
+		struct map _plaintext_2_ID_CRED_R__map;
+	};
+	enum {
+		_plaintext_2_ID_CRED_R_int,
+		_plaintext_2_ID_CRED_R_bstr,
+		_plaintext_2_ID_CRED_R__map,
+	} _plaintext_2_ID_CRED_R_choice;
+	struct zcbor_string _plaintext_2_Signature_or_MAC_2;
+	struct ead_x_ _plaintext_2_EAD_2;
+	bool _plaintext_2_EAD_2_present;
 };
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* BACKEND_CBOR_PLAINTEXT_X_TYPES_H__ */
+#endif /* BACKEND_CBOR_PLAINTEXT_2_TYPES_H__ */

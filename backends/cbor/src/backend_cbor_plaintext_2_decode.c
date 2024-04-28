@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "zcbor_decode.h"
-#include "backend_cbor_plaintext_x_decode.h"
+#include "backend_cbor_plaintext_2_decode.h"
 
 #if DEFAULT_MAX_QTY != 3
 #error "The type file was generated with a different default_max_qty than this file"
@@ -22,7 +22,7 @@ static bool decode_repeated_map_x5t(zcbor_state_t *state, struct map_x5t_ *resul
 static bool decode_map(zcbor_state_t *state, struct map *result);
 static bool decode_repeated_ead_x(zcbor_state_t *state, struct ead_x *result);
 static bool decode_ead_x(zcbor_state_t *state, struct ead_x_ *result);
-static bool decode_plaintext_x(zcbor_state_t *state, struct plaintext_x *result);
+static bool decode_plaintext_2(zcbor_state_t *state, struct plaintext_2 *result);
 
 
 static bool decode_repeated_map_kid(
@@ -129,17 +129,21 @@ static bool decode_ead_x(
 	return tmp_result;
 }
 
-static bool decode_plaintext_x(
-		zcbor_state_t *state, struct plaintext_x *result)
+static bool decode_plaintext_2(
+		zcbor_state_t *state, struct plaintext_2 *result)
 {
 	zcbor_print("%s\r\n", __func__);
 	bool int_res;
 
-	bool tmp_result = (((((zcbor_union_start_code(state) && (int_res = ((((zcbor_int32_decode(state, (&(*result)._plaintext_x_ID_CRED_int)))) && (((*result)._plaintext_x_ID_CRED_choice = _plaintext_x_ID_CRED_int), true))
-	|| (((zcbor_bstr_decode(state, (&(*result)._plaintext_x_ID_CRED_bstr)))) && (((*result)._plaintext_x_ID_CRED_choice = _plaintext_x_ID_CRED_bstr), true))
-	|| (zcbor_union_elem_code(state) && (((decode_map(state, (&(*result)._plaintext_x_ID_CRED__map)))) && (((*result)._plaintext_x_ID_CRED_choice = _plaintext_x_ID_CRED__map), true)))), zcbor_union_end_code(state), int_res)))
-	&& ((zcbor_bstr_decode(state, (&(*result)._plaintext_x_Signature_or_MAC))))
-	&& zcbor_present_decode(&((*result)._plaintext_x_EAD_present), (zcbor_decoder_t *)decode_ead_x, state, (&(*result)._plaintext_x_EAD)))));
+	bool tmp_result = (((((zcbor_union_start_code(state) && (int_res = ((((zcbor_bstr_decode(state, (&(*result)._plaintext_2_C_R_bstr)))) && (((*result)._plaintext_2_C_R_choice = _plaintext_2_C_R_bstr), true))
+	|| (((zcbor_int32_decode(state, (&(*result)._plaintext_2_C_R_int)))
+	&& ((((*result)._plaintext_2_C_R_int >= -24)
+	&& ((*result)._plaintext_2_C_R_int <= 23)) || (zcbor_error(state, ZCBOR_ERR_WRONG_RANGE), false))) && (((*result)._plaintext_2_C_R_choice = _plaintext_2_C_R_int), true))), zcbor_union_end_code(state), int_res)))
+	&& ((zcbor_union_start_code(state) && (int_res = ((((zcbor_int32_decode(state, (&(*result)._plaintext_2_ID_CRED_R_int)))) && (((*result)._plaintext_2_ID_CRED_R_choice = _plaintext_2_ID_CRED_R_int), true))
+	|| (((zcbor_bstr_decode(state, (&(*result)._plaintext_2_ID_CRED_R_bstr)))) && (((*result)._plaintext_2_ID_CRED_R_choice = _plaintext_2_ID_CRED_R_bstr), true))
+	|| (zcbor_union_elem_code(state) && (((decode_map(state, (&(*result)._plaintext_2_ID_CRED_R__map)))) && (((*result)._plaintext_2_ID_CRED_R_choice = _plaintext_2_ID_CRED_R__map), true)))), zcbor_union_end_code(state), int_res)))
+	&& ((zcbor_bstr_decode(state, (&(*result)._plaintext_2_Signature_or_MAC_2))))
+	&& zcbor_present_decode(&((*result)._plaintext_2_EAD_2_present), (zcbor_decoder_t *)decode_ead_x, state, (&(*result)._plaintext_2_EAD_2)))));
 
 	if (!tmp_result)
 		zcbor_trace();
@@ -149,16 +153,16 @@ static bool decode_plaintext_x(
 
 
 
-int cbor_decode_plaintext_x(
+int cbor_decode_plaintext_2(
 		const uint8_t *payload, size_t payload_len,
-		struct plaintext_x *result,
+		struct plaintext_2 *result,
 		size_t *payload_len_out)
 {
 	zcbor_state_t states[6];
 
-	zcbor_new_state(states, sizeof(states) / sizeof(zcbor_state_t), payload, payload_len, 8);
+	zcbor_new_state(states, sizeof(states) / sizeof(zcbor_state_t), payload, payload_len, 9);
 
-	bool ret = decode_plaintext_x(states, result);
+	bool ret = decode_plaintext_2(states, result);
 
 	if (ret && (payload_len_out != NULL)) {
 		*payload_len_out = MIN(payload_len,

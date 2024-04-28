@@ -1,23 +1,91 @@
 ![GitHub CI](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/github-ci.yml/badge.svg)
 
-# libedhoc: A C implementation of the Ephemeral Diffie-Hellman Over COSE (RFC-9528)
+
+# libedhoc: A C implementation of the Ephemeral Diffie-Hellman Over COSE (RFC 9528)
 
 ABOUT LIBEDHOC
 ==============
 
-**libedhoc** is a C implementation of a lightweight authenticated Diffie-Hellman key exchange with ephemeral keys for constrained devices. It provides mutual authentication, forward secrecy, and identity protection. This protocol, EDHOC, is standardized by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/draft-ietf-lake-edhoc-16). Current implementation supproted EDHOC in version 16.
+**libedhoc** is a C implementation of a lightweight authenticated Diffie-Hellman key exchange with ephemeral keys for constrained devices. It provides mutual authentication, forward secrecy, and identity protection. This protocol, EDHOC, is standardized by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/rfc9528). Code has been tested according to [RFC 9529](https://datatracker.ietf.org/doc/html/rfc9529).
 
 MAIN FEATURES
 =============
 
 * Any access for API is possible only by context handle.
-* [CoAP](https://datatracker.ietf.org/doc/html/rfc7252) friendly API for EDHOC message flow.
-* Separate interface for cryptographics keys, operations and authentication credentials.
-* For signature method only key identifier is available. Binary format of crypto keys is forbidden.
-* Support for external authorization data (EAD) compose and process by callbacks.
-* CBOR operations are hidden away from user.
+* EDHOC messages compose & process are [CoAP](https://datatracker.ietf.org/doc/html/rfc7252) friendly.
+* Dedicated API for exporting cryptographic material for OSCORE session.
+* Separate interface for:
+  * cryptographics keys.
+  * cryptographics operations.
+  * authentication credentials.
+  * external authorization data.
+
+* For signature method only key identifier is available. Binary format of cryptographics keys is forbidden.
+* Any CBOR operations are hidden away from user.
 * Any memory operations are performed on stack, using VLA C99 feature.
 * Code has been verified by `cppcheck` and `valgrind`.
+
+EDHOC METHOD's
+==============
+
+Currently implementation supports only method **0**.  
+There are currently works in progress on support [static Diffie-Hellman keys](https://datatracker.ietf.org/doc/html/rfc9529#name-authentication-with-static-).
+
+
+```
++-------------+--------------------+--------------------+
+| Method Type | Initiator          | Responder          |
+|       Value | Authentication Key | Authentication Key |
++-------------+--------------------+--------------------+
+|           0 | Signature Key      | Signature Key      |
+|           1 | Signature Key      | Static DH Key      |
+|           2 | Static DH Key      | Signature Key      |
+|           3 | Static DH Key      | Static DH Key      |
++-------------+--------------------+--------------------+
+```
+
+EDHOC CIPHER SUITES
+===================
+
+Supproted EDHOC cipher suites by example implementations in unit tests:
+
+```
++--------------------------------------------------------------------+
+|                  Cipher suite                                      |
++------------------------+-------------------------------------------+
+| Value |     Array      |                 Description               |
++-------+----------------+-------------------------------------------+
+|     0 | 10, -16, 8,    | AES-CCM-16-64-128, SHA-256, 8,            |
+|       | 4, -8, 10, -16 | X25519, EdDSA, AES‑CCM‑16‑64‑128, SHA-256 |
++-------+----------------+-------------------------------------------+
+|     2 | 10, -16, 8,    | AES-CCM-16-64-128, SHA-256, 8,            |
+|       | 1, -7, 10, -16 | P-256, ES256, AES‑CCM‑16‑64‑128, SHA-256  |
++-------+----------------+-------------------------------------------+
+```
+
+AUTHENTICATION
+==============
+
+Supported authentication methods:
+```
++-----------------------------------------------------------------+
+| COSE Header Parameters                                          |
++-------------+----------+----------------------------------------+
+| Label       | Name     | Description                            |
++-------------+----------+----------------------------------------+
+| 4           | kid      | Key identifier                         |
+| 33          | x5chain  | An ordered chain of X.509 certificates |
+| 34          | x5t      | Hash of an X.509 certificate           |
++-------------+----------+----------------------------------------+
+```
+
+#### Separe interface for verification of authentication credentials gives many advantages:  
+
+1) user decide how to parse peer credentials.
+2) possibility to introduce [CRL](https://datatracker.ietf.org/doc/html/rfc5280).
+3) perform extra checks e.g. to the needs of authorization.
+
+Credentials verification callback will contain also **user context** which allows to save necessary data during verification step for further usage by other layers.
 
 PROJECT STRUCTURE
 =================
@@ -33,6 +101,7 @@ PROJECT STRUCTURE
 
 USAGE EXAMPLE
 =============
+
 ```
                                  EDHOC API flow
                               ====================
@@ -76,10 +145,27 @@ USAGE EXAMPLE
         +--------------------------- POST --------------------------------->|
         |                                                                   |
         |                                         edhoc_message_3_process() |
-        | edhoc_export_secret_and_salt()     edhoc_export_secret_and_salt() |
+        |                                         edhoc_message_4_compose() |
+        |                                                                   |
+        |                       Header: 2.04 Changed                        |
+        |             Content-Format: application/edhoc+cbor-seq            |
+        |                     Payload: EDHOC message_4                      |
+        |                                                                   |
+        |<---------------------------- 2.04 --------------------------------+
+        |                                                                   |
+        | edhoc_message_4_process()                                         |
+        |                                                                   |
+        | edhoc_export_oscore_session()       edhoc_export_oscore_session() |
+        | edhoc_export_key_update()               edhoc_export_key_update() |
+        | edhoc_export_oscore_session()       edhoc_export_oscore_session() |
         | edhoc_context_deinit()                     edhoc_context_deinit() |
         |                                                                   |
 ```
+
+LICENSE INFORMATION
+===================
+
+This library is published as open-source software without any warranty of any kind. Use is permitted under the terms of the GPL-2.0 license.
 
 CONTACT
 =======

@@ -2,7 +2,7 @@
  * \file    edhoc_message_3.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 3.
- * \version 0.1
+ * \version 0.2
  * \date    2024-01-01
  *
  * \copyright Copyright (c) 2024
@@ -10,6 +10,7 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -27,7 +28,7 @@
 #include <backend_cbor_id_cred_x_decode.h>
 #include <backend_cbor_sig_structure_encode.h>
 #include <backend_cbor_info_encode.h>
-#include <backend_cbor_plaintext_x_decode.h>
+#include <backend_cbor_plaintext_3_decode.h>
 #include <backend_cbor_enc_structure_encode.h>
 #include <backend_cbor_enc_structure_decode.h>
 #include <backend_cbor_ead_encode.h>
@@ -76,15 +77,15 @@ struct plaintext {
 /* Static function declarations -------------------------------------------- */
 
 /** 
- * \brief CBOR integer overhead.
+ * \brief CBOR integer memory requirements.
  *
- * \param val		        Length of buffer to CBOR as int.
+ * \param val                   Raw integer value.
  *
  * \return Number of bytes.
  */
-static inline size_t cbor_int_overhead(int32_t val);
+static inline size_t cbor_int_mem_req(int32_t val);
 
-/** 
+/**
  * \brief CBOR text stream overhead.
  *
  * \param len		        Length of buffer to CBOR as tstr.
@@ -93,7 +94,7 @@ static inline size_t cbor_int_overhead(int32_t val);
  */
 static inline size_t cbor_tstr_overhead(size_t len);
 
-/** 
+/**
  * \brief CBOR byte stream overhead.
  *
  * \param len		        Length of buffer to CBOR as bstr.
@@ -102,7 +103,7 @@ static inline size_t cbor_tstr_overhead(size_t len);
  */
 static inline size_t cbor_bstr_overhead(size_t len);
 
-/** 
+/**
  * \brief CBOR map overhead.
  *
  * \param items		        Number of items for map.
@@ -111,7 +112,7 @@ static inline size_t cbor_bstr_overhead(size_t len);
  */
 static inline size_t cbor_map_overhead(size_t items);
 
-/** 
+/**
  * \brief CBOR array overhead.
  *
  * \param items		        Number of items for array.
@@ -120,16 +121,15 @@ static inline size_t cbor_map_overhead(size_t items);
  */
 static inline size_t cbor_array_overhead(size_t items);
 
-/** 
- * \brief Check if integer might be encoded as CBOR one byte. 
+/**
+ * \brief Check if integer might be encoded as CBOR one byte.
  *
- * \param len		        Length of buffer.
  * \param val                   Value for cbor encoding.
  *
  * \retval True if might be encoded as one byte cbor integer,
  *         otherwise false.
  */
-static inline bool is_cbor_one_byte(size_t len, int8_t val);
+static inline bool is_cbor_one_byte_int(int32_t val);
 
 /**
  * \brief Calculate memory required for input (context_3) for for MAC_3.
@@ -147,7 +147,7 @@ static size_t calc_mac_3_input_len(const struct edhoc_context *ctx,
  *
  * \param[in,out] ctx		EDHOC context.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure. 
+ * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 static int compute_prk_4e3m(struct edhoc_context *ctx);
 
@@ -239,7 +239,7 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 			      uint8_t *aad, size_t aad_len);
 
 /**
- * \brief Compute K_3, IV_3 and AAD_3.
+ * \brief Compute CIPHERTEXT_3.
  *
  * \param[in] ctx	        EDHOC context.
  * \param[in] key		Buffer containing the K_3.
@@ -279,15 +279,6 @@ static int compute_th_4(struct edhoc_context *ctx,
 			const uint8_t *ptxt, size_t ptxt_len);
 
 /**
- * \brief Compute output pseudo random key (PRK_out).
- *
- * \param[in] ctx		EDHOC context.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-static int compute_prk_out(struct edhoc_context *ctx);
-
-/**
  * \brief Generate edhoc message 3.
  *
  * \param[in] ctxt	        Buffer continas the ciphertext.
@@ -311,7 +302,7 @@ static int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int parse_msg_3(const uint8_t *msg_2, size_t msg_2_len,
+static int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
 		       const uint8_t **ctxt_3, size_t *ctxt_3_len);
 
 /**
@@ -372,61 +363,48 @@ static int verify_sign_or_mac_3(const struct edhoc_context *ctx,
 
 /* Static function definitions --------------------------------------------- */
 
-#ifdef DEBUG_LOGS
-#include <stdio.h>
-static inline void print_array(const char *name, const uint8_t *array,
-			       size_t array_length)
-{
-	printf("%s:\tLEN( %zu )\n", name, array_length);
-
-	for (size_t i = 0; i < array_length; ++i) {
-		if (0 == i % 16 && i > 0) {
-			printf("\n");
-		}
-
-		printf("%02x ", array[i]);
-	}
-
-	printf("\n\n");
-}
-#define LOG(name, arr, len) print_array(name, arr, len)
-#else
-#define LOG(name, arr, len) \
-	do {                \
-		(void)name; \
-		(void)arr;  \
-		(void)len;  \
-	} while (0)
-#endif
-
-static inline size_t cbor_int_overhead(int32_t val)
+static inline size_t cbor_int_mem_req(int32_t val)
 {
 	if (val >= ONE_BYTE_CBOR_INT_MIN_VALUE &&
-	    val <= ONE_BYTE_CBOR_INT_MAX_VALUE)
+	    val <= ONE_BYTE_CBOR_INT_MAX_VALUE) {
 		return 1;
-
-	if (val >= -256 && val <= 255)
+	} else if (val >= -(UINT8_MAX + 1) && val <= UINT8_MAX) {
 		return 2;
-
-	return 3;
+	} else if (val >= -(UINT16_MAX + 1) && val <= UINT16_MAX) {
+		return 3;
+	} else {
+		return 4;
+	}
 }
 
 static inline size_t cbor_tstr_overhead(size_t len)
 {
-	if (len <= 11)
+	if (len <= 23) {
 		return 1;
-	return 2;
+	} else if (len <= UINT8_MAX) {
+		return 2;
+	} else if (len <= UINT16_MAX) {
+		return 3;
+	} else if (len <= UINT32_MAX) {
+		return 4;
+	} else {
+		return 5;
+	}
 }
 
 static inline size_t cbor_bstr_overhead(size_t len)
 {
-	if (len <= 5)
+	if (len <= 23) {
 		return 1;
-	if (len <= UINT8_MAX)
+	} else if (len <= UINT8_MAX) {
 		return 2;
-	if (len <= UINT16_MAX)
+	} else if (len <= UINT16_MAX) {
 		return 3;
-	return 5;
+	} else if (len <= UINT32_MAX) {
+		return 4;
+	} else {
+		return 5;
+	}
 }
 
 static inline size_t cbor_map_overhead(size_t items)
@@ -443,10 +421,9 @@ static inline size_t cbor_array_overhead(size_t items)
 	return 1;
 }
 
-static inline bool is_cbor_one_byte(size_t len, int8_t val)
+static inline bool is_cbor_one_byte_int(int32_t val)
 {
-	return (ONE_BYTE_CBOR_INT_LEN == len &&
-		ONE_BYTE_CBOR_INT_MIN_VALUE < val &&
+	return (ONE_BYTE_CBOR_INT_MIN_VALUE < val &&
 		ONE_BYTE_CBOR_INT_MAX_VALUE > val);
 }
 
@@ -464,14 +441,19 @@ static size_t calc_mac_3_input_len(const struct edhoc_context *ctx,
 	case EDHOC_COSE_HEADER_KID:
 		len += cbor_map_overhead(nr_of_items);
 
-		if (is_cbor_one_byte(auth_cred->key_id.key_id_len,
-				     (int8_t)auth_cred->key_id.key_id[0])) {
-			len += cbor_int_overhead(
-				(int8_t)auth_cred->key_id.key_id[0]);
-		} else {
-			len += auth_cred->key_id.key_id_len;
-			len += cbor_bstr_overhead(auth_cred->key_id.key_id_len);
+		switch (auth_cred->key_id.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			len += cbor_int_mem_req(auth_cred->key_id.key_id_int);
+			break;
+		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+			len += auth_cred->key_id.key_id_bstr_length;
+			len += cbor_bstr_overhead(
+				auth_cred->key_id.key_id_bstr_length);
+			break;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
+
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
@@ -483,13 +465,20 @@ static size_t calc_mac_3_input_len(const struct edhoc_context *ctx,
 	case EDHOC_COSE_HEADER_X509_HASH:
 		len += cbor_map_overhead(nr_of_items);
 		len += cbor_array_overhead(nr_of_items);
-		if (is_cbor_one_byte(auth_cred->x509_hash.alg_len,
-				     (int8_t)auth_cred->x509_hash.alg[0])) {
-			len += cbor_int_overhead(
-				(int8_t)auth_cred->x509_hash.alg[0]);
-		} else {
-			len += cbor_bstr_overhead(auth_cred->x509_hash.alg_len);
+
+		switch (auth_cred->x509_hash.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			len += cbor_int_mem_req(auth_cred->x509_hash.alg_int);
+			break;
+		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+			len += auth_cred->x509_hash.alg_bstr_length;
+			len += cbor_bstr_overhead(
+				auth_cred->x509_hash.alg_bstr_length);
+			break;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
+
 		len += auth_cred->x509_hash.cert_fp_len;
 		len += cbor_bstr_overhead(auth_cred->x509_hash.cert_fp_len);
 		break;
@@ -525,7 +514,7 @@ static size_t calc_mac_3_input_len(const struct edhoc_context *ctx,
 
 	/* EAD_3. */
 	for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-		len += cbor_int_overhead(ctx->ead_token[i].label);
+		len += cbor_int_mem_req(ctx->ead_token[i].label);
 		len += ctx->ead_token[i].value_len;
 		len += cbor_bstr_overhead(ctx->ead_token[i].value_len);
 	}
@@ -542,13 +531,13 @@ static int compute_prk_4e3m(struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 
 	switch (ctx->method) {
-	case EDHOC_INIT_SIGN_RESP_SIGN:
+	case EDHOC_METHOD_0:
 		ctx->prk_state = EDHOC_PRK_STATE_4E3M;
 		return EDHOC_SUCCESS;
 
-	case EDHOC_INIT_SIGN_RESP_STAT:
-	case EDHOC_INIT_STAT_RESP_SIGN:
-	case EDHOC_INIT_STAT_RESP_STAT:
+	case EDHOC_METHOD_1:
+	case EDHOC_METHOD_2:
+	case EDHOC_METHOD_3:
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -576,15 +565,21 @@ static int calc_mac_3_context(const struct edhoc_context *ctx,
 	switch (auth_cred->label) {
 	case EDHOC_COSE_HEADER_KID:
 		len += cbor_map_overhead(nr_of_items);
-		if (is_cbor_one_byte(auth_cred->key_id.key_id_len,
-				     (int8_t)auth_cred->key_id.key_id[0])) {
-			cbor_items->id_cred_i_is_cob = true;
-			len += cbor_int_overhead(
-				(int8_t)auth_cred->key_id.key_id[0]);
-		} else {
-			len += auth_cred->key_id.key_id_len;
-			len += cbor_bstr_overhead(auth_cred->key_id.key_id_len);
+		switch (auth_cred->key_id.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			len += cbor_int_mem_req(auth_cred->key_id.key_id_int);
+			break;
+		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+			len += auth_cred->key_id.key_id_bstr_length;
+			len += cbor_bstr_overhead(
+				auth_cred->key_id.key_id_bstr_length);
+			break;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
+		if (is_cbor_one_byte_int(auth_cred->key_id.key_id_int))
+			cbor_items->id_cred_i_is_cob = true;
+
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
@@ -596,16 +591,21 @@ static int calc_mac_3_context(const struct edhoc_context *ctx,
 	case EDHOC_COSE_HEADER_X509_HASH:
 		len += cbor_map_overhead(nr_of_items);
 		len += cbor_array_overhead(nr_of_items);
-		if (is_cbor_one_byte(auth_cred->x509_hash.alg_len,
 
-				     (int8_t)auth_cred->x509_hash.alg[0])) {
-			len += cbor_int_overhead(
-				(int8_t)auth_cred->x509_hash.alg[0]);
-		} else {
-			len += auth_cred->x509_hash.alg_len;
-			len += cbor_bstr_overhead(auth_cred->x509_hash.alg_len);
+		switch (auth_cred->x509_hash.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			len += cbor_int_mem_req(auth_cred->x509_hash.alg_int);
+			break;
+		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+			len += auth_cred->x509_hash.alg_bstr_length;
+			len += cbor_bstr_overhead(
+				auth_cred->x509_hash.alg_bstr_length);
+			break;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
-		len += auth_cred->x509_hash.cert_fp_len;
+
+		len += auth_cred->x509_hash.cert_fp_len + 1;
 		len += cbor_bstr_overhead(auth_cred->x509_hash.cert_fp_len);
 		break;
 
@@ -621,37 +621,37 @@ static int calc_mac_3_context(const struct edhoc_context *ctx,
 	switch (auth_cred->label) {
 	case EDHOC_COSE_HEADER_KID: {
 		cbor_id_cred_i._id_cred_x_kid_present = true;
-		if (is_cbor_one_byte(auth_cred->key_id.key_id_len,
-				     (int8_t)auth_cred->key_id.key_id[0])) {
+
+		switch (auth_cred->key_id.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
 			cbor_id_cred_i._id_cred_x_kid._id_cred_x_kid_choice =
 				_id_cred_x_kid_int;
 			cbor_id_cred_i._id_cred_x_kid._id_cred_x_kid_int =
-				(int8_t)auth_cred->key_id.key_id[0];
-
-			if (cbor_items->id_cred_i_is_cob) {
-				const int32_t val =
-					(int8_t)auth_cred->key_id.key_id[0];
-
-				len = 0;
-				ret = cbor_encode_integer_type_int_type(
-					(uint8_t *)&cbor_items
-						->id_cred_i_cob_val,
-					sizeof(cbor_items->id_cred_i_cob_val),
-					&val, &len);
-
-				if (ZCBOR_SUCCESS != ret ||
-				    ONE_BYTE_CBOR_INT_LEN != len)
-					return EDHOC_ERROR_CBOR_FAILURE;
-			}
-		} else {
+				auth_cred->key_id.key_id_int;
+			break;
+		case EDHOC_ENCODE_TYPE_BYTE_STRING:
 			cbor_id_cred_i._id_cred_x_kid._id_cred_x_kid_choice =
 				_id_cred_x_kid_bstr;
-
 			cbor_id_cred_i._id_cred_x_kid._id_cred_x_kid_bstr.value =
-				auth_cred->key_id.key_id;
+				auth_cred->key_id.key_id_bstr;
 			cbor_id_cred_i._id_cred_x_kid._id_cred_x_kid_bstr.len =
-				auth_cred->key_id.key_id_len;
+				auth_cred->key_id.key_id_bstr_length;
+			break;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
+
+		if (true == cbor_items->id_cred_i_is_cob) {
+			len = 0;
+			ret = cbor_encode_integer_type_int_type(
+				(uint8_t *)&cbor_items->id_cred_i_cob_val,
+				sizeof(cbor_items->id_cred_i_cob_val),
+				&auth_cred->key_id.key_id_int, &len);
+
+			if (ZCBOR_SUCCESS != ret)
+				return EDHOC_ERROR_CBOR_FAILURE;
+		}
+
 		break;
 	}
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
@@ -669,20 +669,25 @@ static int calc_mac_3_context(const struct edhoc_context *ctx,
 		cbor_id_cred_i._id_cred_x_x5t._id_cred_x_x5t_hash.len =
 			auth_cred->x509_hash.cert_fp_len;
 
-		if (is_cbor_one_byte(auth_cred->x509_hash.alg_len,
-				     (int8_t)auth_cred->x509_hash.alg[0])) {
+		switch (auth_cred->x509_hash.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
 			cbor_id_cred_i._id_cred_x_x5t._id_cred_x_x5t_alg_choice =
 				_id_cred_x_x5t_alg_int;
 			cbor_id_cred_i._id_cred_x_x5t._id_cred_x_x5t_alg_int =
-				(int8_t)auth_cred->x509_hash.alg[0];
-		} else {
+				auth_cred->x509_hash.alg_int;
+			break;
+		case EDHOC_ENCODE_TYPE_BYTE_STRING:
 			cbor_id_cred_i._id_cred_x_x5t._id_cred_x_x5t_alg_choice =
 				_id_cred_x_x5t_alg_bstr;
 			cbor_id_cred_i._id_cred_x_x5t._id_cred_x_x5t_alg_bstr
-				.value = auth_cred->x509_hash.alg;
+				.value = auth_cred->x509_hash.alg_bstr;
 			cbor_id_cred_i._id_cred_x_x5t._id_cred_x_x5t_alg_bstr
-				.len = auth_cred->x509_hash.alg_len;
+				.len = auth_cred->x509_hash.alg_bstr_length;
+			break;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
+
 		break;
 	}
 
@@ -777,7 +782,7 @@ static int calc_mac_3_context(const struct edhoc_context *ctx,
 	if (0 != ctx->nr_of_ead_tokens) {
 		len = 0;
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			len += cbor_int_overhead(ctx->ead_token[i].label);
+			len += cbor_int_mem_req(ctx->ead_token[i].label);
 			len += 1; // cbor boolean
 			len += ctx->ead_token[i].value_len;
 			len += cbor_bstr_overhead(ctx->ead_token[i].value_len);
@@ -850,9 +855,9 @@ static int calc_mac_3(const struct edhoc_context *ctx,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += cbor_int_overhead(EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3);
+	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3);
 	len += cbor_items->buf_len + cbor_bstr_overhead(cbor_items->buf_len);
-	len += cbor_int_overhead(mac_3_len);
+	len += cbor_int_mem_req(mac_3_len);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -863,17 +868,18 @@ static int calc_mac_3(const struct edhoc_context *ctx,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	LOG("MAC_3 info", info, len);
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "MAC_3 info", info, len);
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-					key_id);
+	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
+				     key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto_cb.expand(key_id, info, len, mac_3, mac_3_len);
-	ctx->keys_cb.destroy_key(key_id);
+	ret = ctx->crypto.expand(key_id, info, len, mac_3, mac_3_len);
+	ctx->keys.destroy_key(key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -930,8 +936,8 @@ static int compute_sign_or_mac_3(const struct edhoc_context *ctx,
 	const size_t cose_sign_1_buf_len = len;
 
 	len = 0;
-	ret = ctx->crypto_cb.sign(auth_creds->priv_key_id, cose_sign_1_buf,
-				  cose_sign_1_buf_len, sign, sign_len, &len);
+	ret = ctx->crypto.signature(auth_creds->priv_key_id, cose_sign_1_buf,
+				    cose_sign_1_buf_len, sign, sign_len, &len);
 
 	if (EDHOC_SUCCESS != ret || sign_len != len)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1017,19 +1023,19 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += cbor_int_overhead(EDHOC_EXTRACT_PRK_INFO_LABEL_IV);
+	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_overhead(csuite.aead_key_len);
+	len += cbor_int_mem_req(csuite.aead_key_length);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
 
 	/* Generate K_3. */
 	input_info = (struct info){
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_KEY,
+		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_K_3,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = csuite.aead_key_len,
+		._info_length = csuite.aead_key_length,
 	};
 
 	memset(info, 0, sizeof(info));
@@ -1039,14 +1045,14 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-					key_id);
+	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
+				     key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto_cb.expand(key_id, info, len, key, key_len);
-	ctx->keys_cb.destroy_key(key_id);
+	ret = ctx->crypto.expand(key_id, info, len, key, key_len);
+	ctx->keys.destroy_key(key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -1054,10 +1060,10 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	/* Generate IV_3. */
 	input_info = (struct info){
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV,
+		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = csuite.aead_iv_len,
+		._info_length = csuite.aead_iv_length,
 	};
 
 	memset(info, 0, sizeof(info));
@@ -1067,14 +1073,14 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-					key_id);
+	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
+				     key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto_cb.expand(key_id, info, len, iv, iv_len);
-	ctx->keys_cb.destroy_key(key_id);
+	ret = ctx->crypto.expand(key_id, info, len, iv, iv_len);
+	ctx->keys.destroy_key(key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -1107,14 +1113,14 @@ static int compute_ciphertext(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_ENCRYPT, key, key_len, key_id);
+	ret = ctx->keys.generate_key(EDHOC_KT_ENCRYPT, key, key_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto_cb.encrypt(key_id, iv, iv_len, aad, aad_len, ptxt,
-				     ptxt_len, ctxt, ctxt_size, ctxt_len);
-	ctx->keys_cb.destroy_key(key_id);
+	ret = ctx->crypto.encrypt(key_id, iv, iv_len, aad, aad_len, ptxt,
+				  ptxt_len, ctxt, ctxt_size, ctxt_len);
+	ctx->keys.destroy_key(key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -1173,11 +1179,11 @@ static int compute_th_4(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
 	/* Calculate TH_4. */
-	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_len;
+	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
 	size_t hash_length = 0;
-	ret = ctx->crypto_cb.hash(th_4, ARRAY_SIZE(th_4), ctx->th, ctx->th_len,
-				  &hash_length);
+	ret = ctx->crypto.hash(th_4, ARRAY_SIZE(th_4), ctx->th, ctx->th_len,
+			       &hash_length);
 
 	if (EDHOC_SUCCESS != ret || ctx->th_len != hash_length)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1186,65 +1192,11 @@ static int compute_th_4(struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int compute_prk_out(struct edhoc_context *ctx)
-{
-	if (NULL == ctx)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-
-	if (EDHOC_TH_STATE_4 != ctx->th_state ||
-	    EDHOC_PRK_STATE_4E3M != ctx->prk_state)
-		return EDHOC_ERROR_BAD_STATE;
-
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
-
-	/* Calculate struct info cbor overhead. */
-	size_t len = 0;
-	len += cbor_int_overhead(EDHOC_EXTRACT_PRK_INFO_LABEL_IV);
-	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_overhead(csuite.hash_len);
-
-	uint8_t info[len];
-	memset(info, 0, sizeof(info));
-
-	/* Generate PRK_out. */
-	struct info input_info = {
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT,
-		._info_context.value = ctx->th,
-		._info_context.len = ctx->th_len,
-		._info_length = csuite.hash_len,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
-
-	if (ZCBOR_SUCCESS != ret)
-		return EDHOC_ERROR_CBOR_FAILURE;
-
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-					key_id);
-
-	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-
-	ret = ctx->crypto_cb.expand(key_id, info, len, ctx->prk, ctx->prk_len);
-	ctx->keys_cb.destroy_key(key_id);
-	memset(key_id, 0, sizeof(key_id));
-
-	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-
-	ctx->prk_state = EDHOC_PRK_STATE_OUT;
-	return EDHOC_SUCCESS;
-}
-
 static int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
 		     size_t msg_3_size, size_t *msg_3_len)
 {
-	if (NULL == ctxt || 0 == ctxt_len || NULL == msg_3 || 0 == msg_3_size)
+	if (NULL == ctxt || 0 == ctxt_len || NULL == msg_3 || 0 == msg_3_size ||
+	    NULL == msg_3_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -1296,15 +1248,15 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_DECRYPT, key, key_len, key_id);
+	ret = ctx->keys.generate_key(EDHOC_KT_DECRYPT, key, key_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	size_t len = 0;
-	ret = ctx->crypto_cb.decrypt(key_id, iv, iv_len, aad, aad_len, ctxt,
-				     ctxt_len, ptxt, ptxt_len, &len);
-	ctx->keys_cb.destroy_key(key_id);
+	ret = ctx->crypto.decrypt(key_id, iv, iv_len, aad, aad_len, ctxt,
+				  ctxt_len, ptxt, ptxt_len, &len);
+	ctx->keys.destroy_key(key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || ptxt_len != len)
@@ -1322,28 +1274,37 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	size_t len = 0;
 
-	struct plaintext_x cbor_ptxt_3 = { 0 };
-	ret = cbor_decode_plaintext_x(ptxt, ptxt_len, &cbor_ptxt_3, &len);
+	struct plaintext_3 cbor_ptxt_3 = { 0 };
+	ret = cbor_decode_plaintext_3(ptxt, ptxt_len, &cbor_ptxt_3, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	/* ID_CRED_I */
-	switch (cbor_ptxt_3._plaintext_x_ID_CRED_choice) {
-	case _plaintext_x_ID_CRED_int: {
+	switch (cbor_ptxt_3._plaintext_3_ID_CRED_I_choice) {
+	case _plaintext_3_ID_CRED_I_int: {
 		parsed_ptxt->auth_creds.label = EDHOC_COSE_HEADER_KID;
-		parsed_ptxt->auth_creds.key_id.key_id_len = 1;
-		parsed_ptxt->auth_creds.key_id.key_id[0] =
-			(int8_t)cbor_ptxt_3._plaintext_x_ID_CRED_int;
+		parsed_ptxt->auth_creds.key_id.encode_type =
+			EDHOC_ENCODE_TYPE_INTEGER;
+		parsed_ptxt->auth_creds.key_id.key_id_int =
+			cbor_ptxt_3._plaintext_3_ID_CRED_I_int;
 		break;
 	}
 
-	case _plaintext_x_ID_CRED_bstr:
-		return EDHOC_ERROR_NOT_SUPPORTED;
+	case _plaintext_3_ID_CRED_I_bstr:
+		parsed_ptxt->auth_creds.label = EDHOC_COSE_HEADER_KID;
+		parsed_ptxt->auth_creds.key_id.encode_type =
+			EDHOC_ENCODE_TYPE_BYTE_STRING;
+		parsed_ptxt->auth_creds.key_id.key_id_bstr_length =
+			cbor_ptxt_3._plaintext_3_ID_CRED_I_bstr.len;
+		memcpy(parsed_ptxt->auth_creds.key_id.key_id_bstr,
+		       cbor_ptxt_3._plaintext_3_ID_CRED_I_bstr.value,
+		       cbor_ptxt_3._plaintext_3_ID_CRED_I_bstr.len);
+		break;
 
-	case _plaintext_x_ID_CRED__map: {
+	case _plaintext_3_ID_CRED_I__map: {
 		const struct map *cbor_map =
-			&cbor_ptxt_3._plaintext_x_ID_CRED__map;
+			&cbor_ptxt_3._plaintext_3_ID_CRED_I__map;
 
 		if (cbor_map->_map_x5chain_present) {
 			parsed_ptxt->auth_creds.label =
@@ -1363,25 +1324,29 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 			parsed_ptxt->auth_creds.x509_hash.cert_fp_len =
 				cbor_map->_map_x5t._map_x5t_hash.len;
 
-			if (_map_x5t_alg_int ==
-				    cbor_map->_map_x5t._map_x5t_alg_choice &&
-			    ONE_BYTE_CBOR_INT_MIN_VALUE <
-				    cbor_map->_map_x5t._map_x5t_alg_int &&
-			    ONE_BYTE_CBOR_INT_MAX_VALUE >
-				    cbor_map->_map_x5t._map_x5t_alg_int) {
-				parsed_ptxt->auth_creds.x509_hash.alg_len = 1;
-				parsed_ptxt->auth_creds.x509_hash.alg[0] =
-					(int8_t)cbor_map->_map_x5t
-						._map_x5t_alg_int;
-			} else {
-				parsed_ptxt->auth_creds.x509_hash.alg_len =
+			switch (cbor_map->_map_x5t._map_x5t_alg_choice) {
+			case _map_x5t_alg_int:
+				parsed_ptxt->auth_creds.x509_hash.encode_type =
+					EDHOC_ENCODE_TYPE_INTEGER;
+				parsed_ptxt->auth_creds.x509_hash.alg_int =
+					cbor_map->_map_x5t._map_x5t_alg_int;
+				break;
+			case _map_x5t_alg_bstr:
+				parsed_ptxt->auth_creds.x509_hash.encode_type =
+					EDHOC_ENCODE_TYPE_BYTE_STRING;
+				parsed_ptxt->auth_creds.x509_hash
+					.alg_bstr_length =
 					cbor_map->_map_x5t._map_x5t_alg_bstr.len;
-				memcpy(parsed_ptxt->auth_creds.x509_hash.alg,
+				memcpy(parsed_ptxt->auth_creds.x509_hash
+					       .alg_bstr,
 				       cbor_map->_map_x5t._map_x5t_alg_bstr
 					       .value,
-				       parsed_ptxt->auth_creds.x509_hash
-					       .alg_len);
+				       cbor_map->_map_x5t._map_x5t_alg_bstr.len);
+				break;
+			default:
+				return EDHOC_ERROR_NOT_PERMITTED;
 			}
+
 			break;
 		}
 	}
@@ -1389,24 +1354,24 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	/* Sign_or_MAC_3 */
 	parsed_ptxt->sign_or_mac =
-		cbor_ptxt_3._plaintext_x_Signature_or_MAC.value;
+		cbor_ptxt_3._plaintext_3_Signature_or_MAC_3.value;
 	parsed_ptxt->sign_or_mac_len =
-		cbor_ptxt_3._plaintext_x_Signature_or_MAC.len;
+		cbor_ptxt_3._plaintext_3_Signature_or_MAC_3.len;
 
 	/* EAD_3 if present */
-	if (cbor_ptxt_3._plaintext_x_EAD_present) {
+	if (cbor_ptxt_3._plaintext_3_EAD_3_present) {
 		ctx->nr_of_ead_tokens =
-			cbor_ptxt_3._plaintext_x_EAD._ead_x_count;
+			cbor_ptxt_3._plaintext_3_EAD_3._ead_x_count;
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
 			ctx->ead_token[i].label =
-				cbor_ptxt_3._plaintext_x_EAD._ead_x[i]
+				cbor_ptxt_3._plaintext_3_EAD_3._ead_x[i]
 					._ead_x_ead_label;
 			ctx->ead_token[i].value =
-				cbor_ptxt_3._plaintext_x_EAD._ead_x[i]
+				cbor_ptxt_3._plaintext_3_EAD_3._ead_x[i]
 					._ead_x_ead_value.value;
 			ctx->ead_token[i].value_len =
-				cbor_ptxt_3._plaintext_x_EAD._ead_x[i]
+				cbor_ptxt_3._plaintext_3_EAD_3._ead_x[i]
 					._ead_x_ead_value.len;
 		}
 	}
@@ -1462,16 +1427,16 @@ static int verify_sign_or_mac_3(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys_cb.generate_key(EDHOC_KT_VERIFY, pub_key, pub_key_len,
-					key_id);
+	ret = ctx->keys.generate_key(EDHOC_KT_VERIFY, pub_key, pub_key_len,
+				     key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto_cb.verify(key_id, cose_sign_1_buf, len,
-				    parsed_ptxt->sign_or_mac,
-				    parsed_ptxt->sign_or_mac_len);
-	ctx->keys_cb.destroy_key(key_id);
+	ret = ctx->crypto.verify(key_id, cose_sign_1_buf, len,
+				 parsed_ptxt->sign_or_mac,
+				 parsed_ptxt->sign_or_mac_len);
+	ctx->keys.destroy_key(key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1495,21 +1460,21 @@ static int verify_sign_or_mac_3(const struct edhoc_context *ctx,
  *      8.  Compute K_3, IV_3 and AAD_3.
  *      9.  Compute ciphertext.
  *      10. Compute transcript hash 4.
- *      11. Compute output psuedo random key (PRK_out).
- *      12. Generate edhoc message 3.
+ *      11. Generate edhoc message 3.
  */
 int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 			    size_t msg_3_size, size_t *msg_3_len)
 {
-	if (NULL == ctx || VERIFIED_M2 != ctx->status || NULL == msg_3 ||
-	    0 == msg_3_size || NULL == msg_3_len)
+	if (NULL == ctx || NULL == msg_3 || 0 == msg_3_size ||
+	    NULL == msg_3_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (VERIFIED_M2 != ctx->status || EDHOC_TH_STATE_3 != ctx->th_state ||
+	if (EDHOC_SM_VERIFIED_M2 != ctx->status ||
+	    EDHOC_TH_STATE_3 != ctx->th_state ||
 	    EDHOC_PRK_STATE_3E2M != ctx->prk_state)
-		return EDHOC_PRK_STATE_4E3M != ctx->prk_state;
+		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->status = ABORTED;
+	ctx->status = EDHOC_SM_ABORTED;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -1518,8 +1483,8 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	/* 2. Compose EAD_3 if present. */
-	if (NULL != ctx->ead_compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->ead_compose(ctx->user_ctx, EDHOC_MSG_3,
+	if (NULL != ctx->ead.compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
+		ret = ctx->ead.compose(ctx->user_ctx, EDHOC_MSG_3,
 				       ctx->ead_token,
 				       ARRAY_SIZE(ctx->ead_token) - 1,
 				       &ctx->nr_of_ead_tokens);
@@ -1531,7 +1496,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	/* 3. Fetch authentication credentials. */
 	struct edhoc_auth_creds auth_creds = { 0 };
-	ret = ctx->creds_cb.fetch(ctx->user_ctx, &auth_creds);
+	ret = ctx->cred.fetch(ctx->user_ctx, &auth_creds);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -1560,42 +1525,47 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_INVALID_MAC_3;
 
-	LOG("context_3", cbor_items->buf, cbor_items->buf_len);
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "context_3", cbor_items->buf,
+			    cbor_items->buf_len);
 
 	/* 5c. Compute Message Authentication Code (MAC_3). */
-	uint8_t mac_3[csuite.hash_len];
+	uint8_t mac_3[csuite.hash_length];
 	memset(mac_3, 0, sizeof(mac_3));
 
 	ret = calc_mac_3(ctx, cbor_items, mac_3, ARRAY_SIZE(mac_3));
 
 	if (EDHOC_SUCCESS != ret) {
-		ctx->status = ABORTED;
+		ctx->status = EDHOC_SM_ABORTED;
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	LOG("MAC_3", mac_3, ARRAY_SIZE(mac_3));
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "MAC_3", mac_3, ARRAY_SIZE(mac_3));
 
 	/* 6. Compute signature if needed (Signature_or_MAC_3). */
-	uint8_t sign[csuite.ecc_sign_len];
+	uint8_t sign[csuite.ecc_sign_length];
 	memset(sign, 0, sizeof(sign));
 
 	switch (ctx->method) {
-	case EDHOC_INIT_SIGN_RESP_SIGN:
+	case EDHOC_METHOD_0:
 		ret = compute_sign_or_mac_3(ctx, &auth_creds, cbor_items, mac_3,
 					    ARRAY_SIZE(mac_3), sign,
 					    ARRAY_SIZE(sign));
 		break;
 
-	case EDHOC_INIT_STAT_RESP_SIGN:
-	case EDHOC_INIT_SIGN_RESP_STAT:
-	case EDHOC_INIT_STAT_RESP_STAT:
+	case EDHOC_METHOD_2:
+	case EDHOC_METHOD_1:
+	case EDHOC_METHOD_3:
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_INVALID_SIGN_OR_MAC_3;
 
-	LOG("Signature_or_MAC_3", sign, ARRAY_SIZE(sign));
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "Signature_or_MAC_3", sign,
+			    ARRAY_SIZE(sign));
 
 	/* 7. Prepare plaintext (PLAINTEXT_3). */
 	size_t plaintext_len = 0;
@@ -1614,13 +1584,15 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	LOG("PLAINTEXT_3", plaintext, ARRAY_SIZE(plaintext));
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "PLAINTEXT_3", plaintext,
+			    ARRAY_SIZE(plaintext));
 
 	/* 8. Compute K_3, IV_3 and AAD_3. */
-	uint8_t key[csuite.aead_key_len];
+	uint8_t key[csuite.aead_key_length];
 	memset(key, 0, sizeof(key));
 
-	uint8_t iv[csuite.aead_iv_len];
+	uint8_t iv[csuite.aead_iv_length];
 	memset(iv, 0, sizeof(iv));
 
 	const size_t aad_len = compute_aad_3_len(ctx);
@@ -1633,13 +1605,15 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	LOG("K_3", key, ARRAY_SIZE(key));
-	LOG("IV_3", iv, ARRAY_SIZE(iv));
-	LOG("AAD_3", aad, ARRAY_SIZE(aad));
+	if (NULL != ctx->logger) {
+		ctx->logger(ctx->user_ctx, "K_3", key, ARRAY_SIZE(key));
+		ctx->logger(ctx->user_ctx, "IV_3", iv, ARRAY_SIZE(iv));
+		ctx->logger(ctx->user_ctx, "AAD_3", aad, ARRAY_SIZE(aad));
+	}
 
 	/* 9. Compute ciphertext. */
 	size_t ciphertext_len = 0;
-	uint8_t ciphertext[ARRAY_SIZE(plaintext) + csuite.aead_tag_len];
+	uint8_t ciphertext[ARRAY_SIZE(plaintext) + csuite.aead_tag_length];
 	memset(ciphertext, 0, sizeof(ciphertext));
 
 	ret = compute_ciphertext(ctx, key, ARRAY_SIZE(key), iv, ARRAY_SIZE(iv),
@@ -1650,7 +1624,9 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	LOG("CIPHERTEXT_3", ciphertext, ciphertext_len);
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "CIPHERTEXT_3", ciphertext,
+			    ciphertext_len);
 
 	/* 10. Compute transcript hash 4. */
 	ret = compute_th_4(ctx, cbor_items, plaintext, ARRAY_SIZE(plaintext));
@@ -1658,23 +1634,24 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 
-	/* 11. Compute output psuedo random key (PRK_out). */
-	ret = compute_prk_out(ctx);
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "TH_4", ctx->th, ctx->th_len);
 
-	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
-
-	/* 12. Generate edhoc message 3. */
+	/* 11. Generate edhoc message 3. */
 	ret = gen_msg_3(ciphertext, ciphertext_len, msg_3, msg_3_size,
 			msg_3_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "message_3", msg_3, *msg_3_len);
+
 	ctx->nr_of_ead_tokens = 0;
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
-	ctx->status = COMPLETED;
+	ctx->is_oscore_export_allowed = true;
+	ctx->status = EDHOC_SM_COMPLETED;
 	return EDHOC_SUCCESS;
 }
 
@@ -1693,7 +1670,6 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
  *      9c. Compute Message Authentication Code (MAC_3).
  *      10. Verify Signature_or_MAC_3.
  *      11. Compute transcript hash 4.
- *      12. Compute output psuedo random key (PRK_out).
  */
 int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 			    size_t msg_3_len)
@@ -1701,11 +1677,12 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (NULL == ctx || NULL == msg_3 || 0 == msg_3_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (WAIT_M3 != ctx->status || EDHOC_TH_STATE_3 != ctx->th_state ||
+	if (EDHOC_SM_WAIT_M3 != ctx->status ||
+	    EDHOC_TH_STATE_3 != ctx->th_state ||
 	    EDHOC_PRK_STATE_3E2M != ctx->prk_state)
 		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->status = ABORTED;
+	ctx->status = EDHOC_SM_ABORTED;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -1723,10 +1700,10 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 
 	/* 3. Compute K_3, IV_3 and AAD_3. */
-	uint8_t key[csuite.aead_key_len];
+	uint8_t key[csuite.aead_key_length];
 	memset(key, 0, sizeof(key));
 
-	uint8_t iv[csuite.aead_iv_len];
+	uint8_t iv[csuite.aead_iv_length];
 	memset(iv, 0, sizeof(iv));
 
 	const size_t aad_len = compute_aad_3_len(ctx);
@@ -1739,12 +1716,14 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	LOG("K_3", key, ARRAY_SIZE(key));
-	LOG("IV_3", iv, ARRAY_SIZE(iv));
-	LOG("AAD_3", aad, ARRAY_SIZE(aad));
+	if (NULL != ctx->logger) {
+		ctx->logger(ctx->user_ctx, "K_3", key, ARRAY_SIZE(key));
+		ctx->logger(ctx->user_ctx, "IV_3", iv, ARRAY_SIZE(iv));
+		ctx->logger(ctx->user_ctx, "AAD_3", aad, ARRAY_SIZE(aad));
+	}
 
 	/* 4. Decrypt ciphertext. */
-	uint8_t ptxt[ctxt_len - csuite.aead_tag_len];
+	uint8_t ptxt[ctxt_len - csuite.aead_tag_length];
 	memset(ptxt, 0, sizeof(ptxt));
 
 	ret = decrypt_ciphertext(ctx, key, ARRAY_SIZE(key), iv, ARRAY_SIZE(iv),
@@ -1754,7 +1733,9 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	LOG("PLAINTEXT_3", ptxt, ARRAY_SIZE(ptxt));
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "PLAINTEXT_3", ptxt,
+			    ARRAY_SIZE(ptxt));
 
 	/* 5. Parse CBOR plaintext (PLAINTEXT_3). */
 	struct plaintext parsed_ptxt = { 0 };
@@ -1764,9 +1745,9 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	/* 6. Process EAD_3 if present. */
-	if (NULL != ctx->ead_process && 0 != ARRAY_SIZE(ctx->ead_token) - 1 &&
+	if (NULL != ctx->ead.process && 0 != ARRAY_SIZE(ctx->ead_token) - 1 &&
 	    0 != ctx->nr_of_ead_tokens) {
-		ret = ctx->ead_process(ctx->user_ctx, EDHOC_MSG_3,
+		ret = ctx->ead.process(ctx->user_ctx, EDHOC_MSG_3,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS != ret)
@@ -1776,8 +1757,8 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	/* 7. Verify if credentials from peer are trusted. */
 	const uint8_t *pub_key = NULL;
 	size_t pub_key_len = 0;
-	ret = ctx->creds_cb.verify(ctx->user_ctx, &parsed_ptxt.auth_creds,
-				   &pub_key, &pub_key_len);
+	ret = ctx->cred.verify(ctx->user_ctx, &parsed_ptxt.auth_creds, &pub_key,
+			       &pub_key_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -1807,10 +1788,12 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_INVALID_MAC_3;
 
-	LOG("context_3", cbor_items->buf, cbor_items->buf_len);
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "context_3", cbor_items->buf,
+			    cbor_items->buf_len);
 
 	/* 9c. Compute Message Authentication Code (MAC_3). */
-	uint8_t mac_3[csuite.hash_len];
+	uint8_t mac_3[csuite.hash_length];
 	memset(mac_3, 0, sizeof(mac_3));
 
 	ret = calc_mac_3(ctx, cbor_items, mac_3, ARRAY_SIZE(mac_3));
@@ -1818,7 +1801,8 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_INVALID_MAC_3;
 
-	LOG("MAC_3", mac_3, ARRAY_SIZE(mac_3));
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "MAC_3", mac_3, ARRAY_SIZE(mac_3));
 
 	/* 10. Verify Signature_or_MAC_3. */
 	ret = verify_sign_or_mac_3(ctx, cbor_items, &parsed_ptxt, pub_key,
@@ -1833,15 +1817,10 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 
-	/* 12. Compute output psuedo random key (PRK_out). */
-	ret = compute_prk_out(ctx);
-
-	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
-
 	ctx->nr_of_ead_tokens = 0;
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
-	ctx->status = COMPLETED;
+	ctx->is_oscore_export_allowed = true;
+	ctx->status = EDHOC_SM_COMPLETED;
 	return EDHOC_SUCCESS;
 }

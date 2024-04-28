@@ -22,9 +22,9 @@ extern "C" {
 #endif
 
 
-int cbor_decode_message_2(
+int cbor_decode_message_2_G_Y_CIPHERTEXT_2(
 		const uint8_t *payload, size_t payload_len,
-		struct message_2 *result,
+		struct zcbor_string *result,
 		size_t *payload_len_out);
 
 

@@ -78,11 +78,23 @@ python3 $ZCBOR_PY code -c $COSE_X509_MODEL          		\
         --oc $SRC/backend_cbor_id_cred_x.c        			\
         --oh $INC/backend_cbor_id_cred_x.h                  \
 
-echo "\nGenerating cbor encoding and decoding functions for edhoc plaintext_x ..."
+echo "\nGenerating cbor encoding and decoding functions for edhoc plaintext_2 ..."
 python3 $ZCBOR_PY code -c $COSE_X509_MODEL              	\
-        --encode --decode --entry-types plaintext_x   		\
-        --oc $SRC/backend_cbor_plaintext_x.c          		\
-        --oh $INC/backend_cbor_plaintext_x.h                \
+        --encode --decode --entry-types plaintext_2   		\
+        --oc $SRC/backend_cbor_plaintext_2.c          		\
+        --oh $INC/backend_cbor_plaintext_2.h                \
+
+echo "\nGenerating cbor encoding and decoding functions for edhoc plaintext_3 ..."
+python3 $ZCBOR_PY code -c $COSE_X509_MODEL              	\
+        --encode --decode --entry-types plaintext_3   		\
+        --oc $SRC/backend_cbor_plaintext_3.c          		\
+        --oh $INC/backend_cbor_plaintext_3.h                \
+
+echo "\nGenerating cbor encoding and decoding functions for edhoc plaintext_4 ..."
+python3 $ZCBOR_PY code -c $COSE_X509_MODEL              	\
+        --encode --decode --entry-types plaintext_4   		\
+        --oc $SRC/backend_cbor_plaintext_4.c          		\
+        --oh $INC/backend_cbor_plaintext_4.h                \
 
 echo "\nGenerating cbor encoding and decoding functions for byte string type ..."
 python3 $ZCBOR_PY code -c $TYPES_MODEL          			\

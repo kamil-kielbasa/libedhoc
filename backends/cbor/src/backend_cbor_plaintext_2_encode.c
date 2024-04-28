@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 #include "zcbor_encode.h"
-#include "backend_cbor_plaintext_x_encode.h"
+#include "backend_cbor_plaintext_2_encode.h"
 
 #if DEFAULT_MAX_QTY != 3
 #error "The type file was generated with a different default_max_qty than this file"
@@ -22,7 +22,7 @@ static bool encode_repeated_map_x5t(zcbor_state_t *state, const struct map_x5t_ 
 static bool encode_map(zcbor_state_t *state, const struct map *input);
 static bool encode_repeated_ead_x(zcbor_state_t *state, const struct ead_x *input);
 static bool encode_ead_x(zcbor_state_t *state, const struct ead_x_ *input);
-static bool encode_plaintext_x(zcbor_state_t *state, const struct plaintext_x *input);
+static bool encode_plaintext_2(zcbor_state_t *state, const struct plaintext_2 *input);
 
 
 static bool encode_repeated_map_kid(
@@ -129,17 +129,22 @@ static bool encode_ead_x(
 	return tmp_result;
 }
 
-static bool encode_plaintext_x(
-		zcbor_state_t *state, const struct plaintext_x *input)
+static bool encode_plaintext_2(
+		zcbor_state_t *state, const struct plaintext_2 *input)
 {
 	zcbor_print("%s\r\n", __func__);
 
-	bool tmp_result = (((((((*input)._plaintext_x_ID_CRED_choice == _plaintext_x_ID_CRED_int) ? ((zcbor_int32_encode(state, (&(*input)._plaintext_x_ID_CRED_int))))
-	: (((*input)._plaintext_x_ID_CRED_choice == _plaintext_x_ID_CRED_bstr) ? ((zcbor_bstr_encode(state, (&(*input)._plaintext_x_ID_CRED_bstr))))
-	: (((*input)._plaintext_x_ID_CRED_choice == _plaintext_x_ID_CRED__map) ? ((encode_map(state, (&(*input)._plaintext_x_ID_CRED__map))))
+	bool tmp_result = (((((((*input)._plaintext_2_C_R_choice == _plaintext_2_C_R_bstr) ? ((zcbor_bstr_encode(state, (&(*input)._plaintext_2_C_R_bstr))))
+	: (((*input)._plaintext_2_C_R_choice == _plaintext_2_C_R_int) ? (((((*input)._plaintext_2_C_R_int >= -24)
+	&& ((*input)._plaintext_2_C_R_int <= 23)) || (zcbor_error(state, ZCBOR_ERR_WRONG_RANGE), false))
+	&& (zcbor_int32_encode(state, (&(*input)._plaintext_2_C_R_int))))
+	: false)))
+	&& ((((*input)._plaintext_2_ID_CRED_R_choice == _plaintext_2_ID_CRED_R_int) ? ((zcbor_int32_encode(state, (&(*input)._plaintext_2_ID_CRED_R_int))))
+	: (((*input)._plaintext_2_ID_CRED_R_choice == _plaintext_2_ID_CRED_R_bstr) ? ((zcbor_bstr_encode(state, (&(*input)._plaintext_2_ID_CRED_R_bstr))))
+	: (((*input)._plaintext_2_ID_CRED_R_choice == _plaintext_2_ID_CRED_R__map) ? ((encode_map(state, (&(*input)._plaintext_2_ID_CRED_R__map))))
 	: false))))
-	&& ((zcbor_bstr_encode(state, (&(*input)._plaintext_x_Signature_or_MAC))))
-	&& zcbor_present_encode(&((*input)._plaintext_x_EAD_present), (zcbor_encoder_t *)encode_ead_x, state, (&(*input)._plaintext_x_EAD)))));
+	&& ((zcbor_bstr_encode(state, (&(*input)._plaintext_2_Signature_or_MAC_2))))
+	&& zcbor_present_encode(&((*input)._plaintext_2_EAD_2_present), (zcbor_encoder_t *)encode_ead_x, state, (&(*input)._plaintext_2_EAD_2)))));
 
 	if (!tmp_result)
 		zcbor_trace();
@@ -149,16 +154,16 @@ static bool encode_plaintext_x(
 
 
 
-int cbor_encode_plaintext_x(
+int cbor_encode_plaintext_2(
 		uint8_t *payload, size_t payload_len,
-		const struct plaintext_x *input,
+		const struct plaintext_2 *input,
 		size_t *payload_len_out)
 {
 	zcbor_state_t states[6];
 
-	zcbor_new_state(states, sizeof(states) / sizeof(zcbor_state_t), payload, payload_len, 8);
+	zcbor_new_state(states, sizeof(states) / sizeof(zcbor_state_t), payload, payload_len, 9);
 
-	bool ret = encode_plaintext_x(states, input);
+	bool ret = encode_plaintext_2(states, input);
 
 	if (ret && (payload_len_out != NULL)) {
 		*payload_len_out = MIN(payload_len,

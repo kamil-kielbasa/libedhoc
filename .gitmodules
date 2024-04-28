@@ -4,3 +4,6 @@
 [submodule "externals/zcbor"]
 	path = externals/zcbor
 	url = https://github.com/NordicSemiconductor/zcbor.git
+[submodule "externals/compact25519"]
+	path = externals/compact25519
+	url = https://github.com/DavyLandman/compact25519.git

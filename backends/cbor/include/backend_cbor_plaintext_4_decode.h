@@ -4,14 +4,14 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef BACKEND_CBOR_MESSAGE_2_ENCODE_H__
-#define BACKEND_CBOR_MESSAGE_2_ENCODE_H__
+#ifndef BACKEND_CBOR_PLAINTEXT_4_DECODE_H__
+#define BACKEND_CBOR_PLAINTEXT_4_DECODE_H__
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include "backend_cbor_message_2_types.h"
+#include "backend_cbor_plaintext_4_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,9 +22,9 @@ extern "C" {
 #endif
 
 
-int cbor_encode_message_2_G_Y_CIPHERTEXT_2(
-		uint8_t *payload, size_t payload_len,
-		const struct zcbor_string *input,
+int cbor_decode_plaintext_4_EAD_4(
+		const uint8_t *payload, size_t payload_len,
+		struct plaintext_4_EAD_4 *result,
 		size_t *payload_len_out);
 
 
@@ -32,4 +32,4 @@ int cbor_encode_message_2_G_Y_CIPHERTEXT_2(
 }
 #endif
 
-#endif /* BACKEND_CBOR_MESSAGE_2_ENCODE_H__ */
+#endif /* BACKEND_CBOR_PLAINTEXT_4_DECODE_H__ */

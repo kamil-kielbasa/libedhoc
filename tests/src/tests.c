@@ -1,24 +1,26 @@
 /**
- * @file    tests.c
- * @author  Kamil Kielbasa
- * @brief   Main file for unit tests.
- * @version 0.1
- * @date    2024-01-01
+ * \file    tests.c
+ * \author  Kamil Kielbasa
+ * \brief   Entry point for all unit tests.
+ * \version 0.2
+ * \date    2024-01-01
  * 
- * @copyright Copyright (c) 2024
+ * \copyright Copyright (c) 2024
  * 
  */
 
 /* Include files ----------------------------------------------------------- */
-#include "test_mbedtls_crypto.h"
-#include "test_edhoc_exporter.h"
-#include "test_edhoc_x509_chain.h"
-#include "test_edhoc_x509_hash.h"
-#include "test_edhoc_x509_kid.h"
-#include "test_edhoc_ead.h"
 
-/* Standard library header: */
+/* Internal test headers: */
+#include "cipher_suites/test_cipher_suite_0.h"
+#include "cipher_suites/test_cipher_suite_2.h"
+#include "edhoc_trace_1/test_edhoc_handshake.h"
+#include "edhoc_trace_1/test_edhoc_handshake_ead.h"
+#include "x509_chain/test_edhoc_handshake_x5chain.h"
+
+/* Standard library headers:*/
 #include <stdio.h>
+#include <assert.h>
 
 /* Crypto header: */
 #include <psa/crypto.h>
@@ -31,142 +33,93 @@
 /* Static function definitions --------------------------------------------- */
 /* Module interface function definitions ----------------------------------- */
 
-#include "test_crypto.h"
-
 int main(void)
 {
-	if (PSA_SUCCESS != psa_crypto_init()) {
-		printf("psa crypto init error!\n");
-		return -1;
-	}
+	assert(PSA_SUCCESS == psa_crypto_init());
 
 	printf("\n");
-	printf("test_mbedtls_crypto_aead:\n");
-	test_mbedtls_crypto_aead();
+	printf("test_cipher_suite_0_ecdsa:\n");
+	test_cipher_suite_0_ecdsa();
 
 	printf("\n");
-	printf("test_mbedtls_crypto_ecdsa:\n");
-	test_mbedtls_crypto_ecdsa();
+	printf("test_cipher_suite_0_ecdh:\n");
+	test_cipher_suite_0_ecdh();
 
 	printf("\n");
-	printf("test_mbedtls_crypto_ecdh:\n");
-	test_mbedtls_crypto_ecdh();
+	printf("test_cipher_suite_0_hkdf:\n");
+	test_cipher_suite_0_hkdf();
 
 	printf("\n");
-	printf("test_mbedtls_crypto_hkdf:\n");
-	test_mbedtls_crypto_hkdf();
+	printf("test_cipher_suite_0_aead:\n");
+	test_cipher_suite_0_aead();
+
+        printf("\n");
+	printf("test_cipher_suite_2_ecdsa:\n");
+	test_cipher_suite_2_ecdsa();
 
 	printf("\n");
-	printf("test_mbedtls_crypto_hash:\n");
-	test_mbedtls_crypto_hash();
+	printf("test_cipher_suite_2_ecdh:\n");
+	test_cipher_suite_2_ecdh();
 
 	printf("\n");
-	printf("test_edhoc_exporter:\n");
-	test_edhoc_exporter();
+	printf("test_cipher_suite_2_hkdf:\n");
+	test_cipher_suite_2_hkdf();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_message_1_compose:\n");
-	test_edhoc_x509_chain_message_1_compose();
+	printf("test_cipher_suite_2_aead:\n");
+	test_cipher_suite_2_aead();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_message_1_process:\n");
-	test_edhoc_x509_chain_message_1_process();
+	printf("test_edhoc_handshake_message_1_compose:\n");
+	test_edhoc_handshake_message_1_compose();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_message_2_compose:\n");
-	test_edhoc_x509_chain_message_2_compose();
+	printf("test_edhoc_handshake_message_1_process:\n");
+	test_edhoc_handshake_message_1_process();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_message_2_process:\n");
-	test_edhoc_x509_chain_message_2_process();
+	printf("test_edhoc_handshake_message_2_compose:\n");
+	test_edhoc_handshake_message_2_compose();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_message_3_compose:\n");
-	test_edhoc_x509_chain_message_3_compose();
+	printf("test_edhoc_handshake_message_2_process:\n");
+	test_edhoc_handshake_message_2_process();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_message_3_process:\n");
-	test_edhoc_x509_chain_message_3_process();
+	printf("test_edhoc_handshake_message_3_compose:\n");
+	test_edhoc_handshake_message_3_compose();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_edhoc_e2e:\n");
-	test_edhoc_x509_chain_edhoc_e2e();
+	printf("test_edhoc_handshake_message_3_process:\n");
+	test_edhoc_handshake_message_3_process();
 
 	printf("\n");
-	printf("test_edhoc_x509_chain_edhoc_e2e_real_crypto:\n");
-	test_edhoc_x509_chain_edhoc_e2e_real_crypto();
+	printf("test_edhoc_handshake_message_4_compose:\n");
+	test_edhoc_handshake_message_4_compose();
 
 	printf("\n");
-	printf("test_edhoc_x509_hash_message_1_compose:\n");
-	test_edhoc_x509_hash_message_1_compose();
+	printf("test_edhoc_handshake_message_4_process:\n");
+	test_edhoc_handshake_message_4_process();
 
 	printf("\n");
-	printf("test_edhoc_x509_hash_message_1_process:\n");
-	test_edhoc_x509_hash_message_1_process();
+	printf("test_edhoc_handshake_e2e:\n");
+	test_edhoc_handshake_e2e();
 
 	printf("\n");
-	printf("test_edhoc_x509_hash_message_2_compose:\n");
-	test_edhoc_x509_hash_message_2_compose();
+	printf("test_edhoc_handshake_e2e_real_crypto:\n");
+	test_edhoc_handshake_e2e_real_crypto();
 
 	printf("\n");
-	printf("test_edhoc_x509_hash_message_2_process:\n");
-	test_edhoc_x509_hash_message_2_process();
+	printf("test_edhoc_handshake_e2e_single_ead_token:\n");
+	test_edhoc_handshake_e2e_single_ead_token();
 
 	printf("\n");
-	printf("test_edhoc_x509_hash_message_3_compose:\n");
-	test_edhoc_x509_hash_message_3_compose();
+	printf("test_edhoc_handshake_e2e_multiple_ead_tokens:\n");
+	test_edhoc_handshake_e2e_multiple_ead_tokens();
 
-	printf("\n");
-	printf("test_edhoc_x509_hash_message_3_process:\n");
-	test_edhoc_x509_hash_message_3_process();
-
-	printf("\n");
-	printf("test_edhoc_x509_hash_edhoc_e2e:\n");
-	test_edhoc_x509_hash_edhoc_e2e();
-
-	printf("\n");
-	printf("test_edhoc_x509_hash_edhoc_e2e_real_crypto:\n");
-	test_edhoc_x509_hash_edhoc_e2e_real_crypto();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_message_1_compose:\n");
-	test_edhoc_x509_kid_message_1_compose();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_message_1_process:\n");
-	test_edhoc_x509_kid_message_1_process();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_message_2_compose:\n");
-	test_edhoc_x509_kid_message_2_compose();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_message_2_process:\n");
-	test_edhoc_x509_kid_message_2_process();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_message_3_compose:\n");
-	test_edhoc_x509_kid_message_3_compose();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_message_3_process:\n");
-	test_edhoc_x509_kid_message_3_process();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_edhoc_e2e:\n");
-	test_edhoc_x509_kid_edhoc_e2e();
-
-	printf("\n");
-	printf("test_edhoc_x509_kid_edhoc_e2e_real_crypto:\n");
-	test_edhoc_x509_kid_edhoc_e2e_real_crypto();
-
-	printf("\n");
-	printf("test_edhoc_single_ead_token:\n");
-	test_edhoc_single_ead_token();
-
-	printf("\n");
-	printf("test_edhoc_multiple_ead_tokens:\n");
-	test_edhoc_multiple_ead_tokens();
+        printf("\n");
+	printf("test_edhoc_handshake_x5chain_e2e_real_crypto:\n");
+        test_edhoc_handshake_x5chain_e2e_real_crypto();
 
 	mbedtls_psa_crypto_free();
 
