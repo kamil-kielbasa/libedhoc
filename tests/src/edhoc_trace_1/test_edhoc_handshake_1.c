@@ -1,8 +1,8 @@
 /**
- * \file    test_edhoc_handshake.c
+ * \file    test_edhoc_handshake_1.c
  * \author  Kamil Kielbasa
  * \brief   Unit tests for EDHOC handshake.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -12,9 +12,9 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test headers: */
-#include "edhoc_trace_1/test_edhoc_handshake.h"
-#include "edhoc_trace_1/test_vector.h"
-#include "edhoc_trace_1/authentication_credentials.h"
+#include "edhoc_trace_1/test_edhoc_handshake_1.h"
+#include "edhoc_trace_1/test_vector_1.h"
+#include "edhoc_trace_1/authentication_credentials_1.h"
 #include "cipher_suites/cipher_suite_0.h"
 
 /* Standard library headers: */
@@ -186,7 +186,7 @@ static inline void print_array(void *user_context, const char *name,
 
 /* Module interface function definitions ----------------------------------- */
 
-void test_edhoc_handshake_message_1_compose(void)
+void test_edhoc_handshake_1_message_1_compose(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context init_ctx = { 0 };
@@ -247,7 +247,7 @@ void test_edhoc_handshake_message_1_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_message_1_process(void)
+void test_edhoc_handshake_1_message_1_process(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context resp_ctx = { 0 };
@@ -308,7 +308,7 @@ void test_edhoc_handshake_message_1_process(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_message_2_compose(void)
+void test_edhoc_handshake_1_message_2_compose(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context resp_ctx = { 0 };
@@ -388,7 +388,7 @@ void test_edhoc_handshake_message_2_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_message_2_process(void)
+void test_edhoc_handshake_1_message_2_process(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context init_ctx = { 0 };
@@ -465,7 +465,7 @@ void test_edhoc_handshake_message_2_process(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_message_3_compose(void)
+void test_edhoc_handshake_1_message_3_compose(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context init_ctx = { 0 };
@@ -543,7 +543,7 @@ void test_edhoc_handshake_message_3_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_message_3_process(void)
+void test_edhoc_handshake_1_message_3_process(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context resp_ctx = { 0 };
@@ -616,7 +616,7 @@ void test_edhoc_handshake_message_3_process(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_message_4_compose(void)
+void test_edhoc_handshake_1_message_4_compose(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context resp_ctx = { 0 };
@@ -693,7 +693,7 @@ void test_edhoc_handshake_message_4_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_message_4_process(void)
+void test_edhoc_handshake_1_message_4_process(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct edhoc_context init_ctx = { 0 };
@@ -763,7 +763,7 @@ void test_edhoc_handshake_message_4_process(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_e2e(void)
+void test_edhoc_handshake_1_e2e(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -1245,7 +1245,7 @@ void test_edhoc_handshake_e2e(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_e2e_real_crypto(void)
+void test_edhoc_handshake_1_e2e_real_crypto(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 

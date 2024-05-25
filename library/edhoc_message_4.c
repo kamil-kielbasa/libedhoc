@@ -2,7 +2,7 @@
  * \file    edhoc_message_4.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 4 compose & process.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -10,6 +10,8 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+
+/* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 

@@ -1,9 +1,9 @@
 /**
- * \file    authentication_credentials.h
+ * \file    authentication_credentials_1.h
  * \author  Kamil Kielbasa
  * \brief   Example implementation of authentication credentials callbacks
  *          for EDHOC traces (RFC 9529) for chapter 2.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -11,8 +11,8 @@
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef AUTHENTICATION_CREDENTIALS_H
-#define AUTHENTICATION_CREDENTIALS_H
+#ifndef AUTHENTICATION_CREDENTIALS_1_H
+#define AUTHENTICATION_CREDENTIALS_1_H
 
 /* Include files ----------------------------------------------------------- */
 
@@ -57,4 +57,4 @@ int auth_cred_verify_resp(void *user_context,
 			  const uint8_t **public_key_reference,
 			  size_t *public_key_length);
 
-#endif /* AUTHENTICATION_CREDENTIALS_H */
+#endif /* AUTHENTICATION_CREDENTIALS_1_H */

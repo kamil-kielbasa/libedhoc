@@ -2,7 +2,7 @@
  * \file    edhoc_ead.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC External Authorization Data (EAD) interface.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -20,23 +20,34 @@
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 
+/** \defgroup edhoc-interface-ead EDHOC interface EAD
+ * @{
+ */
+
 /**
- * @brief RFC 9528: 3.1. General.
+ * \brief Helper type for recognition of EDHOC message in EAD callback.
  */
 enum edhoc_message {
+	/** EDHOC message 1. */
 	EDHOC_MSG_1,
+	/** EDHOC message 2. */
 	EDHOC_MSG_2,
+	/** EDHOC message 3. */
 	EDHOC_MSG_3,
+	/** EDHOC message 4. */
 	EDHOC_MSG_4,
 };
 
 /**
- * @brief RFC 9528: 3.8. External Authorization Data (EAD).
+ * \brief RFC 9528: 3.8. External Authorization Data (EAD).
  */
 struct edhoc_ead_token {
+	/** EAD label value. */
 	int32_t label;
 
+	/** EAD buffer. */
 	const uint8_t *value;
+	/** Size of the \p value buffer in bytes. */
 	size_t value_len;
 };
 
@@ -73,9 +84,13 @@ typedef int (*edhoc_ead_process)(void *user_context, enum edhoc_message message,
  * \brief Bind structure for EAD operations.
  */
 struct edhoc_ead {
+	/** External authorization data compose callback. */
 	edhoc_ead_compose compose;
+	/** External authorization data process callback. */
 	edhoc_ead_process process;
 };
+
+/**@}*/
 
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */

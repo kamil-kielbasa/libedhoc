@@ -2,7 +2,7 @@
  * \file    edhoc_exporter.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC exporter for key update or OSCORE session.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  *
  * \copyright Copyright (c) 2024
@@ -10,11 +10,16 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+
+/* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
+
+/* Standard library headers: */
 #include <string.h>
 #include <stdint.h>
 
+/* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_info_encode.h>
 

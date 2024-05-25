@@ -1,4 +1,4 @@
-name: github pipeline
+name: build-and-tests
 
 on: [push, pull_request]
 

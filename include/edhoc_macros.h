@@ -2,7 +2,7 @@
  * \file    edhoc_macros.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC macros and functionlike macros.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024

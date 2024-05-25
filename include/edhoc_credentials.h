@@ -2,7 +2,7 @@
  * \file    edhoc_credentials.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC authentication credentials interface.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -16,15 +16,22 @@
 /* Include files ----------------------------------------------------------- */
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
+
+/** \defgroup edhoc-interface-credentials EDHOC interface credentials
+ * @{
+ */
 
 /**
  * \brief CBOR encoding type where we can choose between integer or byte string.
  */
 enum edhoc_encode_type {
+	/** Encode as CBOR integer. */
 	EDHOC_ENCODE_TYPE_INTEGER,
+	/** Encode as CBOR byte string. */
 	EDHOC_ENCODE_TYPE_BYTE_STRING,
 };
 
@@ -34,21 +41,25 @@ enum edhoc_encode_type {
  * \ref https://www.iana.org/assignments/cose/cose.xhtml
  */
 enum edhoc_cose_header {
+	/** Authentication credentials identified by key identifier. */
 	EDHOC_COSE_HEADER_KID = 4,
+	/** Authentication credentials identified by an ordered chain of X.509 certificates. */
 	EDHOC_COSE_HEADER_X509_CHAIN = 33,
+	/** Authentication credentials identified by hash of an X.509 certificate. */
 	EDHOC_COSE_HEADER_X509_HASH = 34,
 };
 
 /**
  * \brief Key identifier authentication method.
  *
- * For fetch callback we need to fill:
- * - any type of credentials:           \p cred & \p cred_len.
+ * \section fetch-kid For fetch callback we need to fill:
+ * - any type of credentials:           \p cred and \p cred_len.
+ * - is credentials cborised:           \p cred_is_cbor.
  * - encoding type of key identifer:    \p encode_type.
  * - key identifier:                    \p key_id_int or
- *                                      \p key_id_bstr & \p key_id_bstr_length.
+ *                                      \p key_id_bstr and \p key_id_bstr_length.
  *
- * In verify callback we will receive:
+ * \section verify-kid In verify callback we will receive:
  * - \p encode_type.
  * - \p key_id_int or
  *   \p key_id_bstr & \p key_id_bstr_length.
@@ -57,41 +68,54 @@ enum edhoc_cose_header {
  * \p cred_len needs to written for further EDHOC processing.
  */
 struct edhoc_auth_cred_key_id {
+	/** Credentials buffor. */
 	const uint8_t *cred;
+	/** Size of the \p cred buffer in bytes. */
 	size_t cred_len;
+	/** Is credentials cborised? E.g. CWT, CCS. */
+	bool cred_is_cbor;
 
+	/** Encoding type of key identifier. 
+         *
+         * It must follow representation of byte string identifiers described in RFC 9528: 3.3.2. */
 	enum edhoc_encode_type encode_type;
 
+	/** Key identifier as cbor integer. */
 	int32_t key_id_int;
 
+	/** Key identifier as cbor byte string buffer. */
 	uint8_t key_id_bstr[EDHOC_CRED_KEY_ID_LEN + 1];
+	/** Size of the \p key_id_bstr buffer in bytes. */
 	size_t key_id_bstr_length;
 };
 
 /**
- * \brief X509 chain authentication method.
+ * \brief X.509 chain authentication method.
  *
- * For fetch callback we need to fill:
+ * \section fetch-x5chain For fetch callback we need to fill:
  * - certificate: \p cert & \p cert_len.
  *
- * For verify callback we will receive peer certificate by value, not reference.
+ * \section verify-x5chain For verify callback we will receive:
+ * Peer certificate by value, not reference.
  */
 struct edhoc_auth_cred_x509_chain {
+	/** Certificate buffer. */
 	const uint8_t *cert;
+	/** Size of the \p cert buffer in bytes. */
 	size_t cert_len;
 };
 
 /**
- * \brief X509 hash authentication method.
+ * \brief X.509 hash authentication method.
  *
- * For fetch callback we need to fill:
+ * \section fetch-x5t For fetch callback we need to fill:
  * - certificate:                               \p cert & \p cert_len.
  * - certificate fingerprint:                   \p cert_fp & \p cert_fp_len.
  * - encoding type of fingerprint algorithm:    \p encode_type.
  * - fingerprint algorithm:                     \p alg_int or
  *                                              \p alg_bstr & \p alg_bstr_length.
  *
- * In verify callback we will receive:
+ * \section verify-x5t In verify callback we will receive:
  * - \p cert_fp & \p cert_fp_len.
  * - \p encode_type.
  * - \p alg_int or
@@ -101,17 +125,25 @@ struct edhoc_auth_cred_x509_chain {
  * \p cert and \p cert_len needs to written for further EDHOC processing.
  */
 struct edhoc_auth_cred_x509_hash {
+	/** Certificate buffer. */
 	const uint8_t *cert;
+	/** Size of the \p cert buffer in bytes. */
 	size_t cert_len;
 
+	/** Certificate fingerprint buffer. */
 	const uint8_t *cert_fp;
+	/** Size of the \p cert_fp buffer in bytes. */
 	size_t cert_fp_len;
 
+	/** Encoding type of certificate fingerprint algorithm. */
 	enum edhoc_encode_type encode_type;
 
+	/** Fingerprint algorithm as cbor integer. */
 	int32_t alg_int;
 
+	/** Fingerprint algorithm as cbor byte string buffer. */
 	uint8_t alg_bstr[EDHOC_CRED_X509_HASH_ALG_LEN + 1];
+	/** Size of the \p alg_bstr buffer in bytes. */
 	size_t alg_bstr_length;
 };
 
@@ -119,12 +151,17 @@ struct edhoc_auth_cred_x509_hash {
  * \brief Common structure for different authentication credentials methods.
  */
 struct edhoc_auth_creds {
+	/** Private signature or static DH key. */
 	uint8_t priv_key_id[EDHOC_KID_LEN];
 
+	/** COSE IANA label. */
 	enum edhoc_cose_header label;
 	union {
+		/** Key identifier authentication structure. */
 		struct edhoc_auth_cred_key_id key_id;
+		/** X.509 chain authentication structure. */
 		struct edhoc_auth_cred_x509_chain x509_chain;
+		/** X.509 hash authentication structure. */
 		struct edhoc_auth_cred_x509_hash x509_hash;
 	};
 };
@@ -159,12 +196,16 @@ typedef int (*edhoc_credentials_verify_t)(void *user_context,
  * \brief Bind structure for authentication credentials.
  */
 struct edhoc_credentials {
+	/** Authentication credentials fetch callback. */
 	edhoc_credentials_fetch_t fetch;
+	/** Authentication credentials verify callback. */
 	edhoc_credentials_verify_t verify;
 };
 
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
+
+/**@}*/
 
 #endif /* EDHOC_CREDENTIALS_H */

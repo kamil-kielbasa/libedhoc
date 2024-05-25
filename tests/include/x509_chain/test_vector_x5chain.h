@@ -5,7 +5,7 @@
  *          chapter 2. It contains authentication with signatures, X.509 identified 
  *          by 'x5chain'.
  *          
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024

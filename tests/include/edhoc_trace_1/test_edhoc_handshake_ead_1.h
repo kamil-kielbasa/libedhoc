@@ -1,8 +1,8 @@
 /**
- * \file    test_edhoc_handshake_ead.h
+ * \file    test_edhoc_handshake_ead_1.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC EAD handshake unit tests for EDHOC traces (RFC 9529) for chapter 2.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -10,8 +10,8 @@
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef TEST_EDHOC_HANDSHAKE_EAD_H
-#define TEST_EDHOC_HANDSHAKE_EAD_H
+#ifndef TEST_EDHOC_HANDSHAKE_EAD_1_H
+#define TEST_EDHOC_HANDSHAKE_EAD_1_H
 
 /* Include files ----------------------------------------------------------- */
 /* Defines ----------------------------------------------------------------- */
@@ -36,7 +36,7 @@
  *             - sender ID.
  *             - recipient ID.
  */
-void test_edhoc_handshake_e2e_single_ead_token(void);
+void test_edhoc_handshake_1_e2e_single_ead_token(void);
 
 /**
  * \brief Test scenario:
@@ -54,6 +54,6 @@ void test_edhoc_handshake_e2e_single_ead_token(void);
  *             - sender ID.
  *             - recipient ID.
  */
-void test_edhoc_handshake_e2e_multiple_ead_tokens(void);
+void test_edhoc_handshake_1_e2e_multiple_ead_tokens(void);
 
-#endif /* TEST_EDHOC_HANDSHAKE_EAD_H */
+#endif /* TEST_EDHOC_HANDSHAKE_EAD_1_H */

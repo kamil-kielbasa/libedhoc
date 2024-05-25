@@ -1,8 +1,8 @@
 /**
- * \file    test_edhoc_handshake_ead.c
+ * \file    test_edhoc_handshake_ead_1.c
  * \author  Kamil Kielbasa
  * \brief   Unit tests for EDHOC EAD handshake.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  *
  * \copyright Copyright (c) 2024
@@ -12,9 +12,9 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test headers: */
-#include "edhoc_trace_1/test_edhoc_handshake_ead.h"
-#include "edhoc_trace_1/test_vector.h"
-#include "edhoc_trace_1/authentication_credentials.h"
+#include "edhoc_trace_1/test_edhoc_handshake_ead_1.h"
+#include "edhoc_trace_1/test_vector_1.h"
+#include "edhoc_trace_1/authentication_credentials_1.h"
 #include "cipher_suites/cipher_suite_0.h"
 
 /* Standard library headers: */
@@ -355,7 +355,7 @@ static int ead_process_multiple_tokens(void *user_ctx, enum edhoc_message msg,
 
 /* Module interface function definitions ----------------------------------- */
 
-void test_edhoc_handshake_e2e_single_ead_token(void)
+void test_edhoc_handshake_1_e2e_single_ead_token(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -739,7 +739,7 @@ void test_edhoc_handshake_e2e_single_ead_token(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
-void test_edhoc_handshake_e2e_multiple_ead_tokens(void)
+void test_edhoc_handshake_1_e2e_multiple_ead_tokens(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 

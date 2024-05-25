@@ -1,8 +1,8 @@
 /**
- * \file    authentication_credentials.c
+ * \file    authentication_credentials_1.c
  * \author  Kamil Kielbasa
  * \brief   Example implementation of authentication credentials callbacks.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -12,8 +12,8 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test headers: */
-#include "edhoc_trace_1/authentication_credentials.h"
-#include "edhoc_trace_1/test_vector.h"
+#include "edhoc_trace_1/authentication_credentials_1.h"
+#include "edhoc_trace_1/test_vector_1.h"
 #include "cipher_suites/cipher_suite_0.h"
 
 /* Standard library headers: */
@@ -74,14 +74,14 @@ int auth_cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred)
          * \brief Here we check algorithm for certificate fingerprint. 
          *        - 0x2e is CBOR encoding of the integer -15.
          */
-	if (CBOR_ENC_COSE_ALG_SHA_256_64 != ID_CRED_I[4])
+	if (CBOR_ENC_COSE_ALG_SHA_256_64 != ID_CRED_I_cborised[4])
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
 	auth_cred->x509_hash.cert = CRED_I;
 	auth_cred->x509_hash.cert_len = ARRAY_SIZE(CRED_I);
-	auth_cred->x509_hash.cert_fp = &ID_CRED_I[6];
-	auth_cred->x509_hash.cert_fp_len = ARRAY_SIZE(ID_CRED_I) - 6;
+	auth_cred->x509_hash.cert_fp = &ID_CRED_I_cborised[6];
+	auth_cred->x509_hash.cert_fp_len = ARRAY_SIZE(ID_CRED_I_cborised) - 6;
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
 

@@ -1,8 +1,8 @@
 /**
- * \file    test_edhoc_handshake.h
+ * \file    test_edhoc_handshake_1.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC handshake unit tests for EDHOC traces (RFC 9529) for chapter 2.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -10,8 +10,8 @@
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef TEST_EDHOC_HANDSHAKE_H
-#define TEST_EDHOC_HANDSHAKE_H
+#ifndef TEST_EDHOC_HANDSHAKE_1_H
+#define TEST_EDHOC_HANDSHAKE_1_H
 
 /* Include files ----------------------------------------------------------- */
 /* Defines ----------------------------------------------------------------- */
@@ -31,7 +31,7 @@
  *          - PRK state.
  *          - ephemeral DH private key value and length.
  */
-void test_edhoc_handshake_message_1_compose(void);
+void test_edhoc_handshake_1_message_1_compose(void);
 
 /**
  * \brief Test scenario:
@@ -45,7 +45,7 @@ void test_edhoc_handshake_message_1_compose(void);
  *          - C_I value and length.
  *          - peer ephemeral DH public key value and length.
  */
-void test_edhoc_handshake_message_1_process(void);
+void test_edhoc_handshake_1_message_1_process(void);
 
 /**
  * \brief Test scenario:
@@ -59,7 +59,7 @@ void test_edhoc_handshake_message_1_process(void);
  *          - PRK state, value and length.
  *          - computed DH key agreement.
  */
-void test_edhoc_handshake_message_2_compose(void);
+void test_edhoc_handshake_1_message_2_compose(void);
 
 /**
  * \brief Test scenario:
@@ -74,7 +74,7 @@ void test_edhoc_handshake_message_2_compose(void);
  *          - computed DH key agreement.
  *          - C_R value and length.
  */
-void test_edhoc_handshake_message_2_process(void);
+void test_edhoc_handshake_1_message_2_process(void);
 
 /**
  * \brief Test scenario:
@@ -87,7 +87,7 @@ void test_edhoc_handshake_message_2_process(void);
  *          - TH state, value and length.
  *          - PRK state, value and length.
  */
-void test_edhoc_handshake_message_3_compose(void);
+void test_edhoc_handshake_1_message_3_compose(void);
 
 /**
  * \brief Test scenario:
@@ -100,7 +100,7 @@ void test_edhoc_handshake_message_3_compose(void);
  *          - TH state, value and length.
  *          - PRK state, value and length.
  */
-void test_edhoc_handshake_message_3_process(void);
+void test_edhoc_handshake_1_message_3_process(void);
 
 /**
  * \brief Test scenario:
@@ -113,7 +113,7 @@ void test_edhoc_handshake_message_3_process(void);
  *          - TH state, value and length.
  *          - PRK state, value and length.
  */
-void test_edhoc_handshake_message_4_compose(void);
+void test_edhoc_handshake_1_message_4_compose(void);
 
 /**
  * \brief Test scenario:
@@ -126,7 +126,7 @@ void test_edhoc_handshake_message_4_compose(void);
  *          - TH state, value and length.
  *          - PRK state, value and length.
  */
-void test_edhoc_handshake_message_4_process(void);
+void test_edhoc_handshake_1_message_4_process(void);
 
 /**
  * \brief Test scenario:
@@ -158,7 +158,7 @@ void test_edhoc_handshake_message_4_process(void);
  *             - sender ID.
  *             - recipient ID.
  */
-void test_edhoc_handshake_e2e(void);
+void test_edhoc_handshake_1_e2e(void);
 
 /**
  * \brief Test scenario:
@@ -194,6 +194,6 @@ void test_edhoc_handshake_e2e(void);
  *       generate different keys. This is why only cross-check is possible as
  *       verification step.
  */
-void test_edhoc_handshake_e2e_real_crypto(void);
+void test_edhoc_handshake_1_e2e_real_crypto(void);
 
-#endif /* TEST_EDHOC_HANDSHAKE_H */
+#endif /* TEST_EDHOC_HANDSHAKE_1_H */

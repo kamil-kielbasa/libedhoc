@@ -2,7 +2,7 @@
  * \file    edhoc.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC API.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -28,10 +28,27 @@
 #include "edhoc_values.h"
 
 /* Defines ----------------------------------------------------------------- */
+
+/** \defgroup edhoc-api-version EDHOC API version
+ * @{
+ */
+
+/** The major version of this implementation of the EDHOC API. */
+#define EDHOC_API_VERSION_MAJOR 1
+
+/** The minor version of this implementation of the EDHOC API. */
+#define EDHOC_API_VERSION_MINOR 0
+
+/**@}*/
+
 /* Types and type definitions ---------------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
+
+/** \defgroup edhoc-api-setters EDHOC API setters
+ * @{
+ */
 
 /** 
  * \brief Initialize EDHOC context.
@@ -140,6 +157,12 @@ int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
 int edhoc_bind_credentials(struct edhoc_context *edhoc_context,
 			   struct edhoc_credentials credentials);
 
+/**@}*/
+
+/** \defgroup edhoc-api-messages EDHOC messages API
+ * @{
+ */
+
 /** 
  * \brief Compose EDHOC message 1.
  *
@@ -244,6 +267,12 @@ int edhoc_message_4_compose(struct edhoc_context *edhoc_context,
 int edhoc_message_4_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_4, size_t message_4_length);
 
+/**@}*/
+
+/** \defgroup edhoc-api-exporters EDHOC exporters API
+ * @{
+ */
+
 /**
  * \brief Export key update for the new OSCORE security session.
  *
@@ -273,12 +302,15 @@ int edhoc_export_key_update(struct edhoc_context *edhoc_context,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-int edhoc_export_oscore_session(
-	struct edhoc_context *edhoc_context, uint8_t *restrict master_secret,
-	size_t master_secret_length, uint8_t *restrict master_salt,
-	size_t master_salt_length, uint8_t *restrict sender_id,
-	size_t sender_id_size, size_t *restrict sender_id_length,
-	uint8_t *restrict recipient_id, size_t recipient_id_size,
-	size_t *restrict recipient_id_length);
+int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
+				uint8_t *master_secret,
+				size_t master_secret_length,
+				uint8_t *master_salt, size_t master_salt_length,
+				uint8_t *sender_id, size_t sender_id_size,
+				size_t *sender_id_length, uint8_t *recipient_id,
+				size_t recipient_id_size,
+				size_t *recipient_id_length);
+
+/**@}*/
 
 #endif /* EDHOC_H */

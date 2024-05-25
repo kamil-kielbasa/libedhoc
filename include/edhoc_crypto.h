@@ -2,7 +2,7 @@
  * \file    edhoc_crypto.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC cryptographic interface.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -20,43 +20,32 @@
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 
-/**
- * \brief Structure for cipher suite value and related algorithms lengths in bytes.
+/** \defgroup edhoc-interface-crypto-keys EDHOC interface for cryptographics keys
+ * @{
  */
-struct edhoc_cipher_suite {
-	/* IANA registery value. */
-	int32_t value;
-
-	/* EDHOC AEAD algorithm: key & tag & IV lengths in bytes. */
-	size_t aead_key_length;
-	size_t aead_tag_length;
-	size_t aead_iv_length;
-
-	/* EDHOC hash algorithm: hash length in bytes. */
-	size_t hash_length;
-
-	/* EDHOC MAC length in bytes. */
-	size_t mac_length;
-
-	/* EDHOC ECC algorithm: key & sign lengths in bytes. */
-	size_t ecc_key_length;
-	size_t ecc_sign_length;
-};
 
 /**
- * \brief EDHOC key types.
+ * \brief EDHOC key types for cryptographic keys interface.
  */
 enum edhoc_key_type {
+	/** Key type for generation of ephemeral Diffie-Hellman key pair. */
 	EDHOC_KT_MAKE_KEY_PAIR,
+	/** Key type for Diffie-Hellman keys agreement. */
 	EDHOC_KT_KEY_AGREEMENT,
 
+	/** Key type for signing. */
 	EDHOC_KT_SIGNATURE,
+	/** Key type for signature verification. */
 	EDHOC_KT_VERIFY,
 
+	/** Key type for HKDF extract. */
 	EDHOC_KT_EXTRACT,
+	/** Key type for HKDF expand. */
 	EDHOC_KT_EXPAND,
 
+	/** Key type for symmetric authenticated encryption. */
 	EDHOC_KT_ENCRYPT,
+	/** Key type for symmetric authenticated decryption. */
 	EDHOC_KT_DECRYPT,
 };
 
@@ -87,8 +76,42 @@ typedef int (*edhoc_destroy_key_t)(void *key_id);
  * \brief Bind structure for cryptographic key identifiers.
  */
 struct edhoc_keys {
+	/** Generate cryptographic key callback. */
 	edhoc_generate_key_t generate_key;
+	/** Destroy cryptographic key callback. */
 	edhoc_destroy_key_t destroy_key;
+};
+
+/**@}*/
+
+/** \defgroup edhoc-interface-crypto-operations EDHOC interface for cryptographics operations
+ * @{
+ */
+
+/**
+ * \brief Structure for cipher suite value and related algorithms lengths in bytes.
+ */
+struct edhoc_cipher_suite {
+	/** Cipher suite IANA registery value. */
+	int32_t value;
+
+	/** EDHOC AEAD algorithm key length in bytes. */
+	size_t aead_key_length;
+	/** EDHOC AEAD algorithm tag length in bytes. */
+	size_t aead_tag_length;
+	/** EDHOC AEAD algorithm iv length in bytes. */
+	size_t aead_iv_length;
+
+	/** EDHOC hash algorithm: hash length in bytes. */
+	size_t hash_length;
+
+	/** EDHOC MAC length in bytes. */
+	size_t mac_length;
+
+	/** EDHOC ECC algorithm: key length in bytes. */
+	size_t ecc_key_length;
+	/** EDHOC ECC algorithm: signature length in bytes. */
+	size_t ecc_sign_length;
 };
 
 /**
@@ -261,20 +284,31 @@ typedef int (*edhoc_hash_t)(const uint8_t *input, size_t input_length,
  * \brief Bind structure for cryptographics operations.
  */
 struct edhoc_crypto {
+	/** Cryptographic function callback for generate ephemeral Diffie-Hellman key pair. */
 	edhoc_make_key_pair_t make_key_pair;
+	/** Cryptographic function callback for Diffie-Helmann key agreement callback. */
 	edhoc_key_agreement_t key_agreement;
 
+	/** Cryptographic function callback for signing. */
 	edhoc_signature_t signature;
+	/** Cryptographic function callback for signature verification. */
 	edhoc_verify_t verify;
 
+	/** Cryptographic function callback for HKDF extract. */
 	edhoc_extract_t extract;
+	/** Cryptographic function callback for HKDF expand. */
 	edhoc_expand_t expand;
 
+	/** Cryptographic function callback for symmetric authenticated encryption. */
 	edhoc_encrypt_t encrypt;
+	/** Cryptographic function callback for symmetric authenticated decryption. */
 	edhoc_decrypt_t decrypt;
 
+	/** Cryptographic function callback for hash computing. */
 	edhoc_hash_t hash;
 };
+
+/**@}*/
 
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */

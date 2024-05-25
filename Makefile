@@ -99,7 +99,8 @@ INCLUDE_DIR_TEST 	:= ./tests/include
 SOURCE_TEST 		:= $(wildcard $(SOURCE_DIR_TEST)/*.c) 			\
                            $(wildcard $(SOURCE_DIR_TEST)/cipher_suites/*.c) 	\
 			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c) 	\
-			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain/*.c)
+			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain/*.c)	\
+			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
 OBJECTS_TEST 		:= $(SOURCE_TEST:%.c=%.o)
 
 # -------------------------------------------------------------------------------------------------
@@ -127,7 +128,7 @@ INC := $(foreach d, $(ALL_INCLUDES_PATHS), -I$d)
 # Section: compiler and linker setting.
 CC		:= gcc
 DEFINES		:= -DEDHOC_KID_LEN=4 			\
-		   -DEDHOC_MAX_CSUITES_LEN=1 		\
+		   -DEDHOC_MAX_CSUITES_LEN=2 		\
 		   -DEDHOC_MAX_CID_LEN=1 		\
 		   -DEDHOC_MAX_ECC_KEY_LEN=32 		\
 		   -DEDHOC_MAX_MAC_LEN=32 		\
@@ -167,7 +168,7 @@ CC_FLAGS := -c $(STANDARD) $(DEFINES) $(OPT_LEVEL) $(C_WARNINGS) $(DEBUG_LEVEL)
 # -------------------------------------------------------------------------------------------------
 # Section: library compilation dependency.
 
-LIB		:=	libedhoc.a
+LIB	:=	libedhoc.a
 TEST 	:= 	testedhoc.out
 
 all: lib test
@@ -203,13 +204,19 @@ format:
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/edhoc_trace_1/*.h
 	$(call print_cf,$(INCLUDE_DIR_TEST)/x509_chain/*.h)
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/x509_chain/*.h
+	$(call print_cf,$(INCLUDE_DIR_TEST)/edhoc_trace_2/*.h)
+	$(Q)$(CF) $(INCLUDE_DIR_TEST)/edhoc_trace_2/*.h
 
+	$(call print_cf,$(SOURCE_DIR_TEST)/*.c)
+	$(Q)$(CF) $(SOURCE_DIR_TEST)/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/cipher_suites/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/cipher_suites/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/edhoc_trace_1/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/x509_chain/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/x509_chain/*.c
+	$(call print_cf,$(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
+	$(Q)$(CF) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
 
 # -------------------------------------------------------------------------------------------------
 # Section: Format all source and header files.
@@ -223,6 +230,8 @@ cppcheck:
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c
 	$(call print_cppcheck, $(SOURCE_DIR_TEST)/x509_chain/*.c)
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/x509_chain/*.c
+	$(call print_cppcheck, $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
+	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
 
 # -------------------------------------------------------------------------------------------------
 # Section: Removed all generated files.
@@ -258,3 +267,6 @@ clean:
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/edhoc_trace_1/*.o
 	$(call print_rm,$(SOURCE_DIR_TEST)/x509_chain/*.o)
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/x509_chain/*.o
+	$(call print_rm,$(SOURCE_DIR_TEST)/edhoc_trace_2/*.o)
+	$(Q)$(RM) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.o
+

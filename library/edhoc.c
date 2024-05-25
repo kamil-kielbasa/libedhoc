@@ -2,7 +2,7 @@
  * \file    edhoc.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC context.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
@@ -10,8 +10,13 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+
+/* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
+
+/* Standard library headers: */
+#include <stddef.h>
 #include <string.h>
 
 /* Module defines ---------------------------------------------------------- */

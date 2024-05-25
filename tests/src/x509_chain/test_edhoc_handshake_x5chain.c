@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC handshake unit test for X.509 chain authentication method
  *          with real crypto usage.
- * \version 0.2
+ * \version 0.3
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
