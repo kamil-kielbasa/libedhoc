@@ -70,7 +70,8 @@ int auth_cred_fetch_init_2(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	       ARRAY_SIZE(ID_CRED_I_cborised));
 	auth_cred->key_id.key_id_bstr_length = ARRAY_SIZE(ID_CRED_I_cborised);
 
-	const int ret = cipher_suite_2_key_generate(EDHOC_KT_KEY_AGREEMENT,
+	const int ret = cipher_suite_2_key_generate(NULL,
+						    EDHOC_KT_KEY_AGREEMENT,
 						    SK_I, ARRAY_SIZE(SK_I),
 						    auth_cred->priv_key_id);
 
@@ -93,7 +94,8 @@ int auth_cred_fetch_resp_2(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	       ARRAY_SIZE(ID_CRED_R_cborised));
 	auth_cred->key_id.key_id_bstr_length = ARRAY_SIZE(ID_CRED_R_cborised);
 
-	const int ret = cipher_suite_2_key_generate(EDHOC_KT_KEY_AGREEMENT,
+	const int ret = cipher_suite_2_key_generate(NULL,
+						    EDHOC_KT_KEY_AGREEMENT,
 						    SK_R, ARRAY_SIZE(SK_R),
 						    auth_cred->priv_key_id);
 

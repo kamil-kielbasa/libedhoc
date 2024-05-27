@@ -45,8 +45,8 @@ int auth_cred_fetch_init_x5chain(void *user_ctx,
 	auth_cred->x509_chain.cert = CRED_I;
 	auth_cred->x509_chain.cert_len = ARRAY_SIZE(CRED_I);
 
-	const int ret = cipher_suite_0_key_generate(EDHOC_KT_SIGNATURE, SK_I,
-						    ARRAY_SIZE(SK_I),
+	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+						    SK_I, ARRAY_SIZE(SK_I),
 						    auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != ret)
@@ -67,8 +67,8 @@ int auth_cred_fetch_resp_x5chain(void *user_ctx,
 	auth_cred->x509_chain.cert = CRED_R;
 	auth_cred->x509_chain.cert_len = ARRAY_SIZE(CRED_R);
 
-	const int ret = cipher_suite_0_key_generate(EDHOC_KT_SIGNATURE, SK_R,
-						    ARRAY_SIZE(SK_R),
+	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+						    SK_R, ARRAY_SIZE(SK_R),
 						    auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != ret)

@@ -40,17 +40,17 @@
  * \brief Mocked EDHOC crypto function ECDH make key pair for initiator.
  */
 static int cipher_suite_2_make_key_pair_init(
-	const void *key_id, uint8_t *private_key, size_t private_key_size,
-	size_t *private_key_length, uint8_t *public_key, size_t public_key_size,
-	size_t *public_key_length);
+	void *user_context, const void *key_id, uint8_t *private_key,
+	size_t private_key_size, size_t *private_key_length,
+	uint8_t *public_key, size_t public_key_size, size_t *public_key_length);
 
 /**
  * \brief Mocked EDHOC crypto function ECDH make key pair for responder.
  */
 static int cipher_suite_2_make_key_pair_resp(
-	const void *key_id, uint8_t *private_key, size_t private_key_size,
-	size_t *private_key_length, uint8_t *public_key, size_t public_key_size,
-	size_t *public_key_length);
+	void *user_context, const void *key_id, uint8_t *private_key,
+	size_t private_key_size, size_t *private_key_length,
+	uint8_t *public_key, size_t public_key_size, size_t *public_key_length);
 
 /**
  * \brief Helper function for printing arrays.
@@ -149,13 +149,14 @@ static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
 
 /* Static function definitions --------------------------------------------- */
 
-static int cipher_suite_2_make_key_pair_init(const void *kid, uint8_t *priv_key,
-					     size_t priv_key_size,
-					     size_t *priv_key_len,
-					     uint8_t *pub_key,
-					     size_t pub_key_size,
-					     size_t *pub_key_len)
+static int
+cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
+				  uint8_t *priv_key, size_t priv_key_size,
+				  size_t *priv_key_len, uint8_t *pub_key,
+				  size_t pub_key_size, size_t *pub_key_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
 	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
 	    NULL == pub_key_len)
@@ -170,13 +171,14 @@ static int cipher_suite_2_make_key_pair_init(const void *kid, uint8_t *priv_key,
 	return EDHOC_SUCCESS;
 }
 
-static int cipher_suite_2_make_key_pair_resp(const void *kid, uint8_t *priv_key,
-					     size_t priv_key_size,
-					     size_t *priv_key_len,
-					     uint8_t *pub_key,
-					     size_t pub_key_size,
-					     size_t *pub_key_len)
+static int
+cipher_suite_2_make_key_pair_resp(void *user_ctx, const void *kid,
+				  uint8_t *priv_key, size_t priv_key_size,
+				  size_t *priv_key_len, uint8_t *pub_key,
+				  size_t pub_key_size, size_t *pub_key_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
 	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
 	    NULL == pub_key_len)

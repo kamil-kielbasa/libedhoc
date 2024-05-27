@@ -690,7 +690,8 @@ static int comp_prk_4e3m(enum edhoc_role role, struct edhoc_context *ctx,
 				ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
 			uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-			ret = ctx->keys.generate_key(EDHOC_KT_EXTRACT, giy,
+			ret = ctx->keys.generate_key(ctx->user_ctx,
+						     EDHOC_KT_EXTRACT, giy,
 						     ARRAY_SIZE(giy), key_id);
 			memset(giy, 0, sizeof(giy));
 
@@ -698,11 +699,12 @@ static int comp_prk_4e3m(enum edhoc_role role, struct edhoc_context *ctx,
 				return EDHOC_ERROR_CRYPTO_FAILURE;
 
 			size_t out_len = 0;
-			ret = ctx->crypto.extract(key_id, salt_4e3m,
+			ret = ctx->crypto.extract(ctx->user_ctx, key_id,
+						  salt_4e3m,
 						  ARRAY_SIZE(salt_4e3m),
 						  ctx->prk, ctx->prk_len,
 						  &out_len);
-			ctx->keys.destroy_key(key_id);
+			ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
 			if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len)
 				return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -761,7 +763,8 @@ static int comp_prk_4e3m(enum edhoc_role role, struct edhoc_context *ctx,
 				ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
 			uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-			ret = ctx->keys.generate_key(EDHOC_KT_EXTRACT, giy,
+			ret = ctx->keys.generate_key(ctx->user_ctx,
+						     EDHOC_KT_EXTRACT, giy,
 						     ARRAY_SIZE(giy), key_id);
 			memset(giy, 0, sizeof(giy));
 
@@ -769,11 +772,12 @@ static int comp_prk_4e3m(enum edhoc_role role, struct edhoc_context *ctx,
 				return EDHOC_ERROR_CRYPTO_FAILURE;
 
 			size_t out_len = 0;
-			ret = ctx->crypto.extract(key_id, salt_4e3m,
+			ret = ctx->crypto.extract(ctx->user_ctx, key_id,
+						  salt_4e3m,
 						  ARRAY_SIZE(salt_4e3m),
 						  ctx->prk, ctx->prk_len,
 						  &out_len);
-			ctx->keys.destroy_key(key_id);
+			ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
 			if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len)
 				return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1163,14 +1167,15 @@ static int comp_mac_3(const struct edhoc_context *ctx,
 		ctx->logger(ctx->user_ctx, "MAC_3 info", info, len);
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-				     key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				     ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, mac_3, mac_3_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, mac_3,
+				 mac_3_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -1273,10 +1278,9 @@ static int comp_sign_or_mac_3(const struct edhoc_context *ctx,
 		const size_t cose_sign_1_buf_len = len;
 
 		len = 0;
-		ret = ctx->crypto.signature(auth_creds->priv_key_id,
-					    cose_sign_1_buf,
-					    cose_sign_1_buf_len, sign, sign_len,
-					    &len);
+		ret = ctx->crypto.signature(
+			ctx->user_ctx, auth_creds->priv_key_id, cose_sign_1_buf,
+			cose_sign_1_buf_len, sign, sign_len, &len);
 
 		if (EDHOC_SUCCESS != ret || sign_len != len)
 			return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1453,14 +1457,15 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-				     key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				     ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, key, key_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, key,
+				 key_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -1481,14 +1486,14 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-				     key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				     ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, iv, iv_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, iv, iv_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -1520,14 +1525,16 @@ static int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *key,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(EDHOC_KT_ENCRYPT, key, key_len, key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_ENCRYPT, key,
+				     key_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.encrypt(key_id, iv, iv_len, aad, aad_len, ptxt,
-				  ptxt_len, ctxt, ctxt_size, ctxt_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.encrypt(ctx->user_ctx, key_id, iv, iv_len, aad,
+				  aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
+				  ctxt_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -1589,8 +1596,8 @@ static int comp_th_4(struct edhoc_context *ctx,
 	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
 	size_t hash_length = 0;
-	ret = ctx->crypto.hash(th_4, ARRAY_SIZE(th_4), ctx->th, ctx->th_len,
-			       &hash_length);
+	ret = ctx->crypto.hash(ctx->user_ctx, th_4, ARRAY_SIZE(th_4), ctx->th,
+			       ctx->th_len, &hash_length);
 
 	if (EDHOC_SUCCESS != ret || ctx->th_len != hash_length)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1655,15 +1662,17 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(EDHOC_KT_DECRYPT, key, key_len, key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_DECRYPT, key,
+				     key_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	size_t len = 0;
-	ret = ctx->crypto.decrypt(key_id, iv, iv_len, aad, aad_len, ctxt,
-				  ctxt_len, ptxt, ptxt_len, &len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.decrypt(ctx->user_ctx, key_id, iv, iv_len, aad,
+				  aad_len, ctxt, ctxt_len, ptxt, ptxt_len,
+				  &len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || ptxt_len != len)
@@ -1840,16 +1849,16 @@ static int verify_sign_or_mac_3(const struct edhoc_context *ctx,
 			return EDHOC_ERROR_CBOR_FAILURE;
 
 		uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-		ret = ctx->keys.generate_key(EDHOC_KT_VERIFY, pub_key,
-					     pub_key_len, key_id);
+		ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_VERIFY,
+					     pub_key, pub_key_len, key_id);
 
 		if (EDHOC_SUCCESS != ret)
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 
-		ret = ctx->crypto.verify(key_id, cose_sign_1_buf, len,
-					 parsed_ptxt->sign_or_mac,
+		ret = ctx->crypto.verify(ctx->user_ctx, key_id, cose_sign_1_buf,
+					 len, parsed_ptxt->sign_or_mac,
 					 parsed_ptxt->sign_or_mac_len);
-		ctx->keys.destroy_key(key_id);
+		ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
 		if (EDHOC_SUCCESS != ret)
 			return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1984,15 +1993,15 @@ static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-				     key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				     ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, ARRAY_SIZE(info), salt,
-				 salt_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, ARRAY_SIZE(info),
+				 salt, salt_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -2013,7 +2022,8 @@ static int comp_giy(enum edhoc_role role, struct edhoc_context *ctx,
 	switch (role) {
 	case initiator: {
 		size_t secret_len = 0;
-		ret = ctx->crypto.key_agreement(auth_cred->priv_key_id,
+		ret = ctx->crypto.key_agreement(ctx->user_ctx,
+						auth_cred->priv_key_id,
 						ctx->dh_peer_pub_key,
 						ctx->dh_peer_pub_key_len, giy,
 						giy_len, &secret_len);
@@ -2026,7 +2036,8 @@ static int comp_giy(enum edhoc_role role, struct edhoc_context *ctx,
 
 	case responder: {
 		uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-		ret = ctx->keys.generate_key(EDHOC_KT_KEY_AGREEMENT,
+		ret = ctx->keys.generate_key(ctx->user_ctx,
+					     EDHOC_KT_KEY_AGREEMENT,
 					     ctx->dh_priv_key,
 					     ctx->dh_priv_key_len, key_id);
 		ctx->dh_priv_key_len = 0;
@@ -2036,10 +2047,11 @@ static int comp_giy(enum edhoc_role role, struct edhoc_context *ctx,
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 
 		size_t secret_len = 0;
-		ret = ctx->crypto.key_agreement(key_id, pub_key, pub_key_len,
-						giy, giy_len, &secret_len);
+		ret = ctx->crypto.key_agreement(ctx->user_ctx, key_id, pub_key,
+						pub_key_len, giy, giy_len,
+						&secret_len);
 
-		ctx->keys.destroy_key(key_id);
+		ctx->keys.destroy_key(ctx->user_ctx, key_id);
 		memset(key_id, 0, sizeof(key_id));
 
 		if (EDHOC_SUCCESS != ret || secret_len != giy_len)

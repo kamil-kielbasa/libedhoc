@@ -145,14 +145,15 @@ static int compute_prk_out(struct edhoc_context *ctx)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-				     key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				     ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, ctx->prk, ctx->prk_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
+				 ctx->prk_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -203,14 +204,15 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-				     key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				     ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, ctx->prk, ctx->prk_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
+				 ctx->prk_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -256,14 +258,15 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, ctx->prk, ctx->prk_len,
-				     key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				     ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, prk_exp, prk_exp_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, prk_exp,
+				 prk_exp_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -324,12 +327,11 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *entropy,
  *      6. Copy OSCORE sender ID.
  *      7. Copy OSCORE recipient ID.
  */
-int edhoc_export_oscore_session(struct edhoc_context *ctx,
-				uint8_t *restrict secret, size_t secret_len,
-				uint8_t *restrict salt, size_t salt_len,
-				uint8_t *restrict sid, size_t sid_size,
-				size_t *restrict sid_len, uint8_t *restrict rid,
-				size_t rid_size, size_t *restrict rid_len)
+int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
+				size_t secret_len, uint8_t *salt,
+				size_t salt_len, uint8_t *sid, size_t sid_size,
+				size_t *sid_len, uint8_t *rid, size_t rid_size,
+				size_t *rid_len)
 {
 	if (NULL == ctx || NULL == secret || 0 == secret_len || NULL == salt ||
 	    0 == salt_len || NULL == sid || 0 == sid_size || NULL == sid_len ||
@@ -395,14 +397,16 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, prk_exporter,
-				     ARRAY_SIZE(prk_exporter), key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND,
+				     prk_exporter, ARRAY_SIZE(prk_exporter),
+				     key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, secret, secret_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, secret,
+				 secret_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)
@@ -426,14 +430,16 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys.generate_key(EDHOC_KT_EXPAND, prk_exporter,
-				     ARRAY_SIZE(prk_exporter), key_id);
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND,
+				     prk_exporter, ARRAY_SIZE(prk_exporter),
+				     key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
-	ret = ctx->crypto.expand(key_id, info, len, salt, salt_len);
-	ctx->keys.destroy_key(key_id);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, salt,
+				 salt_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret)

@@ -132,10 +132,12 @@ cleanup:
 
 /* Module interface function definitions ----------------------------------- */
 
-int cipher_suite_2_key_generate(enum edhoc_key_type key_type,
+int cipher_suite_2_key_generate(void *user_ctx, enum edhoc_key_type key_type,
 				const uint8_t *raw_key, size_t raw_key_len,
 				void *kid)
 {
+	(void)user_ctx;
+
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	/*
@@ -234,8 +236,10 @@ int cipher_suite_2_key_generate(enum edhoc_key_type key_type,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_key_destroy(void *kid)
+int cipher_suite_2_key_destroy(void *user_ctx, void *kid)
 {
+	(void)user_ctx;
+
 	if (NULL == kid)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
@@ -247,12 +251,15 @@ int cipher_suite_2_key_destroy(void *kid)
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_make_key_pair(const void *kid, uint8_t *restrict priv_key,
+int cipher_suite_2_make_key_pair(void *user_ctx, const void *kid,
+				 uint8_t *restrict priv_key,
 				 size_t priv_key_size,
 				 size_t *restrict priv_key_len,
 				 uint8_t *restrict pub_key, size_t pub_key_size,
 				 size_t *restrict pub_key_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
 	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
 	    NULL == pub_key_len)
@@ -284,10 +291,13 @@ int cipher_suite_2_make_key_pair(const void *kid, uint8_t *restrict priv_key,
 	return EDHOC_SUCCESS;
 }
 
-int cipher_suite_2_key_agreement(const void *kid, const uint8_t *peer_pub_key,
+int cipher_suite_2_key_agreement(void *user_ctx, const void *kid,
+				 const uint8_t *peer_pub_key,
 				 size_t peer_pub_key_len, uint8_t *shr_sec,
 				 size_t shr_sec_size, size_t *shr_sec_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == peer_pub_key || 0 == peer_pub_key_len ||
 	    NULL == shr_sec || 0 == shr_sec_size || NULL == shr_sec_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -351,10 +361,12 @@ int cipher_suite_2_key_agreement(const void *kid, const uint8_t *peer_pub_key,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_signature(const void *kid, const uint8_t *input,
-			     size_t input_len, uint8_t *sign, size_t sign_size,
-			     size_t *sign_len)
+int cipher_suite_2_signature(void *user_ctx, const void *kid,
+			     const uint8_t *input, size_t input_len,
+			     uint8_t *sign, size_t sign_size, size_t *sign_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == input || 0 == input_len || NULL == sign ||
 	    0 == sign_size || NULL == sign_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -381,10 +393,12 @@ int cipher_suite_2_signature(const void *kid, const uint8_t *input,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_verify(const void *kid, const uint8_t *input,
+int cipher_suite_2_verify(void *user_ctx, const void *kid, const uint8_t *input,
 			  size_t input_len, const uint8_t *sign,
 			  size_t sign_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == input || 0 == input_len || NULL == sign ||
 	    0 == sign_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -408,10 +422,12 @@ int cipher_suite_2_verify(const void *kid, const uint8_t *input,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_extract(const void *kid, const uint8_t *salt,
+int cipher_suite_2_extract(void *user_ctx, const void *kid, const uint8_t *salt,
 			   size_t salt_len, uint8_t *prk, size_t prk_size,
 			   size_t *prk_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == salt || 0 == salt_len || NULL == prk ||
 	    0 == prk_size || NULL == prk_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -458,9 +474,11 @@ psa_error:
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_expand(const void *kid, const uint8_t *info, size_t info_len,
-			  uint8_t *okm, size_t okm_len)
+int cipher_suite_2_expand(void *user_ctx, const void *kid, const uint8_t *info,
+			  size_t info_len, uint8_t *okm, size_t okm_len)
 {
+	(void)user_ctx;
+
 	if (NULL == kid || NULL == info || 0 == info_len || NULL == okm ||
 	    0 == okm_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -505,11 +523,14 @@ psa_error:
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_encrypt(const void *kid, const uint8_t *nonce,
-			   size_t nonce_len, const uint8_t *ad, size_t ad_len,
+int cipher_suite_2_encrypt(void *user_ctx, const void *kid,
+			   const uint8_t *nonce, size_t nonce_len,
+			   const uint8_t *ad, size_t ad_len,
 			   const uint8_t *ptxt, size_t ptxt_len, uint8_t *ctxt,
 			   size_t ctxt_size, size_t *ctxt_len)
 {
+	(void)user_ctx;
+
 	/* Plaintext might be zero length buffer. */
 	if (NULL == kid || NULL == nonce || 0 == nonce_len || NULL == ad ||
 	    0 == ad_len || NULL == ctxt || 0 == ctxt_size || NULL == ctxt_len)
@@ -532,11 +553,14 @@ int cipher_suite_2_encrypt(const void *kid, const uint8_t *nonce,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_decrypt(const void *kid, const uint8_t *nonce,
-			   size_t nonce_len, const uint8_t *ad, size_t ad_len,
+int cipher_suite_2_decrypt(void *user_ctx, const void *kid,
+			   const uint8_t *nonce, size_t nonce_len,
+			   const uint8_t *ad, size_t ad_len,
 			   const uint8_t *ctxt, size_t ctxt_len, uint8_t *ptxt,
 			   size_t ptxt_size, size_t *ptxt_len)
 {
+	(void)user_ctx;
+
 	/* Plaintext might be zero length buffer. */
 	if (NULL == kid || NULL == nonce || 0 == nonce_len || NULL == ad ||
 	    0 == ad_len || NULL == ctxt || 0 == ctxt_len || NULL == ptxt_len)
@@ -559,9 +583,11 @@ int cipher_suite_2_decrypt(const void *kid, const uint8_t *nonce,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_2_hash(const uint8_t *input, size_t input_len, uint8_t *hash,
-			size_t hash_size, size_t *hash_len)
+int cipher_suite_2_hash(void *user_ctx, const uint8_t *input, size_t input_len,
+			uint8_t *hash, size_t hash_size, size_t *hash_len)
 {
+	(void)user_ctx;
+
 	if (NULL == input || 0 == input_len || NULL == hash || 0 == hash_size ||
 	    NULL == hash_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;

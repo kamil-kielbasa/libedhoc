@@ -85,8 +85,8 @@ int auth_cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
 
-	const int ret = cipher_suite_0_key_generate(EDHOC_KT_SIGNATURE, SK_I,
-						    ARRAY_SIZE(SK_I),
+	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+						    SK_I, ARRAY_SIZE(SK_I),
 						    auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != ret)
@@ -117,8 +117,8 @@ int auth_cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
 
-	const int ret = cipher_suite_0_key_generate(EDHOC_KT_SIGNATURE, SK_R,
-						    ARRAY_SIZE(SK_R),
+	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+						    SK_R, ARRAY_SIZE(SK_R),
 						    auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != ret)
