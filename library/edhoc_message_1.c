@@ -310,7 +310,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
 		ctx->peer_cid.bstr_length =
 			cbor_dec_msg_1._message_1_C_I_bstr.len;
-		memcpy(ctx->cid.bstr_value,
+		memcpy(ctx->peer_cid.bstr_value,
 		       cbor_dec_msg_1._message_1_C_I_bstr.value,
 		       cbor_dec_msg_1._message_1_C_I_bstr.len);
 		break;
