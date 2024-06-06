@@ -4,8 +4,8 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef BACKEND_CBOR_MESSAGE_1_TYPES_H__
-#define BACKEND_CBOR_MESSAGE_1_TYPES_H__
+#ifndef CBOR_EDHOC_TYPES_H__
+#define CBOR_EDHOC_TYPES_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -25,6 +25,27 @@ extern "C" {
  */
 #define DEFAULT_MAX_QTY 3
 
+struct ead {
+	int32_t _ead_label;
+	struct zcbor_string _ead_value;
+	bool _ead_value_present;
+};
+
+struct ead_ {
+	struct ead _ead[3];
+	size_t _ead_count;
+};
+
+struct error {
+	int32_t _error_ERR_CODE;
+};
+
+struct info {
+	int32_t _info_label;
+	struct zcbor_string _info_context;
+	uint32_t _info_length;
+};
+
 struct suites_ {
 	union {
 		struct {
@@ -37,17 +58,6 @@ struct suites_ {
 		_suites__int,
 		_suites_int,
 	} _suites_choice;
-};
-
-struct ead {
-	int32_t _ead_label;
-	struct zcbor_string _ead_value;
-	bool _ead_value_present;
-};
-
-struct ead_ {
-	struct ead _ead[3];
-	size_t _ead_count;
 };
 
 struct message_1 {
@@ -70,4 +80,4 @@ struct message_1 {
 }
 #endif
 
-#endif /* BACKEND_CBOR_MESSAGE_1_TYPES_H__ */
+#endif /* CBOR_EDHOC_TYPES_H__ */

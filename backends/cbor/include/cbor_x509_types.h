@@ -4,8 +4,8 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef BACKEND_CBOR_PLAINTEXT_2_TYPES_H__
-#define BACKEND_CBOR_PLAINTEXT_2_TYPES_H__
+#ifndef CBOR_X509_TYPES_H__
+#define CBOR_X509_TYPES_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -24,6 +24,48 @@ extern "C" {
  *  See `zcbor --help` for more information about --default-max-qty
  */
 #define DEFAULT_MAX_QTY 3
+
+struct id_cred_x_kid_ {
+	union {
+		int32_t _id_cred_x_kid_int;
+		struct zcbor_string _id_cred_x_kid_bstr;
+	};
+	enum {
+		_id_cred_x_kid_int,
+		_id_cred_x_kid_bstr,
+	} _id_cred_x_kid_choice;
+};
+
+struct id_cred_x_x5bag {
+	struct zcbor_string _id_cred_x_x5bag;
+};
+
+struct id_cred_x_x5chain {
+	struct zcbor_string _id_cred_x_x5chain;
+};
+
+struct id_cred_x_x5t_ {
+	union {
+		int32_t _id_cred_x_x5t_alg_int;
+		struct zcbor_string _id_cred_x_x5t_alg_bstr;
+	};
+	enum {
+		_id_cred_x_x5t_alg_int,
+		_id_cred_x_x5t_alg_bstr,
+	} _id_cred_x_x5t_alg_choice;
+	struct zcbor_string _id_cred_x_x5t_hash;
+};
+
+struct id_cred_x {
+	struct id_cred_x_kid_ _id_cred_x_kid;
+	bool _id_cred_x_kid_present;
+	struct id_cred_x_x5bag _id_cred_x_x5bag;
+	bool _id_cred_x_x5bag_present;
+	struct id_cred_x_x5chain _id_cred_x_x5chain;
+	bool _id_cred_x_x5chain_present;
+	struct id_cred_x_x5t_ _id_cred_x_x5t;
+	bool _id_cred_x_x5t_present;
+};
 
 struct map_kid_ {
 	union {
@@ -102,8 +144,29 @@ struct plaintext_2 {
 	bool _plaintext_2_EAD_2_present;
 };
 
+struct plaintext_3 {
+	union {
+		int32_t _plaintext_3_ID_CRED_I_int;
+		struct zcbor_string _plaintext_3_ID_CRED_I_bstr;
+		struct map _plaintext_3_ID_CRED_I__map;
+	};
+	enum {
+		_plaintext_3_ID_CRED_I_int,
+		_plaintext_3_ID_CRED_I_bstr,
+		_plaintext_3_ID_CRED_I__map,
+	} _plaintext_3_ID_CRED_I_choice;
+	struct zcbor_string _plaintext_3_Signature_or_MAC_3;
+	struct ead_x_ _plaintext_3_EAD_3;
+	bool _plaintext_3_EAD_3_present;
+};
+
+struct plaintext_4_EAD_4 {
+	struct ead_x_ _plaintext_4_EAD_4;
+	bool _plaintext_4_EAD_4_present;
+};
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* BACKEND_CBOR_PLAINTEXT_2_TYPES_H__ */
+#endif /* CBOR_X509_TYPES_H__ */
