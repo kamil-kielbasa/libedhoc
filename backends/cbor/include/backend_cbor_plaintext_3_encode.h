@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include "backend_cbor_plaintext_3_types.h"
+#include "backend_cbor_x509_types.h"
 
 #ifdef __cplusplus
 extern "C" {
