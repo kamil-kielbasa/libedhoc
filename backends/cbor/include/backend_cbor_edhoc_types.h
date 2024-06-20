@@ -4,8 +4,8 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef CBOR_EDHOC_TYPES_H__
-#define CBOR_EDHOC_TYPES_H__
+#ifndef BACKEND_CBOR_EDHOC_TYPES_H__
+#define BACKEND_CBOR_EDHOC_TYPES_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -80,4 +80,4 @@ struct message_1 {
 }
 #endif
 
-#endif /* CBOR_EDHOC_TYPES_H__ */
+#endif /* BACKEND_CBOR_EDHOC_TYPES_H__ */

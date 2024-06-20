@@ -49,32 +49,32 @@ def generate_cbor_functions(model, entry_types, output, output_ht=None):
 
 # Generate CBOR encoding and decoding functions for EDHOC
 entry_types = {
-    "ead": ["backend_cbor_ead", "cbor_edhoc_types"],
-    "message_1": ["backend_cbor_message_1", "cbor_edhoc_types"],
-    "message_2": ["backend_cbor_message_2", "cbor_edhoc_types"],
-    "message_3": ["backend_cbor_message_3", "cbor_edhoc_types"],
-    "message_4": ["backend_cbor_message_4", "cbor_edhoc_types"],
-    "error": ["backend_cbor_error", "cbor_edhoc_types"],
-    "info": ["backend_cbor_info", "cbor_edhoc_types"]
+    "ead": ["backend_cbor_ead", "backend_cbor_edhoc_types"],
+    "message_1": ["backend_cbor_message_1", "backend_cbor_edhoc_types"],
+    "message_2": ["backend_cbor_message_2", "backend_cbor_edhoc_types"],
+    "message_3": ["backend_cbor_message_3", "backend_cbor_edhoc_types"],
+    "message_4": ["backend_cbor_message_4", "backend_cbor_edhoc_types"],
+    "error": ["backend_cbor_error", "backend_cbor_edhoc_types"],
+    "info": ["backend_cbor_info", "backend_cbor_edhoc_types"]
 }
 
 for entry, files in entry_types.items():
     generate_cbor_functions("EDHOC", entry, *files)
 
-generate_cbor_functions("EDHOC", " ".join(entry_types.keys()), "to_delete", "cbor_edhoc_types")
+generate_cbor_functions("EDHOC", " ".join(entry_types.keys()), "to_delete", "backend_cbor_edhoc_types")
 
 # Generate CBOR encoding and decoding functions for COSE_X509
 entry_types = {
-    "id_cred_x": ["backend_cbor_id_cred_x", "cbor_x509_types"],
-    "plaintext_2": ["backend_cbor_plaintext_2", "cbor_x509_types"],
-    "plaintext_3": ["backend_cbor_plaintext_3", "cbor_x509_types"],
-    "plaintext_4": ["backend_cbor_plaintext_4", "cbor_x509_types"]
+    "id_cred_x": ["backend_cbor_id_cred_x", "backend_cbor_x509_types"],
+    "plaintext_2": ["backend_cbor_plaintext_2", "backend_cbor_x509_types"],
+    "plaintext_3": ["backend_cbor_plaintext_3", "backend_cbor_x509_types"],
+    "plaintext_4": ["backend_cbor_plaintext_4", "backend_cbor_x509_types"]
 }
 
 for entry, files in entry_types.items():
     generate_cbor_functions("COSE_X509", entry, *files)
 
-generate_cbor_functions("COSE_X509", " ".join(entry_types.keys()), "to_delete", "cbor_x509_types")
+generate_cbor_functions("COSE_X509", " ".join(entry_types.keys()), "to_delete", "backend_cbor_x509_types")
 
 # Generate CBOR encoding and decoding functions for COSE
 generate_cbor_functions("COSE", "sig_structure", "backend_cbor_sig_structure")

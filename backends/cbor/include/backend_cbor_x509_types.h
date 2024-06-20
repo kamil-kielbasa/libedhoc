@@ -4,8 +4,8 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef CBOR_X509_TYPES_H__
-#define CBOR_X509_TYPES_H__
+#ifndef BACKEND_CBOR_X509_TYPES_H__
+#define BACKEND_CBOR_X509_TYPES_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -169,4 +169,4 @@ struct plaintext_4_EAD_4 {
 }
 #endif
 
-#endif /* CBOR_X509_TYPES_H__ */
+#endif /* BACKEND_CBOR_X509_TYPES_H__ */
