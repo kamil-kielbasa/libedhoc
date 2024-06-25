@@ -36,10 +36,6 @@ struct ead_ {
 	size_t _ead_count;
 };
 
-struct error {
-	int32_t _error_ERR_CODE;
-};
-
 struct info {
 	int32_t _info_label;
 	struct zcbor_string _info_context;
@@ -74,6 +70,24 @@ struct message_1 {
 	} _message_1_C_I_choice;
 	struct ead_ _message_1_EAD_1;
 	bool _message_1_EAD_1_present;
+};
+
+struct message_error_ERR_INFO_ {
+	union {
+		struct zcbor_string _message_error_ERR_INFO_tstr;
+		struct suites_ _message_error_ERR_INFO__suites;
+	};
+	enum {
+		_message_error_ERR_INFO_tstr,
+		_message_error_ERR_INFO__suites,
+		_message_error_ERR_INFO_bool,
+	} _message_error_ERR_INFO_choice;
+};
+
+struct message_error {
+	int32_t _message_error_ERR_CODE;
+	struct message_error_ERR_INFO_ _message_error_ERR_INFO;
+	bool _message_error_ERR_INFO_present;
 };
 
 #ifdef __cplusplus

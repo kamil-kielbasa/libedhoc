@@ -270,6 +270,37 @@ struct edhoc_context {
 	edhoc_logger_t logger;
 };
 
+/**
+ * \brief EDHOC error code. RFC 9528: 6. Error Handling.
+ */
+enum edhoc_error_code {
+	/** RFC 9528: 6.1. Success. */
+	EDHOC_ERROR_CODE_SUCCESS = 0,
+	/** RFC 9528: 6.2. Unspecified Error. */
+	EDHOC_ERROR_CODE_UNSPECIFIED_ERROR = 1,
+	/** RFC 9528: 6.3. Wrong Selected Cipher Suite. */
+	EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE = 2,
+	/** RFC 9528: 6.4. Unknown Credential Referenced. */
+	EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED = 3,
+};
+
+/**
+ * \brief EDHOC error information. RFC 9528: 6. Error Handling.
+ */
+struct edhoc_error_info {
+	union {
+		/** Pointer used only for error code: \ref EDHOC_ERROR_CODE_UNSPECIFIED_ERROR. */
+		char *text_string;
+		/** Pointer used only for error code: \ref EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE. */
+		int32_t *cipher_suites;
+	};
+
+	/** Total number of entries from: \p text_string or \p cipher_suites. */
+	size_t total_entries;
+	/** Number of written entries to: \p text_string or \p cipher_suites. */
+	size_t written_entries;
+};
+
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */

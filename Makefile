@@ -7,11 +7,11 @@ CPPCHECK := cppcheck --enable=warning,style --inline-suppr
 
 #Colors for echo in shell.
 COLOUR_GREEN 	:= \033[0;32m
-COLOUR_RED 		:= \033[0;31m
+COLOUR_RED 	:= \033[0;31m
 COLOUR_YELLOW	:= \033[0;33m
 COLOUR_BLUE 	:= \033[0;34m
 COLOUR_MAGNETA	:= \033[0;35m
-END_COLOUR 		:= \033[0m
+END_COLOUR 	:= \033[0m
 
 #Verbose mode.
 ifeq ("$(origin VERBOSE)", "command line")
@@ -100,7 +100,8 @@ SOURCE_TEST 		:= $(wildcard $(SOURCE_DIR_TEST)/*.c) 			\
                            $(wildcard $(SOURCE_DIR_TEST)/cipher_suites/*.c) 	\
 			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c) 	\
 			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain/*.c)	\
-			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
+			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)	\
+			   $(wildcard $(SOURCE_DIR_TEST)/error_message/*.c)
 OBJECTS_TEST 		:= $(SOURCE_TEST:%.c=%.o)
 
 # -------------------------------------------------------------------------------------------------
@@ -206,6 +207,8 @@ format:
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/x509_chain/*.h
 	$(call print_cf,$(INCLUDE_DIR_TEST)/edhoc_trace_2/*.h)
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/edhoc_trace_2/*.h
+	$(call print_cf,$(INCLUDE_DIR_TEST)/error_message/*.h)
+	$(Q)$(CF) $(INCLUDE_DIR_TEST)/error_message/*.h
 
 	$(call print_cf,$(SOURCE_DIR_TEST)/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/*.c
@@ -217,6 +220,8 @@ format:
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/x509_chain/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
+	$(call print_cf,$(SOURCE_DIR_TEST)/error_message/*.c)
+	$(Q)$(CF) $(SOURCE_DIR_TEST)/error_message/*.c
 
 # -------------------------------------------------------------------------------------------------
 # Section: Format all source and header files.
@@ -232,6 +237,8 @@ cppcheck:
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/x509_chain/*.c
 	$(call print_cppcheck, $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
+	$(call print_cppcheck, $(SOURCE_DIR_TEST)/error_message/*.c)
+	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/error_message/*.c
 
 # -------------------------------------------------------------------------------------------------
 # Section: Removed all generated files.
@@ -269,4 +276,5 @@ clean:
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/x509_chain/*.o
 	$(call print_rm,$(SOURCE_DIR_TEST)/edhoc_trace_2/*.o)
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.o
-
+	$(call print_rm,$(SOURCE_DIR_TEST)/error_message/*.o)
+	$(Q)$(RM) $(SOURCE_DIR_TEST)/error_message/*.o

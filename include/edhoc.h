@@ -267,6 +267,38 @@ int edhoc_message_4_compose(struct edhoc_context *edhoc_context,
 int edhoc_message_4_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_4, size_t message_4_length);
 
+/**
+ * \brief Compose EDHOC message error.
+ *
+ * \param[out] message_error            Buffer where the generated message error is to be written.
+ * \param message_error_size            Size of the \p message_error buffer in bytes.
+ * \param[out] message_error_length     On success, the number of bytes that make up the message error.
+ * \param error_code                    EDHOC error code.
+ * \param[in] error_info                EDHOC error information.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+int edhoc_message_error_compose(uint8_t *message_error,
+				size_t message_error_size,
+				size_t *message_error_length,
+				enum edhoc_error_code error_code,
+				const struct edhoc_error_info *error_info);
+
+/**
+ * \brief Process EDHOC message error.
+ *
+ * \param[in] message_error             Buffer containing the message error.
+ * \param message_error_length          Size of the \p message_error buffer in bytes.
+ * \param[out] error_code               EDHOC error code.
+ * \param[out] error_info               EDHOC error information.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+int edhoc_message_error_process(const uint8_t *message_error,
+				size_t message_error_length,
+				enum edhoc_error_code *error_code,
+				struct edhoc_error_info *error_info);
+
 /**@}*/
 
 /** \defgroup edhoc-api-exporters EDHOC exporters API

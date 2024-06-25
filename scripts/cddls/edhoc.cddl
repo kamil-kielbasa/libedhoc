@@ -31,10 +31,10 @@ message_4 =
   CIPHERTEXT_4 : bstr,
 )
 
-error =
+message_error =
 (
   ERR_CODE : int,
-  ERR_INFO : any,
+  ? ERR_INFO : tstr / suites / true ; any
 )
 
 info =

@@ -54,7 +54,7 @@ entry_types = {
     "message_2": ["backend_cbor_message_2", "backend_cbor_edhoc_types"],
     "message_3": ["backend_cbor_message_3", "backend_cbor_edhoc_types"],
     "message_4": ["backend_cbor_message_4", "backend_cbor_edhoc_types"],
-    "error": ["backend_cbor_error", "backend_cbor_edhoc_types"],
+    "message_error": ["backend_cbor_message_error", "backend_cbor_edhoc_types"],
     "info": ["backend_cbor_info", "backend_cbor_edhoc_types"]
 }
 

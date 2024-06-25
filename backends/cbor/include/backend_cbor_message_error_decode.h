@@ -4,8 +4,8 @@
  * Generated with a --default-max-qty of 3
  */
 
-#ifndef BACKEND_CBOR_ERROR_DECODE_H__
-#define BACKEND_CBOR_ERROR_DECODE_H__
+#ifndef BACKEND_CBOR_MESSAGE_ERROR_DECODE_H__
+#define BACKEND_CBOR_MESSAGE_ERROR_DECODE_H__
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -22,9 +22,9 @@ extern "C" {
 #endif
 
 
-int cbor_decode_error(
+int cbor_decode_message_error(
 		const uint8_t *payload, size_t payload_len,
-		struct error *result,
+		struct message_error *result,
 		size_t *payload_len_out);
 
 
@@ -32,4 +32,4 @@ int cbor_decode_error(
 }
 #endif
 
-#endif /* BACKEND_CBOR_ERROR_DECODE_H__ */
+#endif /* BACKEND_CBOR_MESSAGE_ERROR_DECODE_H__ */

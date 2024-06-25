@@ -18,6 +18,7 @@
 #include "edhoc_trace_1/test_edhoc_handshake_ead_1.h"
 #include "x509_chain/test_edhoc_handshake_x5chain.h"
 #include "edhoc_trace_2/test_edhoc_handshake_2.h"
+#include "error_message/test_edhoc_error_message.h"
 
 /* Standard library headers:*/
 #include <stdio.h>
@@ -161,6 +162,26 @@ int main(void)
 	printf("\n");
 	printf("test_edhoc_handshake_2_e2e_real_crypto:\n");
 	test_edhoc_handshake_2_e2e_real_crypto();
+
+	printf("\n");
+	printf("test_edhoc_error_message_success:\n");
+	test_edhoc_error_message_success();
+
+	printf("\n");
+	printf("test_edhoc_error_message_unspecified_error:\n");
+	test_edhoc_error_message_unspecified_error();
+
+	printf("\n");
+	printf("test_edhoc_error_message_wrong_selected_cipher_suite_one:\n");
+	test_edhoc_error_message_wrong_selected_cipher_suite_one();
+
+	printf("\n");
+	printf("test_edhoc_error_message_wrong_selected_cipher_suite_many:\n");
+	test_edhoc_error_message_wrong_selected_cipher_suite_many();
+
+	printf("\n");
+	printf("test_edhoc_error_message_unknown_credential_referenced:\n");
+	test_edhoc_error_message_unknown_credential_referenced();
 
 	printf("All tests passed successfully!\n");
 
