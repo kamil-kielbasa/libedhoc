@@ -183,6 +183,10 @@ int main(void)
 	printf("test_edhoc_error_message_unknown_credential_referenced:\n");
 	test_edhoc_error_message_unknown_credential_referenced();
 
+	printf("\n");
+	printf("test_edhoc_trace_1_prk_exporter:\n");
+	test_edhoc_trace_1_prk_exporter();
+
 	printf("All tests passed successfully!\n");
 
 	mbedtls_psa_crypto_free();

@@ -196,4 +196,13 @@ void test_edhoc_handshake_1_e2e(void);
  */
 void test_edhoc_handshake_1_e2e_real_crypto(void);
 
+/**
+ * \brief Test scenario:
+ *        - compute PRK exporter for:
+ *          - OSCORE Master Secret.
+ *          - OSCORE Master Salt.
+ *          - Private usage secrets (labels: min, middle, max).
+ */
+void test_edhoc_trace_1_prk_exporter(void);
+
 #endif /* TEST_EDHOC_HANDSHAKE_1_H */

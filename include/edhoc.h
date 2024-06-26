@@ -306,6 +306,19 @@ int edhoc_message_error_process(const uint8_t *message_error,
  */
 
 /**
+ * \brief Psuedorandom key exporter for derivation keying material.
+ * 
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param label                         PRK exporter label.
+ * \param[out] secret                   Buffer where the generated secret is to be written.
+ * \param secret_length                 Size of the \p secret buffer in bytes.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure. 
+ */
+int edhoc_export_prk_exporter(struct edhoc_context *edhoc_context, size_t label,
+			      uint8_t *secret, size_t secret_length);
+
+/**
  * \brief Export key update for the new OSCORE security session.
  *
  * \param[in,out] edhoc_context         EDHOC context.

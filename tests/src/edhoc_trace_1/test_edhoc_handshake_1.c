@@ -1607,3 +1607,91 @@ void test_edhoc_handshake_1_e2e_real_crypto(void)
 	ret = edhoc_context_deinit(&resp_ctx);
 	assert(EDHOC_SUCCESS == ret);
 }
+
+void test_edhoc_trace_1_prk_exporter(void)
+{
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	/**
+         * \brief Setup EDHOC context.
+         */
+	struct edhoc_context ctx = { 0 };
+
+	ret = edhoc_context_init(&ctx);
+	assert(EDHOC_SUCCESS == ret);
+	ctx.logger = print_array;
+
+	ret = edhoc_set_cipher_suites(&ctx, &edhoc_cipher_suite_0, 1);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_keys(&ctx, edhoc_keys);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_crypto(&ctx, edhoc_crypto);
+	assert(EDHOC_SUCCESS == ret);
+
+	/**
+         * \brief Required injections for EDHOC context.
+         */
+	ctx.status = EDHOC_SM_COMPLETED;
+
+	ctx.th_state = EDHOC_TH_STATE_4;
+	ctx.th_len = ARRAY_SIZE(TH_4);
+	memcpy(ctx.th, TH_4, ARRAY_SIZE(TH_4));
+
+	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
+	ctx.prk_len = ARRAY_SIZE(PRK_4e3m);
+	memcpy(ctx.prk, PRK_4e3m, ARRAY_SIZE(PRK_4e3m));
+
+	/**
+         * \brief Export OSCORE Master Secret.
+         */
+	uint8_t master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
+
+	ret = edhoc_export_prk_exporter(&ctx,
+					OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+					master_secret,
+					ARRAY_SIZE(master_secret));
+	assert(EDHOC_SUCCESS == ret);
+	assert(0 == memcmp(OSCORE_Master_Secret, master_secret,
+			   ARRAY_SIZE(OSCORE_Master_Secret)));
+
+	/**
+         * \brief Export OSCORE Master Salt.
+         */
+	uint8_t master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
+
+	ret = edhoc_export_prk_exporter(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT,
+					master_salt, ARRAY_SIZE(master_salt));
+	assert(EDHOC_SUCCESS == ret);
+	assert(0 == memcmp(OSCORE_Master_Salt, master_salt,
+			   ARRAY_SIZE(OSCORE_Master_Salt)));
+
+	/**
+         * \brief Export private usage secrets (label: minimum, middle, maximum).
+         */
+	uint8_t secret_1[13] = { 0 };
+	uint8_t secret_2[32] = { 0 };
+	uint8_t secret_3[64] = { 0 };
+
+	ret = edhoc_export_prk_exporter(
+		&ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM, secret_1,
+		ARRAY_SIZE(secret_1));
+	assert(EDHOC_SUCCESS == ret);
+
+	print_array(NULL, "Secret 1", secret_1, ARRAY_SIZE(secret_1));
+
+	ret = edhoc_export_prk_exporter(
+		&ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM, secret_2,
+		ARRAY_SIZE(secret_2));
+	assert(EDHOC_SUCCESS == ret);
+
+	print_array(NULL, "Secret 2", secret_2, ARRAY_SIZE(secret_2));
+
+	const size_t label = 45737;
+	ret = edhoc_export_prk_exporter(&ctx, label, secret_3,
+					ARRAY_SIZE(secret_3));
+	assert(EDHOC_SUCCESS == ret);
+
+	print_array(NULL, "Secret 3", secret_3, ARRAY_SIZE(secret_3));
+}

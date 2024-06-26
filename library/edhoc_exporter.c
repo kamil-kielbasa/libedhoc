@@ -1,7 +1,7 @@
 /**
  * \file    edhoc_exporter.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC exporter for key update or OSCORE session.
+ * \brief   EDHOC exporter for PRK exporter, key update or OSCORE session.
  * \version 0.3
  * \date    2024-01-01
  *
@@ -281,6 +281,98 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 
 /* Module interface function definitions ----------------------------------- */
 
+/**
+ * Steps for PRK exporter:
+ *      1. Compute pseudorandom key output if needed (PRK_out).
+ *      2. Choose most preferred cipher suite.
+ *      3. Compute pseudo random key exporter (PRK_exporter).
+ *      4. Derive secret.
+ */
+int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
+			      uint8_t *secret, size_t secret_len)
+{
+	if (NULL == ctx || EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label ||
+	    NULL == secret || 0 == secret_len)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	if (OSCORE_EXTRACT_LABEL_MASTER_SECRET != label &&
+	    OSCORE_EXTRACT_LABEL_MASTER_SALT != label &&
+	    (EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM > label ||
+	     EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label))
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (EDHOC_SM_PERSISTED < ctx->status ||
+	    EDHOC_PRK_STATE_4E3M > ctx->prk_state)
+		return EDHOC_ERROR_BAD_STATE;
+
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	/* 1. Compute pseudorandom key output if needed (PRK_out). */
+	if (EDHOC_PRK_STATE_4E3M == ctx->prk_state) {
+		ret = compute_prk_out(ctx);
+
+		if (EDHOC_SUCCESS != ret)
+			return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
+
+	/* 2. Choose most preferred cipher suite. */
+	const struct edhoc_cipher_suite csuite =
+		ctx->csuite[ctx->chosen_csuite_idx];
+
+	/* 3. Compute pseudo random key exporter (PRK_exporter). */
+	uint8_t prk_exporter[csuite.hash_length];
+	memset(prk_exporter, 0, sizeof(prk_exporter));
+
+	ret = compute_prk_exporter(ctx, prk_exporter, ARRAY_SIZE(prk_exporter));
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+
+	/* 4. Derive secret. */
+	size_t len = 0;
+	len += cbor_int_mem_req(label);
+	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
+	len += cbor_int_mem_req(csuite.hash_length);
+
+	uint8_t info[len];
+	memset(info, 0, sizeof(info));
+
+	const struct info input_info = (struct info){
+		._info_label = label,
+		._info_context.value = NULL,
+		._info_context.len = 0,
+		._info_length = secret_len,
+	};
+
+	len = 0;
+	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
+
+	if (ZCBOR_SUCCESS != ret)
+		return EDHOC_ERROR_CBOR_FAILURE;
+
+	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND,
+				     prk_exporter, ARRAY_SIZE(prk_exporter),
+				     key_id);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, secret,
+				 secret_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+
+	if (NULL != ctx->logger)
+		ctx->logger(ctx->user_ctx, "PRK exporter secret", secret,
+			    secret_len);
+
+	return EDHOC_SUCCESS;
+}
+
 int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *entropy,
 			    size_t entropy_len)
 {
@@ -318,14 +410,11 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *entropy,
 }
 
 /**
- * Steps for exporting secrets:
- *      1. Compute pseudorandom key output if needed (PRK_out).
- *      2. Choose most preferred cipher suite.
- *      3. Compute pseudo random key exporter (PRK_exporter).
- *      4. Derive OSCORE master secret.
- *      5. Derive OSCORE master salt.
- *      6. Copy OSCORE sender ID.
- *      7. Copy OSCORE recipient ID.
+ * Steps for exporting OSCORE secrets:
+ *      1. Derive OSCORE master secret.
+ *      2. Derive OSCORE master salt.
+ *      3. Copy OSCORE sender ID.
+ *      4. Copy OSCORE recipient ID.
  */
 int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 				size_t secret_len, uint8_t *salt,
@@ -351,105 +440,21 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	/* 1. Compute pseudorandom key output if needed (PRK_out). */
-	if (EDHOC_PRK_STATE_4E3M == ctx->prk_state) {
-		ret = compute_prk_out(ctx);
-
-		if (EDHOC_SUCCESS != ret)
-			return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
-	}
-
-	struct info input_info = { 0 };
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-
-	/* 2. Choose most preferred cipher suite. */
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
-
-	/* 3. Compute pseudo random key exporter (PRK_exporter). */
-	uint8_t prk_exporter[csuite.hash_length];
-	memset(prk_exporter, 0, sizeof(prk_exporter));
-
-	ret = compute_prk_exporter(ctx, prk_exporter, ARRAY_SIZE(prk_exporter));
+	/* 1. Derive OSCORE master secret. */
+	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+					secret, secret_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 
-	/* 4. Derive OSCORE master secret. */
-	size_t len = 0;
-	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
-	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
-	len += cbor_int_mem_req(csuite.hash_length);
-
-	uint8_t info[len];
-	memset(info, 0, sizeof(info));
-
-	input_info = (struct info){
-		._info_label = OSCORE_EXTRACT_LABEL_MASTER_SECRET,
-		._info_context.value = NULL,
-		._info_context.len = 0,
-		._info_length = secret_len,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
-
-	if (ZCBOR_SUCCESS != ret)
-		return EDHOC_ERROR_CBOR_FAILURE;
-
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND,
-				     prk_exporter, ARRAY_SIZE(prk_exporter),
-				     key_id);
+	/* 2. Derive OSCORE master salt. */
+	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT,
+					salt, salt_len);
 
 	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, secret,
-				 secret_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
-
-	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "OSCORE master secret", secret,
-			    secret_len);
-
-	/* 5. Derive OSCORE master salt. */
-	input_info = (struct info){
-		._info_label = OSCORE_EXTRACT_LABEL_MASTER_SALT,
-		._info_context.value = NULL,
-		._info_context.len = 0,
-		._info_length = salt_len,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
-
-	if (ZCBOR_SUCCESS != ret)
-		return EDHOC_ERROR_CBOR_FAILURE;
-
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND,
-				     prk_exporter, ARRAY_SIZE(prk_exporter),
-				     key_id);
-
-	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, salt,
-				 salt_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
-
-	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "OSCORE master salt", salt,
-			    salt_len);
-
-	/* 6. Copy OSCORE sender ID. */
+	/* 3. Copy OSCORE sender ID. */
 	switch (ctx->peer_cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
 		*sid_len = sizeof(ctx->peer_cid.int_value);
@@ -486,7 +491,7 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 		}
 	}
 
-	/* 7. Copy OSCORE recipient ID. */
+	/* 4. Copy OSCORE recipient ID. */
 	switch (ctx->cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
 		*rid_len = sizeof(ctx->cid.int_value);

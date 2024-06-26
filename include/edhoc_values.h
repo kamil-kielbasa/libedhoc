@@ -162,6 +162,16 @@
  * RFC 9528: A.1. Deriving the OSCORE Security Context. */
 #define OSCORE_EXTRACT_LABEL_MASTER_SALT ((size_t)1)
 
+/**
+ * \brief RFC 9528: 10.1. EDHOC Exporter Label Registry
+ */
+
+/** Minimum value for EDHOC exporter label for private usage. */
+#define EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM ((size_t)32768)
+
+/** Maximum value for EDHOC exporter label for private usage. */
+#define EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM ((size_t)65535)
+
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
