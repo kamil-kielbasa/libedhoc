@@ -739,11 +739,11 @@ static int comp_prk_3e2m(enum edhoc_role role, struct edhoc_context *ctx,
 	if (initiator == role) {
 		switch (ctx->method) {
 		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
+		case EDHOC_METHOD_2:
 			ctx->prk_state = EDHOC_PRK_STATE_3E2M;
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_2:
+		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_3: {
 			const size_t hash_len =
 				ctx->csuite[ctx->chosen_csuite_idx].hash_length;
@@ -1374,11 +1374,11 @@ static int get_mac_2_len(enum edhoc_role role, const struct edhoc_context *ctx,
 	if (role == initiator) {
 		switch (ctx->method) {
 		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
+		case EDHOC_METHOD_2:
 			*mac_2_len = csuite.hash_length;
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_2:
+		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_3:
 			*mac_2_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
@@ -1471,11 +1471,11 @@ static int comp_sign_or_mac_2_len(enum edhoc_role role,
 	if (role == initiator) {
 		switch (ctx->method) {
 		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
+		case EDHOC_METHOD_2:
 			*sign_or_mac_2_len = csuite.ecc_sign_length;
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_2:
+		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_3:
 			*sign_or_mac_2_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
@@ -2010,7 +2010,7 @@ static int verify_sign_or_mac_2(const struct edhoc_context *ctx,
 
 	switch (ctx->method) {
 	case EDHOC_METHOD_0:
-	case EDHOC_METHOD_1: {
+	case EDHOC_METHOD_2: {
 		size_t len = 0;
 
 		const struct sig_structure cose_sign_1 = {
@@ -2066,7 +2066,7 @@ static int verify_sign_or_mac_2(const struct edhoc_context *ctx,
 		return EDHOC_SUCCESS;
 	}
 
-	case EDHOC_METHOD_2:
+	case EDHOC_METHOD_1:
 	case EDHOC_METHOD_3: {
 		if (mac_2_len != parsed_ptxt->sign_or_mac_len ||
 		    0 != memcmp(parsed_ptxt->sign_or_mac, mac_2, mac_2_len))
