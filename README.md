@@ -15,7 +15,7 @@ Documentation and further information can be found at <https://kamil-kielbasa.gi
 LICENSE INFORMATION
 ===================
 
-This library is published as open-source software without any warranty of any kind. Use is permitted under the terms of the GPL-2.0 license.
+This library is published as open-source software without any warranty of any kind. Use is permitted under the terms of the MIT license.
 
 CONTACT
 =======
