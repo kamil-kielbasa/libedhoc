@@ -1,8 +1,8 @@
 /**
- * \file    test_edhoc_handshake_x5chain.c
+ * \file    test_edhoc_handshake_x5chain_cs_2.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC handshake unit test for X.509 chain authentication method
- *          with real crypto usage.
+ *          for cipher suite 2.
  * \version 0.3
  * \date    2024-01-01
  * 
@@ -13,10 +13,10 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test headers: */
-#include "x509_chain/test_edhoc_handshake_x5chain.h"
-#include "x509_chain/test_vector_x5chain.h"
-#include "x509_chain/authentication_credentials_x5chain.h"
-#include "cipher_suites/cipher_suite_0.h"
+#include "x509_chain_cs_2/test_edhoc_handshake_x5chain_cs_2.h"
+#include "x509_chain_cs_2/test_vector_x5chain_cs_2.h"
+#include "x509_chain_cs_2/authentication_credentials_x5chain_cs_2.h"
+#include "cipher_suites/cipher_suite_2.h"
 
 /* Standard library headers: */
 #include <stdio.h>
@@ -51,8 +51,8 @@ static inline void print_array(void *user_context, const char *name,
 
 /* Static variables and constants ------------------------------------------ */
 
-static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
-	.value = 0,
+static const struct edhoc_cipher_suite edhoc_cipher_suite_2 = {
+	.value = 2,
 	.aead_key_length = 16,
 	.aead_tag_length = 8,
 	.aead_iv_length = 13,
@@ -63,30 +63,54 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
 };
 
 static const struct edhoc_keys edhoc_keys = {
-	.generate_key = cipher_suite_0_key_generate,
-	.destroy_key = cipher_suite_0_key_destroy,
+	.generate_key = cipher_suite_2_key_generate,
+	.destroy_key = cipher_suite_2_key_destroy,
 };
 
-static const struct edhoc_crypto edhoc_crypto = {
-	.make_key_pair = cipher_suite_0_make_key_pair,
-	.key_agreement = cipher_suite_0_key_agreement,
-	.signature = cipher_suite_0_signature,
-	.verify = cipher_suite_0_verify,
-	.extract = cipher_suite_0_extract,
-	.expand = cipher_suite_0_expand,
-	.encrypt = cipher_suite_0_encrypt,
-	.decrypt = cipher_suite_0_decrypt,
-	.hash = cipher_suite_0_hash,
+static int
+cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
+				  uint8_t *priv_key, size_t priv_key_size,
+				  size_t *priv_key_len, uint8_t *pub_key,
+				  size_t pub_key_size, size_t *pub_key_len);
+
+static int
+cipher_suite_2_make_key_pair_resp(void *user_ctx, const void *kid,
+				  uint8_t *priv_key, size_t priv_key_size,
+				  size_t *priv_key_len, uint8_t *pub_key,
+				  size_t pub_key_size, size_t *pub_key_len);
+
+static const struct edhoc_crypto edhoc_crypto_mocked_resp = {
+	.make_key_pair = cipher_suite_2_make_key_pair_resp,
+	.key_agreement = cipher_suite_2_key_agreement,
+	.signature = cipher_suite_2_signature,
+	.verify = cipher_suite_2_verify,
+	.extract = cipher_suite_2_extract,
+	.expand = cipher_suite_2_expand,
+	.encrypt = cipher_suite_2_encrypt,
+	.decrypt = cipher_suite_2_decrypt,
+	.hash = cipher_suite_2_hash,
 };
 
-static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
-	.fetch = auth_cred_fetch_resp_x5chain,
-	.verify = auth_cred_verify_resp_x5chain,
+static const struct edhoc_crypto edhoc_crypto_mocked_init = {
+	.make_key_pair = cipher_suite_2_make_key_pair_init,
+	.key_agreement = cipher_suite_2_key_agreement,
+	.signature = cipher_suite_2_signature,
+	.verify = cipher_suite_2_verify,
+	.extract = cipher_suite_2_extract,
+	.expand = cipher_suite_2_expand,
+	.encrypt = cipher_suite_2_encrypt,
+	.decrypt = cipher_suite_2_decrypt,
+	.hash = cipher_suite_2_hash,
 };
 
-static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
-	.fetch = auth_cred_fetch_init_x5chain,
-	.verify = auth_cred_verify_init_x5chain,
+static const struct edhoc_credentials edhoc_auth_cred_single_cert_mocked_init = {
+	.fetch = auth_cred_fetch_init_x5chain_cs_2_single_cert,
+	.verify = auth_cred_verify_init_x5chain_cs_2_single_cert,
+};
+
+static const struct edhoc_credentials edhoc_auth_cred_single_cert_mocked_resp = {
+	.fetch = auth_cred_fetch_resp_x5chain_cs_2_single_cert,
+	.verify = auth_cred_verify_resp_x5chain_cs_2_single_cert,
 };
 
 /* Static function definitions --------------------------------------------- */
@@ -109,9 +133,53 @@ static inline void print_array(void *user_context, const char *name,
 	printf("\n\n");
 }
 
+static int
+cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
+				  uint8_t *priv_key, size_t priv_key_size,
+				  size_t *priv_key_len, uint8_t *pub_key,
+				  size_t pub_key_size, size_t *pub_key_len)
+{
+	(void)user_ctx;
+
+	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
+	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
+	    NULL == pub_key_len)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	*priv_key_len = ARRAY_SIZE(X);
+	memcpy(priv_key, X, ARRAY_SIZE(X));
+
+	*pub_key_len = ARRAY_SIZE(G_X);
+	memcpy(pub_key, G_X, ARRAY_SIZE(G_X));
+
+	return EDHOC_SUCCESS;
+}
+
+static int
+cipher_suite_2_make_key_pair_resp(void *user_ctx, const void *kid,
+				  uint8_t *priv_key, size_t priv_key_size,
+				  size_t *priv_key_len, uint8_t *pub_key,
+				  size_t pub_key_size, size_t *pub_key_len)
+{
+	(void)user_ctx;
+
+	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
+	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
+	    NULL == pub_key_len)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	*priv_key_len = ARRAY_SIZE(Y);
+	memcpy(priv_key, Y, ARRAY_SIZE(Y));
+
+	*pub_key_len = ARRAY_SIZE(G_X);
+	memcpy(pub_key, G_Y, ARRAY_SIZE(G_Y));
+
+	return EDHOC_SUCCESS;
+}
+
 /* Module interface function definitions ----------------------------------- */
 
-void test_edhoc_handshake_x5chain_e2e_real_crypto(void)
+void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -131,7 +199,7 @@ void test_edhoc_handshake_x5chain_e2e_real_crypto(void)
 	ret = edhoc_set_method(&init_ctx, METHOD);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
+	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_2, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_connection_id(&init_ctx, init_cid);
@@ -140,10 +208,11 @@ void test_edhoc_handshake_x5chain_e2e_real_crypto(void)
 	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto);
+	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&init_ctx, edhoc_auth_cred_mocked_init);
+	ret = edhoc_bind_credentials(&init_ctx,
+				     edhoc_auth_cred_single_cert_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -163,7 +232,7 @@ void test_edhoc_handshake_x5chain_e2e_real_crypto(void)
 	ret = edhoc_set_method(&resp_ctx, METHOD);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
+	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_2, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
@@ -172,10 +241,11 @@ void test_edhoc_handshake_x5chain_e2e_real_crypto(void)
 	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto);
+	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&resp_ctx, edhoc_auth_cred_mocked_resp);
+	ret = edhoc_bind_credentials(&resp_ctx,
+				     edhoc_auth_cred_single_cert_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**

@@ -7,6 +7,14 @@ Next release
 * `@marek-serafin <https://github.com/stoprocent>`__ : Fixed zcbor. Added a method to avoid generation of duplicated types.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added EDHOC error message compose & process with unit tests.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added EDHOC PRK exporter with unit test.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed CDDL models for COSE X.509 chain and COSE X.509 hash.
+  
+  * added unit test with two certificates for X.509 chain for cipher suite 0.
+  * added unit test with one certificate for X.509 chain for cipher suite 2 with multiple EAD tokens.
+  * added unit test for X.509 hash for cipher suite 2 with single EAD token.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Changed licence from GPL-2.0 to MIT.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Forbidden passing empty byte string for connection identifier.
 
 Version 0.3.0
 -------------

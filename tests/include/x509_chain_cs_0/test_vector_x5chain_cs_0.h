@@ -1,5 +1,5 @@
 /**
- * \file    test_vector_x5chain.h
+ * \file    test_vector_x5chain_cs_0.h
  * \author  Kamil Kielbasa
  * \brief   Authentication credentials taken from EDHOC traces (RFC 9529) for 
  *          chapter 2. It contains authentication with signatures, X.509 identified 
@@ -13,8 +13,8 @@
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef TEST_VECTOR_X5CHAIN_H
-#define TEST_VECTOR_X5CHAIN_H
+#ifndef TEST_VECTOR_X5CHAIN_CS_0_H
+#define TEST_VECTOR_X5CHAIN_CS_0_H
 
 /* Include files ----------------------------------------------------------- */
 #include <stdint.h>
@@ -137,4 +137,4 @@ static const uint8_t PK_CA[] = {
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
-#endif /* TEST_VECTOR_X5CHAIN_H */
+#endif /* TEST_VECTOR_X5CHAIN_CS_0_H */

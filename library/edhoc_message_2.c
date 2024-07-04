@@ -534,9 +534,14 @@ static inline size_t cbor_map_overhead(size_t items)
 
 static inline size_t cbor_array_overhead(size_t items)
 {
-	(void)items;
+	if (items < 24)
+		return 1;
+	if (items < 256)
+		return 2;
+	if (items < 65535)
+		return 3;
 
-	return 1;
+	return 4;
 }
 
 static inline bool is_cbor_one_byte_int(int32_t val)
@@ -944,8 +949,16 @@ static int comp_mac_2_input_len(const struct edhoc_context *ctx,
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
 		len += cbor_map_overhead(nr_of_items);
-		len += auth_cred->x509_chain.cert_len;
-		len += cbor_bstr_overhead(auth_cred->x509_chain.cert_len);
+		for (size_t i = 0; i < auth_cred->x509_chain.nr_of_certs; ++i) {
+			len += auth_cred->x509_chain.cert_len[i];
+			len += cbor_bstr_overhead(
+				auth_cred->x509_chain.cert_len[i]);
+		}
+
+		if (auth_cred->x509_chain.nr_of_certs > 1)
+			len += cbor_array_overhead(
+				auth_cred->x509_chain.nr_of_certs);
+
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
@@ -984,10 +997,14 @@ static int comp_mac_2_input_len(const struct edhoc_context *ctx,
 		len += cbor_bstr_overhead(auth_cred->key_id.cred_len);
 		break;
 
-	case EDHOC_COSE_HEADER_X509_CHAIN:
-		len += auth_cred->x509_chain.cert_len;
-		len += cbor_bstr_overhead(auth_cred->x509_chain.cert_len);
+	case EDHOC_COSE_HEADER_X509_CHAIN: {
+		const size_t end_entity_idx =
+			auth_cred->x509_chain.nr_of_certs - 1;
+		len += auth_cred->x509_chain.cert_len[end_entity_idx];
+		len += cbor_bstr_overhead(
+			auth_cred->x509_chain.cert_len[end_entity_idx]);
 		break;
+	}
 
 	case EDHOC_COSE_HEADER_X509_HASH:
 		len += auth_cred->x509_hash.cert_len;
@@ -1110,8 +1127,17 @@ static int gen_mac_2_context(const struct edhoc_context *ctx,
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
 		len += cbor_map_overhead(nr_of_items);
-		len += auth_cred->x509_chain.cert_len;
-		len += cbor_bstr_overhead(auth_cred->x509_chain.cert_len);
+
+		for (size_t i = 0; i < auth_cred->x509_chain.nr_of_certs; ++i) {
+			len += auth_cred->x509_chain.cert_len[i];
+			len += cbor_bstr_overhead(
+				auth_cred->x509_chain.cert_len[i]);
+		}
+
+		if (1 < auth_cred->x509_chain.nr_of_certs)
+			len += cbor_array_overhead(
+				auth_cred->x509_chain.nr_of_certs);
+
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
@@ -1169,40 +1195,72 @@ static int gen_mac_2_context(const struct edhoc_context *ctx,
 
 		break;
 
-	case EDHOC_COSE_HEADER_X509_CHAIN:
-		cbor_id_cred_r._id_cred_x_x5chain_present = true;
-		cbor_id_cred_r._id_cred_x_x5chain._id_cred_x_x5chain.value =
-			auth_cred->x509_chain.cert;
-		cbor_id_cred_r._id_cred_x_x5chain._id_cred_x_x5chain.len =
-			auth_cred->x509_chain.cert_len;
-		break;
+	case EDHOC_COSE_HEADER_X509_CHAIN: {
+		if (0 == auth_cred->x509_chain.nr_of_certs)
+			return EDHOC_ERROR_BAD_STATE;
 
-	case EDHOC_COSE_HEADER_X509_HASH:
+		cbor_id_cred_r._id_cred_x_x5chain_present = true;
+
+		struct COSE_X509_ *cose_x509 =
+			&cbor_id_cred_r._id_cred_x_x5chain._id_cred_x_x5chain;
+
+		if (1 == auth_cred->x509_chain.nr_of_certs) {
+			cose_x509->_COSE_X509_choice = _COSE_X509_bstr;
+			cose_x509->_COSE_X509_bstr.value =
+				auth_cred->x509_chain.cert[0];
+			cose_x509->_COSE_X509_bstr.len =
+				auth_cred->x509_chain.cert_len[0];
+		} else {
+			if (ARRAY_SIZE(cose_x509->_COSE_X509__certs_certs) <
+			    auth_cred->x509_chain.nr_of_certs)
+				return EDHOC_ERROR_BUFFER_TOO_SMALL;
+
+			cose_x509->_COSE_X509_choice = _COSE_X509__certs;
+			cose_x509->_COSE_X509__certs_certs_count =
+				auth_cred->x509_chain.nr_of_certs;
+
+			for (size_t i = 0;
+			     i < auth_cred->x509_chain.nr_of_certs; ++i) {
+				cose_x509->_COSE_X509__certs_certs[i].value =
+					auth_cred->x509_chain.cert[i];
+				cose_x509->_COSE_X509__certs_certs[i].len =
+					auth_cred->x509_chain.cert_len[i];
+			}
+		}
+		break;
+	}
+
+	case EDHOC_COSE_HEADER_X509_HASH: {
 		cbor_id_cred_r._id_cred_x_x5t_present = true;
-		cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t_hash.value =
+
+		struct COSE_CertHash *cose_x509 =
+			&cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t;
+
+		cose_x509->_COSE_CertHash_hashValue.value =
 			auth_cred->x509_hash.cert_fp;
-		cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t_hash.len =
+		cose_x509->_COSE_CertHash_hashValue.len =
 			auth_cred->x509_hash.cert_fp_len;
 
 		switch (auth_cred->x509_hash.encode_type) {
 		case EDHOC_ENCODE_TYPE_INTEGER:
-			cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t_alg_choice =
-				_id_cred_x_x5t_alg_int;
-			cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t_alg_int =
+			cose_x509->_COSE_CertHash_hashAlg_choice =
+				_COSE_CertHash_hashAlg_int;
+			cose_x509->_COSE_CertHash_hashAlg_int =
 				auth_cred->x509_hash.alg_int;
 			break;
 		case EDHOC_ENCODE_TYPE_BYTE_STRING:
-			cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t_alg_choice =
-				_id_cred_x_x5t_alg_bstr;
-			cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t_alg_bstr
-				.value = auth_cred->x509_hash.alg_bstr;
-			cbor_id_cred_r._id_cred_x_x5t._id_cred_x_x5t_alg_bstr
-				.len = auth_cred->x509_hash.alg_bstr_length;
+			cose_x509->_COSE_CertHash_hashAlg_choice =
+				_COSE_CertHash_hashAlg_tstr;
+			cose_x509->_COSE_CertHash_hashAlg_tstr.value =
+				auth_cred->x509_hash.alg_bstr;
+			cose_x509->_COSE_CertHash_hashAlg_tstr.len =
+				auth_cred->x509_hash.alg_bstr_length;
 			break;
 		default:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
+	}
 	default:
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
@@ -1252,10 +1310,14 @@ static int gen_mac_2_context(const struct edhoc_context *ctx,
 		len += cbor_bstr_overhead(auth_cred->key_id.cred_len);
 		break;
 
-	case EDHOC_COSE_HEADER_X509_CHAIN:
-		len += auth_cred->x509_chain.cert_len;
-		len += cbor_bstr_overhead(auth_cred->x509_chain.cert_len);
+	case EDHOC_COSE_HEADER_X509_CHAIN: {
+		const size_t end_entity_idx =
+			auth_cred->x509_chain.nr_of_certs - 1;
+		len += auth_cred->x509_chain.cert_len[end_entity_idx];
+		len += cbor_bstr_overhead(
+			auth_cred->x509_chain.cert_len[end_entity_idx]);
 		break;
+	}
 
 	case EDHOC_COSE_HEADER_X509_HASH:
 		len += auth_cred->x509_hash.cert_len;
@@ -1277,10 +1339,14 @@ static int gen_mac_2_context(const struct edhoc_context *ctx,
 		cbor_cred_r.len = auth_cred->key_id.cred_len;
 		break;
 
-	case EDHOC_COSE_HEADER_X509_CHAIN:
-		cbor_cred_r.value = auth_cred->x509_chain.cert;
-		cbor_cred_r.len = auth_cred->x509_chain.cert_len;
+	case EDHOC_COSE_HEADER_X509_CHAIN: {
+		const size_t end_entity_idx =
+			auth_cred->x509_chain.nr_of_certs - 1;
+		cbor_cred_r.value = auth_cred->x509_chain.cert[end_entity_idx];
+		cbor_cred_r.len =
+			auth_cred->x509_chain.cert_len[end_entity_idx];
 		break;
+	}
 
 	case EDHOC_COSE_HEADER_X509_HASH:
 		cbor_cred_r.value = auth_cred->x509_hash.cert;
@@ -1930,34 +1996,89 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 		if (cbor_map->_map_x5chain_present) {
 			parsed_ptxt->auth_cred.label =
 				EDHOC_COSE_HEADER_X509_CHAIN;
-			parsed_ptxt->auth_cred.x509_chain.cert =
-				cbor_map->_map_x5chain._map_x5chain.value;
-			parsed_ptxt->auth_cred.x509_chain.cert_len =
-				cbor_map->_map_x5chain._map_x5chain.len;
-			break;
+
+			const struct COSE_X509_ *cose_x509 =
+				&cbor_map->_map_x5chain._map_x5chain;
+
+			switch (cose_x509->_COSE_X509_choice) {
+			case _COSE_X509_bstr:
+				parsed_ptxt->auth_cred.x509_chain.nr_of_certs =
+					1;
+				parsed_ptxt->auth_cred.x509_chain.cert[0] =
+					cose_x509->_COSE_X509_bstr.value;
+				parsed_ptxt->auth_cred.x509_chain.cert_len[0] =
+					cose_x509->_COSE_X509_bstr.len;
+				break;
+			case _COSE_X509__certs: {
+				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_chain
+						       .cert) <
+				    cose_x509->_COSE_X509__certs_certs_count)
+					return EDHOC_ERROR_BUFFER_TOO_SMALL;
+
+				parsed_ptxt->auth_cred.x509_chain.nr_of_certs =
+					cose_x509->_COSE_X509__certs_certs_count;
+
+				for (size_t i = 0;
+				     i <
+				     cose_x509->_COSE_X509__certs_certs_count;
+				     ++i) {
+					parsed_ptxt->auth_cred.x509_chain
+						.cert[i] =
+						cose_x509
+							->_COSE_X509__certs_certs
+								[i]
+							.value;
+					parsed_ptxt->auth_cred.x509_chain
+						.cert_len[i] =
+						cose_x509
+							->_COSE_X509__certs_certs
+								[i]
+							.len;
+				}
+				break;
+			}
+
+			default:
+				return EDHOC_ERROR_NOT_PERMITTED;
+			}
 		}
 
 		if (cbor_map->_map_x5t_present) {
 			parsed_ptxt->auth_cred.label =
 				EDHOC_COSE_HEADER_X509_HASH;
-			parsed_ptxt->auth_cred.x509_hash.cert_fp =
-				cbor_map->_map_x5t._map_x5t_hash.value;
-			parsed_ptxt->auth_cred.x509_hash.cert_fp_len =
-				cbor_map->_map_x5t._map_x5t_hash.len;
 
-			switch (cbor_map->_map_x5t._map_x5t_alg_choice) {
-			case _map_x5t_alg_int:
+			const struct COSE_CertHash *cose_x509 =
+				&cbor_map->_map_x5t._map_x5t;
+
+			parsed_ptxt->auth_cred.x509_hash.cert_fp =
+				cose_x509->_COSE_CertHash_hashValue.value;
+			parsed_ptxt->auth_cred.x509_hash.cert_fp_len =
+				cose_x509->_COSE_CertHash_hashValue.len;
+
+			switch (cose_x509->_COSE_CertHash_hashAlg_choice) {
+			case _COSE_CertHash_hashAlg_int:
+				parsed_ptxt->auth_cred.x509_hash.encode_type =
+					EDHOC_ENCODE_TYPE_INTEGER;
 				parsed_ptxt->auth_cred.x509_hash.alg_int =
-					cbor_map->_map_x5t._map_x5t_alg_int;
+					cose_x509->_COSE_CertHash_hashAlg_int;
 				break;
-			case _map_x5t_alg_bstr:
+			case _COSE_CertHash_hashAlg_tstr:
+				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_hash
+						       .alg_bstr) <
+				    cose_x509->_COSE_CertHash_hashAlg_tstr.len)
+					return EDHOC_ERROR_BUFFER_TOO_SMALL;
+
+				parsed_ptxt->auth_cred.x509_hash.encode_type =
+					EDHOC_ENCODE_TYPE_BYTE_STRING;
 				parsed_ptxt->auth_cred.x509_hash
 					.alg_bstr_length =
-					cbor_map->_map_x5t._map_x5t_alg_bstr.len;
+					cose_x509->_COSE_CertHash_hashAlg_tstr
+						.len;
 				memcpy(parsed_ptxt->auth_cred.x509_hash.alg_bstr,
-				       cbor_map->_map_x5t._map_x5t_alg_bstr
+				       cose_x509->_COSE_CertHash_hashAlg_tstr
 					       .value,
-				       cbor_map->_map_x5t._map_x5t_alg_bstr.len);
+				       cose_x509->_COSE_CertHash_hashAlg_tstr
+					       .len);
 				break;
 			default:
 				return EDHOC_ERROR_NOT_PERMITTED;
@@ -2426,6 +2547,23 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		if (EDHOC_SUCCESS != ret ||
 		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens)
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
+
+		if (NULL != ctx->logger) {
+			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+				ctx->logger(ctx->user_ctx,
+					    "EAD_2 compose label",
+					    (const uint8_t *)&ctx->ead_token[i]
+						    .label,
+					    sizeof(ctx->ead_token[i].label));
+
+				if (0 != ctx->ead_token[i].value_len)
+					ctx->logger(
+						ctx->user_ctx,
+						"EAD_2 compose value",
+						ctx->ead_token[i].value,
+						ctx->ead_token[i].value_len);
+			}
+		}
 	}
 
 	/* 7. Compute psuedo random key (PRK_3e2m). */
@@ -2721,6 +2859,23 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 		if (EDHOC_SUCCESS != ret)
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
+
+		if (NULL != ctx->logger) {
+			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+				ctx->logger(ctx->user_ctx,
+					    "EAD_2 process label",
+					    (const uint8_t *)&ctx->ead_token[i]
+						    .label,
+					    sizeof(ctx->ead_token[i].label));
+
+				if (0 != ctx->ead_token[i].value_len)
+					ctx->logger(
+						ctx->user_ctx,
+						"EAD_2 process value",
+						ctx->ead_token[i].value,
+						ctx->ead_token[i].value_len);
+			}
+		}
 	}
 
 	/* 10. Verify if credentials from peer are trusted. */

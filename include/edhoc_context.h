@@ -59,6 +59,11 @@
 #error "Lack of defined external authorization data"
 #endif
 
+/* Maximum number of certifices in COSE X.509 chain. */
+#ifndef EDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
+#error "Lack of defined maximum number of certificates in COSE X.509 chain"
+#endif
+
 /* Types and type definitions ---------------------------------------------- */
 
 /** \defgroup edhoc-context EDHOC context

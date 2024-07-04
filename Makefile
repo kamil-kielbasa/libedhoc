@@ -99,7 +99,9 @@ INCLUDE_DIR_TEST 	:= ./tests/include
 SOURCE_TEST 		:= $(wildcard $(SOURCE_DIR_TEST)/*.c) 			\
                            $(wildcard $(SOURCE_DIR_TEST)/cipher_suites/*.c) 	\
 			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c) 	\
-			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain/*.c)	\
+			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain_cs_0/*.c)	\
+			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain_cs_2/*.c)	\
+			   $(wildcard $(SOURCE_DIR_TEST)/x509_hash_cs_2/*.c)	\
 			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)	\
 			   $(wildcard $(SOURCE_DIR_TEST)/error_message/*.c)
 OBJECTS_TEST 		:= $(SOURCE_TEST:%.c=%.o)
@@ -128,19 +130,21 @@ INC := $(foreach d, $(ALL_INCLUDES_PATHS), -I$d)
 # -------------------------------------------------------------------------------------------------
 # Section: compiler and linker setting.
 CC		:= gcc
-DEFINES		:= -DEDHOC_KID_LEN=4 			\
-		   -DEDHOC_MAX_CSUITES_LEN=2 		\
-		   -DEDHOC_MAX_CID_LEN=1 		\
-		   -DEDHOC_MAX_ECC_KEY_LEN=32 		\
-		   -DEDHOC_MAX_MAC_LEN=32 		\
-		   -DEDHOC_MAX_NR_OF_EAD_TOKENS=5	\
+DEFINES		:= -DEDHOC_KID_LEN=4 				\
+		   -DEDHOC_MAX_CSUITES_LEN=2 			\
+		   -DEDHOC_MAX_CID_LEN=1 			\
+		   -DEDHOC_MAX_ECC_KEY_LEN=32 			\
+		   -DEDHOC_MAX_MAC_LEN=32 			\
+		   -DEDHOC_MAX_NR_OF_EAD_TOKENS=5		\
 		   \
-		   -DZCBOR_CANONICAL 			\
+		   -DZCBOR_CANONICAL 				\
 		   \
-		   -DEDHOC_CRED_KEY_ID_LEN=1		\
-		   -DEDHOC_CRED_X509_HASH_ALG_LEN=1 	\
+		   -DEDHOC_CRED_KEY_ID_LEN=1			\
+		   -DEDHOC_CRED_X509_HASH_ALG_LEN=1 		\
 		   \
-		   -DMBEDTLS_PSA_KEY_SLOT_COUNT=64	\
+		   -DMBEDTLS_PSA_KEY_SLOT_COUNT=64		\
+		   \
+		   -DEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=2	\
 
 STANDARD	:= -std=gnu11
 DEBUG_LEVEL 	:= -g3
@@ -203,8 +207,12 @@ format:
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/cipher_suites/*.h
 	$(call print_cf,$(INCLUDE_DIR_TEST)/edhoc_trace_1/*.h)
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/edhoc_trace_1/*.h
-	$(call print_cf,$(INCLUDE_DIR_TEST)/x509_chain/*.h)
-	$(Q)$(CF) $(INCLUDE_DIR_TEST)/x509_chain/*.h
+	$(call print_cf,$(INCLUDE_DIR_TEST)/x509_chain_cs_0/*.h)
+	$(Q)$(CF) $(INCLUDE_DIR_TEST)/x509_chain_cs_0/*.h
+	$(call print_cf,$(INCLUDE_DIR_TEST)/x509_chain_cs_2/*.h)
+	$(Q)$(CF) $(INCLUDE_DIR_TEST)/x509_chain_cs_2/*.h
+	$(call print_cf,$(INCLUDE_DIR_TEST)/x509_hash_cs_2/*.h)
+	$(Q)$(CF) $(INCLUDE_DIR_TEST)/x509_hash_cs_2/*.h
 	$(call print_cf,$(INCLUDE_DIR_TEST)/edhoc_trace_2/*.h)
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/edhoc_trace_2/*.h
 	$(call print_cf,$(INCLUDE_DIR_TEST)/error_message/*.h)
@@ -216,8 +224,12 @@ format:
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/cipher_suites/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/edhoc_trace_1/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c
-	$(call print_cf,$(SOURCE_DIR_TEST)/x509_chain/*.c)
-	$(Q)$(CF) $(SOURCE_DIR_TEST)/x509_chain/*.c
+	$(call print_cf,$(SOURCE_DIR_TEST)/x509_chain_cs_0/*.c)
+	$(Q)$(CF) $(SOURCE_DIR_TEST)/x509_chain_cs_0/*.c
+	$(call print_cf,$(SOURCE_DIR_TEST)/x509_chain_cs_2/*.c)
+	$(Q)$(CF) $(SOURCE_DIR_TEST)/x509_chain_cs_2/*.c
+	$(call print_cf,$(SOURCE_DIR_TEST)/x509_hash_cs_2/*.c)
+	$(Q)$(CF) $(SOURCE_DIR_TEST)/x509_hash_cs_2/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/error_message/*.c)
@@ -233,8 +245,12 @@ cppcheck:
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/cipher_suites/*.c
 	$(call print_cppcheck, $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c)
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c
-	$(call print_cppcheck, $(SOURCE_DIR_TEST)/x509_chain/*.c)
-	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/x509_chain/*.c
+	$(call print_cppcheck, $(SOURCE_DIR_TEST)/x509_chain_cs_0/*.c)
+	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/x509_chain_cs_0/*.c
+	$(call print_cppcheck, $(SOURCE_DIR_TEST)/x509_chain_cs_2/*.c)
+	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/x509_chain_cs_2/*.c
+	$(call print_cppcheck, $(SOURCE_DIR_TEST)/x509_hash_cs_2/*.c)
+	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/x509_hash_cs_2/*.c
 	$(call print_cppcheck, $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
 	$(call print_cppcheck, $(SOURCE_DIR_TEST)/error_message/*.c)
@@ -272,8 +288,12 @@ clean:
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/cipher_suites/*.o
 	$(call print_rm,$(SOURCE_DIR_TEST)/edhoc_trace_1/*.o)
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/edhoc_trace_1/*.o
-	$(call print_rm,$(SOURCE_DIR_TEST)/x509_chain/*.o)
-	$(Q)$(RM) $(SOURCE_DIR_TEST)/x509_chain/*.o
+	$(call print_rm,$(SOURCE_DIR_TEST)/x509_chain_cs_0/*.o)
+	$(Q)$(RM) $(SOURCE_DIR_TEST)/x509_chain_cs_0/*.o
+	$(call print_rm,$(SOURCE_DIR_TEST)/x509_chain_cs_2/*.o)
+	$(Q)$(RM) $(SOURCE_DIR_TEST)/x509_chain_cs_2/*.o
+	$(call print_rm,$(SOURCE_DIR_TEST)/x509_hash_cs_2/*.o)
+	$(Q)$(RM) $(SOURCE_DIR_TEST)/x509_hash_cs_2/*.o
 	$(call print_rm,$(SOURCE_DIR_TEST)/edhoc_trace_2/*.o)
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.o
 	$(call print_rm,$(SOURCE_DIR_TEST)/error_message/*.o)

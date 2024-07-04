@@ -1,8 +1,8 @@
 /**
- * \file    authentication_credentials_x5chain.c
+ * \file    authentication_credentials_x5chain_cs_2.c
  * \author  Kamil Kielbasa
  * \brief   Example implementation of authentication credentials callbacks
- *          for X.509 chain authenticatoon method.
+ *          for X.509 chain authentication method for cipher suite 2.
  * \version 0.3
  * \date    2024-01-01
  * 
@@ -13,9 +13,9 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test headers: */
-#include "x509_chain/authentication_credentials_x5chain.h"
-#include "x509_chain/test_vector_x5chain.h"
-#include "cipher_suites/cipher_suite_0.h"
+#include "x509_chain_cs_2/authentication_credentials_x5chain_cs_2.h"
+#include "x509_chain_cs_2/test_vector_x5chain_cs_2.h"
+#include "cipher_suites/cipher_suite_2.h"
 
 /* Standard library header: */
 #include <string.h>
@@ -33,8 +33,8 @@
 /* Static function definitions --------------------------------------------- */
 /* Module interface function definitions ----------------------------------- */
 
-int auth_cred_fetch_init_x5chain(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred)
+int auth_cred_fetch_init_x5chain_cs_2_single_cert(
+	void *user_ctx, struct edhoc_auth_creds *auth_cred)
 {
 	(void)user_ctx;
 
@@ -42,10 +42,11 @@ int auth_cred_fetch_init_x5chain(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.cert = CRED_I;
-	auth_cred->x509_chain.cert_len = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.nr_of_certs = 1;
+	auth_cred->x509_chain.cert[0] = CRED_I;
+	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+	const int ret = cipher_suite_2_key_generate(NULL, EDHOC_KT_SIGNATURE,
 						    SK_I, ARRAY_SIZE(SK_I),
 						    auth_cred->priv_key_id);
 
@@ -55,8 +56,8 @@ int auth_cred_fetch_init_x5chain(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-int auth_cred_fetch_resp_x5chain(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred)
+int auth_cred_fetch_resp_x5chain_cs_2_single_cert(
+	void *user_ctx, struct edhoc_auth_creds *auth_cred)
 {
 	(void)user_ctx;
 
@@ -64,10 +65,11 @@ int auth_cred_fetch_resp_x5chain(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.cert = CRED_R;
-	auth_cred->x509_chain.cert_len = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.nr_of_certs = 1;
+	auth_cred->x509_chain.cert[0] = CRED_R;
+	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+	const int ret = cipher_suite_2_key_generate(NULL, EDHOC_KT_SIGNATURE,
 						    SK_R, ARRAY_SIZE(SK_R),
 						    auth_cred->priv_key_id);
 
@@ -77,9 +79,9 @@ int auth_cred_fetch_resp_x5chain(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-int auth_cred_verify_init_x5chain(void *user_ctx,
-				  struct edhoc_auth_creds *auth_cred,
-				  const uint8_t **pub_key, size_t *pub_key_len)
+int auth_cred_verify_init_x5chain_cs_2_single_cert(
+	void *user_ctx, struct edhoc_auth_creds *auth_cred,
+	const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -93,16 +95,22 @@ int auth_cred_verify_init_x5chain(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
+         * \brief Verify received number of certificates. 
+         */
+	if (1 != auth_cred->x509_chain.nr_of_certs)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len != ARRAY_SIZE(CRED_R))
+	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert,
-			auth_cred->x509_chain.cert_len))
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[0],
+			auth_cred->x509_chain.cert_len[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -114,9 +122,9 @@ int auth_cred_verify_init_x5chain(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-int auth_cred_verify_resp_x5chain(void *user_ctx,
-				  struct edhoc_auth_creds *auth_cred,
-				  const uint8_t **pub_key, size_t *pub_key_len)
+int auth_cred_verify_resp_x5chain_cs_2_single_cert(
+	void *user_ctx, struct edhoc_auth_creds *auth_cred,
+	const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -130,16 +138,22 @@ int auth_cred_verify_resp_x5chain(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
+         * \brief Verify received number of certificates. 
+         */
+	if (1 != auth_cred->x509_chain.nr_of_certs)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len != ARRAY_SIZE(CRED_I))
+	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert,
-			auth_cred->x509_chain.cert_len))
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
+			auth_cred->x509_chain.cert_len[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**

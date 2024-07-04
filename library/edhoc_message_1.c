@@ -159,6 +159,23 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		if (EDHOC_SUCCESS != ret ||
 		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens)
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
+
+		if (NULL != ctx->logger) {
+			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+				ctx->logger(ctx->user_ctx,
+					    "EAD_1 compose label",
+					    (const uint8_t *)&ctx->ead_token[i]
+						    .label,
+					    sizeof(ctx->ead_token[i].label));
+
+				if (0 != ctx->ead_token[i].value_len)
+					ctx->logger(
+						ctx->user_ctx,
+						"EAD_1 compose value",
+						ctx->ead_token[i].value,
+						ctx->ead_token[i].value_len);
+			}
+		}
 	}
 
 	if (0 != ctx->nr_of_ead_tokens) {
@@ -361,6 +378,23 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 		ret = ctx->ead.process(ctx->user_ctx, EDHOC_MSG_1,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
+
+		if (EDHOC_SUCCESS == ret && NULL != ctx->logger) {
+			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+				ctx->logger(ctx->user_ctx,
+					    "EAD_1 process label",
+					    (const uint8_t *)&ctx->ead_token[i]
+						    .label,
+					    sizeof(ctx->ead_token[i].label));
+
+				if (0 != ctx->ead_token[i].value_len)
+					ctx->logger(
+						ctx->user_ctx,
+						"EAD_1 process value",
+						ctx->ead_token[i].value,
+						ctx->ead_token[i].value_len);
+			}
+		}
 
 		ctx->nr_of_ead_tokens = 0;
 		memset(ctx->ead_token, 0, sizeof(ctx->ead_token));

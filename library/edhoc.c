@@ -101,6 +101,9 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 		break;
 
 	case EDHOC_CID_TYPE_BYTE_STRING:
+		if (0 == cid.bstr_length)
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+
 		if (EDHOC_MAX_CID_LEN < cid.bstr_length)
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		break;

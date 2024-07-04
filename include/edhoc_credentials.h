@@ -93,16 +93,22 @@ struct edhoc_auth_cred_key_id {
  * \brief X.509 chain authentication method.
  *
  * \section fetch-x5chain For fetch callback we need to fill:
- * - certificate: \p cert & \p cert_len.
+ * - number of certificates: \p nr_of_certs.
+ * - certificates: \p cert.
+ * - certificate lengths: \p cert_len.
  *
  * \section verify-x5chain For verify callback we will receive:
- * Peer certificate by value, not reference.
+ * - number of certificates: \p nr_of_certs.
+ * - certificates: \p cert.
+ * - certificate lengths: \p cert_len.
  */
 struct edhoc_auth_cred_x509_chain {
-	/** Certificate buffer. */
-	const uint8_t *cert;
-	/** Size of the \p cert buffer in bytes. */
-	size_t cert_len;
+	/** Number of certificates in chain. */
+	size_t nr_of_certs;
+	/** Certificates references. */
+	const uint8_t *cert[EDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN];
+	/** Sizes of the \p cert references in bytes. */
+	size_t cert_len[EDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN];
 };
 
 /**

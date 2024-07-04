@@ -4,12 +4,14 @@
 ; * If a single certificate is conveyed, it is placed in a CBOR byte string.
 ; * If multiple certificates are conveyed, a CBOR array of byte strings is used, with each certificate being in its own byte string.
 
+COSE_CertHash = [ hashAlg: (int / tstr), hashValue: bstr ]
+COSE_X509 = bstr / [ 2*certs: bstr ]
+
 id_cred_x =
 {
     ? kid       : 4  => int / bstr,
-    ? x5bag     : 32 => bstr,
-    ? x5chain   : 33 => bstr,
-    ? x5t       : 34 => [alg: (int / bstr), hash: bstr],
+    ? x5chain   : 33 => COSE_X509,
+    ? x5t       : 34 => COSE_CertHash,
 }
 
 ead_x = 1* (
@@ -20,9 +22,8 @@ ead_x = 1* (
 map =
 {
     ? kid       : 4  => int / bstr,
-    ? x5bag     : 32 => bstr,
-    ? x5chain   : 33 => bstr,
-    ? x5t       : 34 => [alg: (int / bstr), hash: bstr],
+    ? x5chain   : 33 => COSE_X509,
+    ? x5t       : 34 => COSE_CertHash,
 }
 
 plaintext_2 =

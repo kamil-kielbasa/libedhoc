@@ -11,6 +11,7 @@ Links
 * `RFC 5280`_ - Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile.
 * `RFC 8949`_ - Concise Binary Object Representation (CBOR).
 * `PSA API`_ - PSA Certified Crypto API 1.2.
+* `RFC 9360`_ - CBOR Object Signing and Encryption (COSE): Header Parameters for Carrying and Referencing X.509 Certificates.
 
 
 .. _`RFC 9528`: https://datatracker.ietf.org/doc/html/rfc9528
@@ -23,3 +24,4 @@ Links
 .. _`RFC 5280`: https://datatracker.ietf.org/doc/html/rfc5280
 .. _`RFC 8949`: https://datatracker.ietf.org/doc/html/rfc8949
 .. _`PSA API`: https://arm-software.github.io/psa-api/crypto/1.2/
+.. _`RFC 9360`: https://datatracker.ietf.org/doc/rfc9360/

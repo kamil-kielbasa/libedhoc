@@ -590,6 +590,23 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		if (EDHOC_SUCCESS != ret ||
 		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens)
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
+
+		if (NULL != ctx->logger) {
+			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+				ctx->logger(ctx->user_ctx,
+					    "EAD_4 compose label",
+					    (const uint8_t *)&ctx->ead_token[i]
+						    .label,
+					    sizeof(ctx->ead_token[i].label));
+
+				if (0 != ctx->ead_token[i].value_len)
+					ctx->logger(
+						ctx->user_ctx,
+						"EAD_4 compose value",
+						ctx->ead_token[i].value,
+						ctx->ead_token[i].value_len);
+			}
+		}
 	}
 
 	/* 3a. Compute plaintext length (PLAINTEXT_4). */
@@ -758,6 +775,23 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 
 		if (EDHOC_SUCCESS != ret)
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
+
+		if (NULL != ctx->logger) {
+			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+				ctx->logger(ctx->user_ctx,
+					    "EAD_4 process label",
+					    (const uint8_t *)&ctx->ead_token[i]
+						    .label,
+					    sizeof(ctx->ead_token[i].label));
+
+				if (0 != ctx->ead_token[i].value_len)
+					ctx->logger(
+						ctx->user_ctx,
+						"EAD_4 process value",
+						ctx->ead_token[i].value,
+						ctx->ead_token[i].value_len);
+			}
+		}
 	}
 
 	ctx->nr_of_ead_tokens = 0;

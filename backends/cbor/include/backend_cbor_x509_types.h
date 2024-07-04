@@ -36,35 +36,63 @@ struct id_cred_x_kid_ {
 	} _id_cred_x_kid_choice;
 };
 
-struct id_cred_x_x5bag {
-	struct zcbor_string _id_cred_x_x5bag;
+struct COSE_X509_ {
+	union {
+		struct zcbor_string _COSE_X509_bstr;
+		struct {
+			struct zcbor_string _COSE_X509__certs_certs[3];
+			size_t _COSE_X509__certs_certs_count;
+		};
+	};
+	enum {
+		_COSE_X509_bstr,
+		_COSE_X509__certs,
+	} _COSE_X509_choice;
 };
 
 struct id_cred_x_x5chain {
-	struct zcbor_string _id_cred_x_x5chain;
+	struct COSE_X509_ _id_cred_x_x5chain;
 };
 
-struct id_cred_x_x5t_ {
+struct COSE_CertHash {
 	union {
-		int32_t _id_cred_x_x5t_alg_int;
-		struct zcbor_string _id_cred_x_x5t_alg_bstr;
+		int32_t _COSE_CertHash_hashAlg_int;
+		struct zcbor_string _COSE_CertHash_hashAlg_tstr;
 	};
 	enum {
-		_id_cred_x_x5t_alg_int,
-		_id_cred_x_x5t_alg_bstr,
-	} _id_cred_x_x5t_alg_choice;
-	struct zcbor_string _id_cred_x_x5t_hash;
+		_COSE_CertHash_hashAlg_int,
+		_COSE_CertHash_hashAlg_tstr,
+	} _COSE_CertHash_hashAlg_choice;
+	struct zcbor_string _COSE_CertHash_hashValue;
+};
+
+struct id_cred_x_x5t {
+	struct COSE_CertHash _id_cred_x_x5t;
 };
 
 struct id_cred_x {
 	struct id_cred_x_kid_ _id_cred_x_kid;
 	bool _id_cred_x_kid_present;
-	struct id_cred_x_x5bag _id_cred_x_x5bag;
-	bool _id_cred_x_x5bag_present;
 	struct id_cred_x_x5chain _id_cred_x_x5chain;
 	bool _id_cred_x_x5chain_present;
-	struct id_cred_x_x5t_ _id_cred_x_x5t;
+	struct id_cred_x_x5t _id_cred_x_x5t;
 	bool _id_cred_x_x5t_present;
+};
+
+struct ead_x {
+	int32_t _ead_x_ead_label;
+	struct zcbor_string _ead_x_ead_value;
+	bool _ead_x_ead_value_present;
+};
+
+struct ead_x_ {
+	struct ead_x _ead_x[3];
+	size_t _ead_x_count;
+};
+
+struct plaintext_4_EAD_4 {
+	struct ead_x_ _plaintext_4_EAD_4;
+	bool _plaintext_4_EAD_4_present;
 };
 
 struct map_kid_ {
@@ -78,46 +106,21 @@ struct map_kid_ {
 	} _map_kid_choice;
 };
 
-struct map_x5bag {
-	struct zcbor_string _map_x5bag;
-};
-
 struct map_x5chain {
-	struct zcbor_string _map_x5chain;
+	struct COSE_X509_ _map_x5chain;
 };
 
-struct map_x5t_ {
-	union {
-		int32_t _map_x5t_alg_int;
-		struct zcbor_string _map_x5t_alg_bstr;
-	};
-	enum {
-		_map_x5t_alg_int,
-		_map_x5t_alg_bstr,
-	} _map_x5t_alg_choice;
-	struct zcbor_string _map_x5t_hash;
+struct map_x5t {
+	struct COSE_CertHash _map_x5t;
 };
 
 struct map {
 	struct map_kid_ _map_kid;
 	bool _map_kid_present;
-	struct map_x5bag _map_x5bag;
-	bool _map_x5bag_present;
 	struct map_x5chain _map_x5chain;
 	bool _map_x5chain_present;
-	struct map_x5t_ _map_x5t;
+	struct map_x5t _map_x5t;
 	bool _map_x5t_present;
-};
-
-struct ead_x {
-	int32_t _ead_x_ead_label;
-	struct zcbor_string _ead_x_ead_value;
-	bool _ead_x_ead_value_present;
-};
-
-struct ead_x_ {
-	struct ead_x _ead_x[3];
-	size_t _ead_x_count;
 };
 
 struct plaintext_2 {
@@ -158,11 +161,6 @@ struct plaintext_3 {
 	struct zcbor_string _plaintext_3_Signature_or_MAC_3;
 	struct ead_x_ _plaintext_3_EAD_3;
 	bool _plaintext_3_EAD_3_present;
-};
-
-struct plaintext_4_EAD_4 {
-	struct ead_x_ _plaintext_4_EAD_4;
-	bool _plaintext_4_EAD_4_present;
 };
 
 #ifdef __cplusplus

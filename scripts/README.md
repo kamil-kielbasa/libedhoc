@@ -2,5 +2,5 @@
 - `python3 -m venv env`
 - `source env/bin/activate`
 - `pip3 install -r ../externals/zcbor/scripts/requirements-base.txt`
-- `python3 ./zcbor_conv_cddls_to_c.py`
+- `python3 zcbor_conv_cddls_to_c.py`
 - `deactivate`
