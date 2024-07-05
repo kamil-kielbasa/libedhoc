@@ -22,6 +22,10 @@ Main API
    :project: libedhoc
    :members:
 
+.. doxygengroup:: edhoc-api-error
+   :project: libedhoc
+   :members:
+
 Authentication credentials
 **************************
 

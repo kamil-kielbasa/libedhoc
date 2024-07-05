@@ -61,6 +61,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	/* 1. Choose most preferred cipher suite. */
 	if (0 == ctx->csuite_len)
@@ -222,6 +223,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	ctx->th_state = EDHOC_TH_STATE_1;
 	ctx->status = EDHOC_SM_WAIT_M2;
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
 
@@ -248,6 +250,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -275,8 +278,11 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	switch (cbor_dec_msg_1._message_1_SUITES_I._suites_choice) {
 	case _suites_int: {
 		if (csuite.value !=
-		    cbor_dec_msg_1._message_1_SUITES_I._suites_int)
+		    cbor_dec_msg_1._message_1_SUITES_I._suites_int) {
+			ctx->error_code =
+				EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
+		}
 		break;
 	}
 
@@ -286,6 +292,8 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 			    ._suites__int_int[cbor_dec_msg_1._message_1_SUITES_I
 						      ._suites__int_int_count -
 					      1]) {
+			ctx->error_code =
+				EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 		}
 
@@ -414,5 +422,6 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	ctx->th_state = EDHOC_TH_STATE_1;
 	ctx->status = EDHOC_SM_RECEIVED_M1;
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }

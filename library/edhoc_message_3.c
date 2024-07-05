@@ -2215,6 +2215,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -2427,7 +2428,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	ctx->is_oscore_export_allowed = true;
 	ctx->status = EDHOC_SM_COMPLETED;
-
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
 
@@ -2460,6 +2461,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -2559,8 +2561,11 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	ret = ctx->cred.verify(ctx->user_ctx, &parsed_ptxt.auth_creds, &pub_key,
 			       &pub_key_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		ctx->error_code =
+			EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
 
 	/* 8. Compute PRK_4e3m. */
 	ret = comp_prk_4e3m(responder, ctx, &parsed_ptxt.auth_creds, pub_key,
@@ -2637,6 +2642,6 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	ctx->is_oscore_export_allowed = true;
 	ctx->status = EDHOC_SM_COMPLETED;
-
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }

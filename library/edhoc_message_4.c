@@ -573,6 +573,7 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -680,6 +681,7 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_PERSISTED;
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
 
@@ -704,6 +706,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -798,5 +801,6 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_PERSISTED;
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }

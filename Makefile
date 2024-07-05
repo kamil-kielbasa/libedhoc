@@ -96,14 +96,15 @@ OBJECTS_APP 	:= $(SOURCE_APP:%.c=%.o)
 # Unit tests
 SOURCE_DIR_TEST		:= ./tests/src
 INCLUDE_DIR_TEST 	:= ./tests/include
-SOURCE_TEST 		:= $(wildcard $(SOURCE_DIR_TEST)/*.c) 			\
-                           $(wildcard $(SOURCE_DIR_TEST)/cipher_suites/*.c) 	\
-			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c) 	\
-			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain_cs_0/*.c)	\
-			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain_cs_2/*.c)	\
-			   $(wildcard $(SOURCE_DIR_TEST)/x509_hash_cs_2/*.c)	\
-			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)	\
-			   $(wildcard $(SOURCE_DIR_TEST)/error_message/*.c)
+SOURCE_TEST 		:= $(wildcard $(SOURCE_DIR_TEST)/*.c) 				\
+                           $(wildcard $(SOURCE_DIR_TEST)/cipher_suites/*.c) 		\
+			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_1/*.c) 		\
+			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain_cs_0/*.c)		\
+			   $(wildcard $(SOURCE_DIR_TEST)/x509_chain_cs_2/*.c)		\
+			   $(wildcard $(SOURCE_DIR_TEST)/x509_hash_cs_2/*.c)		\
+			   $(wildcard $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c)		\
+			   $(wildcard $(SOURCE_DIR_TEST)/error_message/*.c)		\
+			   $(wildcard $(SOURCE_DIR_TEST)/cipher_suite_negotiation/*.c)
 OBJECTS_TEST 		:= $(SOURCE_TEST:%.c=%.o)
 
 # -------------------------------------------------------------------------------------------------
@@ -131,7 +132,7 @@ INC := $(foreach d, $(ALL_INCLUDES_PATHS), -I$d)
 # Section: compiler and linker setting.
 CC		:= gcc
 DEFINES		:= -DEDHOC_KID_LEN=4 				\
-		   -DEDHOC_MAX_CSUITES_LEN=2 			\
+		   -DEDHOC_MAX_CSUITES_LEN=4 			\
 		   -DEDHOC_MAX_CID_LEN=1 			\
 		   -DEDHOC_MAX_ECC_KEY_LEN=32 			\
 		   -DEDHOC_MAX_MAC_LEN=32 			\
@@ -217,6 +218,8 @@ format:
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/edhoc_trace_2/*.h
 	$(call print_cf,$(INCLUDE_DIR_TEST)/error_message/*.h)
 	$(Q)$(CF) $(INCLUDE_DIR_TEST)/error_message/*.h
+	$(call print_cf,$(INCLUDE_DIR_TEST)/cipher_suite_negotiation/*.h)
+	$(Q)$(CF) $(INCLUDE_DIR_TEST)/cipher_suite_negotiation/*.h
 
 	$(call print_cf,$(SOURCE_DIR_TEST)/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/*.c
@@ -234,6 +237,8 @@ format:
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
 	$(call print_cf,$(SOURCE_DIR_TEST)/error_message/*.c)
 	$(Q)$(CF) $(SOURCE_DIR_TEST)/error_message/*.c
+	$(call print_cf,$(SOURCE_DIR_TEST)/cipher_suite_negotiation/*.c)
+	$(Q)$(CF) $(SOURCE_DIR_TEST)/cipher_suite_negotiation/*.c
 
 # -------------------------------------------------------------------------------------------------
 # Section: Format all source and header files.
@@ -255,6 +260,8 @@ cppcheck:
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.c
 	$(call print_cppcheck, $(SOURCE_DIR_TEST)/error_message/*.c)
 	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/error_message/*.c
+	$(call print_cppcheck, $(SOURCE_DIR_TEST)/cipher_suite_negotiation/*.c)
+	$(Q)$(CPPCHECK) $(SOURCE_DIR_TEST)/cipher_suite_negotiation/*.c
 
 # -------------------------------------------------------------------------------------------------
 # Section: Removed all generated files.
@@ -298,3 +305,5 @@ clean:
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/edhoc_trace_2/*.o
 	$(call print_rm,$(SOURCE_DIR_TEST)/error_message/*.o)
 	$(Q)$(RM) $(SOURCE_DIR_TEST)/error_message/*.o
+	$(call print_rm,$(SOURCE_DIR_TEST)/cipher_suite_negotiation/*.o)
+	$(Q)$(RM) $(SOURCE_DIR_TEST)/cipher_suite_negotiation/*.o

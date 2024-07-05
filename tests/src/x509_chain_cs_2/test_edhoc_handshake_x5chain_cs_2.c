@@ -182,6 +182,8 @@ cipher_suite_2_make_key_pair_resp(void *user_ctx, const void *kid,
 void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
+	enum edhoc_error_code error_code_recv =
+		EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	/**
          * \brief Setup initiator context.
@@ -268,6 +270,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(EDHOC_PRK_STATE_INVALID == init_ctx.prk_state);
 	assert(EDHOC_TH_STATE_1 == init_ctx.th_state);
 
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&init_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
+
 	/**
          * \brief EDHOC message 1 process.
          */
@@ -277,6 +284,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(false == resp_ctx.is_oscore_export_allowed);
 	assert(EDHOC_TH_STATE_1 == resp_ctx.th_state);
 	assert(EDHOC_PRK_STATE_INVALID == resp_ctx.prk_state);
+
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&resp_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
 
 	assert(EDHOC_CID_TYPE_ONE_BYTE_INTEGER ==
 	       resp_ctx.peer_cid.encode_type);
@@ -297,6 +309,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(EDHOC_TH_STATE_3 == resp_ctx.th_state);
 	assert(EDHOC_PRK_STATE_3E2M == resp_ctx.prk_state);
 
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&resp_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
+
 	/**
          * \brief EDHOC message 2 process.
          */
@@ -307,6 +324,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(false == init_ctx.is_oscore_export_allowed);
 	assert(EDHOC_TH_STATE_3 == init_ctx.th_state);
 	assert(EDHOC_PRK_STATE_3E2M == init_ctx.prk_state);
+
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&init_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
 
 	assert(EDHOC_CID_TYPE_BYTE_STRING == init_ctx.peer_cid.encode_type);
 	assert(ARRAY_SIZE(C_R) == init_ctx.peer_cid.bstr_length);
@@ -338,6 +360,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(EDHOC_TH_STATE_4 == init_ctx.th_state);
 	assert(EDHOC_PRK_STATE_4E3M == init_ctx.prk_state);
 
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&init_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
+
 	/**
          * \brief EDHOC message 3 process.
          */
@@ -348,6 +375,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(true == resp_ctx.is_oscore_export_allowed);
 	assert(EDHOC_TH_STATE_4 == resp_ctx.th_state);
 	assert(EDHOC_PRK_STATE_4E3M == resp_ctx.prk_state);
+
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&resp_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
 
 	/**
          * \brief EDHOC message 4 compose.
@@ -365,6 +397,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(EDHOC_TH_STATE_4 == resp_ctx.th_state);
 	assert(EDHOC_PRK_STATE_4E3M == resp_ctx.prk_state);
 
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&resp_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
+
 	/**
          * \brief EDHOC message 3 process.
          */
@@ -375,6 +412,11 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	assert(true == init_ctx.is_oscore_export_allowed);
 	assert(EDHOC_TH_STATE_4 == init_ctx.th_state);
 	assert(EDHOC_PRK_STATE_4E3M == init_ctx.prk_state);
+
+	error_code_recv = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&init_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
 
 	/**
          * \brief Initiator - derive OSCORE secret & salt.

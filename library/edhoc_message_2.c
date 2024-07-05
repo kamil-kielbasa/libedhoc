@@ -2482,6 +2482,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -2716,6 +2717,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_WAIT_M3;
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
 
@@ -2751,6 +2753,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
 
 	ctx->status = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	size_t len = 0;
@@ -2885,8 +2888,11 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	ret = ctx->cred.verify(ctx->user_ctx, &parsed_ptxt.auth_cred, &pub_key,
 			       &pub_key_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		ctx->error_code =
+			EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
 
 	/* 11. Compute psuedo random key (PRK_3e2m). */
 	ret = comp_prk_3e2m(initiator, ctx, &parsed_ptxt.auth_cred, pub_key,
@@ -2971,5 +2977,6 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_VERIFIED_M2;
+	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }

@@ -15,6 +15,9 @@ Next release
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Changed licence from GPL-2.0 to MIT.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Forbidden passing empty byte string for connection identifier.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added EDHOC error getters for: error code and cipher suites.
+
+  * added test scenarios according to RFC 9528: 6.3.2. Examples. Covered figures 8 and 9.
 
 Version 0.3.0
 -------------

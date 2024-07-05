@@ -358,4 +358,36 @@ int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
 
 /**@}*/
 
+/** \defgroup edhoc-api-error EDHOC errors API
+ * @{
+ */
+
+/**
+ * \brief EDHOC error getter.
+ * 
+ * \param[in] edhoc_context             EDHOC context. 
+ * \param[out] error_code               EDHOC error code.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+int edhoc_error_get_code(const struct edhoc_context *edhoc_context,
+			 enum edhoc_error_code *error_code);
+
+/**
+ * \brief EDHOC cipher suites getter in case of \p EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE.
+ * 
+ * \param[in] edhoc_context             EDHOC context. 
+ * \param[out] cipher_suites            Buffer where the cipher suites values is to be written.
+ * \param cipher_suites_size            Size of the \p cipher_suites buffer in entries.
+ * \param[out] cipher_suites_length     On success, the number of entires that make up the cipher suites.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+int edhoc_error_get_cipher_suites(const struct edhoc_context *edhoc_context,
+				  int32_t *cipher_suites,
+				  size_t cipher_suites_size,
+				  size_t *cipher_suites_length);
+
+/**@}*/
+
 #endif /* EDHOC_H */

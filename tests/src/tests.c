@@ -22,6 +22,7 @@
 #include "x509_hash_cs_2/test_edhoc_handshake_x5t_cs_2_ead.h"
 #include "edhoc_trace_2/test_edhoc_handshake_2.h"
 #include "error_message/test_edhoc_error_message.h"
+#include "cipher_suite_negotiation/test_edhoc_cipher_suite_negotiation.h"
 
 /* Standard library headers:*/
 #include <stdio.h>
@@ -205,6 +206,14 @@ int main(void)
 	printf("\n");
 	printf("test_edhoc_trace_1_prk_exporter:\n");
 	test_edhoc_trace_1_prk_exporter();
+
+	printf("\n");
+	printf("test_edhoc_cipher_suites_negotiation_scenario_1:\n");
+	test_edhoc_cipher_suites_negotiation_scenario_1();
+
+	printf("\n");
+	printf("test_edhoc_cipher_suites_negotiation_scenario_2:\n");
+	test_edhoc_cipher_suites_negotiation_scenario_2();
 
 	printf("All tests passed successfully!\n");
 

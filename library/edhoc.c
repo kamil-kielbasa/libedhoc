@@ -185,3 +185,35 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 
 	return EDHOC_SUCCESS;
 }
+
+int edhoc_error_get_code(const struct edhoc_context *ctx,
+			 enum edhoc_error_code *code)
+{
+	if (NULL == ctx || NULL == code)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	*code = ctx->error_code;
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_error_get_cipher_suites(const struct edhoc_context *ctx,
+				  int32_t *csuites, size_t csuites_size,
+				  size_t *csuites_len)
+{
+	if (NULL == ctx || NULL == csuites || 0 == csuites_size ||
+	    NULL == csuites_len)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE != ctx->error_code)
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (ctx->csuite_len < csuites_size)
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+
+	*csuites_len = ctx->csuite_len;
+
+	for (size_t i = 0; i < ctx->csuite_len; ++i)
+		csuites[i] = ctx->csuite[i].value;
+
+	return EDHOC_SUCCESS;
+}
