@@ -2,7 +2,7 @@
  * \file    tests.c
  * \author  Kamil Kielbasa
  * \brief   Entry point for all unit tests.
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024

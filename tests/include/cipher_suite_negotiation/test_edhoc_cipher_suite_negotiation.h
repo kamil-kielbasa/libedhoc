@@ -2,7 +2,7 @@
  * \file    test_edhoc_cipher_suite_negotiation.h
  * \author  Kamil Kielbasa
  * \brief   Test scenarios for cipher suite negotiation.
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024

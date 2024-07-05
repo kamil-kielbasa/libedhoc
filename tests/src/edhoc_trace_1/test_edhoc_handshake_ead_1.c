@@ -2,7 +2,7 @@
  * \file    test_edhoc_handshake_ead_1.c
  * \author  Kamil Kielbasa
  * \brief   Unit tests for EDHOC EAD handshake.
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  *
  * \copyright Copyright (c) 2024

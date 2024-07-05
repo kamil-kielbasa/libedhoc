@@ -2,7 +2,7 @@
  * \file    edhoc_exporter.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC exporter for PRK exporter, key update or OSCORE session.
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  *
  * \copyright Copyright (c) 2024

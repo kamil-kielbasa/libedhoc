@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Test vector with keys and certificates for P-256 curve.
  *          
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024

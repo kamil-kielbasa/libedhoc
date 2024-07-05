@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC handshake unit test for X.509 chain authentication method
  *          for cipher suite 2 with multiple EAD tokens.
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024

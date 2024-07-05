@@ -1,7 +1,7 @@
-Next release
-------------
+Version 0.4.0
+-------------
 
-:Date: July X, 2024
+:Date: July 5, 2024
 
 * `@marek-serafin <https://github.com/stoprocent>`__ : Fixed typo in setting peer_cid while processing message 1.
 * `@marek-serafin <https://github.com/stoprocent>`__ : Fixed zcbor. Added a method to avoid generation of duplicated types.

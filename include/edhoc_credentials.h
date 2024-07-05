@@ -2,7 +2,7 @@
  * \file    edhoc_credentials.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC authentication credentials interface.
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024

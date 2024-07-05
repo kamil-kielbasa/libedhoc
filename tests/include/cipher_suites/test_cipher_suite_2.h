@@ -2,7 +2,7 @@
  * \file    test_cipher_suite_2.h
  * \author  Kamil Kielbasa
  * \brief   Unit tests for cipher suite 2.
- * \version 0.3
+ * \version 0.4
  * \date    2024-01-01
  * 
  * \copyright Copyright (c) 2024
