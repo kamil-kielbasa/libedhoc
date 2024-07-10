@@ -21,9 +21,21 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#endif
+
 /* CBOR headers: */
 #include <backend_cbor_message_error_encode.h>
 #include <backend_cbor_message_error_decode.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -45,7 +57,8 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		return EDHOC_ERROR_BAD_STATE;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	struct message_error input = { ._message_error_ERR_CODE = code };
+	struct message_error input = { ._message_error_ERR_CODE =
+					       (int32_t)code };
 
 	switch (code) {
 	case EDHOC_ERROR_CODE_SUCCESS: {

@@ -259,7 +259,7 @@ typedef int (*edhoc_encrypt_t)(void *user_context, const void *key_id,
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
  * \param[in] nonce                     Nonce or IV to use.
- * \param nonce_len                     Size of the \p nonce buffer in bytes.
+ * \param nonce_length                  Size of the \p nonce buffer in bytes.
  * \param[in] additional_data           Additional data that will be authenticated but not encrypted.
  * \param additional_data_length        Size of the \p additional_data buffer in bytes.
  * \param[in] ciphertext                Buffer where the data that has been authenticated and encrypted.

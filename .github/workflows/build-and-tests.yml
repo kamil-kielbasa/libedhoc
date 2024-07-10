@@ -12,26 +12,37 @@ jobs:
         sudo apt-get update
         gcc --version
         make --version
+        sudo apt install clang
+        clang --version
         sudo apt install valgrind
         valgrind --version
         sudo apt install cppcheck
         cppcheck --version
+        sudo apt install clang-tidy
+        clang-tidy --version
+        sudo apt install cmake
+        cmake --version
+        sudo apt install ninja-build
+        ninja --version
     - name: Checkout submodules
       uses: actions/checkout@v2
       with:
         submodules: recursive
-    - name: Run build
+    - name: Run build clang
       run: |
-        make clean
-        make format
-        make -j
+        chmod +x ./scripts/build-linux-clang.sh
+        ./scripts/build-linux-clang.sh
+    - name: Run build gcc
+      run: |
+        chmod +x ./scripts/build-linux-gcc.sh
+        ./scripts/build-linux-gcc.sh
     - name: Run unit tests
-      run: ./testedhoc.out
+      run: ./build/tests/libedhoc_tests
     - name: Run valgrind
       run: |
-        valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./testedhoc.out
-        valgrind --tool=drd --show-stack-usage=yes -s ./testedhoc.out | tail -n 1
+        valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./build/tests/libedhoc_tests
+        valgrind --tool=drd --show-stack-usage=yes -s ./build/tests/libedhoc_tests | tail -n 1
     - name: Run cppcheck
-      run: make cppcheck
-    - name: Run clean-up
-      run: make clean
+      run: |
+        chmod +x ./scripts/verify_cppcheck.sh
+        ./scripts/verify_cppcheck.sh

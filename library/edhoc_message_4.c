@@ -21,6 +21,14 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#endif
+
 /* CBOR headers: */
 #include <backend_cbor_info_encode.h>
 #include <backend_cbor_enc_structure_encode.h>
@@ -29,6 +37,10 @@
 #include <backend_cbor_plaintext_4_decode.h>
 #include <backend_cbor_message_4_encode.h>
 #include <backend_cbor_message_4_decode.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -67,10 +79,12 @@ static inline size_t cbor_bstr_overhead(size_t len);
  * \brief Compute PLAINTEXT_4 length.
  *
  * \param[in] ctx	        EDHOC context.
+ * \param[out] ptxt_4_len       Length of PLAINTEXT_4.
  *
- * \return Length of PLAINTEXT_4.
+ * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static size_t compute_plaintext_4_len(const struct edhoc_context *ctx);
+static int compute_plaintext_4_len(const struct edhoc_context *ctx,
+				   size_t *ptxt_4_len);
 
 /**
  * \brief Prepare PLAINTEXT_4.
@@ -156,8 +170,8 @@ static int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
  *
  * \param[in] msg_4     	Buffer containing the message 4.
  * \param msg_4_len     	Size of the \p msg_4 buffer in bytes.
- * \param[out] ctxt	        Pointer to buffer containing the CIPHERTEXT_4.
- * \param[out] ctxt_len	        Size of the \p ctxt buffer in bytes.
+ * \param[out] ctxt_4	        Pointer to buffer containing the CIPHERTEXT_4.
+ * \param[out] ctxt_4_len	Size of the \p ctxctxt_4t buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
@@ -246,9 +260,10 @@ static inline size_t cbor_bstr_overhead(size_t len)
 	}
 }
 
-static size_t compute_plaintext_4_len(const struct edhoc_context *ctx)
+static int compute_plaintext_4_len(const struct edhoc_context *ctx,
+				   size_t *ptxt_4_len)
 {
-	if (NULL == ctx)
+	if (NULL == ctx || NULL == ptxt_4_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	size_t len = 0;
@@ -259,7 +274,8 @@ static size_t compute_plaintext_4_len(const struct edhoc_context *ctx)
 		len += cbor_bstr_overhead(ctx->ead_token[i].value_len);
 	}
 
-	return len;
+	*ptxt_4_len = len;
+	return EDHOC_SUCCESS;
 }
 
 static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
@@ -338,7 +354,7 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req(csuite.aead_key_length);
+	len += cbor_int_mem_req((int32_t)csuite.aead_key_length);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -348,7 +364,7 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_K_4,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = csuite.aead_key_length,
+		._info_length = (uint32_t)csuite.aead_key_length,
 	};
 
 	memset(info, 0, sizeof(info));
@@ -377,7 +393,7 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = csuite.aead_iv_length,
+		._info_length = (uint32_t)csuite.aead_iv_length,
 	};
 
 	memset(info, 0, sizeof(info));
@@ -611,7 +627,11 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	}
 
 	/* 3a. Compute plaintext length (PLAINTEXT_4). */
-	size_t plaintext_len = compute_plaintext_4_len(ctx);
+	size_t plaintext_len = 0;
+	ret = compute_plaintext_4_len(ctx, &plaintext_len);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	uint8_t plaintext[plaintext_len];
 	memset(plaintext, 0, sizeof(plaintext));

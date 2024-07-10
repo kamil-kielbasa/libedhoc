@@ -21,10 +21,22 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#endif
+
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_message_1_encode.h>
 #include <backend_cbor_message_1_decode.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -106,7 +118,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	struct message_1 cbor_enc_msg_1 = { 0 };
 
 	/* 3a. Fill CBOR structure for message 1 - method. */
-	cbor_enc_msg_1._message_1_METHOD = ctx->method;
+	cbor_enc_msg_1._message_1_METHOD = (int32_t)ctx->method;
 
 	/* 3b. Fill CBOR structure for message 1 - cipher suite. */
 	if (1UL == ctx->csuite_len) {

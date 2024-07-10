@@ -21,6 +21,14 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#endif
+
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_message_2_encode.h>
@@ -35,6 +43,10 @@
 #include <backend_cbor_info_encode.h>
 #include <backend_cbor_plaintext_2_decode.h>
 #include <backend_cbor_ead_encode.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -395,9 +407,9 @@ static int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
  * \brief Parsed cborised PLAINTEXT_2 for separate buffers.
  *
  * \param[in] ctx		EDHOC context.
- * \param[in] plaintext		Buffer containing the PLAINTEXT_2.
- * \param plaintext_len         Size of the \p plaintext buffer in bytes.
- * \param[out] ptxt     	Structure where parsed PLAINTEXT_2 is to be written.
+ * \param[in] ptxt		Buffer containing the PLAINTEXT_2.
+ * \param ptxt_len              Size of the \p plaintext buffer in bytes.
+ * \param[out] parsed_ptxt     	Structure where parsed PLAINTEXT_2 is to be written.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
@@ -1485,14 +1497,14 @@ static int comp_mac_2(const struct edhoc_context *ctx,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2,
 		._info_context.value = cbor_items->buf,
 		._info_context.len = cbor_items->buf_len,
-		._info_length = mac_2_len,
+		._info_length = (uint32_t)mac_2_len,
 	};
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2);
 	len += cbor_items->buf_len + cbor_bstr_overhead(cbor_items->buf_len);
-	len += cbor_int_mem_req(mac_2_len);
+	len += cbor_int_mem_req((int32_t)mac_2_len);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -1602,7 +1614,7 @@ static int comp_sign_or_mac_2(const struct edhoc_context *ctx,
 		       cbor_bstr_overhead(cbor_items->th_2_len +
 					  cbor_items->cred_r_len +
 					  cbor_items->ead_2_len);
-		len += mac_2_len + cbor_int_mem_req(mac_2_len);
+		len += mac_2_len + cbor_int_mem_req((int32_t)mac_2_len);
 
 		uint8_t cose_sign_1_buf[len];
 		memset(cose_sign_1_buf, 0, sizeof(cose_sign_1_buf));
@@ -1787,13 +1799,13 @@ static int comp_keystream(const struct edhoc_context *ctx,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = keystream_len,
+		._info_length = (uint32_t)keystream_len,
 	};
 
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req(keystream_len);
+	len += cbor_int_mem_req((int32_t)keystream_len);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -2354,13 +2366,13 @@ static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = hash_len,
+		._info_length = (uint32_t)hash_len,
 	};
 
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req(hash_len);
+	len += cbor_int_mem_req((int32_t)hash_len);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));

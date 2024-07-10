@@ -21,6 +21,14 @@
 #include <string.h>
 #include <stdbool.h>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#endif
+
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_message_3_encode.h>
@@ -37,6 +45,10 @@
 #include <backend_cbor_enc_structure_encode.h>
 #include <backend_cbor_enc_structure_decode.h>
 #include <backend_cbor_ead_encode.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -154,7 +166,7 @@ static inline bool is_cbor_one_byte_int(int32_t val);
  * \brief Compute memory required for input (context_3) for for MAC_3.
  *
  * \param[in] ctx               EDHOC context.
- * \param[in] auth_cred         Authentication credentials.
+ * \param[in] auth_creds        Authentication credentials.
  * \param[out] context_3_len    On success, length of context_3.
  *
  * \retval EDHOC_SUCCESS on success, otherwise failure.
@@ -182,7 +194,7 @@ static int comp_prk_4e3m(enum edhoc_role role, struct edhoc_context *ctx,
  * \brief Generate context_3.
  *
  * \param[in] ctx		EDHOC context.
- * \param[in] auth_cred         Authentication credentials.
+ * \param[in] auth_creds        Authentication credentials.
  * \param[out] cbor_items	Buffer where the generated context_3 is to be written.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
@@ -270,7 +282,7 @@ static int comp_plaintext_3_len(const struct edhoc_context *ctx,
  * \param[in] sign		Buffer containing the signature.
  * \param sign_len		Size of the \p sign buffer in bytes.
  * \param[out] ptxt	        Buffer where the generated plaintext is to be written.
- * \param ptxt_len	        Size of the \p ptxt buffer in bytes.
+ * \param ptxt_size	        Size of the \p ptxt buffer in bytes.
  * \param[out] ptxt_len		On success, the number of bytes that make up the PLAINTEXT_2.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
@@ -365,8 +377,8 @@ static int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
  *
  * \param[in] msg_3     	Buffer containing the message 3.
  * \param msg_3_len     	Size of the \p msg_3 buffer in bytes.
- * \param[out] ctxt	        Pointer to buffer containing the CIPHERTEXT_3.
- * \param[out] ctxt_len	        Size of the \p ctxt buffer in bytes.
+ * \param[out] ctxt_3	        Pointer to buffer containing the CIPHERTEXT_3.
+ * \param[out] ctxt_3_len	Size of the \p ctxt_3 buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
@@ -1188,8 +1200,7 @@ static int comp_mac_3_len(enum edhoc_role role, const struct edhoc_context *ctx,
 		}
 	}
 
-	return (csuite.hash_length > csuite.mac_length) ? csuite.hash_length :
-							  csuite.mac_length;
+	return EDHOC_ERROR_BAD_STATE;
 }
 
 static int comp_mac_3(const struct edhoc_context *ctx,
@@ -1209,14 +1220,14 @@ static int comp_mac_3(const struct edhoc_context *ctx,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3,
 		._info_context.value = cbor_items->buf,
 		._info_context.len = cbor_items->buf_len,
-		._info_length = mac_3_len,
+		._info_length = (uint32_t)mac_3_len,
 	};
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3);
 	len += cbor_items->buf_len + cbor_bstr_overhead(cbor_items->buf_len);
-	len += cbor_int_mem_req(mac_3_len);
+	len += cbor_int_mem_req((int32_t)mac_3_len);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -1501,7 +1512,7 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req(csuite.aead_key_length);
+	len += cbor_int_mem_req((int32_t)csuite.aead_key_length);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -1511,7 +1522,7 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_K_3,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = csuite.aead_key_length,
+		._info_length = (uint32_t)csuite.aead_key_length,
 	};
 
 	memset(info, 0, sizeof(info));
@@ -1540,7 +1551,7 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = csuite.aead_iv_length,
+		._info_length = (uint32_t)csuite.aead_iv_length,
 	};
 
 	memset(info, 0, sizeof(info));
@@ -2091,13 +2102,13 @@ static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = hash_len,
+		._info_length = (uint32_t)hash_len,
 	};
 
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req(hash_len);
+	len += cbor_int_mem_req((int32_t)hash_len);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));

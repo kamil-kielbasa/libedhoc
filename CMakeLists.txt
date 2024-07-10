@@ -1,0 +1,27 @@
+cmake_minimum_required(VERSION 3.16)
+project(libedhoc)
+enable_language(C)
+set_property(GLOBAL PROPERTY C_STANDARD 99)
+
+option(LIBEDHOC_ENABLE_UNIT_TESTS "Enable building unit & module tests" OFF)
+option(LIBEDHOC_BUILD_COMPILER_GCC "Enable compiling library with gcc" OFF)
+option(LIBEDHOC_BUILD_COMPILER_CLANG "Enable compiling library with clang" OFF)
+
+if (LIBEDHOC_BUILD_COMPILER_GCC AND LIBEDHOC_BUILD_COMPILER_CLANG)
+    message(FATAL_ERROR "One compiler option must be chosen!")
+elseif (LIBEDHOC_BUILD_COMPILER_GCC)
+    set(LIBEDHOC_COMPILER "gcc")
+elseif(LIBEDHOC_BUILD_COMPILER_CLANG)
+    set(LIBEDHOC_COMPILER "clang")
+else()
+    message(FATAL_ERROR "One compiler option must be chosen!")
+endif()
+
+add_subdirectory(externals)
+add_subdirectory(backends)
+add_subdirectory(include)
+add_subdirectory(library)
+
+if (LIBEDHOC_ENABLE_UNIT_TESTS)
+    add_subdirectory(tests)
+endif()

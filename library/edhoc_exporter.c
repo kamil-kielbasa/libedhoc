@@ -19,9 +19,21 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+#pragma clang diagnostic ignored "-Wreserved-identifier"
+#pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#endif
+
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_info_encode.h>
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -125,7 +137,7 @@ static int compute_prk_out(struct edhoc_context *ctx)
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req(csuite.hash_length);
+	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -135,7 +147,7 @@ static int compute_prk_out(struct edhoc_context *ctx)
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT,
 		._info_context.value = ctx->th,
 		._info_context.len = ctx->th_len,
-		._info_length = csuite.hash_length,
+		._info_length = (uint32_t)csuite.hash_length,
 	};
 
 	len = 0;
@@ -184,7 +196,7 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
 	len += entropy_len + cbor_bstr_overhead(entropy_len);
-	len += cbor_int_mem_req(csuite.hash_length);
+	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
@@ -194,7 +206,7 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT,
 		._info_context.value = entropy,
 		._info_context.len = entropy_len,
-		._info_length = csuite.hash_length,
+		._info_length = (uint32_t)csuite.hash_length,
 	};
 
 	len = 0;
@@ -239,16 +251,17 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 	size_t len = 0;
 	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
-	len += cbor_int_mem_req(csuite.hash_length);
+	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
 
 	struct info input_info = {
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER,
+		._info_label =
+			(int32_t)EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER,
 		._info_context.value = NULL,
 		._info_context.len = 0,
-		._info_length = csuite.hash_length,
+		._info_length = (uint32_t)csuite.hash_length,
 	};
 
 	len = 0;
@@ -330,18 +343,18 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 
 	/* 4. Derive secret. */
 	size_t len = 0;
-	len += cbor_int_mem_req(label);
+	len += cbor_int_mem_req((int32_t)label);
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
-	len += cbor_int_mem_req(csuite.hash_length);
+	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	uint8_t info[len];
 	memset(info, 0, sizeof(info));
 
 	const struct info input_info = (struct info){
-		._info_label = label,
+		._info_label = (int32_t)label,
 		._info_context.value = NULL,
 		._info_context.len = 0,
-		._info_length = secret_len,
+		._info_length = (uint32_t)secret_len,
 	};
 
 	len = 0;
