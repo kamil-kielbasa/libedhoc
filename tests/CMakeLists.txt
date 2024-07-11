@@ -17,6 +17,8 @@ add_executable(${PROJECT_NAME}
                ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2/authentication_credentials_x5chain_cs_2.c
                ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2/test_edhoc_handshake_x5chain_cs_2_ead.c
                ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2/test_edhoc_handshake_x5chain_cs_2.c
+               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2_static_dh/authentication_credentials_x5chain_cs_2_static_dh.c
+               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2_static_dh/test_edhoc_handshake_x5chain_cs_2_static_dh_ead.c
                ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_hash_cs_2/authentication_credentials_x5t_cs_2.c
                ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_hash_cs_2/test_edhoc_handshake_x5t_cs_2_ead.c
                ${CMAKE_CURRENT_SOURCE_DIR}/src/tests.c)

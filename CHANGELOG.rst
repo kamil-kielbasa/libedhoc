@@ -5,6 +5,9 @@ Next release
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Changed build system from Make to CMake.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added building library code with clang compiler.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added new module test for scenario:
+
+  * X.509 chain, cipher suite 2, static DH keys, single EAD token.
 
 Version 0.4.0
 -------------

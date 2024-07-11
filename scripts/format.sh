@@ -54,6 +54,11 @@ path="x509_chain_cs_2"
 clang-format -i $tests_include_dir/$path/*.h
 clang-format -i $tests_source_dir/$path/*.c
 
+echo "- (test) X.509 chain over cipher suite 2 with static DH keys."
+path="x509_chain_cs_2_static_dh"
+clang-format -i $tests_include_dir/$path/*.h
+clang-format -i $tests_source_dir/$path/*.c
+
 # Format tests: X.509 hash over cipher suite 2.
 echo "- (test) X.509 hash over cipher suite 2."
 path="x509_hash_cs_2"
