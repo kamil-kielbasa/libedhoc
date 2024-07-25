@@ -71,6 +71,16 @@
  */
 
 /**
+ * \brief RFC 9528: 2. EDHOC Outline.
+ */
+enum edhoc_role {
+	/** EDHOC role - initiator. */
+	EDHOC_INITIATOR,
+	/** EDHOC role - responder. */
+	EDHOC_RESPONDER,
+};
+
+/**
  * \brief RFC 9528: Appendix I. Example Protocol State Machine.
  */
 enum edhoc_state_machine {
@@ -269,6 +279,10 @@ struct edhoc_context {
 	bool EDHOC_PRIVATE(is_oscore_export_allowed);
 	/** EDHOC context state machine. */
 	enum edhoc_state_machine EDHOC_PRIVATE(status);
+	/** Current processing EDHOC message. */
+	enum edhoc_message EDHOC_PRIVATE(message);
+	/** EDHOC role. */
+	enum edhoc_role EDHOC_PRIVATE(role);
 
 	/** EDHOC context transcript hash state. */
 	enum edhoc_th_state EDHOC_PRIVATE(th_state);

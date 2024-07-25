@@ -1,13 +1,23 @@
 Next release
 ------------
 
-:Date: July X, 2024
+:Date: August X, 2024
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Changed build system from Make to CMake.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added building library code with clang compiler.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added new module test for scenario:
 
   * X.509 chain, cipher suite 2, static DH keys, single EAD token.
+
+* `@marek-serafin <https://github.com/stoprocent>`__ : Fixed setting correct cases for static dh methods.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored message_2 and message_3 for common code:
+
+  * CBOR utilities.
+  * MAC 2/3 context generation.
+  * MAC 2/3 computation.
+  * Signature_or_MAC 2/3 computation and verification.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed setting correct cases for methods for message_3.
 
 Version 0.4.0
 -------------

@@ -590,6 +590,8 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ctx->message = EDHOC_MSG_4;
+	ctx->role = EDHOC_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -599,7 +601,7 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 
 	/* 2. Compose EAD_4 if present. */
 	if (NULL != ctx->ead.compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->ead.compose(ctx->user_ctx, EDHOC_MSG_4,
+		ret = ctx->ead.compose(ctx->user_ctx, ctx->message,
 				       ctx->ead_token,
 				       ARRAY_SIZE(ctx->ead_token) - 1,
 				       &ctx->nr_of_ead_tokens);
@@ -727,6 +729,8 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ctx->message = EDHOC_MSG_4;
+	ctx->role = EDHOC_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -793,7 +797,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	/* 6. Process EAD_4 if present. */
 	if (NULL != ctx->ead.process && 0 != ARRAY_SIZE(ctx->ead_token) - 1 &&
 	    0 != ctx->nr_of_ead_tokens) {
-		ret = ctx->ead.process(ctx->user_ctx, EDHOC_MSG_4,
+		ret = ctx->ead.process(ctx->user_ctx, ctx->message,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS != ret)

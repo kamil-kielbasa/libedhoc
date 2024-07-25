@@ -65,3 +65,24 @@ EDHOC context
 .. doxygengroup:: edhoc-context
    :project: libedhoc
    :members:
+
+EDHOC common
+************
+
+| Header file: :file:`include/edhoc_common.h`.
+
+.. doxygengroup:: edhoc-common-structures
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-common-cbor
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-common-mac-context
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-common-sign-or-mac
+   :project: libedhoc
+   :members:

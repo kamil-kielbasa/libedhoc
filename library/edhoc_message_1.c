@@ -74,6 +74,8 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ctx->message = EDHOC_MSG_1;
+	ctx->role = EDHOC_INITIATOR;
 
 	/* 1. Choose most preferred cipher suite. */
 	if (0 == ctx->csuite_len)
@@ -164,7 +166,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	/* 3e. Fill CBOR structure for message 1 - external authorization data if present. */
 	if (NULL != ctx->ead.compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->ead.compose(ctx->user_ctx, EDHOC_MSG_1,
+		ret = ctx->ead.compose(ctx->user_ctx, ctx->message,
 				       ctx->ead_token,
 				       ARRAY_SIZE(ctx->ead_token) - 1,
 				       &ctx->nr_of_ead_tokens);
@@ -263,6 +265,8 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ctx->message = EDHOC_MSG_1;
+	ctx->role = EDHOC_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -396,7 +400,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 					._ead_value.len;
 		}
 
-		ret = ctx->ead.process(ctx->user_ctx, EDHOC_MSG_1,
+		ret = ctx->ead.process(ctx->user_ctx, ctx->message,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS == ret && NULL != ctx->logger) {
