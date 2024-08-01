@@ -294,7 +294,7 @@ static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
-		const size_t end_entity_idx = cred->x509_chain.nr_of_certs - 1;
+		const size_t end_entity_idx = 0;
 		*len += cred->x509_chain.cert_len[end_entity_idx];
 		*len += edhoc_cbor_bstr_oh(
 			cred->x509_chain.cert_len[end_entity_idx]);
@@ -943,7 +943,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
-		const size_t end_entity_idx = cred->x509_chain.nr_of_certs - 1;
+		const size_t end_entity_idx = 0;
 		_cred.value = cred->x509_chain.cert[end_entity_idx];
 		_cred.len = cred->x509_chain.cert_len[end_entity_idx];
 		break;

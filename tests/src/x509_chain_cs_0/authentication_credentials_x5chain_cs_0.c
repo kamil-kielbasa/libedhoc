@@ -176,11 +176,11 @@ int auth_cred_fetch_init_x5chain_cs_0_many_certs(
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
 	auth_cred->x509_chain.nr_of_certs = 2;
 
-	auth_cred->x509_chain.cert[0] = CRED_R;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.cert[0] = CRED_I;
+	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	auth_cred->x509_chain.cert[1] = CRED_I;
-	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.cert[1] = CRED_R;
+	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_R);
 
 	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
 						    SK_I, ARRAY_SIZE(SK_I),
@@ -203,11 +203,11 @@ int auth_cred_fetch_resp_x5chain_cs_0_many_certs(
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
 	auth_cred->x509_chain.nr_of_certs = 2;
 
-	auth_cred->x509_chain.cert[0] = CRED_I;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.cert[0] = CRED_R;
+	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	auth_cred->x509_chain.cert[1] = CRED_R;
-	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.cert[1] = CRED_I;
+	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_I);
 
 	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
 						    SK_R, ARRAY_SIZE(SK_R),
@@ -220,62 +220,6 @@ int auth_cred_fetch_resp_x5chain_cs_0_many_certs(
 }
 
 int auth_cred_verify_init_x5chain_cs_0_many_certs(
-	void *user_ctx, struct edhoc_auth_creds *auth_cred,
-	const uint8_t **pub_key, size_t *pub_key_len)
-{
-	(void)user_ctx;
-
-	if (NULL == auth_cred || NULL == pub_key || NULL == pub_key_len)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-
-	/**
-         * \brief Verify COSE header label value. 
-         */
-	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label)
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	/**
-         * \brief Verify received number of certificates. 
-         */
-	if (2 != auth_cred->x509_chain.nr_of_certs)
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	/**
-         * \brief Verify received peer certificate length. 
-         */
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	/**
-         * \brief Verify received peer certificate. 
-         */
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	/**
-         * \brief Verify received peer certificate length. 
-         */
-	if (auth_cred->x509_chain.cert_len[1] != ARRAY_SIZE(CRED_R))
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	/**
-         * \brief Verify received peer certificate. 
-         */
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[1],
-			auth_cred->x509_chain.cert_len[1]))
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	/**
-         * \brief If successful then assign public key. 
-         */
-	*pub_key = PK_R;
-	*pub_key_len = ARRAY_SIZE(PK_R);
-
-	return EDHOC_SUCCESS;
-}
-
-int auth_cred_verify_resp_x5chain_cs_0_many_certs(
 	void *user_ctx, struct edhoc_auth_creds *auth_cred,
 	const uint8_t **pub_key, size_t *pub_key_len)
 {
@@ -319,6 +263,62 @@ int auth_cred_verify_resp_x5chain_cs_0_many_certs(
          * \brief Verify received peer certificate. 
          */
 	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[1],
+			auth_cred->x509_chain.cert_len[1]))
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
+         * \brief If successful then assign public key. 
+         */
+	*pub_key = PK_R;
+	*pub_key_len = ARRAY_SIZE(PK_R);
+
+	return EDHOC_SUCCESS;
+}
+
+int auth_cred_verify_resp_x5chain_cs_0_many_certs(
+	void *user_ctx, struct edhoc_auth_creds *auth_cred,
+	const uint8_t **pub_key, size_t *pub_key_len)
+{
+	(void)user_ctx;
+
+	if (NULL == auth_cred || NULL == pub_key || NULL == pub_key_len)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	/**
+         * \brief Verify COSE header label value. 
+         */
+	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
+         * \brief Verify received number of certificates. 
+         */
+	if (2 != auth_cred->x509_chain.nr_of_certs)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
+         * \brief Verify received peer certificate length. 
+         */
+	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
+         * \brief Verify received peer certificate. 
+         */
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
+			auth_cred->x509_chain.cert_len[0]))
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
+         * \brief Verify received peer certificate length. 
+         */
+	if (auth_cred->x509_chain.cert_len[1] != ARRAY_SIZE(CRED_R))
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	/**
+         * \brief Verify received peer certificate. 
+         */
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[1],
 			auth_cred->x509_chain.cert_len[1]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
