@@ -18,6 +18,7 @@ Next release
   * Signature_or_MAC 2/3 computation and verification.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed setting correct cases for methods for message_3.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added any cborised authentication credentials option.
 
 Version 0.4.0
 -------------

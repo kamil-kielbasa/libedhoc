@@ -41,6 +41,8 @@ enum edhoc_encode_type {
  * \ref https://www.iana.org/assignments/cose/cose.xhtml
  */
 enum edhoc_cose_header {
+	/** Any authentication credentials. */
+	EDHOC_COSE_ANY = -65537,
 	/** Authentication credentials identified by key identifier. */
 	EDHOC_COSE_HEADER_KID = 4,
 	/** Authentication credentials identified by an ordered chain of X.509 certificates. */
@@ -154,6 +156,37 @@ struct edhoc_auth_cred_x509_hash {
 };
 
 /**
+ * \brief Any authentication credentials.
+ *   
+ * \note Application developer is responsible for correct
+ *       CBOR encoding (compact if required) and decoding.
+ */
+struct edhoc_auth_cred_any {
+	/** Buffer containing identification and optionally transport the credentials.
+	 *  RFC 9528: 2. EDHOC Outline: ID_CRED_I & ID_CRED_R. */
+	const uint8_t *id_cred;
+	/** Size of the \p id_cred buffer in bytes. */
+	size_t id_cred_len;
+
+	/** Is compact encoding of ID_CRED ?
+	 *  RFC 9528: 3.5.3.2. Compact Encoding of ID_CRED Fields for 'kid'. */
+	bool is_id_cred_comp_enc;
+	/** Encoding type of ID_CRED. */
+	enum edhoc_encode_type encode_type;
+
+	/** Buffer containing compact encoded identification. */
+	const uint8_t *id_cred_comp_enc;
+	/** Size of the \p id_cred_comp_enc buffer in bytes. */
+	size_t id_cred_comp_enc_length;
+
+	/** Buffer containing authentication credentials containing the public authentication keys.
+	 *  RFC 9528: 2. EDHOC Outline: CRED_I & CRED_R. */
+	const uint8_t *cred;
+	/** Size of the \p cred buffer in bytes. */
+	size_t cred_len;
+};
+
+/**
  * \brief Common structure for different authentication credentials methods.
  */
 struct edhoc_auth_creds {
@@ -169,6 +202,8 @@ struct edhoc_auth_creds {
 		struct edhoc_auth_cred_x509_chain x509_chain;
 		/** X.509 hash authentication structure. */
 		struct edhoc_auth_cred_x509_hash x509_hash;
+		/** User defined authentication credentials structure. */
+		struct edhoc_auth_cred_any any;
 	};
 };
 

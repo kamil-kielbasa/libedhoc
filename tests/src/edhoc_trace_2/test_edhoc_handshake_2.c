@@ -142,8 +142,18 @@ static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.verify = auth_cred_verify_init_2,
 };
 
+static const struct edhoc_credentials edhoc_auth_cred_mocked_init_any = {
+	.fetch = auth_cred_fetch_init_2_any,
+	.verify = auth_cred_verify_init_2,
+};
+
 static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
 	.fetch = auth_cred_fetch_resp_2,
+	.verify = auth_cred_verify_resp_2,
+};
+
+static const struct edhoc_credentials edhoc_auth_cred_mocked_resp_any = {
+	.fetch = auth_cred_fetch_resp_2_any,
 	.verify = auth_cred_verify_resp_2,
 };
 
@@ -439,6 +449,95 @@ void test_edhoc_handshake_2_message_2_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 }
 
+void test_edhoc_handshake_any_2_message_2_compose(void)
+{
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	struct edhoc_context resp_ctx = { 0 };
+	struct edhoc_connection_id resp_cid = {
+		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = (int8_t)C_R[0],
+	};
+
+	/**
+         * \brief Setup responder context.
+         */
+	ret = edhoc_context_init(&resp_ctx);
+	assert(EDHOC_SUCCESS == ret);
+	resp_ctx.logger = print_array;
+
+	ret = edhoc_set_method(&resp_ctx, METHOD);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,
+				      ARRAY_SIZE(edhoc_cipher_suites_resp));
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_credentials(&resp_ctx,
+				     edhoc_auth_cred_mocked_resp_any);
+	assert(EDHOC_SUCCESS == ret);
+
+	/**
+         * \brief Required injections.
+         */
+	resp_ctx.status = EDHOC_SM_RECEIVED_M1;
+
+	resp_ctx.th_state = EDHOC_TH_STATE_1;
+	resp_ctx.th_len = ARRAY_SIZE(H_message_1);
+	memcpy(resp_ctx.th, H_message_1, sizeof(H_message_1));
+
+	resp_ctx.dh_peer_pub_key_len = ARRAY_SIZE(G_X);
+	memcpy(resp_ctx.dh_peer_pub_key, G_X, ARRAY_SIZE(G_X));
+
+	resp_ctx.peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	resp_ctx.peer_cid.int_value = (int8_t)C_I[0];
+
+	/**
+         * \brief EDHOC message 2 compose.
+         */
+	size_t msg_2_len = 0;
+	uint8_t msg_2[ARRAY_SIZE(message_2)] = { 0 };
+
+	ret = edhoc_message_2_compose(&resp_ctx, msg_2, ARRAY_SIZE(msg_2),
+				      &msg_2_len);
+
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_SM_WAIT_M3 == resp_ctx.status);
+	assert(false == resp_ctx.is_oscore_export_allowed);
+
+	enum edhoc_error_code error_code_recv =
+		EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&resp_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
+
+	assert(ARRAY_SIZE(message_2) == msg_2_len);
+	assert(0 == memcmp(msg_2, message_2, msg_2_len));
+
+	assert(EDHOC_TH_STATE_3 == resp_ctx.th_state);
+	assert(ARRAY_SIZE(TH_3) == resp_ctx.th_len);
+	assert(0 == memcmp(resp_ctx.th, TH_3, resp_ctx.th_len));
+
+	assert(EDHOC_PRK_STATE_3E2M == resp_ctx.prk_state);
+	assert(ARRAY_SIZE(PRK_3e2m) == resp_ctx.prk_len);
+	assert(0 == memcmp(PRK_3e2m, resp_ctx.prk, resp_ctx.prk_len));
+
+	assert(ARRAY_SIZE(G_XY) == resp_ctx.dh_secret_len);
+	assert(0 == memcmp(G_XY, resp_ctx.dh_secret, resp_ctx.dh_secret_len));
+
+	ret = edhoc_context_deinit(&resp_ctx);
+	assert(EDHOC_SUCCESS == ret);
+}
+
 void test_edhoc_handshake_2_message_2_process(void)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -557,6 +656,96 @@ void test_edhoc_handshake_2_message_3_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_credentials(&init_ctx, edhoc_auth_cred_mocked_init);
+	assert(EDHOC_SUCCESS == ret);
+
+	/**
+         * \brief Required incjections.
+         */
+	init_ctx.status = EDHOC_SM_VERIFIED_M2;
+
+	init_ctx.th_state = EDHOC_TH_STATE_3;
+	init_ctx.th_len = ARRAY_SIZE(TH_3);
+	memcpy(init_ctx.th, TH_3, ARRAY_SIZE(TH_3));
+
+	init_ctx.prk_state = EDHOC_PRK_STATE_3E2M;
+	init_ctx.prk_len = ARRAY_SIZE(PRK_3e2m);
+	memcpy(init_ctx.prk, PRK_3e2m, ARRAY_SIZE(PRK_3e2m));
+
+	init_ctx.dh_peer_pub_key_len = ARRAY_SIZE(G_Y);
+	memcpy(init_ctx.dh_peer_pub_key, G_Y, ARRAY_SIZE(G_Y));
+
+	init_ctx.dh_secret_len = ARRAY_SIZE(G_XY);
+	memcpy(init_ctx.dh_secret, G_XY, ARRAY_SIZE(G_XY));
+
+	/**
+         * \brief EDHOC message 3 compose.
+         */
+	size_t msg_3_len = 0;
+	uint8_t msg_3[ARRAY_SIZE(message_3)] = { 0 };
+
+	ret = edhoc_message_3_compose(&init_ctx, msg_3, ARRAY_SIZE(msg_3),
+				      &msg_3_len);
+
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_SM_COMPLETED == init_ctx.status);
+	assert(true == init_ctx.is_oscore_export_allowed);
+
+	enum edhoc_error_code error_code_recv =
+		EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+	ret = edhoc_error_get_code(&init_ctx, &error_code_recv);
+	assert(EDHOC_SUCCESS == ret);
+	assert(EDHOC_ERROR_CODE_SUCCESS == error_code_recv);
+
+	assert(ARRAY_SIZE(message_3) == msg_3_len);
+	assert(0 == memcmp(message_3, msg_3, msg_3_len));
+
+	assert(EDHOC_TH_STATE_4 == init_ctx.th_state);
+	assert(ARRAY_SIZE(TH_4) == init_ctx.th_len);
+	assert(0 == memcmp(TH_4, init_ctx.th, init_ctx.th_len));
+
+	assert(EDHOC_PRK_STATE_4E3M == init_ctx.prk_state);
+	assert(ARRAY_SIZE(PRK_4e3m) == init_ctx.prk_len);
+	assert(0 == memcmp(PRK_4e3m, init_ctx.prk, init_ctx.prk_len));
+
+	ret = edhoc_context_deinit(&init_ctx);
+	assert(EDHOC_SUCCESS == ret);
+}
+
+void test_edhoc_handshake_any_2_message_3_compose(void)
+{
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	struct edhoc_context init_ctx = { 0 };
+	struct edhoc_connection_id init_cid = {
+		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = (int8_t)C_I[0],
+	};
+
+	/**
+         * \brief Setup initiator context.
+         */
+	ret = edhoc_context_init(&init_ctx);
+	assert(EDHOC_SUCCESS == ret);
+	init_ctx.logger = print_array;
+
+	ret = edhoc_set_method(&init_ctx, METHOD);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
+				      ARRAY_SIZE(edhoc_cipher_suites_init));
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	assert(EDHOC_SUCCESS == ret);
+
+	ret = edhoc_bind_credentials(&init_ctx,
+				     edhoc_auth_cred_mocked_init_any);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**

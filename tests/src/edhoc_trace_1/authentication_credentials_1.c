@@ -95,6 +95,29 @@ int auth_cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	return EDHOC_SUCCESS;
 }
 
+int auth_cred_fetch_init_any(void *user_ctx, struct edhoc_auth_creds *auth_cred)
+{
+	(void)user_ctx;
+
+	if (NULL == auth_cred)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	auth_cred->label = EDHOC_COSE_ANY;
+	auth_cred->any.id_cred = ID_CRED_I_cborised;
+	auth_cred->any.id_cred_len = ARRAY_SIZE(ID_CRED_I_cborised);
+	auth_cred->any.cred = CRED_I_cborised;
+	auth_cred->any.cred_len = ARRAY_SIZE(CRED_I_cborised);
+
+	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+						    SK_I, ARRAY_SIZE(SK_I),
+						    auth_cred->priv_key_id);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	return EDHOC_SUCCESS;
+}
+
 int auth_cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 {
 	(void)user_ctx;
@@ -116,6 +139,29 @@ int auth_cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	auth_cred->x509_hash.cert_fp_len = ARRAY_SIZE(ID_CRED_R_cborised) - 6;
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
+
+	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
+						    SK_R, ARRAY_SIZE(SK_R),
+						    auth_cred->priv_key_id);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	return EDHOC_SUCCESS;
+}
+
+int auth_cred_fetch_resp_any(void *user_ctx, struct edhoc_auth_creds *auth_cred)
+{
+	(void)user_ctx;
+
+	if (NULL == auth_cred)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	auth_cred->label = EDHOC_COSE_ANY;
+	auth_cred->any.id_cred = ID_CRED_R_cborised;
+	auth_cred->any.id_cred_len = ARRAY_SIZE(ID_CRED_R_cborised);
+	auth_cred->any.cred = CRED_R_cborised;
+	auth_cred->any.cred_len = ARRAY_SIZE(CRED_R_cborised);
 
 	const int ret = cipher_suite_0_key_generate(NULL, EDHOC_KT_SIGNATURE,
 						    SK_R, ARRAY_SIZE(SK_R),

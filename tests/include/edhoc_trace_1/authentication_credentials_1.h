@@ -36,10 +36,26 @@ int auth_cred_fetch_init(void *user_context,
 			 struct edhoc_auth_creds *credentials);
 
 /**
+ * \brief Authentication credentials fetch callback for initiator.
+ * 
+ * \note It will use already cborised credentials.
+ */
+int auth_cred_fetch_init_any(void *user_context,
+			     struct edhoc_auth_creds *credentials);
+
+/**
  * \brief Authentication credentials fetch callback for responder.
  */
 int auth_cred_fetch_resp(void *user_context,
 			 struct edhoc_auth_creds *credentials);
+
+/**
+ * \brief Authentication credentials fetch callback for responder.
+ * 
+ * \note It will use already cborised credentials.
+ */
+int auth_cred_fetch_resp_any(void *user_context,
+			     struct edhoc_auth_creds *credentials);
 
 /**
  * \brief Authentication credentials verify callback for initiator.

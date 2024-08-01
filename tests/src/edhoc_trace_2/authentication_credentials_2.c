@@ -62,13 +62,41 @@ int auth_cred_fetch_init_2(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
-	auth_cred->key_id.cred = CRED_I;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_I);
+	auth_cred->key_id.cred = CRED_I_cborised;
+	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_I_cborised);
 	auth_cred->key_id.cred_is_cbor = true;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_I_cborised,
-	       ARRAY_SIZE(ID_CRED_I_cborised));
-	auth_cred->key_id.key_id_bstr_length = ARRAY_SIZE(ID_CRED_I_cborised);
+	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_I_raw_cborised,
+	       ARRAY_SIZE(ID_CRED_I_raw_cborised));
+	auth_cred->key_id.key_id_bstr_length =
+		ARRAY_SIZE(ID_CRED_I_raw_cborised);
+
+	const int ret = cipher_suite_2_key_generate(NULL,
+						    EDHOC_KT_KEY_AGREEMENT,
+						    SK_I, ARRAY_SIZE(SK_I),
+						    auth_cred->priv_key_id);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	return EDHOC_SUCCESS;
+}
+
+int auth_cred_fetch_init_2_any(void *user_ctx,
+			       struct edhoc_auth_creds *auth_cred)
+{
+	(void)user_ctx;
+
+	auth_cred->label = EDHOC_COSE_ANY;
+	auth_cred->any.id_cred = ID_CRED_I_cborised;
+	auth_cred->any.id_cred_len = ARRAY_SIZE(ID_CRED_I_cborised);
+	auth_cred->any.is_id_cred_comp_enc = true;
+	auth_cred->any.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->any.id_cred_comp_enc = ID_CRED_I_raw_cborised;
+	auth_cred->any.id_cred_comp_enc_length =
+		ARRAY_SIZE(ID_CRED_I_raw_cborised);
+	auth_cred->any.cred = CRED_I_cborised;
+	auth_cred->any.cred_len = ARRAY_SIZE(CRED_I_cborised);
 
 	const int ret = cipher_suite_2_key_generate(NULL,
 						    EDHOC_KT_KEY_AGREEMENT,
@@ -86,13 +114,41 @@ int auth_cred_fetch_resp_2(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
-	auth_cred->key_id.cred = CRED_R;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_R);
+	auth_cred->key_id.cred = CRED_R_cborised;
+	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_R_cborised);
 	auth_cred->key_id.cred_is_cbor = true;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_R_cborised,
-	       ARRAY_SIZE(ID_CRED_R_cborised));
-	auth_cred->key_id.key_id_bstr_length = ARRAY_SIZE(ID_CRED_R_cborised);
+	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_R_raw_cborised,
+	       ARRAY_SIZE(ID_CRED_R_raw_cborised));
+	auth_cred->key_id.key_id_bstr_length =
+		ARRAY_SIZE(ID_CRED_R_raw_cborised);
+
+	const int ret = cipher_suite_2_key_generate(NULL,
+						    EDHOC_KT_KEY_AGREEMENT,
+						    SK_R, ARRAY_SIZE(SK_R),
+						    auth_cred->priv_key_id);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	return EDHOC_SUCCESS;
+}
+
+int auth_cred_fetch_resp_2_any(void *user_ctx,
+			       struct edhoc_auth_creds *auth_cred)
+{
+	(void)user_ctx;
+
+	auth_cred->label = EDHOC_COSE_ANY;
+	auth_cred->any.id_cred = ID_CRED_R_cborised;
+	auth_cred->any.id_cred_len = ARRAY_SIZE(ID_CRED_R_cborised);
+	auth_cred->any.is_id_cred_comp_enc = true;
+	auth_cred->any.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->any.id_cred_comp_enc = ID_CRED_R_raw_cborised;
+	auth_cred->any.id_cred_comp_enc_length =
+		ARRAY_SIZE(ID_CRED_R_raw_cborised);
+	auth_cred->any.cred = CRED_R_cborised;
+	auth_cred->any.cred_len = ARRAY_SIZE(CRED_R_cborised);
 
 	const int ret = cipher_suite_2_key_generate(NULL,
 						    EDHOC_KT_KEY_AGREEMENT,
@@ -123,12 +179,13 @@ int auth_cred_verify_init_2(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	auth_cred->key_id.key_id_bstr_length = ARRAY_SIZE(ID_CRED_R_cborised);
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_R_cborised,
-	       ARRAY_SIZE(ID_CRED_R_cborised));
+	auth_cred->key_id.key_id_bstr_length =
+		ARRAY_SIZE(ID_CRED_R_raw_cborised);
+	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_R_raw_cborised,
+	       ARRAY_SIZE(ID_CRED_R_raw_cborised));
 
-	auth_cred->key_id.cred = CRED_R;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_R);
+	auth_cred->key_id.cred = CRED_R_cborised;
+	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_R_cborised);
 	auth_cred->key_id.cred_is_cbor = true;
 
 	*pub_key_ref = PK_R;
@@ -155,12 +212,13 @@ int auth_cred_verify_resp_2(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	auth_cred->key_id.key_id_bstr_length = ARRAY_SIZE(ID_CRED_I_cborised);
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_I_cborised,
-	       ARRAY_SIZE(ID_CRED_I_cborised));
+	auth_cred->key_id.key_id_bstr_length =
+		ARRAY_SIZE(ID_CRED_I_raw_cborised);
+	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_I_raw_cborised,
+	       ARRAY_SIZE(ID_CRED_I_raw_cborised));
 
-	auth_cred->key_id.cred = CRED_I;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_I);
+	auth_cred->key_id.cred = CRED_I_cborised;
+	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_I_cborised);
 	auth_cred->key_id.cred_is_cbor = true;
 
 	*pub_key_ref = PK_I;

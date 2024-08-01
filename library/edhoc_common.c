@@ -203,6 +203,10 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 	const size_t nr_of_items = 1;
 
 	switch (cred->label) {
+	case EDHOC_COSE_ANY:
+		*len += cred->any.id_cred_len;
+		break;
+
 	case EDHOC_COSE_HEADER_KID:
 		*len += edhoc_cbor_map_oh(nr_of_items);
 
@@ -280,6 +284,10 @@ static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	switch (cred->label) {
+	case EDHOC_COSE_ANY:
+		*len += cred->any.cred_len;
+		break;
+
 	case EDHOC_COSE_HEADER_KID:
 		*len += cred->key_id.cred_len;
 		*len += edhoc_cbor_bstr_oh(cred->key_id.cred_len);
@@ -745,6 +753,9 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	struct id_cred_x id_cred = { 0 };
 
 	switch (cred->label) {
+	case EDHOC_COSE_ANY:
+		break;
+
 	case EDHOC_COSE_HEADER_KID:
 		id_cred._id_cred_x_kid_present = true;
 
@@ -839,13 +850,18 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	len = 0;
-	ret = cbor_encode_id_cred_x(mac_ctx->id_cred, mac_ctx->id_cred_len,
-				    &id_cred, &len);
-	if (ZCBOR_SUCCESS != ret)
-		return EDHOC_ERROR_CBOR_FAILURE;
+	if (EDHOC_COSE_ANY == cred->label) {
+		memcpy(mac_ctx->id_cred, cred->any.id_cred,
+		       cred->any.id_cred_len);
+	} else {
+		len = 0;
+		ret = cbor_encode_id_cred_x(
+			mac_ctx->id_cred, mac_ctx->id_cred_len, &id_cred, &len);
+		if (ZCBOR_SUCCESS != ret)
+			return EDHOC_ERROR_CBOR_FAILURE;
 
-	mac_ctx->id_cred_len = len;
+		mac_ctx->id_cred_len = len;
+	}
 
 	/* Check compact encoding of ID_CRED_R. */
 	if (EDHOC_COSE_HEADER_KID == cred->label) {
@@ -853,6 +869,28 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 
 		if (EDHOC_SUCCESS != ret)
 			return EDHOC_ERROR_CBOR_FAILURE;
+	}
+
+	if (EDHOC_COSE_ANY == cred->label &&
+	    true == cred->any.is_id_cred_comp_enc) {
+		mac_ctx->id_cred_is_comp_enc = true;
+		mac_ctx->id_cred_enc_type = cred->any.encode_type;
+		switch (mac_ctx->id_cred_enc_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			memcpy(&mac_ctx->id_cred_int,
+			       cred->any.id_cred_comp_enc,
+			       cred->any.id_cred_comp_enc_length);
+			break;
+		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+			mac_ctx->id_cred_bstr_len =
+				cred->any.id_cred_comp_enc_length;
+			memcpy(&mac_ctx->id_cred_bstr,
+			       cred->any.id_cred_comp_enc,
+			       cred->any.id_cred_comp_enc_length);
+			break;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
 	}
 
 	/* TH length. */
@@ -896,6 +934,9 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	struct zcbor_string _cred = { 0 };
 
 	switch (cred->label) {
+	case EDHOC_COSE_ANY:
+		break;
+
 	case EDHOC_COSE_HEADER_KID:
 		_cred.value = cred->key_id.cred;
 		_cred.len = cred->key_id.cred_len;
@@ -921,6 +962,8 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	    true == cred->key_id.cred_is_cbor) {
 		memcpy(mac_ctx->cred, cred->key_id.cred, cred->key_id.cred_len);
 		mac_ctx->cred_len = cred->key_id.cred_len;
+	} else if (EDHOC_COSE_ANY == cred->label) {
+		memcpy(mac_ctx->cred, cred->any.cred, cred->any.cred_len);
 	} else {
 		len = 0;
 		ret = cbor_encode_byte_string_type_bstr_type(

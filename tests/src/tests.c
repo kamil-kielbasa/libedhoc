@@ -42,6 +42,9 @@
 
 int main(void)
 {
+	/*
+	 * Unit tests for cipher suites.
+	 */
 	assert(PSA_SUCCESS == psa_crypto_init());
 
 	printf("\n");
@@ -76,6 +79,13 @@ int main(void)
 	printf("test_cipher_suite_2_aead:\n");
 	test_cipher_suite_2_aead();
 
+	mbedtls_psa_crypto_free();
+
+	/*
+	 * Unit tests for EDHOC trace 1.
+	 */
+	assert(PSA_SUCCESS == psa_crypto_init());
+
 	printf("\n");
 	printf("test_edhoc_handshake_1_message_1_compose:\n");
 	test_edhoc_handshake_1_message_1_compose();
@@ -89,12 +99,20 @@ int main(void)
 	test_edhoc_handshake_1_message_2_compose();
 
 	printf("\n");
+	printf("test_edhoc_handshake_any_1_message_2_compose:\n");
+	test_edhoc_handshake_any_1_message_2_compose();
+
+	printf("\n");
 	printf("test_edhoc_handshake_1_message_2_process:\n");
 	test_edhoc_handshake_1_message_2_process();
 
 	printf("\n");
 	printf("test_edhoc_handshake_1_message_3_compose:\n");
 	test_edhoc_handshake_1_message_3_compose();
+
+	printf("\n");
+	printf("test_edhoc_handshake_any_1_message_3_compose:\n");
+	test_edhoc_handshake_any_1_message_3_compose();
 
 	printf("\n");
 	printf("test_edhoc_handshake_1_message_3_process:\n");
@@ -148,6 +166,13 @@ int main(void)
 	printf("test_edhoc_handshake_x5t_cs_2_e2e_single_ead_token:\n");
 	test_edhoc_handshake_x5t_cs_2_e2e_single_ead_token();
 
+	mbedtls_psa_crypto_free();
+
+	/*
+	 * Unit tests for EDHOC trace 2.
+	 */
+	assert(PSA_SUCCESS == psa_crypto_init());
+
 	printf("\n");
 	printf("test_edhoc_handshake_2_message_1_compose:\n");
 	test_edhoc_handshake_2_message_1_compose();
@@ -157,8 +182,12 @@ int main(void)
 	test_edhoc_handshake_2_message_1_process();
 
 	printf("\n");
-	printf("test_edhoc_handshake_1_message_2_compose:\n");
+	printf("test_edhoc_handshake_2_message_2_compose:\n");
 	test_edhoc_handshake_2_message_2_compose();
+
+	printf("\n");
+	printf("test_edhoc_handshake_any_2_message_2_compose:\n");
+	test_edhoc_handshake_any_2_message_2_compose();
 
 	printf("\n");
 	printf("test_edhoc_handshake_2_message_2_process:\n");
@@ -167,6 +196,10 @@ int main(void)
 	printf("\n");
 	printf("test_edhoc_handshake_2_message_3_compose:\n");
 	test_edhoc_handshake_2_message_3_compose();
+
+	printf("\n");
+	printf("test_edhoc_handshake_any_2_message_3_compose:\n");
+	test_edhoc_handshake_any_2_message_3_compose();
 
 	printf("\n");
 	printf("test_edhoc_handshake_2_message_3_process:\n");
@@ -188,6 +221,13 @@ int main(void)
 	printf("test_edhoc_handshake_2_e2e_real_crypto:\n");
 	test_edhoc_handshake_2_e2e_real_crypto();
 
+	mbedtls_psa_crypto_free();
+
+	/*
+	 * Unit tests for EDHOC error message.
+	 */
+	assert(PSA_SUCCESS == psa_crypto_init());
+
 	printf("\n");
 	printf("test_edhoc_error_message_success:\n");
 	test_edhoc_error_message_success();
@@ -208,9 +248,23 @@ int main(void)
 	printf("test_edhoc_error_message_unknown_credential_referenced:\n");
 	test_edhoc_error_message_unknown_credential_referenced();
 
+	mbedtls_psa_crypto_free();
+
+	/*
+	 * Unit tests for EDHOC PRK exporter.
+	 */
+	assert(PSA_SUCCESS == psa_crypto_init());
+
 	printf("\n");
 	printf("test_edhoc_trace_1_prk_exporter:\n");
 	test_edhoc_trace_1_prk_exporter();
+
+	mbedtls_psa_crypto_free();
+
+	/*
+	 * Unit tests for EDHOC cipher suite negotiation.
+	 */
+	assert(PSA_SUCCESS == psa_crypto_init());
 
 	printf("\n");
 	printf("test_edhoc_cipher_suites_negotiation_scenario_1:\n");
@@ -220,9 +274,8 @@ int main(void)
 	printf("test_edhoc_cipher_suites_negotiation_scenario_2:\n");
 	test_edhoc_cipher_suites_negotiation_scenario_2();
 
-	printf("All tests passed successfully!\n");
-
 	mbedtls_psa_crypto_free();
 
+	printf("All tests passed successfully!\n");
 	return 0;
 }

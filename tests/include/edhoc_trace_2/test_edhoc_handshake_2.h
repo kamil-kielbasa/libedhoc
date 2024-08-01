@@ -62,6 +62,12 @@ void test_edhoc_handshake_2_message_1_process(void);
 void test_edhoc_handshake_2_message_2_compose(void);
 
 /**
+ * \brief Test scenario is similar as above but will use
+ *        already cborised credentials fetch callback.
+ */
+void test_edhoc_handshake_any_2_message_2_compose(void);
+
+/**
  * \brief Test scenario:
  *        - use test vector as input for EDHOC context.
  *        - do required injections.
@@ -88,6 +94,12 @@ void test_edhoc_handshake_2_message_2_process(void);
  *          - PRK state, value and length.
  */
 void test_edhoc_handshake_2_message_3_compose(void);
+
+/**
+ * \brief Test scenario is similar as above but will use
+ *        already cborised credentials fetch callback.
+ */
+void test_edhoc_handshake_any_2_message_3_compose(void);
 
 /**
  * \brief Test scenario:
