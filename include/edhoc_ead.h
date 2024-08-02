@@ -62,9 +62,11 @@ struct edhoc_ead_token {
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-typedef int (*edhoc_ead_compose)(void *user_context, enum edhoc_message message,
-				 struct edhoc_ead_token *ead_token,
-				 size_t ead_token_size, size_t *ead_token_len);
+typedef int (*edhoc_ead_compose_t)(void *user_context,
+				   enum edhoc_message message,
+				   struct edhoc_ead_token *ead_token,
+				   size_t ead_token_size,
+				   size_t *ead_token_len);
 
 /** 
  * \brief Callback for external authorization data (EAD) processing.
@@ -76,18 +78,19 @@ typedef int (*edhoc_ead_compose)(void *user_context, enum edhoc_message message,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-typedef int (*edhoc_ead_process)(void *user_context, enum edhoc_message message,
-				 const struct edhoc_ead_token *ead_token,
-				 size_t ead_token_size);
+typedef int (*edhoc_ead_process_t)(void *user_context,
+				   enum edhoc_message message,
+				   const struct edhoc_ead_token *ead_token,
+				   size_t ead_token_size);
 
 /**
  * \brief Bind structure for EAD operations.
  */
 struct edhoc_ead {
 	/** External authorization data compose callback. */
-	edhoc_ead_compose compose;
+	edhoc_ead_compose_t compose;
 	/** External authorization data process callback. */
-	edhoc_ead_process process;
+	edhoc_ead_process_t process;
 };
 
 /**@}*/

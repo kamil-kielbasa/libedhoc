@@ -374,8 +374,8 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				     ctx->prk_len, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				   ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -403,8 +403,8 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				     ctx->prk_len, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				   ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -443,8 +443,8 @@ static int compute_ciphertext(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_ENCRYPT, key,
-				     key_len, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_ENCRYPT, key,
+				   key_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -517,8 +517,8 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_DECRYPT, key,
-				     key_len, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_DECRYPT, key,
+				   key_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;

@@ -38,7 +38,7 @@
 /* Static variables and constants ------------------------------------------ */
 
 static const struct edhoc_keys keys = {
-	.generate_key = cipher_suite_2_key_generate,
+	.import_key = cipher_suite_2_key_import,
 	.destroy_key = cipher_suite_2_key_destroy,
 };
 
@@ -126,8 +126,8 @@ void test_cipher_suite_2_ecdsa(void)
 	size_t sign_len = 0;
 	uint8_t sign[ECC_ECDSA_SIGN_LEN] = { 0 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_SIGNATURE, priv_key,
-				       ARRAY_SIZE(priv_key), &key_id);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_SIGNATURE, priv_key,
+				     ARRAY_SIZE(priv_key), &key_id);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->signature(NULL, &key_id, input, ARRAY_SIZE(input),
@@ -142,8 +142,8 @@ void test_cipher_suite_2_ecdsa(void)
 	/**
 	 * \brief Verify signature.
 	 */
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_VERIFY, pub_key,
-				       ARRAY_SIZE(pub_key), &key_id);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_VERIFY, pub_key,
+				     ARRAY_SIZE(pub_key), &key_id);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->verify(NULL, &key_id, input, ARRAY_SIZE(input),
@@ -172,8 +172,8 @@ void test_cipher_suite_2_ecdh(void)
 	size_t pub_key_len_a = 0;
 	uint8_t pub_key_a[ECC_COMP_KEY_LEN] = { 0 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_MAKE_KEY_PAIR, NULL, 0,
-				       &key_id_a);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_MAKE_KEY_PAIR, NULL, 0,
+				     &key_id_a);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->make_key_pair(NULL, &key_id_a, priv_key_a,
@@ -200,8 +200,8 @@ void test_cipher_suite_2_ecdh(void)
 	size_t pub_key_len_b = 0;
 	uint8_t pub_key_b[ECC_COMP_KEY_LEN] = { 0 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_MAKE_KEY_PAIR, NULL, 0,
-				       &key_id_b);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_MAKE_KEY_PAIR, NULL, 0,
+				     &key_id_b);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->make_key_pair(NULL, &key_id_b, priv_key_b,
@@ -227,8 +227,8 @@ void test_cipher_suite_2_ecdh(void)
 	size_t shr_sec_len_a = 0;
 	uint8_t shr_sec_a[ECC_ECDH_KEY_AGREEMENT_LEN] = { 0 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_KEY_AGREEMENT, priv_key_a,
-				       priv_key_len_a, &key_id_a);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_KEY_AGREEMENT, priv_key_a,
+				     priv_key_len_a, &key_id_a);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->key_agreement(NULL, &key_id_a, pub_key_b,
@@ -251,8 +251,8 @@ void test_cipher_suite_2_ecdh(void)
 	size_t shr_sec_len_b = 0;
 	uint8_t shr_sec_b[ECC_ECDH_KEY_AGREEMENT_LEN] = { 0 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_KEY_AGREEMENT, priv_key_b,
-				       priv_key_len_b, &key_id_b);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_KEY_AGREEMENT, priv_key_b,
+				     priv_key_len_b, &key_id_b);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->key_agreement(NULL, &key_id_b, pub_key_a,
@@ -332,8 +332,8 @@ void test_cipher_suite_2_hkdf(void)
 	size_t comp_prk_len = 0;
 	uint8_t comp_prk[32] = { 0 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_EXTRACT, ikm,
-				       ARRAY_SIZE(ikm), &key_id);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_EXTRACT, ikm,
+				     ARRAY_SIZE(ikm), &key_id);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->extract(NULL, &key_id, salt, ARRAY_SIZE(salt),
@@ -354,8 +354,8 @@ void test_cipher_suite_2_hkdf(void)
 	uint8_t comp_okm[L];
 	memset(comp_okm, 0, sizeof(comp_okm));
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_EXPAND, comp_prk,
-				       ARRAY_SIZE(comp_prk), &key_id);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_EXPAND, comp_prk,
+				     ARRAY_SIZE(comp_prk), &key_id);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->expand(NULL, &key_id, info, ARRAY_SIZE(info),
@@ -397,8 +397,8 @@ void test_cipher_suite_2_aead(void)
          */
 	const uint8_t ptxt[10] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_ENCRYPT, key,
-				       ARRAY_SIZE(key), &key_id);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_ENCRYPT, key,
+				     ARRAY_SIZE(key), &key_id);
 	assert(EDHOC_SUCCESS == ret);
 
 	size_t ctxt_len = 0;
@@ -418,8 +418,8 @@ void test_cipher_suite_2_aead(void)
 	size_t dec_ctxt_len = 0;
 	uint8_t dec_ctxt[ARRAY_SIZE(ptxt)] = { 0 };
 
-	ret = edhoc_keys->generate_key(NULL, EDHOC_KT_DECRYPT, key,
-				       ARRAY_SIZE(key), &key_id);
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_DECRYPT, key,
+				     ARRAY_SIZE(key), &key_id);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_crypto->decrypt(NULL, &key_id, iv, ARRAY_SIZE(iv), aad,

@@ -72,7 +72,7 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
 };
 
 static const struct edhoc_keys edhoc_keys = {
-	.generate_key = cipher_suite_0_key_generate,
+	.import_key = cipher_suite_0_key_import,
 	.destroy_key = cipher_suite_0_key_destroy,
 };
 
@@ -220,13 +220,13 @@ void test_edhoc_handshake_1_message_1_compose(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -273,7 +273,7 @@ void test_edhoc_handshake_1_message_1_process(void)
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
-	memcpy(resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 
 	/**
          * \brief Setup responder context.
@@ -288,13 +288,13 @@ void test_edhoc_handshake_1_message_1_process(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -340,7 +340,7 @@ void test_edhoc_handshake_1_message_2_compose(void)
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
-	memcpy(resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 	/**
          * \brief Setup responder context.
          */
@@ -354,16 +354,16 @@ void test_edhoc_handshake_1_message_2_compose(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&resp_ctx, edhoc_auth_cred_mocked_resp);
+	ret = edhoc_bind_credentials(&resp_ctx, &edhoc_auth_cred_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -426,7 +426,7 @@ void test_edhoc_handshake_any_1_message_2_compose(void)
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
-	memcpy(resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 	/**
          * \brief Setup responder context.
          */
@@ -440,17 +440,17 @@ void test_edhoc_handshake_any_1_message_2_compose(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_credentials(&resp_ctx,
-				     edhoc_auth_cred_mocked_resp_any);
+				     &edhoc_auth_cred_mocked_resp_any);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -527,16 +527,16 @@ void test_edhoc_handshake_1_message_2_process(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&init_ctx, edhoc_auth_cred_mocked_init);
+	ret = edhoc_bind_credentials(&init_ctx, &edhoc_auth_cred_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -610,16 +610,16 @@ void test_edhoc_handshake_1_message_3_compose(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&init_ctx, edhoc_auth_cred_mocked_init);
+	ret = edhoc_bind_credentials(&init_ctx, &edhoc_auth_cred_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -694,17 +694,17 @@ void test_edhoc_handshake_any_1_message_3_compose(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_credentials(&init_ctx,
-				     edhoc_auth_cred_mocked_init_any);
+				     &edhoc_auth_cred_mocked_init_any);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -765,7 +765,7 @@ void test_edhoc_handshake_1_message_3_process(void)
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
-	memcpy(resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 
 	/**
          * \brief Setup responder context.
@@ -780,16 +780,16 @@ void test_edhoc_handshake_1_message_3_process(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&resp_ctx, edhoc_auth_cred_mocked_resp);
+	ret = edhoc_bind_credentials(&resp_ctx, &edhoc_auth_cred_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -844,7 +844,7 @@ void test_edhoc_handshake_1_message_4_compose(void)
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
-	memcpy(resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 
 	/**
          * \brief Setup responder context.
@@ -859,16 +859,16 @@ void test_edhoc_handshake_1_message_4_compose(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&resp_ctx, edhoc_auth_cred_mocked_resp);
+	ret = edhoc_bind_credentials(&resp_ctx, &edhoc_auth_cred_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -941,16 +941,16 @@ void test_edhoc_handshake_1_message_4_process(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&init_ctx, edhoc_auth_cred_mocked_init);
+	ret = edhoc_bind_credentials(&init_ctx, &edhoc_auth_cred_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -1020,16 +1020,16 @@ void test_edhoc_handshake_1_e2e(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&init_ctx, edhoc_auth_cred_mocked_init);
+	ret = edhoc_bind_credentials(&init_ctx, &edhoc_auth_cred_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -1040,7 +1040,7 @@ void test_edhoc_handshake_1_e2e(void)
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
-	memcpy(resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 
 	ret = edhoc_context_init(&resp_ctx);
 	assert(EDHOC_SUCCESS == ret);
@@ -1052,16 +1052,16 @@ void test_edhoc_handshake_1_e2e(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&resp_ctx, edhoc_auth_cred_mocked_resp);
+	ret = edhoc_bind_credentials(&resp_ctx, &edhoc_auth_cred_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -1544,16 +1544,16 @@ void test_edhoc_handshake_1_e2e_real_crypto(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&init_ctx, edhoc_auth_cred_mocked_init);
+	ret = edhoc_bind_credentials(&init_ctx, &edhoc_auth_cred_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -1564,7 +1564,7 @@ void test_edhoc_handshake_1_e2e_real_crypto(void)
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
-	memcpy(resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 
 	ret = edhoc_context_init(&resp_ctx);
 	assert(EDHOC_SUCCESS == ret);
@@ -1576,16 +1576,16 @@ void test_edhoc_handshake_1_e2e_real_crypto(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_credentials(&resp_ctx, edhoc_auth_cred_mocked_resp);
+	ret = edhoc_bind_credentials(&resp_ctx, &edhoc_auth_cred_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -1938,10 +1938,10 @@ void test_edhoc_trace_1_prk_exporter(void)
 	ret = edhoc_set_cipher_suites(&ctx, &edhoc_cipher_suite_0, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&ctx, edhoc_crypto);
+	ret = edhoc_bind_crypto(&ctx, &edhoc_crypto);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**

@@ -49,16 +49,31 @@ cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
 				  size_t pub_key_size, size_t *pub_key_len);
 
 static const struct edhoc_keys edhoc_keys = {
-	.generate_key = cipher_suite_2_key_generate,
+	.import_key = cipher_suite_2_key_import,
 	.destroy_key = cipher_suite_2_key_destroy,
 };
 
 static const struct edhoc_crypto edhoc_crypto_mocked_init = {
 	.make_key_pair = cipher_suite_2_make_key_pair_init,
+	.key_agreement = cipher_suite_2_key_agreement,
+	.signature = cipher_suite_2_signature,
+	.verify = cipher_suite_2_verify,
+	.extract = cipher_suite_2_extract,
+	.expand = cipher_suite_2_expand,
+	.encrypt = cipher_suite_2_encrypt,
+	.decrypt = cipher_suite_2_decrypt,
 	.hash = cipher_suite_2_hash,
 };
 
 static const struct edhoc_crypto edhoc_crypto_mocked_resp = {
+	.make_key_pair = cipher_suite_2_make_key_pair,
+	.key_agreement = cipher_suite_2_key_agreement,
+	.signature = cipher_suite_2_signature,
+	.verify = cipher_suite_2_verify,
+	.extract = cipher_suite_2_extract,
+	.expand = cipher_suite_2_expand,
+	.encrypt = cipher_suite_2_encrypt,
+	.decrypt = cipher_suite_2_decrypt,
 	.hash = cipher_suite_2_hash,
 };
 
@@ -163,13 +178,13 @@ void test_edhoc_cipher_suites_negotiation_scenario_1(void)
 				      ARRAY_SIZE(csuites_init));
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, conn_id_init);
+	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -272,13 +287,13 @@ void test_edhoc_cipher_suites_negotiation_scenario_1(void)
 				      ARRAY_SIZE(fixed_csuites_init));
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, conn_id_init);
+	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -304,10 +319,10 @@ void test_edhoc_cipher_suites_negotiation_scenario_1(void)
 				      ARRAY_SIZE(csuites_resp));
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -371,13 +386,13 @@ void test_edhoc_cipher_suites_negotiation_scenario_2(void)
 				      ARRAY_SIZE(csuites_init));
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, conn_id_init);
+	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -493,13 +508,13 @@ void test_edhoc_cipher_suites_negotiation_scenario_2(void)
 				      ARRAY_SIZE(fixed_csuites_init));
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, conn_id_init);
+	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -525,10 +540,10 @@ void test_edhoc_cipher_suites_negotiation_scenario_2(void)
 				      ARRAY_SIZE(csuites_resp));
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**

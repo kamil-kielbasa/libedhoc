@@ -44,9 +44,9 @@
 
 /* Module interface function definitions ----------------------------------- */
 
-int cipher_suite_0_key_generate(void *user_ctx, enum edhoc_key_type key_type,
-				const uint8_t *raw_key, size_t raw_key_len,
-				void *kid)
+int cipher_suite_0_key_import(void *user_ctx, enum edhoc_key_type key_type,
+			      const uint8_t *raw_key, size_t raw_key_len,
+			      void *kid)
 {
 	(void)user_ctx;
 

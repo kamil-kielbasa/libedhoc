@@ -50,7 +50,7 @@ enum edhoc_key_type {
 };
 
 /**
- * \brief Cryptographic function for key identifier generation.
+ * \brief Cryptographic function for import of key identifier.
  *
  * \param[in] user_context		User context.
  * \param key_type                      Requested key type.
@@ -60,13 +60,13 @@ enum edhoc_key_type {
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-typedef int (*edhoc_generate_key_t)(void *user_context,
-				    enum edhoc_key_type key_type,
-				    const uint8_t *raw_key,
-				    size_t raw_key_length, void *key_id);
+typedef int (*edhoc_import_key_t)(void *user_context,
+				  enum edhoc_key_type key_type,
+				  const uint8_t *raw_key, size_t raw_key_length,
+				  void *key_id);
 
 /**
- * \brief Cryptographic function for key identifier destroying.
+ * \brief Cryptographic function for destroy of key identifier.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
@@ -79,8 +79,8 @@ typedef int (*edhoc_destroy_key_t)(void *user_context, void *key_id);
  * \brief Bind structure for cryptographic key identifiers.
  */
 struct edhoc_keys {
-	/** Generate cryptographic key callback. */
-	edhoc_generate_key_t generate_key;
+	/** Import cryptographic key callback. */
+	edhoc_import_key_t import_key;
 	/** Destroy cryptographic key callback. */
 	edhoc_destroy_key_t destroy_key;
 };

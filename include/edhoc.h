@@ -37,7 +37,7 @@
 #define EDHOC_API_VERSION_MAJOR 1
 
 /** The minor version of this implementation of the EDHOC API. */
-#define EDHOC_API_VERSION_MINOR 0
+#define EDHOC_API_VERSION_MINOR 1
 
 /**@}*/
 
@@ -80,7 +80,7 @@ int edhoc_set_method(struct edhoc_context *edhoc_context,
 		     enum edhoc_method method);
 
 /** 
- * \brief Set EDHOC supproted cipher suites.
+ * \brief Set EDHOC cipher suites.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] cipher_suite              EDHOC cipher suites.
@@ -101,7 +101,7 @@ int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 int edhoc_set_connection_id(struct edhoc_context *edhoc_context,
-			    struct edhoc_connection_id connection_id);
+			    const struct edhoc_connection_id *connection_id);
 
 /** 
  * \brief Set user context.
@@ -118,44 +118,45 @@ int edhoc_set_user_context(struct edhoc_context *edhoc_context,
  * \brief Bind EDHOC external authorization data (EAD) callbacks.
  *
  * \param[in,out] edhoc_context         EDHOC context.
- * \param ead                           EDHOC EAD structure with callbacks.
+ * \param[in] ead                       EDHOC EAD structure with callbacks.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-int edhoc_bind_ead(struct edhoc_context *edhoc_context, struct edhoc_ead ead);
+int edhoc_bind_ead(struct edhoc_context *edhoc_context,
+		   const struct edhoc_ead *ead);
 
 /** 
  * \brief Bind EDHOC cryptographic keys callbacks.
  *
  * \param[in,out] edhoc_context         EDHOC context.
- * \param keys                          EDHOC cryptographic keys structure with callbacks.
+ * \param[in] keys                      EDHOC cryptographic keys structure with callbacks.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 int edhoc_bind_keys(struct edhoc_context *edhoc_context,
-		    struct edhoc_keys keys);
+		    const struct edhoc_keys *keys);
 
 /** 
  * \brief Bind EDHOC cryptographic operations callbacks.
  *
  * \param[in,out] edhoc_context         EDHOC context.
- * \param crypto                        EDHOC cryptographic operations structure with callbacks.
+ * \param[in] crypto                    EDHOC cryptographic operations structure with callbacks.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
-		      struct edhoc_crypto crypto);
+		      const struct edhoc_crypto *crypto);
 
 /** 
  * \brief Bind EDHOC authentication credentials callbacks.
  *
  * \param[in,out] edhoc_context         EDHOC context.
- * \param credentials                   EDHOC authentication credentials structure with callbacks.
+ * \param[in] credentials               EDHOC authentication credentials structure with callbacks.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 int edhoc_bind_credentials(struct edhoc_context *edhoc_context,
-			   struct edhoc_credentials credentials);
+			   const struct edhoc_credentials *credentials);
 
 /**@}*/
 

@@ -157,8 +157,8 @@ static int compute_prk_out(struct edhoc_context *ctx)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				     ctx->prk_len, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				   ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -216,8 +216,8 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				     ctx->prk_len, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				   ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -271,8 +271,8 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				     ctx->prk_len, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				   ctx->prk_len, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -364,9 +364,8 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND,
-				     prk_exporter, ARRAY_SIZE(prk_exporter),
-				     key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_exporter,
+				   ARRAY_SIZE(prk_exporter), key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;

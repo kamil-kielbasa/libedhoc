@@ -87,8 +87,8 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	/* 2. Generate ephemeral Diffie-Hellmann key pair. */
 	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR,
-				     NULL, 0, key_id);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR, NULL,
+				   0, key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;

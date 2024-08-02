@@ -89,7 +89,7 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_2 = {
 };
 
 static const struct edhoc_keys edhoc_keys = {
-	.generate_key = cipher_suite_2_key_generate,
+	.import_key = cipher_suite_2_key_import,
 	.destroy_key = cipher_suite_2_key_destroy,
 };
 
@@ -347,23 +347,23 @@ void test_edhoc_handshake_x5t_cs_2_e2e_single_ead_token(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_2, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_user_context(&init_ctx, &init_ead_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_ead(&init_ctx, edhoc_ead_single_token);
+	ret = edhoc_bind_ead(&init_ctx, &edhoc_ead_single_token);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_credentials(&init_ctx,
-				     edhoc_auth_cred_single_cert_mocked_init);
+				     &edhoc_auth_cred_single_cert_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -387,23 +387,23 @@ void test_edhoc_handshake_x5t_cs_2_e2e_single_ead_token(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_2, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_user_context(&resp_ctx, &resp_ead_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_ead(&resp_ctx, edhoc_ead_single_token);
+	ret = edhoc_bind_ead(&resp_ctx, &edhoc_ead_single_token);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_credentials(&resp_ctx,
-				     edhoc_auth_cred_single_cert_mocked_resp);
+				     &edhoc_auth_cred_single_cert_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**

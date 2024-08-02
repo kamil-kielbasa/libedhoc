@@ -496,8 +496,8 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t kid[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_VERIFY, pub_key,
-				     pub_key_len, kid);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_VERIFY, pub_key,
+				   pub_key_len, kid);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -1132,8 +1132,8 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	}
 
 	uint8_t kid[EDHOC_KID_LEN] = { 0 };
-	ret = ctx->keys.generate_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				     ctx->prk_len, kid);
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
+				   ctx->prk_len, kid);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;

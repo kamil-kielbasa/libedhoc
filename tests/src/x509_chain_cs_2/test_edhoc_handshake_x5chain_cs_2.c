@@ -63,7 +63,7 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_2 = {
 };
 
 static const struct edhoc_keys edhoc_keys = {
-	.generate_key = cipher_suite_2_key_generate,
+	.import_key = cipher_suite_2_key_import,
 	.destroy_key = cipher_suite_2_key_destroy,
 };
 
@@ -204,17 +204,17 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_2, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&init_ctx, init_cid);
+	ret = edhoc_set_connection_id(&init_ctx, &init_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&init_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&init_ctx, edhoc_crypto_mocked_init);
+	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_credentials(&init_ctx,
-				     edhoc_auth_cred_single_cert_mocked_init);
+				     &edhoc_auth_cred_single_cert_mocked_init);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -237,17 +237,17 @@ void test_edhoc_handshake_x5chain_cs_2_single_cert_e2e(void)
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_2, 1);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_connection_id(&resp_ctx, resp_cid);
+	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&resp_ctx, &edhoc_keys);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_bind_crypto(&resp_ctx, edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_credentials(&resp_ctx,
-				     edhoc_auth_cred_single_cert_mocked_resp);
+				     &edhoc_auth_cred_single_cert_mocked_resp);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
