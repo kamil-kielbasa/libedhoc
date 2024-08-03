@@ -52,15 +52,18 @@ int edhoc_context_deinit(struct edhoc_context *ctx)
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_set_method(struct edhoc_context *ctx, enum edhoc_method method)
+int edhoc_set_methods(struct edhoc_context *ctx,
+		      const enum edhoc_method *method, size_t method_len)
 {
-	if (NULL == ctx)
+	if (NULL == ctx || NULL == method || 0 == method_len ||
+	    EDHOC_METHOD_MAX < method_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	ctx->method = method;
+	ctx->method_len = method_len;
+	memcpy(ctx->method, method, method_len);
 
 	return EDHOC_SUCCESS;
 }

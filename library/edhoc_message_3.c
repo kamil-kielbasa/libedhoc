@@ -273,7 +273,7 @@ static int comp_prk_4e3m(struct edhoc_context *ctx,
 	if (EDHOC_PRK_STATE_3E2M != ctx->prk_state)
 		return EDHOC_ERROR_BAD_STATE;
 
-	switch (ctx->method) {
+	switch (ctx->chosen_method) {
 	case EDHOC_METHOD_0:
 	case EDHOC_METHOD_1:
 		ctx->prk_state = EDHOC_PRK_STATE_4E3M;
@@ -334,7 +334,7 @@ static int comp_prk_4e3m(struct edhoc_context *ctx,
 		ctx->prk_state = EDHOC_PRK_STATE_4E3M;
 		return EDHOC_SUCCESS;
 	}
-	default:
+	case EDHOC_METHOD_MAX:
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 

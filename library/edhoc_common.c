@@ -1038,7 +1038,7 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
 			*mac_len = csuite.hash_length;
@@ -1048,11 +1048,14 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 		case EDHOC_METHOD_3:
 			*mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
+
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
 	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
 			*mac_len = csuite.hash_length;
@@ -1062,6 +1065,9 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 		case EDHOC_METHOD_3:
 			*mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
+
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
@@ -1162,7 +1168,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
 			*sign_or_mac_len = csuite.ecc_sign_length;
@@ -1172,11 +1178,14 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 		case EDHOC_METHOD_3:
 			*sign_or_mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
+
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
 	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
 			*sign_or_mac_len = csuite.ecc_sign_length;
@@ -1186,6 +1195,9 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 		case EDHOC_METHOD_3:
 			*sign_or_mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
+
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
@@ -1203,7 +1215,7 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
 			return sign_cose_sign_1(ctx, cred, mac_ctx, mac,
@@ -1216,13 +1228,13 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			memcpy(sign, mac, mac_len);
 			return EDHOC_SUCCESS;
 
-		default:
-			return EDHOC_ERROR_INVALID_SIGN_OR_MAC_2;
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
 	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
 			return sign_cose_sign_1(ctx, cred, mac_ctx, mac,
@@ -1235,8 +1247,8 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			memcpy(sign, mac, mac_len);
 			return EDHOC_SUCCESS;
 
-		default:
-			return EDHOC_ERROR_INVALID_SIGN_OR_MAC_3;
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
@@ -1255,7 +1267,7 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
 			return verify_cose_sign_1(ctx, mac_ctx, pub_key,
@@ -1270,13 +1282,13 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 			return EDHOC_SUCCESS;
 
-		default:
-			return EDHOC_ERROR_INVALID_SIGN_OR_MAC_2;
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
 	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->method) {
+		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
 			return verify_cose_sign_1(ctx, mac_ctx, pub_key,
@@ -1291,8 +1303,8 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 			return EDHOC_SUCCESS;
 
-		default:
-			return EDHOC_ERROR_INVALID_SIGN_OR_MAC_3;
+		case EDHOC_METHOD_MAX:
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 

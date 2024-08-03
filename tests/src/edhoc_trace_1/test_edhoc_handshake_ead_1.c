@@ -375,7 +375,8 @@ void test_edhoc_handshake_1_e2e_single_ead_token(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
@@ -414,7 +415,8 @@ void test_edhoc_handshake_1_e2e_single_ead_token(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);
@@ -801,7 +803,8 @@ void test_edhoc_handshake_1_e2e_multiple_ead_tokens(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, &edhoc_cipher_suite_0, 1);
@@ -840,7 +843,8 @@ void test_edhoc_handshake_1_e2e_multiple_ead_tokens(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, &edhoc_cipher_suite_0, 1);

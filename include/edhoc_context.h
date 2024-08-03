@@ -132,6 +132,8 @@ enum edhoc_method {
 	EDHOC_METHOD_2 = 2,
 	/** Initiator static DH Key to responder static DH Key. */
 	EDHOC_METHOD_3 = 3,
+	/** Sanity check maximum. */
+	EDHOC_METHOD_MAX,
 };
 
 /**
@@ -237,8 +239,13 @@ struct edhoc_error_info {
  * \brief EDHOC context.
  */
 struct edhoc_context {
-	/** EDHOC method. */
-	enum edhoc_method EDHOC_PRIVATE(method);
+	/** EDHOC chosen method. */
+	enum edhoc_method EDHOC_PRIVATE(chosen_method);
+
+	/** EDHOC supported methods. */
+	enum edhoc_method EDHOC_PRIVATE(method[EDHOC_METHOD_MAX]);
+	/** Length of the \p method buffer. */
+	size_t EDHOC_PRIVATE(method_len);
 
 	/** EDHOC cipher suite chosen index. */
 	size_t EDHOC_PRIVATE(chosen_csuite_idx);

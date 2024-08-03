@@ -48,7 +48,8 @@
 
 /*
  * Steps for composition of message 1:
- *      1.  Choose most preferred cipher suite.
+ *      1a. Choose most preferred cipher suite.
+ *      1b. Choose most preferred method.
  *      2.  Generate ephemeral Diffie-Hellmann key pair.
  *      3a. Fill CBOR structure for message 1 - method.
  *      3b. Fill CBOR structure for message 1 - cipher suite.
@@ -77,13 +78,16 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	ctx->message = EDHOC_MSG_1;
 	ctx->role = EDHOC_INITIATOR;
 
-	/* 1. Choose most preferred cipher suite. */
+	/* 1a. Choose most preferred cipher suite. */
 	if (0 == ctx->csuite_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	ctx->chosen_csuite_idx = ctx->csuite_len - 1;
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
+
+	/* 1b. Choose most preferred method. */
+	ctx->chosen_method = ctx->method[0];
 
 	/* 2. Generate ephemeral Diffie-Hellmann key pair. */
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
@@ -120,7 +124,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	struct message_1 cbor_enc_msg_1 = { 0 };
 
 	/* 3a. Fill CBOR structure for message 1 - method. */
-	cbor_enc_msg_1._message_1_METHOD = (int32_t)ctx->method;
+	cbor_enc_msg_1._message_1_METHOD = (int32_t)ctx->chosen_method;
 
 	/* 3b. Fill CBOR structure for message 1 - cipher suite. */
 	if (1UL == ctx->csuite_len) {
@@ -287,7 +291,17 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	/* 3a. Verify method. */
-	if ((int32_t)ctx->method != cbor_dec_msg_1._message_1_METHOD)
+	bool method_match = false;
+	for (size_t i = 0; i < ctx->method_len; ++i) {
+		if ((int32_t)ctx->method[i] ==
+		    cbor_dec_msg_1._message_1_METHOD) {
+			ctx->chosen_method = ctx->method[i];
+			method_match = true;
+			break;
+		}
+	}
+
+	if (false == method_match)
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 
 	/* 3b. Verify cipher suite. */

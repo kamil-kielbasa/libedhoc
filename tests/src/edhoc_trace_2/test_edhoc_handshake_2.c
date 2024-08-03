@@ -240,7 +240,8 @@ void test_edhoc_handshake_2_message_1_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
@@ -310,7 +311,8 @@ void test_edhoc_handshake_2_message_1_process(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,
@@ -378,7 +380,8 @@ void test_edhoc_handshake_2_message_2_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,
@@ -401,6 +404,7 @@ void test_edhoc_handshake_2_message_2_compose(void)
          * \brief Required injections.
          */
 	resp_ctx.status = EDHOC_SM_RECEIVED_M1;
+	resp_ctx.chosen_method = METHOD;
 
 	resp_ctx.th_state = EDHOC_TH_STATE_1;
 	resp_ctx.th_len = ARRAY_SIZE(H_message_1);
@@ -466,7 +470,8 @@ void test_edhoc_handshake_any_2_message_2_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,
@@ -490,6 +495,7 @@ void test_edhoc_handshake_any_2_message_2_compose(void)
          * \brief Required injections.
          */
 	resp_ctx.status = EDHOC_SM_RECEIVED_M1;
+	resp_ctx.chosen_method = METHOD;
 
 	resp_ctx.th_state = EDHOC_TH_STATE_1;
 	resp_ctx.th_len = ARRAY_SIZE(H_message_1);
@@ -555,7 +561,8 @@ void test_edhoc_handshake_2_message_2_process(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
@@ -578,6 +585,7 @@ void test_edhoc_handshake_2_message_2_process(void)
          * \brief Required incjections.
          */
 	init_ctx.status = EDHOC_SM_WAIT_M2;
+	init_ctx.chosen_method = METHOD;
 
 	init_ctx.th_state = EDHOC_TH_STATE_1;
 	init_ctx.th_len = ARRAY_SIZE(H_message_1);
@@ -639,7 +647,8 @@ void test_edhoc_handshake_2_message_3_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
@@ -662,6 +671,7 @@ void test_edhoc_handshake_2_message_3_compose(void)
          * \brief Required incjections.
          */
 	init_ctx.status = EDHOC_SM_VERIFIED_M2;
+	init_ctx.chosen_method = METHOD;
 
 	init_ctx.th_state = EDHOC_TH_STATE_3;
 	init_ctx.th_len = ARRAY_SIZE(TH_3);
@@ -728,7 +738,8 @@ void test_edhoc_handshake_any_2_message_3_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
@@ -752,6 +763,7 @@ void test_edhoc_handshake_any_2_message_3_compose(void)
          * \brief Required incjections.
          */
 	init_ctx.status = EDHOC_SM_VERIFIED_M2;
+	init_ctx.chosen_method = METHOD;
 
 	init_ctx.th_state = EDHOC_TH_STATE_3;
 	init_ctx.th_len = ARRAY_SIZE(TH_3);
@@ -817,7 +829,8 @@ void test_edhoc_handshake_2_message_3_process(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,
@@ -840,6 +853,7 @@ void test_edhoc_handshake_2_message_3_process(void)
          * \brief Required incjections.
          */
 	resp_ctx.status = EDHOC_SM_WAIT_M3;
+	resp_ctx.chosen_method = METHOD;
 
 	resp_ctx.th_state = EDHOC_TH_STATE_3;
 	resp_ctx.th_len = ARRAY_SIZE(TH_3);
@@ -900,7 +914,8 @@ void test_edhoc_handshake_2_message_4_compose(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,
@@ -983,7 +998,8 @@ void test_edhoc_handshake_2_message_4_process(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
@@ -1063,7 +1079,8 @@ void test_edhoc_handshake_2_e2e(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
@@ -1095,7 +1112,8 @@ void test_edhoc_handshake_2_e2e(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,
@@ -1587,7 +1605,8 @@ void test_edhoc_handshake_2_e2e_real_crypto(void)
 	assert(EDHOC_SUCCESS == ret);
 	init_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&init_ctx, METHOD);
+	ret = edhoc_set_methods(&init_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suites_init,
@@ -1619,7 +1638,8 @@ void test_edhoc_handshake_2_e2e_real_crypto(void)
 	assert(EDHOC_SUCCESS == ret);
 	resp_ctx.logger = print_array;
 
-	ret = edhoc_set_method(&resp_ctx, METHOD);
+	ret = edhoc_set_methods(&resp_ctx, (const enum edhoc_method *)&METHOD,
+				1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suites_resp,

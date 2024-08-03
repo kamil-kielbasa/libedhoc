@@ -171,7 +171,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_1(void)
 	ret = edhoc_context_init(&init_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&init_ctx, method);
+	ret = edhoc_set_methods(&init_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, csuites_init,
@@ -195,7 +195,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_1(void)
 	ret = edhoc_context_init(&resp_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&resp_ctx, method);
+	ret = edhoc_set_methods(&resp_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, csuites_resp,
@@ -276,7 +276,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_1(void)
 	ret = edhoc_context_init(&init_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&init_ctx, method);
+	ret = edhoc_set_methods(&init_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	const struct edhoc_cipher_suite fixed_csuites_init[] = {
@@ -312,7 +312,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_1(void)
 	ret = edhoc_context_init(&resp_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&resp_ctx, method);
+	ret = edhoc_set_methods(&resp_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, csuites_resp,
@@ -379,7 +379,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_2(void)
 	ret = edhoc_context_init(&init_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&init_ctx, method);
+	ret = edhoc_set_methods(&init_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&init_ctx, csuites_init,
@@ -403,7 +403,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_2(void)
 	ret = edhoc_context_init(&resp_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&resp_ctx, method);
+	ret = edhoc_set_methods(&resp_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, csuites_resp,
@@ -486,7 +486,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_2(void)
 	ret = edhoc_context_init(&init_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&init_ctx, method);
+	ret = edhoc_set_methods(&init_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	/**
@@ -533,7 +533,7 @@ void test_edhoc_cipher_suites_negotiation_scenario_2(void)
 	ret = edhoc_context_init(&resp_ctx);
 	assert(EDHOC_SUCCESS == ret);
 
-	ret = edhoc_set_method(&resp_ctx, method);
+	ret = edhoc_set_methods(&resp_ctx, &method, 1);
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, csuites_resp,

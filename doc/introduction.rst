@@ -112,7 +112,7 @@ API usage example
   Initiator                                                   Responder
   |                                                                   |
   | edhoc_context_init()                         edhoc_context_init() |
-  | edhoc_set_method()                             edhoc_set_method() |
+  | edhoc_set_methods()                           edhoc_set_methods() |
   | edhoc_set_cipher_suites()               edhoc_set_cipher_suites() |
   | edhoc_set_conn_id()                           edhoc_set_conn_id() |
   | edhoc_bind_ead()                                 edhoc_bind_ead() |

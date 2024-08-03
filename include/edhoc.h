@@ -37,7 +37,7 @@
 #define EDHOC_API_VERSION_MAJOR 1
 
 /** The minor version of this implementation of the EDHOC API. */
-#define EDHOC_API_VERSION_MINOR 1
+#define EDHOC_API_VERSION_MINOR 2
 
 /**@}*/
 
@@ -69,15 +69,23 @@ int edhoc_context_init(struct edhoc_context *edhoc_context);
 int edhoc_context_deinit(struct edhoc_context *edhoc_context);
 
 /** 
- * \brief Set EDHOC method.
+ * \brief Set EDHOC methods.
+ *
+ * \note According to RFC 9528: 3.2. Method.
+ *       It is required to set at least one method but no more than \p EDHOC_METHOD_MAX.
+ * 
+ * \note Depends on processing side:
+ *       - Initiator will always read first value (method[0]) in message 1 compose.
+ *       - Responder will iterator over all method and try to match in message 1 process.
  *
  * \param[in,out] edhoc_context         EDHOC context.
- * \param method                        EDHOC method.
+ * \param[in] method                    EDHOC method.
+ * \param method_length			Number of the \p method.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-int edhoc_set_method(struct edhoc_context *edhoc_context,
-		     enum edhoc_method method);
+int edhoc_set_methods(struct edhoc_context *edhoc_context,
+		      const enum edhoc_method *method, size_t method_length);
 
 /** 
  * \brief Set EDHOC cipher suites.
