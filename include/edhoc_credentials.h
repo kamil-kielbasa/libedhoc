@@ -19,6 +19,19 @@
 #include <stdbool.h>
 
 /* Defines ----------------------------------------------------------------- */
+
+#ifndef CONFIG_LIBEDHOC_ENABLE
+#error "Library has not been enabled."
+#endif
+
+#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
+#error "Lack of defined maximum length of authentication credentials key identifier in bytes."
+#endif
+
+#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG
+#error "Lack of defined maximum length of authentication credentials hash algorithm in bytes."
+#endif
+
 /* Types and type definitions ---------------------------------------------- */
 
 /** \defgroup edhoc-interface-credentials EDHOC interface credentials
@@ -86,7 +99,7 @@ struct edhoc_auth_cred_key_id {
 	int32_t key_id_int;
 
 	/** Key identifier as cbor byte string buffer. */
-	uint8_t key_id_bstr[EDHOC_CRED_KEY_ID_LEN + 1];
+	uint8_t key_id_bstr[CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID + 1];
 	/** Size of the \p key_id_bstr buffer in bytes. */
 	size_t key_id_bstr_length;
 };
@@ -108,9 +121,9 @@ struct edhoc_auth_cred_x509_chain {
 	/** Number of certificates in chain. */
 	size_t nr_of_certs;
 	/** Certificates references. */
-	const uint8_t *cert[EDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN];
+	const uint8_t *cert[CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN];
 	/** Sizes of the \p cert references in bytes. */
-	size_t cert_len[EDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN];
+	size_t cert_len[CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN];
 };
 
 /**
@@ -150,7 +163,7 @@ struct edhoc_auth_cred_x509_hash {
 	int32_t alg_int;
 
 	/** Fingerprint algorithm as cbor byte string buffer. */
-	uint8_t alg_bstr[EDHOC_CRED_X509_HASH_ALG_LEN + 1];
+	uint8_t alg_bstr[CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG + 1];
 	/** Size of the \p alg_bstr buffer in bytes. */
 	size_t alg_bstr_length;
 };
@@ -191,7 +204,7 @@ struct edhoc_auth_cred_any {
  */
 struct edhoc_auth_creds {
 	/** Private signature or static DH key. */
-	uint8_t priv_key_id[EDHOC_KID_LEN];
+	uint8_t priv_key_id[CONFIG_LIBEDHOC_KEY_ID_LEN];
 
 	/** COSE IANA label. */
 	enum edhoc_cose_header label;

@@ -1,0 +1,43 @@
+config LIBEDHOC_ENABLE
+    bool "Enable libedhoc."
+    default n
+    help
+        Enable building libedhoc for Zephyr target.
+
+if LIBEDHOC_ENABLE
+    config LIBEDHOC_KEY_ID_LEN
+        int "Key identifier length in bytes."
+        default 4
+
+    config LIBEDHOC_MAX_NR_OF_CIPHER_SUITES
+        int "Maximum number of cipher suites in chain for negotiation."
+        default 3
+
+    config LIBEDHOC_MAX_LEN_OF_CONN_ID
+        int "Maximum length of connection identifier in bytes."
+        default 1
+
+    config LIBEDHOC_MAX_LEN_OF_ECC_KEY
+        int "Maximum length of ECC (Elliptic Curve Cryptography) key in bytes."
+        default 32
+
+    config LIBEDHOC_MAX_LEN_OF_MAC
+        int "Maximum length of hash in bytes."
+        default 32
+
+    config LIBCONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS
+        int "Maximum number of EAD (External Authorization Data) tokens."
+        default 3
+
+    config LIBCONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
+        int "Maximum number of certificates in X.509 chain."
+        default 2
+
+    config LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
+        int "Maximum length of authentication credentials key identifier in bytes."
+        default 1
+
+    config LIBEDHOC_MAX_LEN_OF_HASH_ALG
+        int "Maximum length of authentication credentials hash algorithm in bytes."
+        default 1
+endif # LIBEDHOC_ENABLE

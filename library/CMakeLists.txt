@@ -18,15 +18,16 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC
-                           -DEDHOC_KID_LEN=4
-                           -DEDHOC_MAX_CSUITES_LEN=4
-                           -DEDHOC_MAX_CID_LEN=1
-                           -DEDHOC_MAX_ECC_KEY_LEN=32
-                           -DEDHOC_MAX_MAC_LEN=32
-                           -DEDHOC_MAX_NR_OF_EAD_TOKENS=5
-                           -DEDHOC_CRED_KEY_ID_LEN=1
-                           -DEDHOC_CRED_X509_HASH_ALG_LEN=1
-                           -DEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=2)
+                           CONFIG_LIBEDHOC_ENABLE=1
+                           CONFIG_LIBEDHOC_KEY_ID_LEN=4
+                           CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES=3
+                           CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID=1
+                           CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY=32
+                           CONFIG_LIBEDHOC_MAX_LEN_OF_MAC=32
+                           CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=3
+                           CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=1
+                           CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=1
+                           CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=2)
 
 if (LIBEDHOC_BUILD_COMPILER_GCC)
     target_compile_options(${PROJECT_NAME} PRIVATE

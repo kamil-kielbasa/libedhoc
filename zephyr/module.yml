@@ -1,0 +1,4 @@
+name: libedhoc
+build:
+  cmake: zephyr/.
+  kconfig: Kconfig

@@ -347,7 +347,7 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
 
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	struct info input_info = { 0 };
 
 	/* Calculate struct info cbor overhead. */
@@ -442,7 +442,7 @@ static int compute_ciphertext(const struct edhoc_context *ctx,
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_ENCRYPT, key,
 				   key_len, key_id);
 
@@ -516,7 +516,7 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_DECRYPT, key,
 				   key_len, key_id);
 

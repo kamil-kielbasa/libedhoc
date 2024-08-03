@@ -29,39 +29,36 @@
 
 /* Defines ----------------------------------------------------------------- */
 
-/* Maximum length in bytes of key identifier used for cryptographics keys. */
-#ifndef EDHOC_KID_LEN
-#error "Lack of defined key ID length"
+#ifndef CONFIG_LIBEDHOC_ENABLE
+#error "Library has not been enabled."
 #endif
 
-/* Maximum number of cipher suites available to store in context. */
-#ifndef EDHOC_MAX_CSUITES_LEN
-#error "Lack of defined cipher suites length"
+#ifndef CONFIG_LIBEDHOC_KEY_ID_LEN
+#error "Lack of defined key identifier length in bytes."
 #endif
 
-/* Maximum length in bytes of connection identifier encoded as byte string. */
-#ifndef EDHOC_MAX_CID_LEN
-#error "Lack of defined connection ID length"
+#ifndef CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES
+#error "Lack of defined maximum number of cipher suites in chain for negotiation."
 #endif
 
-/* Maximum length in bytes of ECC point. */
-#ifndef EDHOC_MAX_ECC_KEY_LEN
-#error "Lack of defined length for ellipic curve point X coordinate"
+#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID
+#error "Lack of defined maximum length of connection identifier in bytes."
 #endif
 
-/* Maximum length in bytes of PRK and TH buffer. */
-#ifndef EDHOC_MAX_MAC_LEN
-#error "Lack of defined hash length"
+#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY
+#error "Lack of defined maximum length of ECC (Elliptic Curve Cryptography) key in bytes."
 #endif
 
-/* Maximum number of EAD tokens available to store in context. */
-#ifndef EDHOC_MAX_NR_OF_EAD_TOKENS
-#error "Lack of defined external authorization data"
+#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_MAC
+#error "Lack of defined maximum length of hash in bytes."
 #endif
 
-/* Maximum number of certifices in COSE X.509 chain. */
-#ifndef EDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
-#error "Lack of defined maximum number of certificates in COSE X.509 chain"
+#ifndef CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS
+#error "Lack of defined maximum number of EAD (External Authorization Data) tokens."
+#endif
+
+#ifndef CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
+#error "Lack of defined maximum number of certificates in X.509 chain."
 #endif
 
 /* Types and type definitions ---------------------------------------------- */
@@ -200,7 +197,7 @@ struct edhoc_connection_id {
 	int8_t int_value;
 
 	/** Connection identifier as cbor byte string buffer. */
-	uint8_t bstr_value[EDHOC_MAX_CID_LEN + 1];
+	uint8_t bstr_value[CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID + 1];
 	/** Size of the \p bstr_value buffer in bytes. */
 	size_t bstr_length;
 };
@@ -246,7 +243,8 @@ struct edhoc_context {
 	/** EDHOC cipher suite chosen index. */
 	size_t EDHOC_PRIVATE(chosen_csuite_idx);
 	/** EDHOC cipher suite buffer. */
-	struct edhoc_cipher_suite EDHOC_PRIVATE(csuite)[EDHOC_MAX_CSUITES_LEN];
+	struct edhoc_cipher_suite
+		EDHOC_PRIVATE(csuite)[CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES];
 	/** Length of the \p csuite buffer. */
 	size_t EDHOC_PRIVATE(csuite_len);
 
@@ -256,20 +254,21 @@ struct edhoc_context {
 	struct edhoc_connection_id EDHOC_PRIVATE(peer_cid);
 
 	/** EDHOC ephemeral Diffie-Hellman public key. */
-	uint8_t EDHOC_PRIVATE(dh_pub_key)[EDHOC_MAX_ECC_KEY_LEN];
+	uint8_t EDHOC_PRIVATE(dh_pub_key)[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
 	/** Size of the \p dh_pub_key buffer in bytes. */
 	size_t EDHOC_PRIVATE(dh_pub_key_len);
 	/** EDHOC ephemeral Diffie-Hellman private key. */
-	uint8_t EDHOC_PRIVATE(dh_priv_key)[EDHOC_MAX_ECC_KEY_LEN];
+	uint8_t EDHOC_PRIVATE(dh_priv_key)[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
 	/** Size of the \p dh_priv_key buffer in bytes. */
 	size_t EDHOC_PRIVATE(dh_priv_key_len);
 
 	/** EDHOC ephemeral Diffie-Hellman peer public key. */
-	uint8_t EDHOC_PRIVATE(dh_peer_pub_key)[EDHOC_MAX_ECC_KEY_LEN];
+	uint8_t EDHOC_PRIVATE(
+		dh_peer_pub_key)[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
 	/** Size of the \p dh_peer_pub_key buffer in bytes. */
 	size_t EDHOC_PRIVATE(dh_peer_pub_key_len);
 	/** EDHOC ephemeral Diffie-Hellman key agreement. */
-	uint8_t EDHOC_PRIVATE(dh_secret)[EDHOC_MAX_ECC_KEY_LEN];
+	uint8_t EDHOC_PRIVATE(dh_secret)[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
 	/** Size of the \p dh_secret buffer in bytes. */
 	size_t EDHOC_PRIVATE(dh_secret_len);
 
@@ -287,14 +286,14 @@ struct edhoc_context {
 	/** EDHOC context transcript hash state. */
 	enum edhoc_th_state EDHOC_PRIVATE(th_state);
 	/** EDHOC context transcript hash buffer. */
-	uint8_t EDHOC_PRIVATE(th)[EDHOC_MAX_MAC_LEN];
+	uint8_t EDHOC_PRIVATE(th)[CONFIG_LIBEDHOC_MAX_LEN_OF_MAC];
 	/** Size of the \p th buffer in bytes. */
 	size_t EDHOC_PRIVATE(th_len);
 
 	/** EDHOC context pseudorandom key state. */
 	enum edhoc_prk_state EDHOC_PRIVATE(prk_state);
 	/** EDHOC context pseudorandom key buffer. */
-	uint8_t EDHOC_PRIVATE(prk)[EDHOC_MAX_MAC_LEN];
+	uint8_t EDHOC_PRIVATE(prk)[CONFIG_LIBEDHOC_MAX_LEN_OF_MAC];
 	/** Size of the \p prk buffer in bytes. */
 	size_t EDHOC_PRIVATE(prk_len);
 
@@ -308,8 +307,8 @@ struct edhoc_context {
 	struct edhoc_credentials EDHOC_PRIVATE(cred);
 
 	/** EDHOC EAD tokens buffer. */
-	struct edhoc_ead_token
-		EDHOC_PRIVATE(ead_token)[EDHOC_MAX_NR_OF_EAD_TOKENS + 1];
+	struct edhoc_ead_token EDHOC_PRIVATE(
+		ead_token)[CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS + 1];
 	/** Length of the \p ead_token buffer. */
 	size_t EDHOC_PRIVATE(nr_of_ead_tokens);
 

@@ -60,7 +60,7 @@ struct mac_context {
 	/** Buffer containing credentials identifer integer representation. */
 	int32_t id_cred_int;
 	/** Buffer containing credentials identifer byte string representation. */
-	uint8_t id_cred_bstr[EDHOC_CRED_KEY_ID_LEN + 1];
+	uint8_t id_cred_bstr[CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID + 1];
 	/** Size of the \p id_cred_bstr buffer in bytes. */
 	size_t id_cred_bstr_len;
 

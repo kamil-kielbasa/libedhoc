@@ -86,7 +86,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	/* 2. Generate ephemeral Diffie-Hellmann key pair. */
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR, NULL,
 				   0, key_id);
 

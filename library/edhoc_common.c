@@ -495,7 +495,7 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	uint8_t kid[EDHOC_KID_LEN] = { 0 };
+	uint8_t kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_VERIFY, pub_key,
 				   pub_key_len, kid);
 
@@ -1131,7 +1131,7 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 		}
 	}
 
-	uint8_t kid[EDHOC_KID_LEN] = { 0 };
+	uint8_t kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, kid);
 

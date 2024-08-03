@@ -22,6 +22,7 @@ Next release
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed end entity certificate according to COSE X.509 chain.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed wrong MAC length for static DH in test suite.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored EDHOC API and EDHOC interfaces.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added library zephyrization.
 
 Version 0.4.0
 -------------

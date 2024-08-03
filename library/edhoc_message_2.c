@@ -274,7 +274,7 @@ static int gen_dh_keys(struct edhoc_context *ctx)
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	/* Generate ephemeral key pair. */
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR, NULL,
 				   0, key_id);
 
@@ -310,7 +310,7 @@ static int comp_dh_secret(struct edhoc_context *ctx)
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_KEY_AGREEMENT,
 				   ctx->dh_priv_key, ctx->dh_priv_key_len,
 				   key_id);
@@ -430,7 +430,7 @@ static int comp_prk_2e(struct edhoc_context *ctx)
 
 	ctx->prk_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXTRACT,
 				   ctx->dh_secret, ctx->dh_secret_len, key_id);
 
@@ -500,7 +500,7 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 
 		ctx->prk_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
-		uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+		uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 		ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXTRACT, grx,
 					   ARRAY_SIZE(grx), key_id);
 		memset(grx, 0, sizeof(grx));
@@ -693,7 +693,7 @@ static int comp_keystream(const struct edhoc_context *ctx,
 	if (ZCBOR_SUCCESS != ret || ARRAY_SIZE(info) != len)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_2e,
 				   prk_2e_len, key_id);
 
@@ -1096,7 +1096,7 @@ static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	if (ZCBOR_SUCCESS != ret || ARRAY_SIZE(info) != len)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, key_id);
 
@@ -1125,7 +1125,7 @@ static int comp_grx(struct edhoc_context *ctx,
 
 	switch (ctx->role) {
 	case EDHOC_INITIATOR: {
-		uint8_t key_id[EDHOC_KID_LEN] = { 0 };
+		uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 		ret = ctx->keys.import_key(ctx->user_ctx,
 					   EDHOC_KT_KEY_AGREEMENT,
 					   ctx->dh_priv_key,
