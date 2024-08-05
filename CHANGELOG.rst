@@ -24,6 +24,7 @@ Next release
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored EDHOC API and EDHOC interfaces.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added library zephyrization.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored function edhoc_set_methods for more flexibility.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added support for MSVC _alloca (lack of VLA).
 
 Version 0.4.0
 -------------

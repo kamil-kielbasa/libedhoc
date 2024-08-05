@@ -356,8 +356,8 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
 	len += cbor_int_mem_req((int32_t)csuite.aead_key_length);
 
-	uint8_t info[len];
-	memset(info, 0, sizeof(info));
+	VLA_ALLOC(uint8_t, info, len);
+	memset(info, 0, VLA_SIZEOF(info));
 
 	/* Generate K_3. */
 	input_info = (struct info){
@@ -367,9 +367,9 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		._info_length = (uint32_t)csuite.aead_key_length,
 	};
 
-	memset(info, 0, sizeof(info));
+	memset(info, 0, VLA_SIZEOF(info));
 	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -396,9 +396,9 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		._info_length = (uint32_t)csuite.aead_iv_length,
 	};
 
-	memset(info, 0, sizeof(info));
+	memset(info, 0, VLA_SIZEOF(info));
 	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -635,11 +635,11 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	uint8_t plaintext[plaintext_len];
-	memset(plaintext, 0, sizeof(plaintext));
+	VLA_ALLOC(uint8_t, plaintext, plaintext_len);
+	memset(plaintext, 0, VLA_SIZEOF(plaintext));
 
 	/* 3b. Prepare plaintext (PLAINTEXT_4). */
-	ret = prepare_plaintext_4(ctx, plaintext, ARRAY_SIZE(plaintext),
+	ret = prepare_plaintext_4(ctx, plaintext, VLA_SIZE(plaintext),
 				  &plaintext_len);
 
 	if (EDHOC_SUCCESS != ret)
@@ -650,36 +650,37 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 			    plaintext_len);
 
 	/* 4. Compute K_4, IV_4 and AAD_4. */
-	uint8_t key[csuite.aead_key_length];
-	memset(key, 0, sizeof(key));
+	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
+	memset(key, 0, VLA_SIZEOF(key));
 
-	uint8_t iv[csuite.aead_iv_length];
-	memset(iv, 0, sizeof(iv));
+	VLA_ALLOC(uint8_t, iv, csuite.aead_iv_length);
+	memset(iv, 0, VLA_SIZEOF(iv));
 
 	const size_t aad_len = compute_aad_4_len(ctx);
-	uint8_t aad[aad_len];
-	memset(aad, 0, sizeof(aad));
+	VLA_ALLOC(uint8_t, aad, aad_len);
+	memset(aad, 0, VLA_SIZEOF(aad));
 
-	ret = compute_key_iv_aad(ctx, key, ARRAY_SIZE(key), iv, ARRAY_SIZE(iv),
-				 aad, ARRAY_SIZE(aad));
+	ret = compute_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
+				 VLA_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	if (NULL != ctx->logger) {
-		ctx->logger(ctx->user_ctx, "K_4", key, ARRAY_SIZE(key));
-		ctx->logger(ctx->user_ctx, "IV_4", iv, ARRAY_SIZE(iv));
-		ctx->logger(ctx->user_ctx, "AAD_4", aad, ARRAY_SIZE(aad));
+		ctx->logger(ctx->user_ctx, "K_4", key, VLA_SIZE(key));
+		ctx->logger(ctx->user_ctx, "IV_4", iv, VLA_SIZE(iv));
+		ctx->logger(ctx->user_ctx, "AAD_4", aad, VLA_SIZE(aad));
 	}
 
 	/* 5. Compute ciphertext. */
 	size_t ciphertext_len = 0;
-	uint8_t ciphertext[ARRAY_SIZE(plaintext) + csuite.aead_tag_length];
-	memset(ciphertext, 0, sizeof(ciphertext));
+	VLA_ALLOC(uint8_t, ciphertext,
+		  VLA_SIZE(plaintext) + csuite.aead_tag_length);
+	memset(ciphertext, 0, VLA_SIZEOF(ciphertext));
 
-	ret = compute_ciphertext(ctx, key, ARRAY_SIZE(key), iv, ARRAY_SIZE(iv),
-				 aad, ARRAY_SIZE(aad), plaintext, plaintext_len,
-				 ciphertext, ARRAY_SIZE(ciphertext),
+	ret = compute_ciphertext(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
+				 VLA_SIZE(aad), plaintext, plaintext_len,
+				 ciphertext, VLA_SIZE(ciphertext),
 				 &ciphertext_len);
 
 	if (EDHOC_SUCCESS != ret)
@@ -751,45 +752,44 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 		ctx->logger(ctx->user_ctx, "CIPHERTEXT_4", ctxt, ctxt_len);
 
 	/* 3. Compute K_4, IV_4 and AAD_4. */
-	uint8_t key[csuite.aead_key_length];
-	memset(key, 0, sizeof(key));
+	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
+	memset(key, 0, VLA_SIZEOF(key));
 
-	uint8_t iv[csuite.aead_iv_length];
-	memset(iv, 0, sizeof(iv));
+	VLA_ALLOC(uint8_t, iv, csuite.aead_iv_length);
+	memset(iv, 0, VLA_SIZEOF(iv));
 
 	const size_t aad_len = compute_aad_4_len(ctx);
-	uint8_t aad[aad_len];
-	memset(aad, 0, sizeof(aad));
+	VLA_ALLOC(uint8_t, aad, aad_len);
+	memset(aad, 0, VLA_SIZEOF(aad));
 
-	ret = compute_key_iv_aad(ctx, key, ARRAY_SIZE(key), iv, ARRAY_SIZE(iv),
-				 aad, ARRAY_SIZE(aad));
+	ret = compute_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
+				 VLA_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	if (NULL != ctx->logger) {
-		ctx->logger(ctx->user_ctx, "K_4", key, ARRAY_SIZE(key));
-		ctx->logger(ctx->user_ctx, "IV_4", iv, ARRAY_SIZE(iv));
-		ctx->logger(ctx->user_ctx, "AAD_4", aad, ARRAY_SIZE(aad));
+		ctx->logger(ctx->user_ctx, "K_4", key, VLA_SIZE(key));
+		ctx->logger(ctx->user_ctx, "IV_4", iv, VLA_SIZE(iv));
+		ctx->logger(ctx->user_ctx, "AAD_4", aad, VLA_SIZE(aad));
 	}
 
 	/* 4. Decrypt ciphertext. */
-	uint8_t ptxt[ctxt_len - csuite.aead_tag_length];
-	memset(ptxt, 0, sizeof(ptxt));
+	VLA_ALLOC(uint8_t, ptxt, ctxt_len - csuite.aead_tag_length);
+	memset(ptxt, 0, VLA_SIZEOF(ptxt));
 
-	ret = decrypt_ciphertext(ctx, key, ARRAY_SIZE(key), iv, ARRAY_SIZE(iv),
-				 aad, ARRAY_SIZE(aad), ctxt, ctxt_len, ptxt,
-				 ARRAY_SIZE(ptxt));
+	ret = decrypt_ciphertext(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
+				 VLA_SIZE(aad), ctxt, ctxt_len, ptxt,
+				 VLA_SIZE(ptxt));
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", ptxt,
-			    ARRAY_SIZE(ptxt));
+		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", ptxt, VLA_SIZE(ptxt));
 
 	/* 5. Parse CBOR plaintext (PLAINTEXT_4). */
-	ret = parse_plaintext(ctx, ptxt, ARRAY_SIZE(ptxt));
+	ret = parse_plaintext(ctx, ptxt, VLA_SIZE(ptxt));
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;

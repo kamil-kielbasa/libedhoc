@@ -434,13 +434,13 @@ static int sign_cose_sign_1(const struct edhoc_context *ctx,
 	len += mac_len;
 	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
 
-	uint8_t cose_sign_1_buf[len];
-	memset(cose_sign_1_buf, 0, sizeof(cose_sign_1_buf));
+	VLA_ALLOC(uint8_t, cose_sign_1_buf, len);
+	memset(cose_sign_1_buf, 0, VLA_SIZEOF(cose_sign_1_buf));
 
 	size_t cose_sign_1_buf_len = 0;
 	ret = cbor_encode_sig_structure(cose_sign_1_buf,
-					ARRAY_SIZE(cose_sign_1_buf),
-					&cose_sign_1, &cose_sign_1_buf_len);
+					VLA_SIZE(cose_sign_1_buf), &cose_sign_1,
+					&cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -484,13 +484,13 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 	len += mac_len;
 	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
 
-	uint8_t cose_sign_1_buf[len];
-	memset(cose_sign_1_buf, 0, sizeof(cose_sign_1_buf));
+	VLA_ALLOC(uint8_t, cose_sign_1_buf, len);
+	memset(cose_sign_1_buf, 0, VLA_SIZEOF(cose_sign_1_buf));
 
 	size_t cose_sign_1_buf_len = 0;
 	ret = cbor_encode_sig_structure(cose_sign_1_buf,
-					ARRAY_SIZE(cose_sign_1_buf),
-					&cose_sign_1, &cose_sign_1_buf_len);
+					VLA_SIZE(cose_sign_1_buf), &cose_sign_1,
+					&cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -1112,11 +1112,11 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	len += mac_ctx->buf_len + edhoc_cbor_bstr_oh(mac_ctx->buf_len);
 	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
 
-	uint8_t info_buf[len];
-	memset(info_buf, 0, sizeof(info_buf));
+	VLA_ALLOC(uint8_t, info_buf, len);
+	memset(info_buf, 0, VLA_SIZEOF(info_buf));
 
 	len = 0;
-	ret = cbor_encode_info(info_buf, ARRAY_SIZE(info_buf), &info, &len);
+	ret = cbor_encode_info(info_buf, VLA_SIZE(info_buf), &info, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;

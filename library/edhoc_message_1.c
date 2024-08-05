@@ -97,16 +97,15 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 
-	uint8_t dh_pub_key[csuite.ecc_key_length];
-	memset(dh_pub_key, 0, sizeof(dh_pub_key));
+	VLA_ALLOC(uint8_t, dh_pub_key, csuite.ecc_key_length);
+	memset(dh_pub_key, 0, VLA_SIZEOF(dh_pub_key));
 
 	size_t dh_priv_key_len = 0;
 	size_t dh_pub_key_len = 0;
 	ret = ctx->crypto.make_key_pair(ctx->user_ctx, key_id, ctx->dh_priv_key,
 					ARRAY_SIZE(ctx->dh_priv_key),
 					&dh_priv_key_len, dh_pub_key,
-					ARRAY_SIZE(dh_pub_key),
-					&dh_pub_key_len);
+					VLA_SIZE(dh_pub_key), &dh_pub_key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
 	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != dh_priv_key_len ||
@@ -149,7 +148,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	/* 3c. Fill CBOR structure for message 1 - ephemeral public key. */
 	cbor_enc_msg_1._message_1_G_X.value = dh_pub_key;
-	cbor_enc_msg_1._message_1_G_X.len = ARRAY_SIZE(dh_pub_key);
+	cbor_enc_msg_1._message_1_G_X.len = VLA_SIZE(dh_pub_key);
 
 	/* 3d. Fill CBOR structure for message 1 - connection identifier. */
 	switch (ctx->cid.encode_type) {

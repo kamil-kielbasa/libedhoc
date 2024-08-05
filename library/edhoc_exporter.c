@@ -139,8 +139,8 @@ static int compute_prk_out(struct edhoc_context *ctx)
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	uint8_t info[len];
-	memset(info, 0, sizeof(info));
+	VLA_ALLOC(uint8_t, info, len);
+	memset(info, 0, VLA_SIZEOF(info));
 
 	/* Generate PRK_out. */
 	struct info input_info = {
@@ -151,7 +151,7 @@ static int compute_prk_out(struct edhoc_context *ctx)
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -198,8 +198,8 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 	len += entropy_len + cbor_bstr_overhead(entropy_len);
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	uint8_t info[len];
-	memset(info, 0, sizeof(info));
+	VLA_ALLOC(uint8_t, info, len);
+	memset(info, 0, VLA_SIZEOF(info));
 
 	/* Generate PRK_out. */
 	struct info input_info = {
@@ -210,7 +210,7 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -253,8 +253,8 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	uint8_t info[len];
-	memset(info, 0, sizeof(info));
+	VLA_ALLOC(uint8_t, info, len);
+	memset(info, 0, VLA_SIZEOF(info));
 
 	struct info input_info = {
 		._info_label =
@@ -265,7 +265,7 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -333,10 +333,10 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	/* 3. Compute pseudo random key exporter (PRK_exporter). */
-	uint8_t prk_exporter[csuite.hash_length];
-	memset(prk_exporter, 0, sizeof(prk_exporter));
+	VLA_ALLOC(uint8_t, prk_exporter, csuite.hash_length);
+	memset(prk_exporter, 0, VLA_SIZEOF(prk_exporter));
 
-	ret = compute_prk_exporter(ctx, prk_exporter, ARRAY_SIZE(prk_exporter));
+	ret = compute_prk_exporter(ctx, prk_exporter, VLA_SIZE(prk_exporter));
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
@@ -347,8 +347,8 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	uint8_t info[len];
-	memset(info, 0, sizeof(info));
+	VLA_ALLOC(uint8_t, info, len);
+	memset(info, 0, VLA_SIZEOF(info));
 
 	const struct info input_info = (struct info){
 		._info_label = (int32_t)label,
@@ -358,14 +358,14 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, ARRAY_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_exporter,
-				   ARRAY_SIZE(prk_exporter), key_id);
+				   VLA_SIZE(prk_exporter), key_id);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
