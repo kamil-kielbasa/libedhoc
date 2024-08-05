@@ -5,8 +5,8 @@
  *          - CBOR utilities.
  *          - MAC context.
  *          - MAC & Signature_or_MAC.
- * \version 0.4
- * \date    2024-07-01
+ * \version 0.5
+ * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024
  * 

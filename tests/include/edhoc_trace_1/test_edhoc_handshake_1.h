@@ -2,8 +2,8 @@
  * \file    test_edhoc_handshake_1.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC handshake unit tests for EDHOC traces (RFC 9529) for chapter 2.
- * \version 0.4
- * \date    2024-01-01
+ * \version 0.5
+ * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024
  * 

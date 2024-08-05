@@ -3,8 +3,8 @@
  * \author  Kamil Kielbasa
  * \brief   Example implementation of authentication credentials callbacks
  *          for X.509 hash authentication method for cipher suite 2.
- * \version 0.4
- * \date    2024-01-01
+ * \version 0.5
+ * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024
  * 

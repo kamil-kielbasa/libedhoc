@@ -1,7 +1,7 @@
-Next release
-------------
+Version 0.5.0
+-------------
 
-:Date: August X, 2024
+:Date: August 5, 2024
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Changed build system from Make to CMake.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added building library code with clang compiler.

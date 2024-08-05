@@ -2,8 +2,8 @@
  * \file    edhoc_message_2.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 2.
- * \version 0.4
- * \date    2024-01-01
+ * \version 0.5
+ * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024
  * 

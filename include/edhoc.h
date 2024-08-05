@@ -2,8 +2,8 @@
  * \file    edhoc.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC API.
- * \version 0.4
- * \date    2024-01-01
+ * \version 0.5
+ * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024
  * 

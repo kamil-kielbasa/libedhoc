@@ -2,8 +2,8 @@
  * \file    test_edhoc_cipher_suite_negotiation.c
  * \author  Kamil Kielbasa
  * \brief   Test scenarios for cipher suite negotiation.
- * \version 0.4
- * \date    2024-01-01
+ * \version 0.5
+ * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024
  * 
