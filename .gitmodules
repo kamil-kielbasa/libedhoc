@@ -7,3 +7,6 @@
 [submodule "externals/compact25519"]
 	path = externals/compact25519
 	url = https://github.com/DavyLandman/compact25519.git
+[submodule "externals/Unity"]
+	path = externals/Unity
+	url = https://github.com/ThrowTheSwitch/Unity.git

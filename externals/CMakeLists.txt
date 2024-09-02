@@ -27,3 +27,17 @@ add_library(${COMPACT25519_NAME} STATIC ${COMPACT25519_SOURCES})
 target_include_directories(${COMPACT25519_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src
                            ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519)
+
+set(UNITY_NAME unity)
+set(UNITY_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/Unity/src/unity.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/fixture/src/unity_fixture.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/memory/src/unity_memory.c)
+
+add_library(${UNITY_NAME} STATIC ${UNITY_SOURCES})
+target_compile_definitions(${UNITY_NAME} PUBLIC
+                           UNITY_OUTPUT_COLOR)
+target_include_directories(${UNITY_NAME} PUBLIC
+                           ${CMAKE_CURRENT_SOURCE_DIR}/Unity/src
+                           ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/fixture/src
+                           ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/memory/src)

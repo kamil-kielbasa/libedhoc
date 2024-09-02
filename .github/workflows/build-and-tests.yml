@@ -37,11 +37,11 @@ jobs:
         chmod +x ./scripts/build-linux-gcc.sh
         ./scripts/build-linux-gcc.sh
     - name: Run unit tests
-      run: ./build/tests/libedhoc_tests
+      run: ./build/tests/libedhoc_module_tests
     - name: Run valgrind
       run: |
-        valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./build/tests/libedhoc_tests
-        valgrind --tool=drd --show-stack-usage=yes -s ./build/tests/libedhoc_tests | tail -n 1
+        valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all -s ./build/tests/libedhoc_module_tests
+        valgrind --tool=drd --show-stack-usage=yes -s ./build/tests/libedhoc_module_tests | tail -n 1
     - name: Run cppcheck
       run: |
         chmod +x ./scripts/verify_cppcheck.sh

@@ -1,3 +1,11 @@
+Next release
+------------
+
+:Date: September X, 2024
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added C unit test framework - Unity.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Migrated all module tests to Unity framework.
+
 Version 0.5.0
 -------------
 

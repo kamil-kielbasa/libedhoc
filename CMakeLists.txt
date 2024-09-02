@@ -3,7 +3,8 @@ project(libedhoc)
 enable_language(C)
 set_property(GLOBAL PROPERTY C_STANDARD 99)
 
-option(LIBEDHOC_ENABLE_UNIT_TESTS "Enable building unit & module tests" OFF)
+option(LIBEDHOC_ENABLE_MODULE_TESTS "Enable building module tests" OFF)
+option(LIBEDHOC_ENABLE_MODULE_TESTS_TRACES "Enable printing traces for module tests" OFF)
 option(LIBEDHOC_BUILD_COMPILER_GCC "Enable compiling library with gcc" OFF)
 option(LIBEDHOC_BUILD_COMPILER_CLANG "Enable compiling library with clang" OFF)
 
@@ -22,6 +23,6 @@ add_subdirectory(backends)
 add_subdirectory(include)
 add_subdirectory(library)
 
-if (LIBEDHOC_ENABLE_UNIT_TESTS)
+if (LIBEDHOC_ENABLE_MODULE_TESTS)
     add_subdirectory(tests)
 endif()

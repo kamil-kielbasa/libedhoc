@@ -1,35 +1,31 @@
-project(libedhoc_tests)
+project(libedhoc_module_tests)
 
 add_executable(${PROJECT_NAME}
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/cipher_suite_negotiation/test_edhoc_cipher_suite_negotiation.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/cipher_suites/cipher_suite_0.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/cipher_suites/cipher_suite_2.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/cipher_suites/test_cipher_suite_0.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/cipher_suites/test_cipher_suite_2.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/edhoc_trace_1/authentication_credentials_1.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/edhoc_trace_1/test_edhoc_handshake_1.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/edhoc_trace_1/test_edhoc_handshake_ead_1.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/edhoc_trace_2/authentication_credentials_2.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/edhoc_trace_2/test_edhoc_handshake_2.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/error_message/test_edhoc_error_message.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_0/authentication_credentials_x5chain_cs_0.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_0/test_edhoc_handshake_x5chain_cs_0.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2/authentication_credentials_x5chain_cs_2.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2/test_edhoc_handshake_x5chain_cs_2_ead.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2/test_edhoc_handshake_x5chain_cs_2.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2_static_dh/authentication_credentials_x5chain_cs_2_static_dh.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_chain_cs_2_static_dh/test_edhoc_handshake_x5chain_cs_2_static_dh_ead.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_hash_cs_2/authentication_credentials_x5t_cs_2.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/x509_hash_cs_2/test_edhoc_handshake_x5t_cs_2_ead.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/src/tests.c)
+               src/cipher_suite_0.c
+               src/cipher_suite_2.c
+               src/module_test_main.c
+               src/module_test_cipher_suite_0.c
+               src/module_test_cipher_suite_2.c
+               src/module_test_rfc9529_chapter_2.c
+               src/module_test_rfc9529_chapter_3.c
+               src/module_test_rfc9528_suites_negotiation.c
+               src/module_test_error_message.c
+               src/module_test_x5chain_sign_keys_suite_0.c
+               src/module_test_x5chain_sign_keys_suite_2.c
+               src/module_test_x5chain_static_dh_keys_suite_2.c
+               src/module_test_x5t_sign_keys_suite_2.c)
+
+if (LIBEDHOC_ENABLE_MODULE_TESTS_TRACES)
+        target_compile_definitions(${PROJECT_NAME} PUBLIC
+                                   TEST_TRACES)
+endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_compile_options(${PROJECT_NAME} PUBLIC
-                       -g3
-                       -O0)
-
 target_link_libraries(${PROJECT_NAME} PUBLIC
+                      libedhoc
                       libedhoc_api
-                      libedhoc)
+                      unity)
+
+add_test(${PROJECT_NAME} libedhoc_module_tests)
