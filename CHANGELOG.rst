@@ -5,6 +5,10 @@ Next release
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added C unit test framework - Unity.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Migrated all module tests to Unity framework.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added documentation for:
+
+  * Library configuration.
+  * Module tests scenarios.
 
 Version 0.5.0
 -------------

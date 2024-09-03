@@ -2,21 +2,23 @@ Welcome to the libedhoc documentation!
 ======================================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 10
    :hidden:
    :caption: documentation
 
    introduction
    api
    values
+   configuration
+   module_tests
 
 .. toctree::
    :maxdepth: 2
    :hidden:
    :caption: References
    
-   Changelog <changelog>
-   Links <links>
+   changelog
+   links
 
 Documentation
 -------------
@@ -29,6 +31,12 @@ Documentation
 
 :doc:`values`
   Documentation for error codes and values.
+
+:doc:`configuration`
+  Documentation for library configuration.
+
+:doc:`module_tests`
+  Documentation for module tests scenarios.
 
 References
 ----------
