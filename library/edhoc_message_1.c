@@ -80,7 +80,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	/* 1a. Choose most preferred cipher suite. */
 	if (0 == ctx->csuite_len)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
+		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->chosen_csuite_idx = ctx->csuite_len - 1;
 	const struct edhoc_cipher_suite csuite =
@@ -283,7 +283,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	/* 2. Choose most preferred cipher suite. */
 	if (0 == ctx->csuite_len)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
+		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->chosen_csuite_idx = ctx->csuite_len - 1;
 	const struct edhoc_cipher_suite csuite =

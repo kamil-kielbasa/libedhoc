@@ -1098,7 +1098,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	ret = comp_aad_3_len(ctx, &aad_len);
 
 	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		return ret;
 
 	VLA_ALLOC(uint8_t, aad, aad_len);
 	memset(aad, 0, VLA_SIZEOF(aad));
@@ -1129,7 +1129,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 					    &mac_context_length);
 
 	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_INVALID_MAC_3;
+		return ret;
 
 	/* 6b. Cborise items required by context_3. */
 	VLA_ALLOC(uint8_t, mac_3_context_buf,
@@ -1191,7 +1191,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 				   &plaintext_len);
 
 	if (EDHOC_SUCCESS != ret)
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		return ret;
 
 	VLA_ALLOC(uint8_t, plaintext, plaintext_len);
 	memset(plaintext, 0, VLA_SIZEOF(plaintext));

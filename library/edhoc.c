@@ -72,14 +72,14 @@ int edhoc_set_cipher_suites(struct edhoc_context *ctx,
 			    const struct edhoc_cipher_suite *csuite,
 			    size_t csuite_len)
 {
-	if (NULL == ctx)
+	if (NULL == ctx || NULL == csuite || 0 == csuite_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	if (0 == csuite_len || ARRAY_SIZE(ctx->csuite) < csuite_len)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
+	if (ARRAY_SIZE(ctx->csuite) < csuite_len)
+		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->csuite_len = csuite_len;
 	memcpy(ctx->csuite, csuite, sizeof(*csuite) * csuite_len);
@@ -100,15 +100,15 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
 		if (ONE_BYTE_CBOR_INT_MIN_VALUE > cid->int_value ||
 		    ONE_BYTE_CBOR_INT_MAX_VALUE < cid->int_value)
-			return EDHOC_ERROR_INVALID_ARGUMENT;
+			return EDHOC_ERROR_BAD_STATE;
 		break;
 
 	case EDHOC_CID_TYPE_BYTE_STRING:
 		if (0 == cid->bstr_length)
-			return EDHOC_ERROR_INVALID_ARGUMENT;
+			return EDHOC_ERROR_BAD_STATE;
 
 		if (CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID < cid->bstr_length)
-			return EDHOC_ERROR_INVALID_ARGUMENT;
+			return EDHOC_ERROR_BAD_STATE;
 		break;
 
 	default:
@@ -138,10 +138,10 @@ int edhoc_bind_ead(struct edhoc_context *ctx, const struct edhoc_ead *ead)
 	if (NULL == ctx || NULL == ead)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (NULL == ead->compose && NULL == ead->process)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-
 	if (!ctx->is_init)
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (NULL == ead->compose && NULL == ead->process)
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->ead = *ead;
@@ -154,10 +154,10 @@ int edhoc_bind_keys(struct edhoc_context *ctx, const struct edhoc_keys *keys)
 	if (NULL == ctx || NULL == keys)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (NULL == keys->import_key || NULL == keys->destroy_key)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-
 	if (!ctx->is_init)
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (NULL == keys->import_key || NULL == keys->destroy_key)
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->keys = *keys;
@@ -171,14 +171,14 @@ int edhoc_bind_crypto(struct edhoc_context *ctx,
 	if (NULL == ctx || NULL == crypto)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
+	if (!ctx->is_init)
+		return EDHOC_ERROR_BAD_STATE;
+
 	if (NULL == crypto->make_key_pair || NULL == crypto->key_agreement ||
 	    NULL == crypto->signature || NULL == crypto->verify ||
 	    NULL == crypto->extract || NULL == crypto->expand ||
 	    NULL == crypto->encrypt || NULL == crypto->decrypt ||
 	    NULL == crypto->hash)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-
-	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->crypto = *crypto;
@@ -192,10 +192,10 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 	if (NULL == ctx || NULL == cred)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (NULL == cred->fetch || NULL == cred->verify)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-
 	if (!ctx->is_init)
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (NULL == cred->fetch || NULL == cred->verify)
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->cred = *cred;
@@ -209,6 +209,9 @@ int edhoc_error_get_code(const struct edhoc_context *ctx,
 	if (NULL == ctx || NULL == code)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
+	if (!ctx->is_init)
+		return EDHOC_ERROR_BAD_STATE;
+
 	*code = ctx->error_code;
 	return EDHOC_SUCCESS;
 }
@@ -220,6 +223,9 @@ int edhoc_error_get_cipher_suites(const struct edhoc_context *ctx,
 	if (NULL == ctx || NULL == csuites || 0 == csuites_size ||
 	    NULL == csuites_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	if (!ctx->is_init)
+		return EDHOC_ERROR_BAD_STATE;
 
 	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE != ctx->error_code)
 		return EDHOC_ERROR_BAD_STATE;

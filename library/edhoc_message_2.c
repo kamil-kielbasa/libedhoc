@@ -1203,7 +1203,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	if (EDHOC_SM_RECEIVED_M1 != ctx->status ||
 	    EDHOC_TH_STATE_1 != ctx->th_state ||
 	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
-		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
+		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
@@ -1469,7 +1469,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	if (EDHOC_SM_WAIT_M2 != ctx->status ||
 	    EDHOC_TH_STATE_1 != ctx->th_state ||
 	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
-		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
+		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;

@@ -10,6 +10,8 @@ Next release
   * Library configuration.
   * Module tests scenarios.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added missing doxygen for API.
+
 Version 0.5.0
 -------------
 
