@@ -2,10 +2,13 @@
 
 suites = [ 2** int ] / int
 
-ead = 1* (
+ead_x = (
   ead_label : int,
   ? ead_value : bstr,
 )
+
+ead = 1* ead_x
+EAD_1 = 1* ead_x
 
 message_1 =
 (
@@ -13,7 +16,7 @@ message_1 =
   SUITES_I  : suites,
   G_X       : bstr,
   C_I       : bstr / -24..23,
-  ? EAD_1   : ead,
+  ? EAD_1,
 )
 
 message_2 =

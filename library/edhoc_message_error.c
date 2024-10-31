@@ -57,12 +57,12 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		return EDHOC_ERROR_BAD_STATE;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	struct message_error input = { ._message_error_ERR_CODE =
+	struct message_error input = { .message_error_ERR_CODE =
 					       (int32_t)code };
 
 	switch (code) {
 	case EDHOC_ERROR_CODE_SUCCESS: {
-		input._message_error_ERR_INFO_present = false;
+		input.message_error_ERR_INFO_present = false;
 		break;
 	}
 
@@ -74,20 +74,20 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		if (info->written_entries > info->total_entries)
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 
-		input._message_error_ERR_INFO_present = true;
-		input._message_error_ERR_INFO._message_error_ERR_INFO_choice =
-			_message_error_ERR_INFO_tstr;
-		input._message_error_ERR_INFO._message_error_ERR_INFO_tstr
+		input.message_error_ERR_INFO_present = true;
+		input.message_error_ERR_INFO.message_error_ERR_INFO_choice =
+			message_error_ERR_INFO_tstr_c;
+		input.message_error_ERR_INFO.message_error_ERR_INFO_tstr
 			.value = (const uint8_t *)info->text_string;
-		input._message_error_ERR_INFO._message_error_ERR_INFO_tstr.len =
+		input.message_error_ERR_INFO.message_error_ERR_INFO_tstr.len =
 			info->written_entries;
 		break;
 	}
 
 	case EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE: {
-		input._message_error_ERR_INFO_present = true;
-		input._message_error_ERR_INFO._message_error_ERR_INFO_choice =
-			_message_error_ERR_INFO__suites;
+		input.message_error_ERR_INFO_present = true;
+		input.message_error_ERR_INFO.message_error_ERR_INFO_choice =
+			message_error_ERR_INFO_suites_m_c;
 
 		if (NULL == info || NULL == info->cipher_suites ||
 		    0 == info->total_entries || 0 == info->written_entries)
@@ -96,21 +96,21 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		if (info->written_entries > info->total_entries)
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 
-		struct suites_ *suites =
-			&input._message_error_ERR_INFO
-				 ._message_error_ERR_INFO__suites;
+		struct suites_r *suites =
+			&input.message_error_ERR_INFO
+				 .message_error_ERR_INFO_suites_m;
 
 		if (1 == info->written_entries) {
-			suites->_suites_choice = _suites_int;
-			suites->_suites_int = *info->cipher_suites;
+			suites->suites_choice = suites_int_c;
+			suites->suites_int = *info->cipher_suites;
 		} else {
-			if (ARRAY_SIZE(suites->_suites__int_int) <
+			if (ARRAY_SIZE(suites->suites_int_l_int) <
 			    info->written_entries)
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
-			suites->_suites_choice = _suites__int;
-			suites->_suites__int_int_count = info->written_entries;
-			memcpy(suites->_suites__int_int, info->cipher_suites,
+			suites->suites_choice = suites_int_l_c;
+			suites->suites_int_l_int_count = info->written_entries;
+			memcpy(suites->suites_int_l_int, info->cipher_suites,
 			       sizeof(*info->cipher_suites) *
 				       info->written_entries);
 		}
@@ -119,9 +119,9 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 	}
 
 	case EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED: {
-		input._message_error_ERR_INFO_present = true;
-		input._message_error_ERR_INFO._message_error_ERR_INFO_choice =
-			_message_error_ERR_INFO_bool;
+		input.message_error_ERR_INFO_present = true;
+		input.message_error_ERR_INFO.message_error_ERR_INFO_choice =
+			message_error_ERR_INFO_bool_c;
 		break;
 	}
 
@@ -154,7 +154,7 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	switch (result._message_error_ERR_CODE) {
+	switch (result.message_error_ERR_CODE) {
 	case EDHOC_ERROR_CODE_SUCCESS: {
 		*code = EDHOC_ERROR_CODE_SUCCESS;
 		break;
@@ -167,10 +167,10 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 		    0 == info->total_entries)
 			break;
 
-		if (true == result._message_error_ERR_INFO_present) {
+		if (true == result.message_error_ERR_INFO_present) {
 			const struct zcbor_string *tstr =
-				&result._message_error_ERR_INFO
-					 ._message_error_ERR_INFO_tstr;
+				&result.message_error_ERR_INFO
+					 .message_error_ERR_INFO_tstr;
 
 			if (tstr->len > info->total_entries)
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
@@ -190,29 +190,29 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 		    0 == info->total_entries)
 			break;
 
-		if (true == result._message_error_ERR_INFO_present) {
-			const struct suites_ *suites =
-				&result._message_error_ERR_INFO
-					 ._message_error_ERR_INFO__suites;
+		if (true == result.message_error_ERR_INFO_present) {
+			const struct suites_r *suites =
+				&result.message_error_ERR_INFO
+					 .message_error_ERR_INFO_suites_m;
 
-			switch (suites->_suites_choice) {
-			case _suites_int: {
+			switch (suites->suites_choice) {
+			case suites_int_c: {
 				info->written_entries = 1;
-				*info->cipher_suites = suites->_suites_int;
+				*info->cipher_suites = suites->suites_int;
 				break;
 			}
 
-			case _suites__int: {
-				if (suites->_suites__int_int_count >
+			case suites_int_l_c: {
+				if (suites->suites_int_l_int_count >
 				    info->total_entries)
 					return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
 				info->written_entries =
-					suites->_suites__int_int_count;
+					suites->suites_int_l_int_count;
 				memcpy(info->cipher_suites,
-				       suites->_suites__int_int,
+				       suites->suites_int_l_int,
 				       sizeof(*info->cipher_suites) *
-					       suites->_suites__int_int_count);
+					       suites->suites_int_l_int_count);
 				break;
 			}
 

@@ -123,44 +123,44 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	struct message_1 cbor_enc_msg_1 = { 0 };
 
 	/* 3a. Fill CBOR structure for message 1 - method. */
-	cbor_enc_msg_1._message_1_METHOD = (int32_t)ctx->chosen_method;
+	cbor_enc_msg_1.message_1_METHOD = (int32_t)ctx->chosen_method;
 
 	/* 3b. Fill CBOR structure for message 1 - cipher suite. */
 	if (1UL == ctx->csuite_len) {
-		cbor_enc_msg_1._message_1_SUITES_I._suites_choice = _suites_int;
-		cbor_enc_msg_1._message_1_SUITES_I._suites_int = csuite.value;
+		cbor_enc_msg_1.message_1_SUITES_I.suites_choice = suites_int_c;
+		cbor_enc_msg_1.message_1_SUITES_I.suites_int = csuite.value;
 	} else {
-		cbor_enc_msg_1._message_1_SUITES_I._suites_choice =
-			_suites__int;
-		cbor_enc_msg_1._message_1_SUITES_I._suites__int_int_count =
+		cbor_enc_msg_1.message_1_SUITES_I.suites_choice =
+			suites_int_l_c;
+		cbor_enc_msg_1.message_1_SUITES_I.suites_int_l_int_count =
 			ctx->csuite_len;
 
-		if (ARRAY_SIZE(cbor_enc_msg_1._message_1_SUITES_I
-				       ._suites__int_int) < ctx->csuite_len) {
+		if (ARRAY_SIZE(cbor_enc_msg_1.message_1_SUITES_I
+				       .suites_int_l_int) < ctx->csuite_len) {
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
 		for (size_t i = 0; i < ctx->csuite_len; ++i) {
-			cbor_enc_msg_1._message_1_SUITES_I._suites__int_int[i] =
+			cbor_enc_msg_1.message_1_SUITES_I.suites_int_l_int[i] =
 				ctx->csuite[i].value;
 		}
 	}
 
 	/* 3c. Fill CBOR structure for message 1 - ephemeral public key. */
-	cbor_enc_msg_1._message_1_G_X.value = dh_pub_key;
-	cbor_enc_msg_1._message_1_G_X.len = VLA_SIZE(dh_pub_key);
+	cbor_enc_msg_1.message_1_G_X.value = dh_pub_key;
+	cbor_enc_msg_1.message_1_G_X.len = VLA_SIZE(dh_pub_key);
 
 	/* 3d. Fill CBOR structure for message 1 - connection identifier. */
 	switch (ctx->cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		cbor_enc_msg_1._message_1_C_I_choice = _message_1_C_I_int;
-		cbor_enc_msg_1._message_1_C_I_int = ctx->cid.int_value;
+		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_int_c;
+		cbor_enc_msg_1.message_1_C_I_int = ctx->cid.int_value;
 		break;
 
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		cbor_enc_msg_1._message_1_C_I_choice = _message_1_C_I_bstr;
-		cbor_enc_msg_1._message_1_C_I_bstr.value = ctx->cid.bstr_value;
-		cbor_enc_msg_1._message_1_C_I_bstr.len = ctx->cid.bstr_length;
+		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_bstr_c;
+		cbor_enc_msg_1.message_1_C_I_bstr.value = ctx->cid.bstr_value;
+		cbor_enc_msg_1.message_1_C_I_bstr.len = ctx->cid.bstr_length;
 		break;
 
 	default:
@@ -197,23 +197,23 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	}
 
 	if (0 != ctx->nr_of_ead_tokens) {
-		cbor_enc_msg_1._message_1_EAD_1_present = true;
-		cbor_enc_msg_1._message_1_EAD_1._ead_count =
+		cbor_enc_msg_1.message_1_EAD_1_m_present = true;
+		cbor_enc_msg_1.message_1_EAD_1_m.EAD_1_count =
 			ctx->nr_of_ead_tokens;
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			cbor_enc_msg_1._message_1_EAD_1._ead[i]
-				._ead_value_present = true;
-			cbor_enc_msg_1._message_1_EAD_1._ead[i]._ead_label =
+			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
+				.ead_x_ead_value_present = true;
+			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i].ead_x_ead_label =
 				ctx->ead_token[i].label;
-			cbor_enc_msg_1._message_1_EAD_1._ead[i]
-				._ead_value.value = ctx->ead_token[i].value;
-			cbor_enc_msg_1._message_1_EAD_1._ead[i]._ead_value.len =
+			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
+				.ead_x_ead_value.value = ctx->ead_token[i].value;
+			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i].ead_x_ead_value.len =
 				ctx->ead_token[i].value_len;
 		}
 	} else {
-		cbor_enc_msg_1._message_1_EAD_1_present = false;
-		cbor_enc_msg_1._message_1_EAD_1._ead_count = 0;
+		cbor_enc_msg_1.message_1_EAD_1_m_present = false;
+		cbor_enc_msg_1.message_1_EAD_1_m.EAD_1_count = 0;
 	}
 
 	/* 4. Encode cbor sequence of message 1. */
@@ -293,7 +293,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	bool method_match = false;
 	for (size_t i = 0; i < ctx->method_len; ++i) {
 		if ((int32_t)ctx->method[i] ==
-		    cbor_dec_msg_1._message_1_METHOD) {
+		    cbor_dec_msg_1.message_1_METHOD) {
 			ctx->chosen_method = ctx->method[i];
 			method_match = true;
 			break;
@@ -304,10 +304,10 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 
 	/* 3b. Verify cipher suite. */
-	switch (cbor_dec_msg_1._message_1_SUITES_I._suites_choice) {
-	case _suites_int: {
+	switch (cbor_dec_msg_1.message_1_SUITES_I.suites_choice) {
+	case suites_int_c: {
 		if (csuite.value !=
-		    cbor_dec_msg_1._message_1_SUITES_I._suites_int) {
+		    cbor_dec_msg_1.message_1_SUITES_I.suites_int) {
 			ctx->error_code =
 				EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
@@ -315,11 +315,11 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		break;
 	}
 
-	case _suites__int: {
+	case suites_int_l_c: {
 		if (csuite.value !=
-		    cbor_dec_msg_1._message_1_SUITES_I
-			    ._suites__int_int[cbor_dec_msg_1._message_1_SUITES_I
-						      ._suites__int_int_count -
+		    cbor_dec_msg_1.message_1_SUITES_I
+			    .suites_int_l_int[cbor_dec_msg_1.message_1_SUITES_I
+						      .suites_int_l_int_count -
 					      1]) {
 			ctx->error_code =
 				EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
@@ -334,39 +334,39 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	/* 3c. Verify ephemeral public key. */
-	if (cbor_dec_msg_1._message_1_G_X.len != csuite.ecc_key_length)
+	if (cbor_dec_msg_1.message_1_G_X.len != csuite.ecc_key_length)
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 
-	ctx->dh_peer_pub_key_len = cbor_dec_msg_1._message_1_G_X.len;
-	memcpy(ctx->dh_peer_pub_key, cbor_dec_msg_1._message_1_G_X.value,
+	ctx->dh_peer_pub_key_len = cbor_dec_msg_1.message_1_G_X.len;
+	memcpy(ctx->dh_peer_pub_key, cbor_dec_msg_1.message_1_G_X.value,
 	       csuite.ecc_key_length);
 
 	/* 3d. Verify connection identifier. */
-	switch (cbor_dec_msg_1._message_1_C_I_choice) {
-	case _message_1_C_I_int: {
+	switch (cbor_dec_msg_1.message_1_C_I_choice) {
+	case message_1_C_I_int_c: {
 		if (ONE_BYTE_CBOR_INT_MIN_VALUE >
-			    cbor_dec_msg_1._message_1_C_I_int ||
+			    cbor_dec_msg_1.message_1_C_I_int ||
 		    ONE_BYTE_CBOR_INT_MAX_VALUE <
-			    cbor_dec_msg_1._message_1_C_I_int)
+			    cbor_dec_msg_1.message_1_C_I_int)
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 
 		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 		ctx->peer_cid.int_value =
-			(int8_t)cbor_dec_msg_1._message_1_C_I_int;
+			(int8_t)cbor_dec_msg_1.message_1_C_I_int;
 		break;
 	}
 
-	case _message_1_C_I_bstr: {
+	case message_1_C_I_bstr_c: {
 		if (ARRAY_SIZE(ctx->peer_cid.bstr_value) <
-		    cbor_dec_msg_1._message_1_C_I_bstr.len)
+		    cbor_dec_msg_1.message_1_C_I_bstr.len)
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 
 		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
 		ctx->peer_cid.bstr_length =
-			cbor_dec_msg_1._message_1_C_I_bstr.len;
+			cbor_dec_msg_1.message_1_C_I_bstr.len;
 		memcpy(ctx->peer_cid.bstr_value,
-		       cbor_dec_msg_1._message_1_C_I_bstr.value,
-		       cbor_dec_msg_1._message_1_C_I_bstr.len);
+		       cbor_dec_msg_1.message_1_C_I_bstr.value,
+		       cbor_dec_msg_1.message_1_C_I_bstr.len);
 		break;
 	}
 
@@ -393,24 +393,24 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	/* 4. Process EAD if present. */
-	if (true == cbor_dec_msg_1._message_1_EAD_1_present &&
+	if (true == cbor_dec_msg_1.message_1_EAD_1_m_present &&
 	    NULL != ctx->ead.process) {
 		if (ARRAY_SIZE(ctx->ead_token) - 1 <
-		    cbor_dec_msg_1._message_1_EAD_1._ead_count)
+		    cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count)
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
 		ctx->nr_of_ead_tokens =
-			cbor_dec_msg_1._message_1_EAD_1._ead_count;
+			cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count;
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
 			ctx->ead_token[i].label =
-				cbor_dec_msg_1._message_1_EAD_1._ead[i]
-					._ead_label;
+				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
+					.ead_x_ead_label;
 			ctx->ead_token[i].value =
-				cbor_dec_msg_1._message_1_EAD_1._ead[i]
-					._ead_value.value;
+				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
+					.ead_x_ead_value.value;
 			ctx->ead_token[i].value_len =
-				cbor_dec_msg_1._message_1_EAD_1._ead[i]
-					._ead_value.len;
+				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
+					.ead_x_ead_value.len;
 		}
 
 		ret = ctx->ead.process(ctx->user_ctx, ctx->message,

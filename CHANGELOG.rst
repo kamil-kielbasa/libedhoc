@@ -1,7 +1,7 @@
-Next release
-------------
+Version 0.6.0
+-------------
 
-:Date: September X, 2024
+:Date: October 31, 2024
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added C unit test framework - Unity.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Migrated all module tests to Unity framework.
@@ -11,6 +11,7 @@ Next release
   * Module tests scenarios.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added missing doxygen for API.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Update zcbor from v0.7.0 to v0.8.1.
 
 Version 0.5.0
 -------------

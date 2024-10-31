@@ -1,5 +1,5 @@
 /*
- * Generated using zcbor version 0.7.0
+ * Generated using zcbor version 0.8.1
  * https://github.com/NordicSemiconductor/zcbor
  * Generated with a --default-max-qty of 3
  */
@@ -25,142 +25,152 @@ extern "C" {
  */
 #define DEFAULT_MAX_QTY 3
 
-struct id_cred_x_kid_ {
+struct id_cred_x_kid_r {
 	union {
-		int32_t _id_cred_x_kid_int;
-		struct zcbor_string _id_cred_x_kid_bstr;
+		int32_t id_cred_x_kid_int;
+		struct zcbor_string id_cred_x_kid_bstr;
 	};
 	enum {
-		_id_cred_x_kid_int,
-		_id_cred_x_kid_bstr,
-	} _id_cred_x_kid_choice;
+		id_cred_x_kid_int_c,
+		id_cred_x_kid_bstr_c,
+	} id_cred_x_kid_choice;
 };
 
-struct COSE_X509_ {
+struct COSE_X509_r {
 	union {
-		struct zcbor_string _COSE_X509_bstr;
+		struct zcbor_string COSE_X509_bstr;
 		struct {
-			struct zcbor_string _COSE_X509__certs_certs[3];
-			size_t _COSE_X509__certs_certs_count;
+			struct zcbor_string COSE_X509_certs_l_certs[3];
+			size_t COSE_X509_certs_l_certs_count;
 		};
 	};
 	enum {
-		_COSE_X509_bstr,
-		_COSE_X509__certs,
-	} _COSE_X509_choice;
+		COSE_X509_bstr_c,
+		COSE_X509_certs_l_c,
+	} COSE_X509_choice;
 };
 
 struct id_cred_x_x5chain {
-	struct COSE_X509_ _id_cred_x_x5chain;
+	struct COSE_X509_r id_cred_x_x5chain;
 };
 
 struct COSE_CertHash {
 	union {
-		int32_t _COSE_CertHash_hashAlg_int;
-		struct zcbor_string _COSE_CertHash_hashAlg_tstr;
+		int32_t COSE_CertHash_hashAlg_int;
+		struct zcbor_string COSE_CertHash_hashAlg_tstr;
 	};
 	enum {
-		_COSE_CertHash_hashAlg_int,
-		_COSE_CertHash_hashAlg_tstr,
-	} _COSE_CertHash_hashAlg_choice;
-	struct zcbor_string _COSE_CertHash_hashValue;
+		COSE_CertHash_hashAlg_int_c,
+		COSE_CertHash_hashAlg_tstr_c,
+	} COSE_CertHash_hashAlg_choice;
+	struct zcbor_string COSE_CertHash_hashValue;
 };
 
 struct id_cred_x_x5t {
-	struct COSE_CertHash _id_cred_x_x5t;
+	struct COSE_CertHash id_cred_x_x5t;
 };
 
 struct id_cred_x {
-	struct id_cred_x_kid_ _id_cred_x_kid;
-	bool _id_cred_x_kid_present;
-	struct id_cred_x_x5chain _id_cred_x_x5chain;
-	bool _id_cred_x_x5chain_present;
-	struct id_cred_x_x5t _id_cred_x_x5t;
-	bool _id_cred_x_x5t_present;
+	struct id_cred_x_kid_r id_cred_x_kid;
+	bool id_cred_x_kid_present;
+	struct id_cred_x_x5chain id_cred_x_x5chain;
+	bool id_cred_x_x5chain_present;
+	struct id_cred_x_x5t id_cred_x_x5t;
+	bool id_cred_x_x5t_present;
 };
 
-struct ead_x {
-	int32_t _ead_x_ead_label;
-	struct zcbor_string _ead_x_ead_value;
-	bool _ead_x_ead_value_present;
-};
-
-struct ead_x_ {
-	struct ead_x _ead_x[3];
-	size_t _ead_x_count;
-};
-
-struct plaintext_4_EAD_4 {
-	struct ead_x_ _plaintext_4_EAD_4;
-	bool _plaintext_4_EAD_4_present;
-};
-
-struct map_kid_ {
+struct map_kid_r {
 	union {
-		int32_t _map_kid_int;
-		struct zcbor_string _map_kid_bstr;
+		int32_t map_kid_int;
+		struct zcbor_string map_kid_bstr;
 	};
 	enum {
-		_map_kid_int,
-		_map_kid_bstr,
-	} _map_kid_choice;
+		map_kid_int_c,
+		map_kid_bstr_c,
+	} map_kid_choice;
 };
 
 struct map_x5chain {
-	struct COSE_X509_ _map_x5chain;
+	struct COSE_X509_r map_x5chain;
 };
 
 struct map_x5t {
-	struct COSE_CertHash _map_x5t;
+	struct COSE_CertHash map_x5t;
 };
 
 struct map {
-	struct map_kid_ _map_kid;
-	bool _map_kid_present;
-	struct map_x5chain _map_x5chain;
-	bool _map_x5chain_present;
-	struct map_x5t _map_x5t;
-	bool _map_x5t_present;
+	struct map_kid_r map_kid;
+	bool map_kid_present;
+	struct map_x5chain map_x5chain;
+	bool map_x5chain_present;
+	struct map_x5t map_x5t;
+	bool map_x5t_present;
+};
+
+struct ead_y {
+	int32_t ead_y_ead_label;
+	struct zcbor_string ead_y_ead_value;
+	bool ead_y_ead_value_present;
+};
+
+struct EAD_2 {
+	struct ead_y EAD_2[3];
+	size_t EAD_2_count;
 };
 
 struct plaintext_2 {
 	union {
-		struct zcbor_string _plaintext_2_C_R_bstr;
-		int32_t _plaintext_2_C_R_int;
+		struct zcbor_string plaintext_2_C_R_bstr;
+		int32_t plaintext_2_C_R_int;
 	};
 	enum {
-		_plaintext_2_C_R_bstr,
-		_plaintext_2_C_R_int,
-	} _plaintext_2_C_R_choice;
+		plaintext_2_C_R_bstr_c,
+		plaintext_2_C_R_int_c,
+	} plaintext_2_C_R_choice;
 	union {
-		int32_t _plaintext_2_ID_CRED_R_int;
-		struct zcbor_string _plaintext_2_ID_CRED_R_bstr;
-		struct map _plaintext_2_ID_CRED_R__map;
+		int32_t plaintext_2_ID_CRED_R_int;
+		struct zcbor_string plaintext_2_ID_CRED_R_bstr;
+		struct map plaintext_2_ID_CRED_R_map_m;
 	};
 	enum {
-		_plaintext_2_ID_CRED_R_int,
-		_plaintext_2_ID_CRED_R_bstr,
-		_plaintext_2_ID_CRED_R__map,
-	} _plaintext_2_ID_CRED_R_choice;
-	struct zcbor_string _plaintext_2_Signature_or_MAC_2;
-	struct ead_x_ _plaintext_2_EAD_2;
-	bool _plaintext_2_EAD_2_present;
+		plaintext_2_ID_CRED_R_int_c,
+		plaintext_2_ID_CRED_R_bstr_c,
+		plaintext_2_ID_CRED_R_map_m_c,
+	} plaintext_2_ID_CRED_R_choice;
+	struct zcbor_string plaintext_2_Signature_or_MAC_2;
+	struct EAD_2 plaintext_2_EAD_2_m;
+	bool plaintext_2_EAD_2_m_present;
+};
+
+struct EAD_3 {
+	struct ead_y EAD_3[3];
+	size_t EAD_3_count;
 };
 
 struct plaintext_3 {
 	union {
-		int32_t _plaintext_3_ID_CRED_I_int;
-		struct zcbor_string _plaintext_3_ID_CRED_I_bstr;
-		struct map _plaintext_3_ID_CRED_I__map;
+		int32_t plaintext_3_ID_CRED_I_int;
+		struct zcbor_string plaintext_3_ID_CRED_I_bstr;
+		struct map plaintext_3_ID_CRED_I_map_m;
 	};
 	enum {
-		_plaintext_3_ID_CRED_I_int,
-		_plaintext_3_ID_CRED_I_bstr,
-		_plaintext_3_ID_CRED_I__map,
-	} _plaintext_3_ID_CRED_I_choice;
-	struct zcbor_string _plaintext_3_Signature_or_MAC_3;
-	struct ead_x_ _plaintext_3_EAD_3;
-	bool _plaintext_3_EAD_3_present;
+		plaintext_3_ID_CRED_I_int_c,
+		plaintext_3_ID_CRED_I_bstr_c,
+		plaintext_3_ID_CRED_I_map_m_c,
+	} plaintext_3_ID_CRED_I_choice;
+	struct zcbor_string plaintext_3_Signature_or_MAC_3;
+	struct EAD_3 plaintext_3_EAD_3_m;
+	bool plaintext_3_EAD_3_m_present;
+};
+
+struct EAD_4 {
+	struct ead_y EAD_4[3];
+	size_t EAD_4_count;
+};
+
+struct plaintext_4 {
+	struct EAD_4 plaintext_4;
+	bool plaintext_4_present;
 };
 
 #ifdef __cplusplus

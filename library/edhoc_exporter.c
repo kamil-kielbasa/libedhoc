@@ -144,10 +144,10 @@ static int compute_prk_out(struct edhoc_context *ctx)
 
 	/* Generate PRK_out. */
 	struct info input_info = {
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT,
-		._info_context.value = ctx->th,
-		._info_context.len = ctx->th_len,
-		._info_length = (uint32_t)csuite.hash_length,
+		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT,
+		.info_context.value = ctx->th,
+		.info_context.len = ctx->th_len,
+		.info_length = (uint32_t)csuite.hash_length,
 	};
 
 	len = 0;
@@ -203,10 +203,10 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 
 	/* Generate PRK_out. */
 	struct info input_info = {
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT,
-		._info_context.value = entropy,
-		._info_context.len = entropy_len,
-		._info_length = (uint32_t)csuite.hash_length,
+		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT,
+		.info_context.value = entropy,
+		.info_context.len = entropy_len,
+		.info_length = (uint32_t)csuite.hash_length,
 	};
 
 	len = 0;
@@ -257,11 +257,11 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 	memset(info, 0, VLA_SIZEOF(info));
 
 	struct info input_info = {
-		._info_label =
+		.info_label =
 			(int32_t)EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER,
-		._info_context.value = NULL,
-		._info_context.len = 0,
-		._info_length = (uint32_t)csuite.hash_length,
+		.info_context.value = NULL,
+		.info_context.len = 0,
+		.info_length = (uint32_t)csuite.hash_length,
 	};
 
 	len = 0;
@@ -351,10 +351,10 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	memset(info, 0, VLA_SIZEOF(info));
 
 	const struct info input_info = (struct info){
-		._info_label = (int32_t)label,
-		._info_context.value = NULL,
-		._info_context.len = 0,
-		._info_length = (uint32_t)secret_len,
+		.info_label = (int32_t)label,
+		.info_context.value = NULL,
+		.info_context.len = 0,
+		.info_length = (uint32_t)secret_len,
 	};
 
 	len = 0;

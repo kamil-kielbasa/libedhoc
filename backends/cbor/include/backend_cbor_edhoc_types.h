@@ -1,5 +1,5 @@
 /*
- * Generated using zcbor version 0.7.0
+ * Generated using zcbor version 0.8.1
  * https://github.com/NordicSemiconductor/zcbor
  * Generated with a --default-max-qty of 3
  */
@@ -25,69 +25,74 @@ extern "C" {
  */
 #define DEFAULT_MAX_QTY 3
 
-struct ead {
-	int32_t _ead_label;
-	struct zcbor_string _ead_value;
-	bool _ead_value_present;
-};
-
-struct ead_ {
-	struct ead _ead[3];
-	size_t _ead_count;
-};
-
 struct info {
-	int32_t _info_label;
-	struct zcbor_string _info_context;
-	uint32_t _info_length;
+	int32_t info_label;
+	struct zcbor_string info_context;
+	uint32_t info_length;
 };
 
-struct suites_ {
+struct ead_x {
+	int32_t ead_x_ead_label;
+	struct zcbor_string ead_x_ead_value;
+	bool ead_x_ead_value_present;
+};
+
+struct ead {
+	struct ead_x ead[3];
+	size_t ead_count;
+};
+
+struct suites_r {
 	union {
 		struct {
-			int32_t _suites__int_int[3];
-			size_t _suites__int_int_count;
+			int32_t suites_int_l_int[3];
+			size_t suites_int_l_int_count;
 		};
-		int32_t _suites_int;
+		int32_t suites_int;
 	};
 	enum {
-		_suites__int,
-		_suites_int,
-	} _suites_choice;
+		suites_int_l_c,
+		suites_int_c,
+	} suites_choice;
 };
 
-struct message_1 {
-	int32_t _message_1_METHOD;
-	struct suites_ _message_1_SUITES_I;
-	struct zcbor_string _message_1_G_X;
+struct message_error_ERR_INFO_r {
 	union {
-		struct zcbor_string _message_1_C_I_bstr;
-		int32_t _message_1_C_I_int;
+		struct zcbor_string message_error_ERR_INFO_tstr;
+		struct suites_r message_error_ERR_INFO_suites_m;
 	};
 	enum {
-		_message_1_C_I_bstr,
-		_message_1_C_I_int,
-	} _message_1_C_I_choice;
-	struct ead_ _message_1_EAD_1;
-	bool _message_1_EAD_1_present;
-};
-
-struct message_error_ERR_INFO_ {
-	union {
-		struct zcbor_string _message_error_ERR_INFO_tstr;
-		struct suites_ _message_error_ERR_INFO__suites;
-	};
-	enum {
-		_message_error_ERR_INFO_tstr,
-		_message_error_ERR_INFO__suites,
-		_message_error_ERR_INFO_bool,
-	} _message_error_ERR_INFO_choice;
+		message_error_ERR_INFO_tstr_c,
+		message_error_ERR_INFO_suites_m_c,
+		message_error_ERR_INFO_bool_c,
+	} message_error_ERR_INFO_choice;
 };
 
 struct message_error {
-	int32_t _message_error_ERR_CODE;
-	struct message_error_ERR_INFO_ _message_error_ERR_INFO;
-	bool _message_error_ERR_INFO_present;
+	int32_t message_error_ERR_CODE;
+	struct message_error_ERR_INFO_r message_error_ERR_INFO;
+	bool message_error_ERR_INFO_present;
+};
+
+struct EAD_1 {
+	struct ead_x EAD_1[3];
+	size_t EAD_1_count;
+};
+
+struct message_1 {
+	int32_t message_1_METHOD;
+	struct suites_r message_1_SUITES_I;
+	struct zcbor_string message_1_G_X;
+	union {
+		struct zcbor_string message_1_C_I_bstr;
+		int32_t message_1_C_I_int;
+	};
+	enum {
+		message_1_C_I_bstr_c,
+		message_1_C_I_int_c,
+	} message_1_C_I_choice;
+	struct EAD_1 message_1_EAD_1_m;
+	bool message_1_EAD_1_m_present;
 };
 
 #ifdef __cplusplus

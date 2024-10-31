@@ -14,10 +14,14 @@ id_cred_x =
     ? x5t       : 34 => COSE_CertHash,
 }
 
-ead_x = 1* (
+ead_y = (
   ead_label : int,
   ? ead_value : bstr,
 )
+
+EAD_2 = 1* ead_y
+EAD_3 = 1* ead_y
+EAD_4 = 1* ead_y
 
 map =
 {
@@ -31,17 +35,17 @@ plaintext_2 =
   C_R                 : bstr / -24..23,
   ID_CRED_R           : int / bstr / map,
   Signature_or_MAC_2  : bstr,
-  ? EAD_2             : ead_x,
+  ? EAD_2,
 )
 
 plaintext_3 =
 (
   ID_CRED_I           : int / bstr / map,
   Signature_or_MAC_3  : bstr,
-  ? EAD_3             : ead_x,
+  ? EAD_3,
 )
 
 plaintext_4 =
 (
-  ? EAD_4             : ead_x,
+  ? EAD_4,
 )

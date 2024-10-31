@@ -1,5 +1,5 @@
 /*
- * Generated using zcbor version 0.7.0
+ * Generated using zcbor version 0.8.1
  * https://github.com/NordicSemiconductor/zcbor
  * Generated with a --default-max-qty of 3
  */
@@ -10,49 +10,58 @@
 #include <string.h>
 #include "zcbor_encode.h"
 #include "backend_cbor_plaintext_3_encode.h"
+#include "zcbor_print.h"
 
 #if DEFAULT_MAX_QTY != 3
 #error "The type file was generated with a different default_max_qty than this file"
 #endif
 
-static bool encode_repeated_map_kid(zcbor_state_t *state, const struct map_kid_ *input);
-static bool encode_COSE_X509(zcbor_state_t *state, const struct COSE_X509_ *input);
+static bool encode_repeated_map_kid(zcbor_state_t *state, const struct map_kid_r *input);
+static bool encode_COSE_X509(zcbor_state_t *state, const struct COSE_X509_r *input);
 static bool encode_repeated_map_x5chain(zcbor_state_t *state, const struct map_x5chain *input);
 static bool encode_COSE_CertHash(zcbor_state_t *state, const struct COSE_CertHash *input);
 static bool encode_repeated_map_x5t(zcbor_state_t *state, const struct map_x5t *input);
 static bool encode_map(zcbor_state_t *state, const struct map *input);
-static bool encode_repeated_ead_x(zcbor_state_t *state, const struct ead_x *input);
-static bool encode_ead_x(zcbor_state_t *state, const struct ead_x_ *input);
+static bool encode_ead_y(zcbor_state_t *state, const struct ead_y *input);
+static bool encode_EAD_3(zcbor_state_t *state, const struct EAD_3 *input);
 static bool encode_plaintext_3(zcbor_state_t *state, const struct plaintext_3 *input);
 
 
 static bool encode_repeated_map_kid(
-		zcbor_state_t *state, const struct map_kid_ *input)
+		zcbor_state_t *state, const struct map_kid_r *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
 	bool tmp_result = ((((zcbor_uint32_put(state, (4))))
-	&& (((*input)._map_kid_choice == _map_kid_int) ? ((zcbor_int32_encode(state, (&(*input)._map_kid_int))))
-	: (((*input)._map_kid_choice == _map_kid_bstr) ? ((zcbor_bstr_encode(state, (&(*input)._map_kid_bstr))))
+	&& (((*input).map_kid_choice == map_kid_int_c) ? ((zcbor_int32_encode(state, (&(*input).map_kid_int))))
+	: (((*input).map_kid_choice == map_kid_bstr_c) ? ((zcbor_bstr_encode(state, (&(*input).map_kid_bstr))))
 	: false))));
 
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
 
 static bool encode_COSE_X509(
-		zcbor_state_t *state, const struct COSE_X509_ *input)
+		zcbor_state_t *state, const struct COSE_X509_r *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((((*input)._COSE_X509_choice == _COSE_X509_bstr) ? ((zcbor_bstr_encode(state, (&(*input)._COSE_X509_bstr))))
-	: (((*input)._COSE_X509_choice == _COSE_X509__certs) ? ((zcbor_list_start_encode(state, 3) && ((zcbor_multi_encode_minmax(2, 3, &(*input)._COSE_X509__certs_certs_count, (zcbor_encoder_t *)zcbor_bstr_encode, state, (&(*input)._COSE_X509__certs_certs), sizeof(struct zcbor_string))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_list_end_encode(state, 3)))
+	bool tmp_result = (((((*input).COSE_X509_choice == COSE_X509_bstr_c) ? ((zcbor_bstr_encode(state, (&(*input).COSE_X509_bstr))))
+	: (((*input).COSE_X509_choice == COSE_X509_certs_l_c) ? ((zcbor_list_start_encode(state, 3) && ((zcbor_multi_encode_minmax(2, 3, &(*input).COSE_X509_certs_l_certs_count, (zcbor_encoder_t *)zcbor_bstr_encode, state, (&(*input).COSE_X509_certs_l_certs), sizeof(struct zcbor_string))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_list_end_encode(state, 3)))
 	: false))));
 
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
@@ -60,13 +69,17 @@ static bool encode_COSE_X509(
 static bool encode_repeated_map_x5chain(
 		zcbor_state_t *state, const struct map_x5chain *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
 	bool tmp_result = ((((zcbor_uint32_put(state, (33))))
-	&& (encode_COSE_X509(state, (&(*input)._map_x5chain)))));
+	&& (encode_COSE_X509(state, (&(*input).map_x5chain)))));
 
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
@@ -74,15 +87,19 @@ static bool encode_repeated_map_x5chain(
 static bool encode_COSE_CertHash(
 		zcbor_state_t *state, const struct COSE_CertHash *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((zcbor_list_start_encode(state, 2) && ((((((*input)._COSE_CertHash_hashAlg_choice == _COSE_CertHash_hashAlg_int) ? ((zcbor_int32_encode(state, (&(*input)._COSE_CertHash_hashAlg_int))))
-	: (((*input)._COSE_CertHash_hashAlg_choice == _COSE_CertHash_hashAlg_tstr) ? ((zcbor_tstr_encode(state, (&(*input)._COSE_CertHash_hashAlg_tstr))))
+	bool tmp_result = (((zcbor_list_start_encode(state, 2) && ((((((*input).COSE_CertHash_hashAlg_choice == COSE_CertHash_hashAlg_int_c) ? ((zcbor_int32_encode(state, (&(*input).COSE_CertHash_hashAlg_int))))
+	: (((*input).COSE_CertHash_hashAlg_choice == COSE_CertHash_hashAlg_tstr_c) ? ((zcbor_tstr_encode(state, (&(*input).COSE_CertHash_hashAlg_tstr))))
 	: false)))
-	&& ((zcbor_bstr_encode(state, (&(*input)._COSE_CertHash_hashValue))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_list_end_encode(state, 2))));
+	&& ((zcbor_bstr_encode(state, (&(*input).COSE_CertHash_hashValue))))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_list_end_encode(state, 2))));
 
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
@@ -90,13 +107,17 @@ static bool encode_COSE_CertHash(
 static bool encode_repeated_map_x5t(
 		zcbor_state_t *state, const struct map_x5t *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
 	bool tmp_result = ((((zcbor_uint32_put(state, (34))))
-	&& (encode_COSE_CertHash(state, (&(*input)._map_x5t)))));
+	&& (encode_COSE_CertHash(state, (&(*input).map_x5t)))));
 
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
@@ -104,41 +125,53 @@ static bool encode_repeated_map_x5t(
 static bool encode_map(
 		zcbor_state_t *state, const struct map *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((zcbor_map_start_encode(state, 3) && ((zcbor_present_encode(&((*input)._map_kid_present), (zcbor_encoder_t *)encode_repeated_map_kid, state, (&(*input)._map_kid))
-	&& zcbor_present_encode(&((*input)._map_x5chain_present), (zcbor_encoder_t *)encode_repeated_map_x5chain, state, (&(*input)._map_x5chain))
-	&& zcbor_present_encode(&((*input)._map_x5t_present), (zcbor_encoder_t *)encode_repeated_map_x5t, state, (&(*input)._map_x5t))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 3))));
+	bool tmp_result = (((zcbor_map_start_encode(state, 3) && (((!(*input).map_kid_present || encode_repeated_map_kid(state, (&(*input).map_kid)))
+	&& (!(*input).map_x5chain_present || encode_repeated_map_x5chain(state, (&(*input).map_x5chain)))
+	&& (!(*input).map_x5t_present || encode_repeated_map_x5t(state, (&(*input).map_x5t)))) || (zcbor_list_map_end_force_encode(state), false)) && zcbor_map_end_encode(state, 3))));
 
-	if (!tmp_result)
-		zcbor_trace();
-
-	return tmp_result;
-}
-
-static bool encode_repeated_ead_x(
-		zcbor_state_t *state, const struct ead_x *input)
-{
-	zcbor_print("%s\r\n", __func__);
-
-	bool tmp_result = (((((zcbor_int32_encode(state, (&(*input)._ead_x_ead_label))))
-	&& zcbor_present_encode(&((*input)._ead_x_ead_value_present), (zcbor_encoder_t *)zcbor_bstr_encode, state, (&(*input)._ead_x_ead_value)))));
-
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
 
-static bool encode_ead_x(
-		zcbor_state_t *state, const struct ead_x_ *input)
+static bool encode_ead_y(
+		zcbor_state_t *state, const struct ead_y *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (zcbor_multi_encode_minmax(1, 3, &(*input)._ead_x_count, (zcbor_encoder_t *)encode_repeated_ead_x, state, (&(*input)._ead_x), sizeof(struct ead_x)));
+	bool tmp_result = (((((zcbor_int32_encode(state, (&(*input).ead_y_ead_label))))
+	&& (!(*input).ead_y_ead_value_present || zcbor_bstr_encode(state, (&(*input).ead_y_ead_value))))));
 
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
+
+	return tmp_result;
+}
+
+static bool encode_EAD_3(
+		zcbor_state_t *state, const struct EAD_3 *input)
+{
+	zcbor_log("%s\r\n", __func__);
+
+	bool tmp_result = (zcbor_multi_encode_minmax(1, 3, &(*input).EAD_3_count, (zcbor_encoder_t *)encode_ead_y, state, (&(*input).EAD_3), sizeof(struct ead_y)));
+
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
@@ -146,17 +179,21 @@ static bool encode_ead_x(
 static bool encode_plaintext_3(
 		zcbor_state_t *state, const struct plaintext_3 *input)
 {
-	zcbor_print("%s\r\n", __func__);
+	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((((((*input)._plaintext_3_ID_CRED_I_choice == _plaintext_3_ID_CRED_I_int) ? ((zcbor_int32_encode(state, (&(*input)._plaintext_3_ID_CRED_I_int))))
-	: (((*input)._plaintext_3_ID_CRED_I_choice == _plaintext_3_ID_CRED_I_bstr) ? ((zcbor_bstr_encode(state, (&(*input)._plaintext_3_ID_CRED_I_bstr))))
-	: (((*input)._plaintext_3_ID_CRED_I_choice == _plaintext_3_ID_CRED_I__map) ? ((encode_map(state, (&(*input)._plaintext_3_ID_CRED_I__map))))
+	bool tmp_result = (((((((*input).plaintext_3_ID_CRED_I_choice == plaintext_3_ID_CRED_I_int_c) ? ((zcbor_int32_encode(state, (&(*input).plaintext_3_ID_CRED_I_int))))
+	: (((*input).plaintext_3_ID_CRED_I_choice == plaintext_3_ID_CRED_I_bstr_c) ? ((zcbor_bstr_encode(state, (&(*input).plaintext_3_ID_CRED_I_bstr))))
+	: (((*input).plaintext_3_ID_CRED_I_choice == plaintext_3_ID_CRED_I_map_m_c) ? ((encode_map(state, (&(*input).plaintext_3_ID_CRED_I_map_m))))
 	: false))))
-	&& ((zcbor_bstr_encode(state, (&(*input)._plaintext_3_Signature_or_MAC_3))))
-	&& zcbor_present_encode(&((*input)._plaintext_3_EAD_3_present), (zcbor_encoder_t *)encode_ead_x, state, (&(*input)._plaintext_3_EAD_3)))));
+	&& ((zcbor_bstr_encode(state, (&(*input).plaintext_3_Signature_or_MAC_3))))
+	&& (!(*input).plaintext_3_EAD_3_m_present || encode_EAD_3(state, (&(*input).plaintext_3_EAD_3_m))))));
 
-	if (!tmp_result)
-		zcbor_trace();
+	if (!tmp_result) {
+		zcbor_trace_file(state);
+		zcbor_log("%s error: %s\r\n", __func__, zcbor_error_str(zcbor_peek_error(state)));
+	} else {
+		zcbor_log("%s success\r\n", __func__);
+	}
 
 	return tmp_result;
 }
@@ -170,20 +207,6 @@ int cbor_encode_plaintext_3(
 {
 	zcbor_state_t states[6];
 
-	zcbor_new_state(states, sizeof(states) / sizeof(zcbor_state_t), payload, payload_len, 8);
-
-	bool ret = encode_plaintext_3(states, input);
-
-	if (ret && (payload_len_out != NULL)) {
-		*payload_len_out = MIN(payload_len,
-				(size_t)states[0].payload - (size_t)payload);
-	}
-
-	if (!ret) {
-		int err = zcbor_pop_error(states);
-
-		zcbor_print("Return error: %d\r\n", err);
-		return (err == ZCBOR_SUCCESS) ? ZCBOR_ERR_UNKNOWN : err;
-	}
-	return ZCBOR_SUCCESS;
+	return zcbor_entry_function(payload, payload_len, (void *)input, payload_len_out, states,
+		(zcbor_decoder_t *)encode_plaintext_3, sizeof(states) / sizeof(zcbor_state_t), 8);
 }

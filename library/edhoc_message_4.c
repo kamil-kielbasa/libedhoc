@@ -286,32 +286,32 @@ static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	struct plaintext_4_EAD_4 ead_4 = { 0 };
+	struct plaintext_4 ead_4 = { .plaintext_4_present = false };
 
-	if (ARRAY_SIZE(ead_4._plaintext_4_EAD_4._ead_x) < ctx->nr_of_ead_tokens)
+	if (ARRAY_SIZE(ead_4.plaintext_4.EAD_4) < ctx->nr_of_ead_tokens)
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
 	if (0 != ctx->nr_of_ead_tokens) {
-		ead_4._plaintext_4_EAD_4_present = true;
-		ead_4._plaintext_4_EAD_4._ead_x_count = ctx->nr_of_ead_tokens;
+		ead_4.plaintext_4_present = true;
+		ead_4.plaintext_4.EAD_4_count = ctx->nr_of_ead_tokens;
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			ead_4._plaintext_4_EAD_4._ead_x[i]._ead_x_ead_label =
+			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label =
 				ctx->ead_token[i].label;
-			ead_4._plaintext_4_EAD_4._ead_x[i]
-				._ead_x_ead_value.value =
+			ead_4.plaintext_4.EAD_4[i]
+				.ead_y_ead_value.value =
 				ctx->ead_token[i].value;
-			ead_4._plaintext_4_EAD_4._ead_x[i]._ead_x_ead_value.len =
+			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len =
 				ctx->ead_token[i].value_len;
-			ead_4._plaintext_4_EAD_4._ead_x[i]
-				._ead_x_ead_value_present =
+			ead_4.plaintext_4.EAD_4[i]
+				.ead_y_ead_value_present =
 				(NULL != ctx->ead_token[i].value);
 		}
 	} else {
-		ead_4._plaintext_4_EAD_4_present = false;
+		ead_4.plaintext_4_present = false;
 	}
 
-	ret = cbor_encode_plaintext_4_EAD_4(ptxt, ptxt_size, &ead_4, ptxt_len);
+	ret = cbor_encode_plaintext_4(ptxt, ptxt_size, &ead_4, ptxt_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -361,10 +361,10 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	/* Generate K_3. */
 	input_info = (struct info){
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_K_4,
-		._info_context.value = ctx->th,
-		._info_context.len = ctx->th_len,
-		._info_length = (uint32_t)csuite.aead_key_length,
+		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_K_4,
+		.info_context.value = ctx->th,
+		.info_context.len = ctx->th_len,
+		.info_length = (uint32_t)csuite.aead_key_length,
 	};
 
 	memset(info, 0, VLA_SIZEOF(info));
@@ -390,10 +390,10 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	/* Generate IV_3. */
 	input_info = (struct info){
-		._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4,
-		._info_context.value = ctx->th,
-		._info_context.len = ctx->th_len,
-		._info_length = (uint32_t)csuite.aead_iv_length,
+		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4,
+		.info_context.value = ctx->th,
+		.info_context.len = ctx->th_len,
+		.info_length = (uint32_t)csuite.aead_iv_length,
 	};
 
 	memset(info, 0, VLA_SIZEOF(info));
@@ -418,10 +418,10 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	/* Generate AAD_3. */
 	struct enc_structure cose_enc_0 = {
-		._enc_structure_protected.value = NULL,
-		._enc_structure_protected.len = 0,
-		._enc_structure_external_aad.value = ctx->th,
-		._enc_structure_external_aad.len = ctx->th_len,
+		.enc_structure_protected.value = NULL,
+		.enc_structure_protected.len = 0,
+		.enc_structure_external_aad.value = ctx->th,
+		.enc_structure_external_aad.len = ctx->th_len,
 	};
 
 	len = 0;
@@ -545,20 +545,20 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	size_t len = 0;
-	struct plaintext_4_EAD_4 ead_4 = { 0 };
-	ret = cbor_decode_plaintext_4_EAD_4(ptxt, ptxt_len, &ead_4, &len);
+	struct plaintext_4 ead_4 = { 0 };
+	ret = cbor_decode_plaintext_4(ptxt, ptxt_len, &ead_4, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ctx->nr_of_ead_tokens = ead_4._plaintext_4_EAD_4._ead_x_count;
-	for (size_t i = 0; i < ead_4._plaintext_4_EAD_4._ead_x_count; ++i) {
+	ctx->nr_of_ead_tokens = ead_4.plaintext_4.EAD_4_count;
+	for (size_t i = 0; i < ead_4.plaintext_4.EAD_4_count; ++i) {
 		ctx->ead_token[i].label =
-			ead_4._plaintext_4_EAD_4._ead_x[i]._ead_x_ead_label;
-		ctx->ead_token[i].value = ead_4._plaintext_4_EAD_4._ead_x[i]
-						  ._ead_x_ead_value.value;
+			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label;
+		ctx->ead_token[i].value = ead_4.plaintext_4.EAD_4[i]
+						  .ead_y_ead_value.value;
 		ctx->ead_token[i].value_len =
-			ead_4._plaintext_4_EAD_4._ead_x[i]._ead_x_ead_value.len;
+			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len;
 	}
 
 	return EDHOC_SUCCESS;

@@ -1,5 +1,5 @@
 /*
- * Generated using zcbor version 0.7.0
+ * Generated using zcbor version 0.8.1
  * https://github.com/NordicSemiconductor/zcbor
  * Generated with a --default-max-qty of 3
  */
@@ -24,7 +24,7 @@ extern "C" {
 
 int cbor_decode_ead(
 		const uint8_t *payload, size_t payload_len,
-		struct ead_ *result,
+		struct ead *result,
 		size_t *payload_len_out);
 
 

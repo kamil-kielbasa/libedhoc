@@ -414,13 +414,13 @@ static int sign_cose_sign_1(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	const struct sig_structure cose_sign_1 = {
-		._sig_structure_protected.value = mac_ctx->id_cred,
-		._sig_structure_protected.len = mac_ctx->id_cred_len,
-		._sig_structure_external_aad.value = mac_ctx->th,
-		._sig_structure_external_aad.len =
+		.sig_structure_protected.value = mac_ctx->id_cred,
+		.sig_structure_protected.len = mac_ctx->id_cred_len,
+		.sig_structure_external_aad.value = mac_ctx->th,
+		.sig_structure_external_aad.len =
 			mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len,
-		._sig_structure_payload.value = mac,
-		._sig_structure_payload.len = mac_len,
+		.sig_structure_payload.value = mac,
+		.sig_structure_payload.len = mac_len,
 	};
 
 	size_t len = 0;
@@ -464,13 +464,13 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	const struct sig_structure cose_sign_1 = {
-		._sig_structure_protected.value = mac_ctx->id_cred,
-		._sig_structure_protected.len = mac_ctx->id_cred_len,
-		._sig_structure_external_aad.value = mac_ctx->th,
-		._sig_structure_external_aad.len =
+		.sig_structure_protected.value = mac_ctx->id_cred,
+		.sig_structure_protected.len = mac_ctx->id_cred_len,
+		.sig_structure_external_aad.value = mac_ctx->th,
+		.sig_structure_external_aad.len =
 			mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len,
-		._sig_structure_payload.value = mac,
-		._sig_structure_payload.len = mac_len,
+		.sig_structure_payload.value = mac,
+		.sig_structure_payload.len = mac_len,
 	};
 
 	size_t len = 0;
@@ -757,21 +757,21 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		break;
 
 	case EDHOC_COSE_HEADER_KID:
-		id_cred._id_cred_x_kid_present = true;
+		id_cred.id_cred_x_kid_present = true;
 
 		switch (cred->key_id.encode_type) {
 		case EDHOC_ENCODE_TYPE_INTEGER:
-			id_cred._id_cred_x_kid._id_cred_x_kid_choice =
-				_id_cred_x_kid_int;
-			id_cred._id_cred_x_kid._id_cred_x_kid_int =
+			id_cred.id_cred_x_kid.id_cred_x_kid_choice =
+				id_cred_x_kid_int_c;
+			id_cred.id_cred_x_kid.id_cred_x_kid_int =
 				cred->key_id.key_id_int;
 			break;
 		case EDHOC_ENCODE_TYPE_BYTE_STRING:
-			id_cred._id_cred_x_kid._id_cred_x_kid_choice =
-				_id_cred_x_kid_bstr;
-			id_cred._id_cred_x_kid._id_cred_x_kid_bstr.value =
+			id_cred.id_cred_x_kid.id_cred_x_kid_choice =
+				id_cred_x_kid_bstr_c;
+			id_cred.id_cred_x_kid.id_cred_x_kid_bstr.value =
 				cred->key_id.key_id_bstr;
-			id_cred._id_cred_x_kid._id_cred_x_kid_bstr.len =
+			id_cred.id_cred_x_kid.id_cred_x_kid_bstr.len =
 				cred->key_id.key_id_bstr_length;
 			break;
 		default:
@@ -784,31 +784,31 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		if (0 == cred->x509_chain.nr_of_certs)
 			return EDHOC_ERROR_BAD_STATE;
 
-		id_cred._id_cred_x_x5chain_present = true;
+		id_cred.id_cred_x_x5chain_present = true;
 
-		struct COSE_X509_ *cose_x509 =
-			&id_cred._id_cred_x_x5chain._id_cred_x_x5chain;
+		struct COSE_X509_r *cose_x509 =
+			&id_cred.id_cred_x_x5chain.id_cred_x_x5chain;
 
 		if (1 == cred->x509_chain.nr_of_certs) {
-			cose_x509->_COSE_X509_choice = _COSE_X509_bstr;
-			cose_x509->_COSE_X509_bstr.value =
+			cose_x509->COSE_X509_choice = COSE_X509_bstr_c;
+			cose_x509->COSE_X509_bstr.value =
 				cred->x509_chain.cert[0];
-			cose_x509->_COSE_X509_bstr.len =
+			cose_x509->COSE_X509_bstr.len =
 				cred->x509_chain.cert_len[0];
 		} else {
-			if (ARRAY_SIZE(cose_x509->_COSE_X509__certs_certs) <
+			if (ARRAY_SIZE(cose_x509->COSE_X509_certs_l_certs) <
 			    cred->x509_chain.nr_of_certs)
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
-			cose_x509->_COSE_X509_choice = _COSE_X509__certs;
-			cose_x509->_COSE_X509__certs_certs_count =
+			cose_x509->COSE_X509_choice = COSE_X509_certs_l_c;
+			cose_x509->COSE_X509_certs_l_certs_count =
 				cred->x509_chain.nr_of_certs;
 
 			for (size_t i = 0; i < cred->x509_chain.nr_of_certs;
 			     ++i) {
-				cose_x509->_COSE_X509__certs_certs[i].value =
+				cose_x509->COSE_X509_certs_l_certs[i].value =
 					cred->x509_chain.cert[i];
-				cose_x509->_COSE_X509__certs_certs[i].len =
+				cose_x509->COSE_X509_certs_l_certs[i].len =
 					cred->x509_chain.cert_len[i];
 			}
 		}
@@ -816,29 +816,29 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	}
 
 	case EDHOC_COSE_HEADER_X509_HASH: {
-		id_cred._id_cred_x_x5t_present = true;
+		id_cred.id_cred_x_x5t_present = true;
 
 		struct COSE_CertHash *cose_x509 =
-			&id_cred._id_cred_x_x5t._id_cred_x_x5t;
+			&id_cred.id_cred_x_x5t.id_cred_x_x5t;
 
-		cose_x509->_COSE_CertHash_hashValue.value =
+		cose_x509->COSE_CertHash_hashValue.value =
 			cred->x509_hash.cert_fp;
-		cose_x509->_COSE_CertHash_hashValue.len =
+		cose_x509->COSE_CertHash_hashValue.len =
 			cred->x509_hash.cert_fp_len;
 
 		switch (cred->x509_hash.encode_type) {
 		case EDHOC_ENCODE_TYPE_INTEGER:
-			cose_x509->_COSE_CertHash_hashAlg_choice =
-				_COSE_CertHash_hashAlg_int;
-			cose_x509->_COSE_CertHash_hashAlg_int =
+			cose_x509->COSE_CertHash_hashAlg_choice =
+				COSE_CertHash_hashAlg_int_c;
+			cose_x509->COSE_CertHash_hashAlg_int =
 				cred->x509_hash.alg_int;
 			break;
 		case EDHOC_ENCODE_TYPE_BYTE_STRING:
-			cose_x509->_COSE_CertHash_hashAlg_choice =
-				_COSE_CertHash_hashAlg_tstr;
-			cose_x509->_COSE_CertHash_hashAlg_tstr.value =
+			cose_x509->COSE_CertHash_hashAlg_choice =
+				COSE_CertHash_hashAlg_tstr_c;
+			cose_x509->COSE_CertHash_hashAlg_tstr.value =
 				cred->x509_hash.alg_bstr;
-			cose_x509->_COSE_CertHash_hashAlg_tstr.len =
+			cose_x509->COSE_CertHash_hashAlg_tstr.len =
 				cred->x509_hash.alg_bstr_length;
 			break;
 		default:
@@ -994,19 +994,19 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 
 	/* EAD cborising. */
 	if (true == mac_ctx->is_ead) {
-		struct ead_ ead = { ._ead_count = ctx->nr_of_ead_tokens };
+		struct ead tmp_ead = { .ead_count = ctx->nr_of_ead_tokens };
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			ead._ead[i]._ead_label = ctx->ead_token[i].label;
-			ead._ead[i]._ead_value_present =
+			tmp_ead.ead[i].ead_x_ead_label = ctx->ead_token[i].label;
+			tmp_ead.ead[i].ead_x_ead_value_present =
 				(NULL != ctx->ead_token[i].value);
-			ead._ead[i]._ead_value.value = ctx->ead_token[i].value;
-			ead._ead[i]._ead_value.len =
+			tmp_ead.ead[i].ead_x_ead_value.value = ctx->ead_token[i].value;
+			tmp_ead.ead[i].ead_x_ead_value.len =
 				ctx->ead_token[i].value_len;
 		}
 
 		len = 0;
-		ret = cbor_encode_ead(mac_ctx->ead, mac_ctx->ead_len, &ead,
+		ret = cbor_encode_ead(mac_ctx->ead, mac_ctx->ead_len, &tmp_ead,
 				      &len);
 
 		if (ZCBOR_SUCCESS != ret)
@@ -1095,20 +1095,20 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	struct info info = {
-		._info_context.value = mac_ctx->buf,
-		._info_context.len = mac_ctx->buf_len,
-		._info_length = (uint32_t)mac_len,
+		.info_context.value = mac_ctx->buf,
+		.info_context.len = mac_ctx->buf_len,
+		.info_length = (uint32_t)mac_len,
 	};
 
 	if (EDHOC_MSG_2 == ctx->message)
-		info._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2;
+		info.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2;
 
 	if (EDHOC_MSG_3 == ctx->message)
-		info._info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3;
+		info.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3;
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(info._info_label);
+	len += edhoc_cbor_int_mem_req(info.info_label);
 	len += mac_ctx->buf_len + edhoc_cbor_bstr_oh(mac_ctx->buf_len);
 	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
 

@@ -1,5 +1,5 @@
 /*
- * Generated using zcbor version 0.7.0
+ * Generated using zcbor version 0.8.1
  * https://github.com/NordicSemiconductor/zcbor
  * Generated with a --default-max-qty of 3
  */
@@ -26,9 +26,9 @@ extern "C" {
 #define DEFAULT_MAX_QTY 3
 
 struct sig_structure {
-	struct zcbor_string _sig_structure_protected;
-	struct zcbor_string _sig_structure_external_aad;
-	struct zcbor_string _sig_structure_payload;
+	struct zcbor_string sig_structure_protected;
+	struct zcbor_string sig_structure_external_aad;
+	struct zcbor_string sig_structure_payload;
 };
 
 #ifdef __cplusplus
