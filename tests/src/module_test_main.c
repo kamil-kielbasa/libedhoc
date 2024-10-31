@@ -2,7 +2,7 @@
  * \file    module_test_main.c
  * \author  Kamil Kielbasa
  * \brief   Module tests main.
- * \version 0.5
+ * \version 0.6
  * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024

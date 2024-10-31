@@ -2,7 +2,7 @@
  * \file    module_test_rfc9528_suites_negotiation.c
  * \author  Kamil Kielbasa
  * \brief   Module tests for RFC 9528 suites negotation examples.
- * \version 0.5
+ * \version 0.6
  * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024

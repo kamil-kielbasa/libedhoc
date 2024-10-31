@@ -2,7 +2,7 @@
  * \file    edhoc_context.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC context.
- * \version 0.5
+ * \version 0.6
  * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024

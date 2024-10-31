@@ -6,7 +6,7 @@
  *          - static DH keys.
  *          - cipher suite 2.
  *          - single EAD token.
- * \version 0.5
+ * \version 0.6
  * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024

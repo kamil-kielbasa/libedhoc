@@ -2,7 +2,7 @@
  * \file    module_test_cipher_suite_2.c
  * \author  Kamil Kielbasa
  * \brief   Module tests for cipher suite 2.
- * \version 0.5
+ * \version 0.6
  * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024

@@ -2,7 +2,7 @@
  * \file    test_vector_x5chain_static_dh_keys_suite_2.h
  * \author  Kamil Kielbasa
  * \brief   Test vector with keys and certificates for P-256 curve.   
- * \version 0.5
+ * \version 0.6
  * \date    2024-08-05
  * 
  * \copyright Copyright (c) 2024
