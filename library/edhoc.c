@@ -63,7 +63,7 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->method_len = method_len;
-	memcpy(ctx->method, method, method_len);
+	memcpy(ctx->method, method, sizeof(*method) * method_len);
 
 	return EDHOC_SUCCESS;
 }
@@ -230,7 +230,7 @@ int edhoc_error_get_cipher_suites(const struct edhoc_context *ctx,
 	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE != ctx->error_code)
 		return EDHOC_ERROR_BAD_STATE;
 
-	if (ctx->csuite_len < csuites_size)
+	if (ctx->csuite_len > csuites_size)
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
 	*csuites_len = ctx->csuite_len;
