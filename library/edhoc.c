@@ -63,7 +63,7 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 
 	ctx->method_len = method_len;
-	memcpy(ctx->method, method, method_len);
+	memcpy(ctx->method, method, sizeof(*method) * method_len);
 
 	return EDHOC_SUCCESS;
 }
@@ -218,10 +218,13 @@ int edhoc_error_get_code(const struct edhoc_context *ctx,
 
 int edhoc_error_get_cipher_suites(const struct edhoc_context *ctx,
 				  int32_t *csuites, size_t csuites_size,
-				  size_t *csuites_len)
+				  size_t *csuites_len, int32_t *peer_csuites,
+				  size_t peer_csuites_size,
+				  size_t *peer_csuites_len)
 {
 	if (NULL == ctx || NULL == csuites || 0 == csuites_size ||
-	    NULL == csuites_len)
+	    NULL == csuites_len || NULL == peer_csuites ||
+	    0 == peer_csuites_size || NULL == peer_csuites_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	if (!ctx->is_init)
@@ -230,13 +233,21 @@ int edhoc_error_get_cipher_suites(const struct edhoc_context *ctx,
 	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE != ctx->error_code)
 		return EDHOC_ERROR_BAD_STATE;
 
-	if (ctx->csuite_len < csuites_size)
+	if (csuites_size < ctx->csuite_len)
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 
 	*csuites_len = ctx->csuite_len;
 
 	for (size_t i = 0; i < ctx->csuite_len; ++i)
 		csuites[i] = ctx->csuite[i].value;
+
+	if (peer_csuites_size < ctx->peer_csuite_len)
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+
+	*peer_csuites_len = ctx->peer_csuite_len;
+
+	for (size_t i = 0; i < ctx->peer_csuite_len; ++i)
+		peer_csuites[i] = ctx->peer_csuite[i].value;
 
 	return EDHOC_SUCCESS;
 }

@@ -1,3 +1,13 @@
+Next version
+------------
+
+:Date: January X, 2025
+
+* `@marek-serafin <https://github.com/stoprocent>`__ : Fixed some minor issues with sizes.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added module tests for public API.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added peer cipher suites caching for message 1 process.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored cipher suites negotiation module tests.
+
 Version 0.6.0
 -------------
 

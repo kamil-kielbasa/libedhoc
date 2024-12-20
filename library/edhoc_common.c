@@ -997,10 +997,12 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		struct ead tmp_ead = { .ead_count = ctx->nr_of_ead_tokens };
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			tmp_ead.ead[i].ead_x_ead_label = ctx->ead_token[i].label;
+			tmp_ead.ead[i].ead_x_ead_label =
+				ctx->ead_token[i].label;
 			tmp_ead.ead[i].ead_x_ead_value_present =
 				(NULL != ctx->ead_token[i].value);
-			tmp_ead.ead[i].ead_x_ead_value.value = ctx->ead_token[i].value;
+			tmp_ead.ead[i].ead_x_ead_value.value =
+				ctx->ead_token[i].value;
 			tmp_ead.ead[i].ead_x_ead_value.len =
 				ctx->ead_token[i].value_len;
 		}

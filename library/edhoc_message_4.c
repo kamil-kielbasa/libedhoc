@@ -298,13 +298,11 @@ static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label =
 				ctx->ead_token[i].label;
-			ead_4.plaintext_4.EAD_4[i]
-				.ead_y_ead_value.value =
+			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value =
 				ctx->ead_token[i].value;
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len =
 				ctx->ead_token[i].value_len;
-			ead_4.plaintext_4.EAD_4[i]
-				.ead_y_ead_value_present =
+			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value_present =
 				(NULL != ctx->ead_token[i].value);
 		}
 	} else {
@@ -555,8 +553,8 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 	for (size_t i = 0; i < ead_4.plaintext_4.EAD_4_count; ++i) {
 		ctx->ead_token[i].label =
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label;
-		ctx->ead_token[i].value = ead_4.plaintext_4.EAD_4[i]
-						  .ead_y_ead_value.value;
+		ctx->ead_token[i].value =
+			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value;
 		ctx->ead_token[i].value_len =
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len;
 	}

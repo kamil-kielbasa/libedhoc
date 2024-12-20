@@ -65,7 +65,9 @@ if (LIBEDHOC_BUILD_COMPILER_CLANG)
                            -Wno-vla
                            -Wno-declaration-after-statement
                            -Wno-covered-switch-default
-                           -Wno-padded)
+                           -Wno-padded
+                           -Wno-unsafe-buffer-usage
+                           -Wno-switch-default)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC

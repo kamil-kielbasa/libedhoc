@@ -204,11 +204,13 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
 				.ead_x_ead_value_present = true;
-			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i].ead_x_ead_label =
-				ctx->ead_token[i].label;
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
-				.ead_x_ead_value.value = ctx->ead_token[i].value;
-			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i].ead_x_ead_value.len =
+				.ead_x_ead_label = ctx->ead_token[i].label;
+			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
+				.ead_x_ead_value.value =
+				ctx->ead_token[i].value;
+			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
+				.ead_x_ead_value.len =
 				ctx->ead_token[i].value_len;
 		}
 	} else {
@@ -306,16 +308,32 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	/* 3b. Verify cipher suite. */
 	switch (cbor_dec_msg_1.message_1_SUITES_I.suites_choice) {
 	case suites_int_c: {
+		ctx->peer_csuite[ctx->peer_csuite_len].value =
+			cbor_dec_msg_1.message_1_SUITES_I.suites_int;
+		ctx->peer_csuite_len = 1;
+
 		if (csuite.value !=
 		    cbor_dec_msg_1.message_1_SUITES_I.suites_int) {
 			ctx->error_code =
 				EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 		}
+
 		break;
 	}
 
 	case suites_int_l_c: {
+		if (ARRAY_SIZE(ctx->peer_csuite) <
+		    cbor_dec_msg_1.message_1_SUITES_I.suites_int_l_int_count)
+			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+
+		ctx->peer_csuite_len =
+			cbor_dec_msg_1.message_1_SUITES_I.suites_int_l_int_count;
+		for (size_t i = 0; i < ctx->peer_csuite_len; ++i)
+			ctx->peer_csuite[i].value =
+				cbor_dec_msg_1.message_1_SUITES_I
+					.suites_int_l_int[i];
+
 		if (csuite.value !=
 		    cbor_dec_msg_1.message_1_SUITES_I
 			    .suites_int_l_int[cbor_dec_msg_1.message_1_SUITES_I

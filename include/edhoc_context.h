@@ -254,6 +254,11 @@ struct edhoc_context {
 		EDHOC_PRIVATE(csuite)[CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES];
 	/** Length of the \p csuite buffer. */
 	size_t EDHOC_PRIVATE(csuite_len);
+	/** EDHOC peer cipher suite buffer. */
+	struct edhoc_cipher_suite EDHOC_PRIVATE(
+		peer_csuite)[CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES];
+	/** Length of the \p peer_csuite buffer. */
+	size_t EDHOC_PRIVATE(peer_csuite_len);
 
 	/** EDHOC connection identifier. */
 	struct edhoc_connection_id EDHOC_PRIVATE(cid);

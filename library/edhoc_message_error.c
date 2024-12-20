@@ -77,8 +77,8 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		input.message_error_ERR_INFO_present = true;
 		input.message_error_ERR_INFO.message_error_ERR_INFO_choice =
 			message_error_ERR_INFO_tstr_c;
-		input.message_error_ERR_INFO.message_error_ERR_INFO_tstr
-			.value = (const uint8_t *)info->text_string;
+		input.message_error_ERR_INFO.message_error_ERR_INFO_tstr.value =
+			(const uint8_t *)info->text_string;
 		input.message_error_ERR_INFO.message_error_ERR_INFO_tstr.len =
 			info->written_entries;
 		break;

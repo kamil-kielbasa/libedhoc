@@ -38,6 +38,7 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(x5chain_sign_keys_suite_2);
 	RUN_TEST_GROUP(x5chain_static_dh_keys_suite_2);
 	RUN_TEST_GROUP(x5t_sign_keys_suite_2);
+	RUN_TEST_GROUP(api);
 }
 
 /* Module interface function definitions ----------------------------------- */

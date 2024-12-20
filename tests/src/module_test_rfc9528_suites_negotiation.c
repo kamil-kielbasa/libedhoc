@@ -211,14 +211,24 @@ TEST(rfc9528_suites_negotiation, example_1)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE,
 			  error_code_resp);
 
-	/* 4c. Responder collect his EDHOC cipher suites. */
+	/* 4c. Responder collect his own and peer EDHOC cipher suites. */
 	size_t csuites_len = 0;
 	int32_t csuites[1] = { 0 };
-	ret = edhoc_error_get_cipher_suites(&resp_ctx, csuites,
-					    ARRAY_SIZE(csuites), &csuites_len);
+	size_t peer_csuites_len = 0;
+	int32_t peer_csuites[1] = { 0 };
+	ret = edhoc_error_get_cipher_suites(
+		&resp_ctx, csuites, ARRAY_SIZE(csuites), &csuites_len,
+		peer_csuites, ARRAY_SIZE(peer_csuites), &peer_csuites_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_resp), csuites_len);
 	TEST_ASSERT_EQUAL(csuites_resp[0].value, csuites[0]);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_init), peer_csuites_len);
+	TEST_ASSERT_EQUAL(csuites_init[0].value, peer_csuites[0]);
+
+	/*
+	 * Point where responder can compare his and peer cipher suites.
+	 * After comparison responder is able to send error message with his preferences.
+	 */
 
 	/* 4d. Responder compose error message. */
 	size_t msg_err_len = 0;
@@ -397,15 +407,26 @@ TEST(rfc9528_suites_negotiation, example_2)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE,
 			  error_code_resp);
 
-	/* 4c. Responder collect his EDHOC cipher suites. */
+	/* 4c. Responder collect his own and peer EDHOC cipher suites. */
 	size_t csuites_len = 0;
 	int32_t csuites[2] = { 0 };
-	ret = edhoc_error_get_cipher_suites(&resp_ctx, csuites,
-					    ARRAY_SIZE(csuites), &csuites_len);
+	size_t peer_csuites_len = 0;
+	int32_t peer_csuites[2] = { 0 };
+	ret = edhoc_error_get_cipher_suites(
+		&resp_ctx, csuites, ARRAY_SIZE(csuites), &csuites_len,
+		peer_csuites, ARRAY_SIZE(peer_csuites), &peer_csuites_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_resp), csuites_len);
 	TEST_ASSERT_EQUAL(csuites_resp[0].value, csuites[0]);
 	TEST_ASSERT_EQUAL(csuites_resp[1].value, csuites[1]);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_init), peer_csuites_len);
+	TEST_ASSERT_EQUAL(csuites_init[0].value, peer_csuites[0]);
+	TEST_ASSERT_EQUAL(csuites_init[1].value, peer_csuites[1]);
+
+	/*
+	 * Point where responder can compare his and peer cipher suites.
+	 * After comparison responder is able to send error message with his preferences.
+	 */
 
 	/* 4d. Responder compose error message. */
 	size_t msg_err_len = 0;

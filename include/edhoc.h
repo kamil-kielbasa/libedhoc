@@ -37,7 +37,7 @@
 #define EDHOC_API_VERSION_MAJOR 1
 
 /** The minor version of this implementation of the EDHOC API. */
-#define EDHOC_API_VERSION_MINOR 3
+#define EDHOC_API_VERSION_MINOR 4
 
 /**@}*/
 
@@ -655,12 +655,15 @@ int edhoc_error_get_code(const struct edhoc_context *edhoc_context,
 			 enum edhoc_error_code *error_code);
 
 /**
- * \brief EDHOC cipher suites getter in case of \p EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE.
+ * \brief EDHOC own and peer cipher suites getter in case of \p EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE.
  * 
- * \param[in] edhoc_context             EDHOC context. 
- * \param[out] cipher_suites            Buffer where the cipher suites values is to be written.
- * \param cipher_suites_size            Size of the \p cipher_suites buffer in entries.
- * \param[out] cipher_suites_length     On success, the number of entires that make up the cipher suites.
+ * \param[in] edhoc_context             	EDHOC context. 
+ * \param[out] cipher_suites			Buffer where the cipher suites values is to be written.
+ * \param cipher_suites_size            	Size of the \p cipher_suites buffer in entries.
+ * \param[out] cipher_suites_length     	On success, the number of entires that make up the cipher suites.
+ * \param[out] peer_cipher_suites		Buffer where the peer cipher suites values is to be written.
+ * \param peer_cipher_suites_size		Size of the \p peer_cipher_suites buffer in entries.
+ * \param[out] peer_cipher_suites_length	On success, the number of entires that make up the peer cipher suites.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
@@ -674,7 +677,10 @@ int edhoc_error_get_code(const struct edhoc_context *edhoc_context,
 int edhoc_error_get_cipher_suites(const struct edhoc_context *edhoc_context,
 				  int32_t *cipher_suites,
 				  size_t cipher_suites_size,
-				  size_t *cipher_suites_length);
+				  size_t *cipher_suites_length,
+				  int32_t *peer_cipher_suites,
+				  size_t peer_cipher_suites_size,
+				  size_t *peer_cipher_suites_length);
 
 /**@}*/
 
