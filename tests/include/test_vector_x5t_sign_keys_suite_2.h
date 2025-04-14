@@ -2,10 +2,10 @@
  * \file    test_vector_x5t_sign_keys_suite_2.h
  * \author  Kamil Kielbasa
  * \brief   Test vector with keys and certificates for P-256 curve.
- * \version 0.6
- * \date    2024-08-05
+ * \version 1.0
+ * \date    2025-04-14
  * 
- * \copyright Copyright (c) 2024
+ * \copyright Copyright (c) 2025
  * 
  */
 

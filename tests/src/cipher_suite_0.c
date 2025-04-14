@@ -2,10 +2,10 @@
  * \file    cipher_suite_0.c
  * \author  Kamil Kielbasa
  * \brief   Example implementation of cipher suite 0.
- * \version 0.6
- * \date    2024-08-05
+ * \version 1.0
+ * \date    2025-04-14
  * 
- * \copyright Copyright (c) 2024
+ * \copyright Copyright (c) 2025
  * 
  */
 

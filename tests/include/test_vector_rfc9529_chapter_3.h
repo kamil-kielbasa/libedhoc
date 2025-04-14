@@ -6,10 +6,10 @@
  *          represented as raw public keys (RPKs), encoded in a CWT Claims Set (CCS)
  *          and identified by the COSE header parameter 'kid'.
  *          
- * \version 0.6
- * \date    2024-08-05
+ * \version 1.0
+ * \date    2025-04-14
  * 
- * \copyright Copyright (c) 2024
+ * \copyright Copyright (c) 2025
  * 
  */
 

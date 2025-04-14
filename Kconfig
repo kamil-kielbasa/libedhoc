@@ -25,11 +25,11 @@ if LIBEDHOC_ENABLE
         int "Maximum length of hash in bytes."
         default 32
 
-    config LIBCONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS
+    config LIBEDHOC_MAX_NR_OF_EAD_TOKENS
         int "Maximum number of EAD (External Authorization Data) tokens."
         default 3
 
-    config LIBCONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
+    config LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
         int "Maximum number of certificates in X.509 chain."
         default 2
 

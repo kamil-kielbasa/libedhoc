@@ -27,11 +27,11 @@ Kconfig library configuration
 :C:`LIBEDHOC_MAX_LEN_OF_MAC`
     | Maximum length of hash in bytes.
 
-:C:`LIBCONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS`
+:C:`LIBEDHOC_MAX_NR_OF_EAD_TOKENS`
     | Maximum number of EAD (External Authorization Data) tokens.
     | Values bigger than `3` requires regeneration of CBOR backend.
 
-:C:`LIBCONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN`
+:C:`LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN`
     | Maximum number of certificates in X.509 chain.
     | Values bigger than `3` requires regeneration of CBOR backend.
 

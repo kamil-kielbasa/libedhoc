@@ -5,10 +5,10 @@
  *          - X.509 chain.
  *          - signature keys.
  *          - cipher suite 0.
- * \version 0.6
- * \date    2024-08-05
+ * \version 1.0
+ * \date    2025-04-14
  * 
- * \copyright Copyright (c) 2024
+ * \copyright Copyright (c) 2025
  * 
  */
 
@@ -194,11 +194,11 @@ static int auth_cred_fetch_init_single_cert(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	const int ret = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_I, ARRAY_SIZE(SK_I),
 						  auth_cred->priv_key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	return EDHOC_SUCCESS;
@@ -217,11 +217,11 @@ static int auth_cred_fetch_resp_single_cert(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	const int ret = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_R, ARRAY_SIZE(SK_R),
 						  auth_cred->priv_key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	return EDHOC_SUCCESS;
@@ -332,11 +332,11 @@ static int auth_cred_fetch_init_many_certs(void *user_ctx,
 	auth_cred->x509_chain.cert[1] = CRED_R;
 	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_R);
 
-	const int ret = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_I, ARRAY_SIZE(SK_I),
 						  auth_cred->priv_key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	return EDHOC_SUCCESS;
@@ -359,11 +359,11 @@ static int auth_cred_fetch_resp_many_certs(void *user_ctx,
 	auth_cred->x509_chain.cert[1] = CRED_I;
 	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_I);
 
-	const int ret = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_R, ARRAY_SIZE(SK_R),
 						  auth_cred->priv_key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	return EDHOC_SUCCESS;

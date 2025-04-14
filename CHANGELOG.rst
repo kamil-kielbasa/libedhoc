@@ -1,12 +1,20 @@
-Next version
-------------
+Version 1.0.0
+-------------
 
-:Date: January X, 2025
+:Date: April 14, 2025
 
 * `@marek-serafin <https://github.com/stoprocent>`__ : Fixed some minor issues with sizes.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added module tests for public API.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added peer cipher suites caching for message 1 process.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored cipher suites negotiation module tests.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Updated readme.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored Kconfig:
+
+  * Moved hardcoded values from cmake to build script.
+  * Renamed two variables according to style.
+  * Zephyr environment variable in cmake.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Cleaned up cppcheck warnings in module tests.
 
 Version 0.6.0
 -------------
