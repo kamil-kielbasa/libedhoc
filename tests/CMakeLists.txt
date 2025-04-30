@@ -14,7 +14,8 @@ add_executable(${PROJECT_NAME}
                src/module_test_x5chain_sign_keys_suite_2.c
                src/module_test_x5chain_static_dh_keys_suite_2.c
                src/module_test_x5t_sign_keys_suite_2.c
-               src/module_test_api.c)
+               src/module_test_api.c
+               src/module_test_draft_edhoc_psk.c)
 
 if (LIBEDHOC_ENABLE_MODULE_TESTS_TRACES)
         target_compile_definitions(${PROJECT_NAME} PUBLIC

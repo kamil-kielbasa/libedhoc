@@ -5,7 +5,13 @@
 
 ## About libedhoc
 
-**libedhoc** is a C implementation of a lightweight authenticated Diffie-Hellman key exchange with ephemeral keys for constrained devices. It provides mutual authentication, forward secrecy, and identity protection. This protocol, EDHOC, is standardized by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/rfc9528). Code has been tested according to [RFC 9529](https://datatracker.ietf.org/doc/html/rfc9529).
+**libedhoc** is a C implementation of a lightweight authenticated Diffie-Hellman key exchange with ephemeral keys for constrained devices. It provides mutual authentication, forward secrecy, and identity protection. This protocol, EDHOC, is standardized by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/rfc9528).
+
+## Supported RFC's
+
+- [RFC 9528: Ephemeral Diffie-Hellman Over COSE (EDHOC)](https://datatracker.ietf.org/doc/rfc9528/)
+- [RFC 9529: Traces of Ephemeral Diffie-Hellman Over COSE (EDHOC)](https://datatracker.ietf.org/doc/rfc9529/)
+- [draft-ietf-lake-edhoc-psk-03: EDHOC Authenticated with Pre-Shred Keys (PSK)](https://datatracker.ietf.org/doc/draft-ietf-lake-edhoc-psk/)
 
 ## Documentation
 

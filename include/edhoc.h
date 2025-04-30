@@ -77,6 +77,21 @@ int edhoc_context_init(struct edhoc_context *edhoc_context);
 int edhoc_context_deinit(struct edhoc_context *edhoc_context);
 
 /** 
+ * \brief Set EDHOC mode (classical or pre-shared key).
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param mode				EDHOC mode.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \retval #EDHOC_ERROR_INVALID_ARGUMENT
+ *         Input parameter is recognized as invalid.
+ * \retval #EDHOC_ERROR_BAD_STATE
+ *         Internal context state is incorrect.
+ */
+int edhoc_set_mode(struct edhoc_context *edhoc_context, enum edhoc_mode mode);
+
+/** 
  * \brief Set EDHOC methods.
  *
  * According to RFC 9528: 3.2. Method.  It is required to set at least one method 
@@ -631,6 +646,35 @@ int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
 				size_t *sender_id_length, uint8_t *recipient_id,
 				size_t recipient_id_size,
 				size_t *recipient_id_length);
+
+/**
+ * \brief Export the fresh pre-shared key (PSK).
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param[out] credential_psk           Buffer where the exported credential pre-shared key is to be written.
+ * \param resumption_psk_length         Size of the \p credential_psk buffer in bytes.
+ * \param[out] id_credential_psk        Buffer where the exported id credential pre-shared key is to be written.
+ * \param id_credential_psk_length      Size of the \p id_credential_psk buffer in bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \retval #EDHOC_ERROR_INVALID_ARGUMENT
+ *         Combination of input parameters are recognized as invalid.
+ * \retval #EDHOC_ERROR_BAD_STATE
+ *         Internal context state is incorrect.
+ * \retval #EDHOC_ERROR_NOT_PERMITTED
+ *         Processing code branch is not permitted by implementation.
+ * \retval #EDHOC_ERROR_CBOR_FAILURE
+ *         CBOR encoding failure.
+ * \retval #EDHOC_ERROR_CRYPTO_FAILURE
+ *         Cryptographics operation failure.
+ * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
+ *         Computation of pseudorandom key failure.
+ */
+int edhoc_export_psk(struct edhoc_context *edhoc_context,
+		     uint8_t *credential_psk, size_t resumption_psk_length,
+		     uint8_t *id_credential_psk,
+		     size_t id_credential_psk_length);
 
 /**@}*/
 

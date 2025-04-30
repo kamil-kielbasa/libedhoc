@@ -131,34 +131,6 @@ static struct edhoc_context *init_ctx = &edhoc_initiator_context;
 static struct edhoc_context edhoc_responder_context = { 0 };
 static struct edhoc_context *resp_ctx = &edhoc_responder_context;
 
-static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
-	.value = 0,
-	.aead_key_length = 16,
-	.aead_tag_length = 8,
-	.aead_iv_length = 13,
-	.hash_length = 32,
-	.mac_length = 32,
-	.ecc_key_length = 32,
-	.ecc_sign_length = 64,
-};
-
-static const struct edhoc_keys edhoc_keys = {
-	.import_key = cipher_suite_0_key_import,
-	.destroy_key = cipher_suite_0_key_destroy,
-};
-
-static const struct edhoc_crypto edhoc_crypto = {
-	.make_key_pair = cipher_suite_0_make_key_pair,
-	.key_agreement = cipher_suite_0_key_agreement,
-	.signature = cipher_suite_0_signature,
-	.verify = cipher_suite_0_verify,
-	.extract = cipher_suite_0_extract,
-	.expand = cipher_suite_0_expand,
-	.encrypt = cipher_suite_0_encrypt,
-	.decrypt = cipher_suite_0_decrypt,
-	.hash = cipher_suite_0_hash,
-};
-
 static const struct edhoc_credentials edhoc_auth_cred_single_cert_mocked_init = {
 	.fetch = auth_cred_fetch_init_single_cert,
 	.verify = auth_cred_verify_init_single_cert,
@@ -510,10 +482,8 @@ TEST_SETUP(x5chain_sign_keys_suite_0)
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
 
+	const enum edhoc_mode mode = EDHOC_MODE_CLASSIC_RFC_9528;
 	const enum edhoc_method methods[] = { METHOD };
-	const struct edhoc_cipher_suite cipher_suites[] = {
-		edhoc_cipher_suite_0,
-	};
 
 	const struct edhoc_connection_id init_cid = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
@@ -529,39 +499,45 @@ TEST_SETUP(x5chain_sign_keys_suite_0)
 	ret = edhoc_context_init(init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_set_mode(init_ctx, mode);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	ret = edhoc_set_methods(init_ctx, methods, ARRAY_SIZE(methods));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_set_cipher_suites(init_ctx, cipher_suites,
-				      ARRAY_SIZE(cipher_suites));
+	ret = edhoc_set_cipher_suites(init_ctx, cipher_suite_0_get_info(), 1);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_connection_id(init_ctx, &init_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(init_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(init_ctx, cipher_suite_0_get_keys_callbacks());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto);
+	ret = edhoc_bind_crypto(init_ctx,
+				cipher_suite_0_get_cipher_callbacks());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_init(resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_set_mode(resp_ctx, mode);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	ret = edhoc_set_methods(resp_ctx, methods, ARRAY_SIZE(methods));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_set_cipher_suites(resp_ctx, cipher_suites,
-				      ARRAY_SIZE(cipher_suites));
+	ret = edhoc_set_cipher_suites(resp_ctx, cipher_suite_0_get_info(), 1);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_connection_id(resp_ctx, &resp_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(resp_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(resp_ctx, cipher_suite_0_get_keys_callbacks());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto);
+	ret = edhoc_bind_crypto(resp_ctx,
+				cipher_suite_0_get_cipher_callbacks());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 #if defined(TEST_TRACES)

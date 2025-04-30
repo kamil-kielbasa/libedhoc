@@ -86,3 +86,7 @@ EDHOC common
 .. doxygengroup:: edhoc-common-sign-or-mac
    :project: libedhoc
    :members:
+
+.. doxygengroup:: edhoc-psk-common
+   :project: libedhoc
+   :members:

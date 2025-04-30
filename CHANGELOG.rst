@@ -1,3 +1,23 @@
+Version 1.1.0
+-------------
+
+:Date: April 25, 2025
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Implemented draft of EDHOC-PSK (Pre-Shared Key).
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Tested EDHOC-PSK with two scenarios:
+
+  * Without EAD exchange.
+  * With EAD exchange.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Refactored and code clean-up:
+
+  * Aligned naming convention in static functions.
+  * Created common code and getters for cipher suites.
+  * Unified CBOR utils for EDHOC message 4.
+  * Renamed CDDL file according to models.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Removed bug with EDHOC role assignment.
+
 Version 1.0.0
 -------------
 

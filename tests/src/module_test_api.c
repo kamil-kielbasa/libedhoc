@@ -61,22 +61,8 @@ static int ead_process(void *user_context, enum edhoc_message message,
 
 /* Static variables and constants ------------------------------------------ */
 
-static const struct edhoc_keys edhoc_keys = {
-	.import_key = cipher_suite_2_key_import,
-	.destroy_key = cipher_suite_2_key_destroy,
-};
-
-static const struct edhoc_crypto edhoc_crypto = {
-	.make_key_pair = cipher_suite_2_make_key_pair,
-	.key_agreement = cipher_suite_2_key_agreement,
-	.signature = cipher_suite_2_signature,
-	.verify = cipher_suite_2_verify,
-	.extract = cipher_suite_2_extract,
-	.expand = cipher_suite_2_expand,
-	.encrypt = cipher_suite_2_encrypt,
-	.decrypt = cipher_suite_2_decrypt,
-	.hash = cipher_suite_2_hash,
-};
+static const struct edhoc_keys *edhoc_keys = NULL;
+static const struct edhoc_crypto *edhoc_crypto = NULL;
 
 static const struct edhoc_credentials edhoc_credentials = {
 	.fetch = auth_cred_fetch,
@@ -140,6 +126,11 @@ TEST_GROUP(api);
 
 TEST_SETUP(api)
 {
+	edhoc_keys = cipher_suite_2_get_keys_callbacks();
+	TEST_ASSERT_NOT_NULL(edhoc_keys);
+
+	edhoc_crypto = cipher_suite_2_get_cipher_callbacks();
+	TEST_ASSERT_NOT_NULL(edhoc_crypto);
 }
 
 TEST_TEAR_DOWN(api)
@@ -154,6 +145,33 @@ TEST(api, context_init)
 	ret = edhoc_context_init(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(true, ctx.is_init);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(api, set_mode)
+{
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	/*
+	 * Test setting single method.
+	 */
+	struct edhoc_context ctx = { 0 };
+	ret = edhoc_context_init(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_mode(&ctx, EDHOC_MODE_CLASSIC_RFC_9528);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_mode(&ctx, EDHOC_MODE_PSK_DRAFT);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_mode(&ctx, EDHOC_MODE_CLASSIC_RFC_9528 - 1);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_set_mode(&ctx, EDHOC_MODE_PSK_DRAFT + 1);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -394,22 +412,24 @@ TEST(api, bindings)
 	TEST_ASSERT_EQUAL(edhoc_ead.compose, ctx.ead.compose);
 	TEST_ASSERT_EQUAL(edhoc_ead.process, ctx.ead.process);
 
-	ret = edhoc_bind_keys(&ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(&ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_keys.import_key, ctx.keys.import_key);
-	TEST_ASSERT_EQUAL(edhoc_keys.destroy_key, ctx.keys.destroy_key);
+	TEST_ASSERT_EQUAL(edhoc_keys->import_key, ctx.keys.import_key);
+	TEST_ASSERT_EQUAL(edhoc_keys->destroy_key, ctx.keys.destroy_key);
 
-	ret = edhoc_bind_crypto(&ctx, &edhoc_crypto);
+	ret = edhoc_bind_crypto(&ctx, edhoc_crypto);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_crypto.make_key_pair, ctx.crypto.make_key_pair);
-	TEST_ASSERT_EQUAL(edhoc_crypto.key_agreement, ctx.crypto.key_agreement);
-	TEST_ASSERT_EQUAL(edhoc_crypto.signature, ctx.crypto.signature);
-	TEST_ASSERT_EQUAL(edhoc_crypto.verify, ctx.crypto.verify);
-	TEST_ASSERT_EQUAL(edhoc_crypto.extract, ctx.crypto.extract);
-	TEST_ASSERT_EQUAL(edhoc_crypto.expand, ctx.crypto.expand);
-	TEST_ASSERT_EQUAL(edhoc_crypto.encrypt, ctx.crypto.encrypt);
-	TEST_ASSERT_EQUAL(edhoc_crypto.decrypt, ctx.crypto.decrypt);
-	TEST_ASSERT_EQUAL(edhoc_crypto.hash, ctx.crypto.hash);
+	TEST_ASSERT_EQUAL(edhoc_crypto->make_key_pair,
+			  ctx.crypto.make_key_pair);
+	TEST_ASSERT_EQUAL(edhoc_crypto->key_agreement,
+			  ctx.crypto.key_agreement);
+	TEST_ASSERT_EQUAL(edhoc_crypto->signature, ctx.crypto.signature);
+	TEST_ASSERT_EQUAL(edhoc_crypto->verify, ctx.crypto.verify);
+	TEST_ASSERT_EQUAL(edhoc_crypto->extract, ctx.crypto.extract);
+	TEST_ASSERT_EQUAL(edhoc_crypto->expand, ctx.crypto.expand);
+	TEST_ASSERT_EQUAL(edhoc_crypto->encrypt, ctx.crypto.encrypt);
+	TEST_ASSERT_EQUAL(edhoc_crypto->decrypt, ctx.crypto.decrypt);
+	TEST_ASSERT_EQUAL(edhoc_crypto->hash, ctx.crypto.hash);
 
 	ret = edhoc_bind_credentials(&ctx, &edhoc_credentials);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -423,6 +443,7 @@ TEST(api, bindings)
 TEST_GROUP_RUNNER(api)
 {
 	RUN_TEST_CASE(api, context_init);
+	RUN_TEST_CASE(api, set_mode);
 	RUN_TEST_CASE(api, set_methods);
 	RUN_TEST_CASE(api, set_cipher_suites);
 	RUN_TEST_CASE(api, set_connection_id);

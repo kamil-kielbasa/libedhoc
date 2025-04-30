@@ -21,5 +21,5 @@ kconfig_options+="-DCONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=2 "
 rm -rf build
 mkdir build
 cd build
-cmake $libedhoc_options $mbedtls_options $kconfig_options-G Ninja ..
+cmake $libedhoc_options $mbedtls_options $kconfig_options -G Ninja ..
 ninja

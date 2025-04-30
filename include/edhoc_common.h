@@ -96,7 +96,7 @@ struct mac_context {
  */
 struct plaintext {
 	/** Authentication credentials. */
-	struct edhoc_auth_creds auth_cred;
+	struct edhoc_auth_creds auth_creds;
 
 	/** Buffer containing cborised Signature_or_MAC (2/3). */
 	const uint8_t *sign_or_mac;
@@ -283,6 +283,38 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *edhoc_context,
 			     size_t public_key_length, const uint8_t *signature,
 			     size_t signature_length, const uint8_t *mac,
 			     size_t mac_length);
+
+/**@}*/
+
+/** \defgroup edhoc-psk-common EDHOC-PSK commons
+ * @{
+ */
+
+/** 
+ * \brief Compute KEYSTREAM_2 & KEYSTREAM_3.
+ *
+ * \param[in] edhoc_context		EDHOC context.
+ * \param prk_label			PRK (psuedorandom key) label.
+ * \param[in] prk			Buffer containing the PRK (psuedorandom key).
+ * \param prk_length			Size of the \p prk buffer in bytes.
+ * \param[out] keystream		Buffer where the generated keystream is to be written.
+ * \param keystream_length		Size of the \p keystream buffer in bytes.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+int edhoc_comp_keystream(const struct edhoc_context *edhoc_context,
+			 size_t prk_label, const uint8_t *prk,
+			 size_t prk_length, uint8_t *keystream,
+			 size_t keystream_length);
+
+/** 
+ * \brief XOR swap algorithm.
+ *
+ * \param[out] dst		Memory location to XOR to.
+ * \param[in] src		Memory location to XOR from.
+ * \param count			Number of bytes to XOR.
+ */
+void edhoc_xor_arrays(uint8_t *dst, const uint8_t *src, size_t count);
 
 /**@}*/
 

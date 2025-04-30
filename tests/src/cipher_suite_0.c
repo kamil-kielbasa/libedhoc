@@ -39,10 +39,53 @@
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
+
+static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
+	.value = 0,
+	.aead_key_length = 16,
+	.aead_tag_length = 8,
+	.aead_iv_length = 13,
+	.hash_length = 32,
+	.mac_length = 32,
+	.ecc_key_length = 32,
+	.ecc_sign_length = 64,
+};
+
+static const struct edhoc_keys edhoc_cipher_suite_0_keys = {
+	.import_key = cipher_suite_0_key_import,
+	.destroy_key = cipher_suite_0_key_destroy,
+};
+
+static const struct edhoc_crypto edhoc_cipher_suite_0_crypto = {
+	.make_key_pair = cipher_suite_0_make_key_pair,
+	.key_agreement = cipher_suite_0_key_agreement,
+	.signature = cipher_suite_0_signature,
+	.verify = cipher_suite_0_verify,
+	.extract = cipher_suite_0_extract,
+	.expand = cipher_suite_0_expand,
+	.encrypt = cipher_suite_0_encrypt,
+	.decrypt = cipher_suite_0_decrypt,
+	.hash = cipher_suite_0_hash,
+};
+
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
-
 /* Module interface function definitions ----------------------------------- */
+
+const struct edhoc_cipher_suite *cipher_suite_0_get_info(void)
+{
+	return &edhoc_cipher_suite_0;
+}
+
+const struct edhoc_keys *cipher_suite_0_get_keys_callbacks(void)
+{
+	return &edhoc_cipher_suite_0_keys;
+}
+
+const struct edhoc_crypto *cipher_suite_0_get_cipher_callbacks(void)
+{
+	return &edhoc_cipher_suite_0_crypto;
+}
 
 int cipher_suite_0_key_import(void *user_ctx, enum edhoc_key_type key_type,
 			      const uint8_t *raw_key, size_t raw_key_len,

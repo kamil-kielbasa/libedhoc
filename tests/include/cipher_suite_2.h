@@ -37,10 +37,30 @@
 
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
+
+extern const struct edhoc_cipher_suite edhoc_cipher_suite_2;
+extern const struct edhoc_keys edhoc_cipher_suite_2_keys;
+extern const struct edhoc_crypto edhoc_cipher_suite_2_crypto;
+
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
 /* Module interface function definitions ----------------------------------- */
+
+/**
+ * \brief Get cipher suite 2 informations.
+ */
+const struct edhoc_cipher_suite *cipher_suite_2_get_info(void);
+
+/**
+ * \brief Get cipher suite 2 keys callbacks structure.
+ */
+const struct edhoc_keys *cipher_suite_2_get_keys_callbacks(void);
+
+/**
+ * \brief Get cipher suite 2 cipher algorithms callbacks structure.
+ */
+const struct edhoc_crypto *cipher_suite_2_get_cipher_callbacks(void);
 
 /**
  * \brief Crypto key generation.

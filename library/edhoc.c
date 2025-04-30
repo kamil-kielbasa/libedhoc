@@ -47,7 +47,21 @@ int edhoc_context_deinit(struct edhoc_context *ctx)
 	if (!ctx->is_init)
 		return EDHOC_ERROR_BAD_STATE;
 
-	memset(ctx, 0, sizeof(*ctx));
+	memset(ctx, -1, sizeof(*ctx));
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_set_mode(struct edhoc_context *ctx, enum edhoc_mode mode)
+{
+	if (NULL == ctx || (EDHOC_MODE_CLASSIC_RFC_9528 != mode &&
+			    EDHOC_MODE_PSK_DRAFT != mode))
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	if (!ctx->is_init)
+		return EDHOC_ERROR_BAD_STATE;
+
+	ctx->mode = mode;
 
 	return EDHOC_SUCCESS;
 }

@@ -460,6 +460,7 @@ TEST_SETUP(rfc9529_chapter_3)
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
 
+	const enum edhoc_mode mode = EDHOC_MODE_CLASSIC_RFC_9528;
 	const enum edhoc_method methods[] = { METHOD };
 
 	const struct edhoc_connection_id init_cid = {
@@ -473,6 +474,9 @@ TEST_SETUP(rfc9529_chapter_3)
 	};
 
 	ret = edhoc_context_init(init_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_mode(init_ctx, mode);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_methods(init_ctx, methods, ARRAY_SIZE(methods));
@@ -495,6 +499,9 @@ TEST_SETUP(rfc9529_chapter_3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_init(resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_mode(resp_ctx, mode);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_methods(resp_ctx, methods, ARRAY_SIZE(methods));
@@ -598,6 +605,7 @@ TEST(rfc9529_chapter_3, message_1_process)
 TEST(rfc9529_chapter_3, message_2_compose)
 {
 	/* Required injections. */
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_RECEIVED_M1;
 	resp_ctx->chosen_method = METHOD;
 
@@ -649,6 +657,7 @@ TEST(rfc9529_chapter_3, message_2_compose_any)
 				     &edhoc_auth_cred_mocked_resp_any);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_RECEIVED_M1;
 	resp_ctx->chosen_method = METHOD;
 
@@ -696,6 +705,7 @@ TEST(rfc9529_chapter_3, message_2_compose_any)
 TEST(rfc9529_chapter_3, message_2_process)
 {
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_WAIT_M2;
 	init_ctx->chosen_method = METHOD;
 
@@ -738,6 +748,7 @@ TEST(rfc9529_chapter_3, message_2_process)
 TEST(rfc9529_chapter_3, message_3_compose)
 {
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_VERIFIED_M2;
 	init_ctx->chosen_method = METHOD;
 
@@ -789,6 +800,7 @@ TEST(rfc9529_chapter_3, message_3_compose_any)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_VERIFIED_M2;
 	init_ctx->chosen_method = METHOD;
 
@@ -836,6 +848,7 @@ TEST(rfc9529_chapter_3, message_3_compose_any)
 TEST(rfc9529_chapter_3, message_3_process)
 {
 	/* Required injections. */
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_WAIT_M3;
 	resp_ctx->chosen_method = METHOD;
 
@@ -877,6 +890,7 @@ TEST(rfc9529_chapter_3, message_3_process)
 TEST(rfc9529_chapter_3, message_4_compose)
 {
 	/* Required injections. */
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_COMPLETED;
 	resp_ctx->is_oscore_export_allowed = true;
 
@@ -918,6 +932,7 @@ TEST(rfc9529_chapter_3, message_4_compose)
 TEST(rfc9529_chapter_3, message_4_process)
 {
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_COMPLETED;
 	init_ctx->is_oscore_export_allowed = true;
 

@@ -37,12 +37,40 @@
 
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
+
+const struct edhoc_cipher_suite edhoc_cipher_suite_2 = {
+	.value = 2,
+	.aead_key_length = 16,
+	.aead_tag_length = 8,
+	.aead_iv_length = 13,
+	.hash_length = 32,
+	.mac_length = 32,
+	.ecc_key_length = 32,
+	.ecc_sign_length = 64,
+};
+
+const struct edhoc_keys edhoc_cipher_suite_2_keys = {
+	.import_key = cipher_suite_2_key_import,
+	.destroy_key = cipher_suite_2_key_destroy,
+};
+
+const struct edhoc_crypto edhoc_cipher_suite_2_crypto = {
+	.make_key_pair = cipher_suite_2_make_key_pair,
+	.key_agreement = cipher_suite_2_key_agreement,
+	.signature = cipher_suite_2_signature,
+	.verify = cipher_suite_2_verify,
+	.extract = cipher_suite_2_extract,
+	.expand = cipher_suite_2_expand,
+	.encrypt = cipher_suite_2_encrypt,
+	.decrypt = cipher_suite_2_decrypt,
+	.hash = cipher_suite_2_hash,
+};
+
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 
 /**
  * \brief Ellipic curve poin decompression.
- * 
  */
 static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 				  const uint8_t *raw_key, size_t raw_key_len,
@@ -131,6 +159,21 @@ cleanup:
 }
 
 /* Module interface function definitions ----------------------------------- */
+
+const struct edhoc_cipher_suite *cipher_suite_2_get_info(void)
+{
+	return &edhoc_cipher_suite_2;
+}
+
+const struct edhoc_keys *cipher_suite_2_get_keys_callbacks(void)
+{
+	return &edhoc_cipher_suite_2_keys;
+}
+
+const struct edhoc_crypto *cipher_suite_2_get_cipher_callbacks(void)
+{
+	return &edhoc_cipher_suite_2_crypto;
+}
 
 int cipher_suite_2_key_import(void *user_ctx, enum edhoc_key_type key_type,
 			      const uint8_t *raw_key, size_t raw_key_len,

@@ -15,7 +15,7 @@ zcbor_py = "../externals/zcbor/zcbor/zcbor.py"
 models = {
     "EDHOC": "cddls/edhoc.cddl",
     "COSE": "cddls/cose.cddl",
-    "COSE_X509": "cddls/cose_x509.cddl",
+    "CREDENTIALS": "cddls/credentials.cddl",
     "TYPES": "cddls/types.cddl"
 }
 src_dir = "../backends/cbor/src"
@@ -72,18 +72,22 @@ for entry, files in entry_types.items():
 
 generate_cbor_functions("EDHOC", " ".join(entry_types.keys()), "to_delete", "backend_cbor_edhoc_types")
 
-# Generate CBOR encoding and decoding functions for COSE_X509
+# Generate CBOR encoding and decoding functions for CREDENTIALS
 entry_types = {
-    "id_cred_x": ["backend_cbor_id_cred_x", "backend_cbor_x509_types"],
-    "plaintext_2": ["backend_cbor_plaintext_2", "backend_cbor_x509_types"],
-    "plaintext_3": ["backend_cbor_plaintext_3", "backend_cbor_x509_types"],
-    "plaintext_4": ["backend_cbor_plaintext_4", "backend_cbor_x509_types"]
+    "id_cred_x": ["backend_cbor_id_cred_x", "backend_cbor_credentials_types"],
+    "plaintext_2": ["backend_cbor_plaintext_2", "backend_cbor_credentials_types"],
+    "plaintext_2b": ["backend_cbor_plaintext_2b", "backend_cbor_credentials_types"],
+    "plaintext_3": ["backend_cbor_plaintext_3", "backend_cbor_credentials_types"],
+    "plaintext_3a": ["backend_cbor_plaintext_3a", "backend_cbor_credentials_types"],
+    "plaintext_3b": ["backend_cbor_plaintext_3b", "backend_cbor_credentials_types"],
+    "plaintext_4": ["backend_cbor_plaintext_4", "backend_cbor_credentials_types"],
+    "header_map": ["backend_cbor_header_map", "backend_cbor_credentials_types"],
 }
 
 for entry, files in entry_types.items():
-    generate_cbor_functions("COSE_X509", entry, *files)
+    generate_cbor_functions("CREDENTIALS", entry, *files)
 
-generate_cbor_functions("COSE_X509", " ".join(entry_types.keys()), "to_delete", "backend_cbor_x509_types")
+generate_cbor_functions("CREDENTIALS", " ".join(entry_types.keys()), "to_delete", "backend_cbor_credentials_types")
 
 # Generate CBOR encoding and decoding functions for COSE
 generate_cbor_functions("COSE", "sig_structure", "backend_cbor_sig_structure")

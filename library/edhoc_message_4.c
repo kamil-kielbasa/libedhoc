@@ -14,6 +14,7 @@
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
+#include "edhoc_common.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -48,220 +49,156 @@
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 
-/** 
- * \brief CBOR integer memory requirements.
- *
- * \param val                   Raw integer value.
- *
- * \return Number of bytes.
- */
-static inline size_t cbor_int_mem_req(int32_t val);
-
-/** 
- * \brief CBOR text stream overhead.
- *
- * \param len		        Length of buffer to CBOR as tstr.
- *
- * \return Number of bytes.
- */
-static inline size_t cbor_tstr_overhead(size_t len);
-
-/** 
- * \brief CBOR byte stream overhead.
- *
- * \param len		        Length of buffer to CBOR as bstr.
- *
- * \return Number of bytes.
- */
-static inline size_t cbor_bstr_overhead(size_t len);
-
 /**
  * \brief Compute PLAINTEXT_4 length.
  *
- * \param[in] ctx	        EDHOC context.
- * \param[out] ptxt_4_len       Length of PLAINTEXT_4.
+ * \param[in] edhoc_context		EDHOC context.
+ * \param[out] plaintext_4_length       Length of PLAINTEXT_4.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int compute_plaintext_4_len(const struct edhoc_context *ctx,
-				   size_t *ptxt_4_len);
+static int compute_plaintext_4_length(const struct edhoc_context *edhoc_context,
+				      size_t *plaintext_4_length);
 
 /**
  * \brief Prepare PLAINTEXT_4.
  *
- * \param[in] ctx	        EDHOC context.
- * \param[out] ptxt	        Buffer where the generated plaintext is to be written.
- * \param ptxt_size             Size of the \p ptxt buffer in bytes.
- * \param ptxt_len	        On success, the number of bytes that make up the plaintext.
+ * \param[in] edhoc_context	        EDHOC context.
+ * \param[out] plaintext_4	        Buffer where the generated plaintext 4 is to be written.
+ * \param plaintext_4_size             	Size of the \p plaintext_4 buffer in bytes.
+ * \param plaintext_4_length	        On success, the number of bytes that make up the plaintext 4.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
-			       size_t ptxt_size, size_t *ptxt_len);
+static int prepare_plaintext_4(const struct edhoc_context *edhoc_context,
+			       uint8_t *plaintext_4, size_t plaintext_4_size,
+			       size_t *plaintext_4_length);
 
 /**
  * \brief Compute required length in bytes for AAD_4.
  *
- * \param[in] ctx	        EDHOC context.
+ * \param[in] edhoc_context		EDHOC context.
  *
  * \retval Value different than 0 is success, otherwise failure.
  */
-static size_t compute_aad_4_len(const struct edhoc_context *ctx);
+static size_t compute_aad_4_length(const struct edhoc_context *edhoc_context);
 
 /**
  * \brief Compute K_4, IV_4 and AAD_4.
  *
- * \param[in] ctx	        EDHOC context.
- * \param[out] key		Buffer where the generated K_4 is to be written.
- * \param key_len	        Size of the \p key buffer in bytes.
- * \param[out] iv	        Buffer where the generated IV_4 is to be written.
- * \param iv_len                Size of the \p iv buffer in bytes.
- * \param[out] aad	        Buffer where the generated AAD_4 is to be written.
- * \param aad_len               Size of the \p aad buffer in bytes.
+ * \param[in] edhoc_context	        EDHOC context.
+ * \param[out] key			Buffer where the generated K_4 is to be written.
+ * \param key_length	        	Size of the \p key buffer in bytes.
+ * \param[out] iv	        	Buffer where the generated IV_4 is to be written.
+ * \param iv_length                	Size of the \p iv buffer in bytes.
+ * \param[out] aad	        	Buffer where the generated AAD_4 is to be written.
+ * \param aad_size               	Size of the \p aad buffer in bytes.
+ * \param[out] aad_length		On success, the number of bytes that make up the AAD_4.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
-			      size_t key_len, uint8_t *iv, size_t iv_len,
-			      uint8_t *aad, size_t aad_len);
+static int compute_key_iv_aad(const struct edhoc_context *edhoc_context,
+			      uint8_t *key, size_t key_length, uint8_t *iv,
+			      size_t iv_length, uint8_t *aad, size_t aad_size,
+			      size_t *aad_length);
 
 /**
  * \brief Compute CIPHERTEXT_4.
  *
- * \param[in] ctx	        EDHOC context.
- * \param[in] key		Buffer containing the K_4.
- * \param key_len	        Size of the \p key buffer in bytes.
- * \param[in] iv	        Buffer containing the IV_4.
- * \param iv_len                Size of the \p iv buffer in bytes.
- * \param[in] aad	        Buffer containing the AAD_4.
- * \param aad_len               Size of the \p aad buffer in bytes.
- * \param[in] ptxt	        Buffer containing the PLAINTEXT_4.
- * \param ptxt_len              Size of the \p ptxt buffer in bytes.
- * \param[out] ctxt	        Buffer where the generated ciphertext is to be written.
- * \param ctxt_size	        Size of the \p ctxt buffer in bytes.
- * \param[out] ctxt_len         On success, the number of bytes that make up the CIPHERTEXT_4.
+ * \param[in] edhoc_context	        EDHOC context.
+ * \param[in] key			Buffer containing the K_4.
+ * \param key_length	        	Size of the \p key buffer in bytes.
+ * \param[in] iv	        	Buffer containing the IV_4.
+ * \param iv_length                	Size of the \p iv buffer in bytes.
+ * \param[in] aad	        	Buffer containing the AAD_4.
+ * \param aad_length               	Size of the \p aad buffer in bytes.
+ * \param[in] plaintext_4	        Buffer containing the PLAINTEXT_4.
+ * \param plaintext_4_length            Size of the \p plaintext_4 buffer in bytes.
+ * \param[out] ciphertext_4	        Buffer where the generated CIPHERTEXT_4 is to be written.
+ * \param ciphertext_4_size	        Size of the \p ciphertext_4 buffer in bytes.
+ * \param[out] ciphertext_4_length      On success, the number of bytes that make up the CIPHERTEXT_4.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int compute_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *key, size_t key_len,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ptxt, size_t ptxt_len,
-			      uint8_t *ctxt, size_t ctxt_size,
-			      size_t *ctxt_len);
+static int compute_ciphertext_4(const struct edhoc_context *edhoc_context,
+				const uint8_t *key, size_t key_length,
+				const uint8_t *iv, size_t iv_length,
+				const uint8_t *aad, size_t aad_length,
+				const uint8_t *plaintext_4,
+				size_t plaintext_4_length,
+				uint8_t *ciphertext_4, size_t ciphertext_4_size,
+				size_t *ciphertext_4_length);
 
 /**
  * \brief Generate edhoc message 4.
  *
- * \param[in] ctxt	        Buffer continas the ciphertext.
- * \param ctxt_len	        Size of the \p ctxt buffer in bytes.
- * \param[out] msg_4            Buffer where the generated message 4 is to be written.
- * \param msg_4_size            Size of the \p msg_4 buffer in bytes.
- * \param[out] msg_4_len        On success, the number of bytes that make up the message 4.
+ * \param[in] ciphertext_4	        Buffer continas the ciphertext 4.
+ * \param ciphertext_4_length	        Size of the \p ciphertext_4 buffer in bytes.
+ * \param[out] message_4            	Buffer where the generated message 4 is to be written.
+ * \param message_4_size            	Size of the \p message_4 buffer in bytes.
+ * \param[out] message_4_length        	On success, the number of bytes that make up the message 4.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
-		     size_t msg_4_size, size_t *msg_4_len);
+static int generate_message_4(const uint8_t *ciphertext_4,
+			      size_t ciphertext_4_length, uint8_t *message_4,
+			      size_t message_4_size, size_t *message_4_length);
 
 /**
  * \brief CBOR decode message 4 and save address and length for CIPHERTEXT_4.
  *
- * \param[in] msg_4     	Buffer containing the message 4.
- * \param msg_4_len     	Size of the \p msg_4 buffer in bytes.
- * \param[out] ctxt_4	        Pointer to buffer containing the CIPHERTEXT_4.
- * \param[out] ctxt_4_len	Size of the \p ctxctxt_4t buffer in bytes.
+ * \param[in] message_4     		Buffer containing the message 4.
+ * \param message_4_length     		Size of the \p message_4 buffer in bytes.
+ * \param[out] ciphertext_4	        Pointer to buffer containing the CIPHERTEXT_4.
+ * \param[out] ciphertext_4_length	Size of the \p ciphertext_4 buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
-		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
+static int parse_message_4(const uint8_t *message_4, size_t message_4_length,
+			   const uint8_t **ciphertext_4,
+			   size_t *ciphertext_4_length);
 
 /**
  * \brief Decrypt CIPHERTEXT_4.
  *
- * \param[in] ctx		EDHOC context.
- * \param[in] key		Buffer containing the K_4.
- * \param key_len	        Size of the \p key buffer in bytes.
- * \param[in] iv	        Buffer containing the IV_4.
- * \param iv_len                Size of the \p iv buffer in bytes.
- * \param[in] aad	        Buffer containing the AAD_4.
- * \param aad_len               Size of the \p aad buffer in bytes.
- * \param[in] ctxt	        Pointer to buffer containing the CIPHERTEXT_4.
- * \param ctxt_len	        Size of the \p ctxt buffer in bytes.
- * \param[out] ptxt	        Buffer where the decrypted PLAINTEXT_4 is to be written.
- * \param ptxt_len	        Size of the \p ptxt buffer in bytes.
+ * \param[in] edhoc_context		EDHOC context.
+ * \param[in] key			Buffer containing the K_4.
+ * \param key_length	        	Size of the \p key buffer in bytes.
+ * \param[in] iv	        	Buffer containing the IV_4.
+ * \param iv_length                	Size of the \p iv buffer in bytes.
+ * \param[in] aad	        	Buffer containing the AAD_4.
+ * \param aad_length               	Size of the \p aad buffer in bytes.
+ * \param[in] ciphertext_4	        Pointer to buffer containing the CIPHERTEXT_4.
+ * \param ciphertext_4_length	        Size of the \p ctxt_4 buffer in bytes.
+ * \param[out] plaintext_4	        Buffer where the decrypted PLAINTEXT_4 is to be written.
+ * \param plaintext_4_length	        Size of the \p ptxt_4 buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int decrypt_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *key, size_t key_len,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ctxt, size_t ctxt_len,
-			      uint8_t *ptxt, size_t ptxt_len);
+static int
+decrypt_ciphertext_4(const struct edhoc_context *edhoc_context,
+		     const uint8_t *key, size_t key_length, const uint8_t *iv,
+		     size_t iv_length, const uint8_t *aad, size_t aad_length,
+		     const uint8_t *ciphertext_4, size_t ciphertext_4_length,
+		     uint8_t *plaintext_4, size_t plaintext_4_length);
 
 /**
  * \brief Parsed cborised PLAINTEXT_4.
  *
- * \param[in] ctx		EDHOC context.
- * \param[in] ptxt		Buffer containing the PLAINTEXT_4.
- * \param ptxt_len              Size of the \p ptxt buffer in bytes.
+ * \param[in] edhoc_context		EDHOC context.
+ * \param[in] plaintext_4		Buffer containing the PLAINTEXT_4.
+ * \param plaintext_4_length            Size of the \p plaintext_4 buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
-			   size_t ptxt_len);
+static int parse_plaintext_4(struct edhoc_context *edhoc_context,
+			     const uint8_t *plaintext_4,
+			     size_t plaintext_4_length);
 
 /* Static function definitions --------------------------------------------- */
 
-static inline size_t cbor_int_mem_req(int32_t val)
-{
-	if (val >= ONE_BYTE_CBOR_INT_MIN_VALUE &&
-	    val <= ONE_BYTE_CBOR_INT_MAX_VALUE) {
-		return 1;
-	} else if (val >= -(UINT8_MAX + 1) && val <= UINT8_MAX) {
-		return 2;
-	} else if (val >= -(UINT16_MAX + 1) && val <= UINT16_MAX) {
-		return 3;
-	} else {
-		return 4;
-	}
-}
-
-static inline size_t cbor_tstr_overhead(size_t len)
-{
-	if (len <= 23) {
-		return 1;
-	} else if (len <= UINT8_MAX) {
-		return 2;
-	} else if (len <= UINT16_MAX) {
-		return 3;
-	} else if (len <= UINT32_MAX) {
-		return 4;
-	} else {
-		return 5;
-	}
-}
-
-static inline size_t cbor_bstr_overhead(size_t len)
-{
-	if (len <= 23) {
-		return 1;
-	} else if (len <= UINT8_MAX) {
-		return 2;
-	} else if (len <= UINT16_MAX) {
-		return 3;
-	} else if (len <= UINT32_MAX) {
-		return 4;
-	} else {
-		return 5;
-	}
-}
-
-static int compute_plaintext_4_len(const struct edhoc_context *ctx,
-				   size_t *ptxt_4_len)
+static int compute_plaintext_4_length(const struct edhoc_context *ctx,
+				      size_t *ptxt_4_len)
 {
 	if (NULL == ctx || NULL == ptxt_4_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -269,19 +206,19 @@ static int compute_plaintext_4_len(const struct edhoc_context *ctx,
 	size_t len = 0;
 
 	for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-		len += cbor_int_mem_req(ctx->ead_token[i].label);
+		len += edhoc_cbor_int_mem_req(ctx->ead_token[i].label);
 		len += ctx->ead_token[i].value_len + 1;
-		len += cbor_bstr_overhead(ctx->ead_token[i].value_len);
+		len += edhoc_cbor_bstr_oh(ctx->ead_token[i].value_len);
 	}
 
 	*ptxt_4_len = len;
 	return EDHOC_SUCCESS;
 }
 
-static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
-			       size_t ptxt_size, size_t *ptxt_len)
+static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt_4,
+			       size_t ptxt_4_size, size_t *ptxt_4_len)
 {
-	if (NULL == ctx || NULL == ptxt || NULL == ptxt_len)
+	if (NULL == ctx || NULL == ptxt_4 || NULL == ptxt_4_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -309,7 +246,7 @@ static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 		ead_4.plaintext_4_present = false;
 	}
 
-	ret = cbor_encode_plaintext_4(ptxt, ptxt_size, &ead_4, ptxt_len);
+	ret = cbor_encode_plaintext_4(ptxt_4, ptxt_4_size, &ead_4, ptxt_4_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -317,23 +254,23 @@ static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 	return EDHOC_SUCCESS;
 }
 
-static size_t compute_aad_4_len(const struct edhoc_context *ctx)
+static size_t compute_aad_4_length(const struct edhoc_context *ctx)
 {
 	size_t len = 0;
 
-	len += sizeof("Encrypt0") + cbor_tstr_overhead(sizeof("Encrypt0"));
-	len += 0 + cbor_bstr_overhead(0);
-	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
+	len += sizeof("Encrypt0") + edhoc_cbor_tstr_oh(sizeof("Encrypt0"));
+	len += 0 + edhoc_cbor_bstr_oh(0);
+	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 
 	return len;
 }
 
 static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 			      size_t key_len, uint8_t *iv, size_t iv_len,
-			      uint8_t *aad, size_t aad_len)
+			      uint8_t *aad, size_t aad_size, size_t *aad_len)
 {
 	if (NULL == ctx || NULL == key || 0 == key_len || NULL == iv ||
-	    0 == iv_len || NULL == aad || 0 == aad_len)
+	    0 == iv_len || NULL == aad || 0 == aad_size || NULL == aad_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	if (EDHOC_TH_STATE_4 != ctx->th_state ||
@@ -350,9 +287,9 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
-	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req((int32_t)csuite.aead_key_length);
+	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
+	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
+	len += edhoc_cbor_int_mem_req((int32_t)csuite.aead_key_length);
 
 	VLA_ALLOC(uint8_t, info, len);
 	memset(info, 0, VLA_SIZEOF(info));
@@ -422,8 +359,7 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		.enc_structure_external_aad.len = ctx->th_len,
 	};
 
-	len = 0;
-	ret = cbor_encode_enc_structure(aad, aad_len, &cose_enc_0, &len);
+	ret = cbor_encode_enc_structure(aad, aad_size, &cose_enc_0, aad_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -431,12 +367,13 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	return EDHOC_SUCCESS;
 }
 
-static int compute_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *key, size_t key_len,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ptxt, size_t ptxt_len,
-			      uint8_t *ctxt, size_t ctxt_size, size_t *ctxt_len)
+static int compute_ciphertext_4(const struct edhoc_context *ctx,
+				const uint8_t *key, size_t key_len,
+				const uint8_t *iv, size_t iv_len,
+				const uint8_t *aad, size_t aad_len,
+				const uint8_t *ptxt_4, size_t ptxt_4_len,
+				uint8_t *ctxt_4, size_t ctxt_4_size,
+				size_t *ctxt_4_len)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -448,8 +385,8 @@ static int compute_ciphertext(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	ret = ctx->crypto.encrypt(ctx->user_ctx, key_id, iv, iv_len, aad,
-				  aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
-				  ctxt_len);
+				  aad_len, ptxt_4, ptxt_4_len, ctxt_4,
+				  ctxt_4_size, ctxt_4_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
@@ -459,18 +396,19 @@ static int compute_ciphertext(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
-		     size_t msg_4_size, size_t *msg_4_len)
+static int generate_message_4(const uint8_t *ctxt_4, size_t ctxt_4_len,
+			      uint8_t *msg_4, size_t msg_4_size,
+			      size_t *msg_4_len)
 {
-	if (NULL == ctxt || 0 == ctxt_len || NULL == msg_4 || 0 == msg_4_size ||
-	    NULL == msg_4_len)
+	if (NULL == ctxt_4 || 0 == ctxt_4_len || NULL == msg_4 ||
+	    0 == msg_4_size || NULL == msg_4_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	const struct zcbor_string input_bstr = {
-		.value = ctxt,
-		.len = ctxt_len,
+		.value = ctxt_4,
+		.len = ctxt_4_len,
 	};
 
 	ret = cbor_encode_message_4_CIPHERTEXT_4(msg_4, msg_4_size, &input_bstr,
@@ -482,8 +420,8 @@ static int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
 	return EDHOC_SUCCESS;
 }
 
-static int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
-		       const uint8_t **ctxt_4, size_t *ctxt_4_len)
+static int parse_message_4(const uint8_t *msg_4, size_t msg_4_len,
+			   const uint8_t **ctxt_4, size_t *ctxt_4_len)
 {
 	if (NULL == msg_4 || 0 == msg_4_len || NULL == ctxt_4 ||
 	    NULL == ctxt_4_len)
@@ -505,12 +443,12 @@ static int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 	return EDHOC_SUCCESS;
 }
 
-static int decrypt_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *key, size_t key_len,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ctxt, size_t ctxt_len,
-			      uint8_t *ptxt, size_t ptxt_len)
+static int decrypt_ciphertext_4(const struct edhoc_context *ctx,
+				const uint8_t *key, size_t key_len,
+				const uint8_t *iv, size_t iv_len,
+				const uint8_t *aad, size_t aad_len,
+				const uint8_t *ctxt_4, size_t ctxt_4_len,
+				uint8_t *ptxt_4, size_t ptxt_4_len)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -523,28 +461,28 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	ret = ctx->crypto.decrypt(ctx->user_ctx, key_id, iv, iv_len, aad,
-				  aad_len, ctxt, ctxt_len, ptxt, ptxt_len,
-				  &len);
+				  aad_len, ctxt_4, ctxt_4_len, ptxt_4,
+				  ptxt_4_len, &len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret || ptxt_len != len)
+	if (EDHOC_SUCCESS != ret || ptxt_4_len != len)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	return EDHOC_SUCCESS;
 }
 
-static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
-			   size_t ptxt_len)
+static int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt_4,
+			     size_t ptxt_4_len)
 {
-	if (NULL == ctx || NULL == ptxt)
+	if (NULL == ctx || NULL == ptxt_4)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	size_t len = 0;
 	struct plaintext_4 ead_4 = { 0 };
-	ret = cbor_decode_plaintext_4(ptxt, ptxt_len, &ead_4, &len);
+	ret = cbor_decode_plaintext_4(ptxt_4, ptxt_4_len, &ead_4, &len);
 
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -568,10 +506,10 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
  * Steps for composition of message 4:
  *      1.  Choose most preferred cipher suite.
  *      2.  Compose EAD_4 if present.
- *      3a. Compute plaintext length (PLAINTEXT_4).
- *      3b. Prepare plaintext (PLAINTEXT_4).
+ *      3a. Compute ptxt_4 length (PLAINTEXT_4).
+ *      3b. Prepare ptxt_4 (PLAINTEXT_4).
  *      4.  Compute K_4, IV_4 and AAD_4.
- *      5.  Compute ciphertext.
+ *      5.  Compute ctxt_4.
  *      6.  Generate edhoc message 4.
  */
 int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
@@ -589,7 +527,6 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 	ctx->message = EDHOC_MSG_4;
-	ctx->role = EDHOC_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -626,26 +563,24 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		}
 	}
 
-	/* 3a. Compute plaintext length (PLAINTEXT_4). */
-	size_t plaintext_len = 0;
-	ret = compute_plaintext_4_len(ctx, &plaintext_len);
+	/* 3a. Compute ptxt_4 length (PLAINTEXT_4). */
+	size_t ptxt_4_len = 0;
+	ret = compute_plaintext_4_length(ctx, &ptxt_4_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	VLA_ALLOC(uint8_t, plaintext, plaintext_len);
-	memset(plaintext, 0, VLA_SIZEOF(plaintext));
+	VLA_ALLOC(uint8_t, ptxt_4, ptxt_4_len);
+	memset(ptxt_4, 0, VLA_SIZEOF(ptxt_4));
 
-	/* 3b. Prepare plaintext (PLAINTEXT_4). */
-	ret = prepare_plaintext_4(ctx, plaintext, VLA_SIZE(plaintext),
-				  &plaintext_len);
+	/* 3b. Prepare ptxt_4 (PLAINTEXT_4). */
+	ret = prepare_plaintext_4(ctx, ptxt_4, VLA_SIZE(ptxt_4), &ptxt_4_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
 	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", plaintext,
-			    plaintext_len);
+		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", ptxt_4, ptxt_4_len);
 
 	/* 4. Compute K_4, IV_4 and AAD_4. */
 	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
@@ -654,12 +589,13 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	VLA_ALLOC(uint8_t, iv, csuite.aead_iv_length);
 	memset(iv, 0, VLA_SIZEOF(iv));
 
-	const size_t aad_len = compute_aad_4_len(ctx);
+	size_t aad_len = compute_aad_4_length(ctx);
 	VLA_ALLOC(uint8_t, aad, aad_len);
 	memset(aad, 0, VLA_SIZEOF(aad));
 
+	aad_len = 0;
 	ret = compute_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-				 VLA_SIZE(aad));
+				 VLA_SIZE(aad), &aad_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -667,30 +603,27 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	if (NULL != ctx->logger) {
 		ctx->logger(ctx->user_ctx, "K_4", key, VLA_SIZE(key));
 		ctx->logger(ctx->user_ctx, "IV_4", iv, VLA_SIZE(iv));
-		ctx->logger(ctx->user_ctx, "AAD_4", aad, VLA_SIZE(aad));
+		ctx->logger(ctx->user_ctx, "AAD_4", aad, aad_len);
 	}
 
-	/* 5. Compute ciphertext. */
-	size_t ciphertext_len = 0;
-	VLA_ALLOC(uint8_t, ciphertext,
-		  VLA_SIZE(plaintext) + csuite.aead_tag_length);
-	memset(ciphertext, 0, VLA_SIZEOF(ciphertext));
+	/* 5. Compute ctxt_4. */
+	size_t ctxt_4_len = 0;
+	VLA_ALLOC(uint8_t, ctxt_4, VLA_SIZE(ptxt_4) + csuite.aead_tag_length);
+	memset(ctxt_4, 0, VLA_SIZEOF(ctxt_4));
 
-	ret = compute_ciphertext(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-				 VLA_SIZE(aad), plaintext, plaintext_len,
-				 ciphertext, VLA_SIZE(ciphertext),
-				 &ciphertext_len);
+	ret = compute_ciphertext_4(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv),
+				   aad, aad_len, ptxt_4, ptxt_4_len, ctxt_4,
+				   VLA_SIZE(ctxt_4), &ctxt_4_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "CIPHERTEXT_4", ciphertext,
-			    ciphertext_len);
+		ctx->logger(ctx->user_ctx, "CIPHERTEXT_4", ctxt_4, ctxt_4_len);
 
 	/* 6. Generate edhoc message 4. */
-	ret = gen_msg_4(ciphertext, ciphertext_len, msg_4, msg_4_size,
-			msg_4_len);
+	ret = generate_message_4(ctxt_4, ctxt_4_len, msg_4, msg_4_size,
+				 msg_4_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -711,8 +644,8 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
  *      1. Choose most preferred cipher suite.
  *      2. CBOR decode message 3.
  *      3. Compute K_4, IV_4 and AAD_4.
- *      4. Decrypt ciphertext.
- *      5. Parse CBOR plaintext (PLAINTEXT_4).
+ *      4. Decrypt ctxt_4.
+ *      5. Parse CBOR ptxt_4 (PLAINTEXT_4).
  *      6. Process EAD_4 if present.
  */
 int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
@@ -729,7 +662,6 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 	ctx->message = EDHOC_MSG_4;
-	ctx->role = EDHOC_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -738,16 +670,16 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	/* 2. CBOR decode message 3. */
-	const uint8_t *ctxt = NULL;
-	size_t ctxt_len = 0;
+	const uint8_t *ctxt_4 = NULL;
+	size_t ctxt_4_len = 0;
 
-	ret = parse_msg_4(msg_4, msg_4_len, &ctxt, &ctxt_len);
+	ret = parse_message_4(msg_4, msg_4_len, &ctxt_4, &ctxt_4_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_MSG_4_PROCESS_FAILURE;
 
 	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "CIPHERTEXT_4", ctxt, ctxt_len);
+		ctx->logger(ctx->user_ctx, "CIPHERTEXT_4", ctxt_4, ctxt_4_len);
 
 	/* 3. Compute K_4, IV_4 and AAD_4. */
 	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
@@ -756,12 +688,13 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	VLA_ALLOC(uint8_t, iv, csuite.aead_iv_length);
 	memset(iv, 0, VLA_SIZEOF(iv));
 
-	const size_t aad_len = compute_aad_4_len(ctx);
+	size_t aad_len = compute_aad_4_length(ctx);
 	VLA_ALLOC(uint8_t, aad, aad_len);
 	memset(aad, 0, VLA_SIZEOF(aad));
 
+	aad_len = 0;
 	ret = compute_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-				 VLA_SIZE(aad));
+				 VLA_SIZE(aad), &aad_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -769,25 +702,26 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	if (NULL != ctx->logger) {
 		ctx->logger(ctx->user_ctx, "K_4", key, VLA_SIZE(key));
 		ctx->logger(ctx->user_ctx, "IV_4", iv, VLA_SIZE(iv));
-		ctx->logger(ctx->user_ctx, "AAD_4", aad, VLA_SIZE(aad));
+		ctx->logger(ctx->user_ctx, "AAD_4", aad, aad_len);
 	}
 
-	/* 4. Decrypt ciphertext. */
-	VLA_ALLOC(uint8_t, ptxt, ctxt_len - csuite.aead_tag_length);
-	memset(ptxt, 0, VLA_SIZEOF(ptxt));
+	/* 4. Decrypt ctxt_4. */
+	VLA_ALLOC(uint8_t, ptxt_4, ctxt_4_len - csuite.aead_tag_length);
+	memset(ptxt_4, 0, VLA_SIZEOF(ptxt_4));
 
-	ret = decrypt_ciphertext(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-				 VLA_SIZE(aad), ctxt, ctxt_len, ptxt,
-				 VLA_SIZE(ptxt));
+	ret = decrypt_ciphertext_4(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv),
+				   aad, aad_len, ctxt_4, ctxt_4_len, ptxt_4,
+				   VLA_SIZE(ptxt_4));
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 
 	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", ptxt, VLA_SIZE(ptxt));
+		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", ptxt_4,
+			    VLA_SIZE(ptxt_4));
 
-	/* 5. Parse CBOR plaintext (PLAINTEXT_4). */
-	ret = parse_plaintext(ctx, ptxt, VLA_SIZE(ptxt));
+	/* 5. Parse CBOR ptxt_4 (PLAINTEXT_4). */
+	ret = parse_plaintext_4(ctx, ptxt_4, VLA_SIZE(ptxt_4));
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;

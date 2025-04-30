@@ -308,8 +308,10 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	    NULL == secret || 0 == secret_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (OSCORE_EXTRACT_LABEL_MASTER_SECRET != label &&
-	    OSCORE_EXTRACT_LABEL_MASTER_SALT != label &&
+	if (OSCORE_EXPORTER_LABEL_MASTER_SECRET != label &&
+	    OSCORE_EXPORTER_LABEL_MASTER_SALT != label &&
+	    EDHOC_EXPORTER_LABEL_CRED_PSK != label &&
+	    EDHOC_EXPORTER_LABEL_ID_CRED_PSK != label &&
 	    (EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM > label ||
 	     EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label))
 		return EDHOC_ERROR_BAD_STATE;
@@ -453,14 +455,14 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	/* 1. Derive OSCORE master secret. */
-	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
-					secret, secret_len);
+	ret = edhoc_export_prk_exporter(
+		ctx, OSCORE_EXPORTER_LABEL_MASTER_SECRET, secret, secret_len);
 
 	if (EDHOC_SUCCESS != ret)
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 
 	/* 2. Derive OSCORE master salt. */
-	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT,
+	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXPORTER_LABEL_MASTER_SALT,
 					salt, salt_len);
 
 	if (EDHOC_SUCCESS != ret)
@@ -536,6 +538,45 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
+
+	ctx->status = status;
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_export_psk(struct edhoc_context *ctx, uint8_t *cred_psk,
+		     size_t cred_psk_len, uint8_t *id_cred_psk,
+		     size_t id_cred_psk_len)
+{
+	if (NULL == ctx || NULL == cred_psk || 0 == cred_psk_len ||
+	    NULL == id_cred_psk || 0 == id_cred_psk_len)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	if (false == ctx->is_psk_export_allowed)
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (EDHOC_SM_COMPLETED > ctx->status ||
+	    EDHOC_PRK_STATE_4E3M > ctx->prk_state)
+		return EDHOC_ERROR_BAD_STATE;
+
+	const enum edhoc_state_machine status = ctx->status;
+	ctx->status = EDHOC_SM_ABORTED;
+	ctx->is_psk_export_allowed = false;
+
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	/* 1. Derive CRED_PSK. */
+	ret = edhoc_export_prk_exporter(ctx, EDHOC_EXPORTER_LABEL_CRED_PSK,
+					cred_psk, cred_psk_len);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+
+	/* 2. Derive ID_CRED_PSK. */
+	ret = edhoc_export_prk_exporter(ctx, EDHOC_EXPORTER_LABEL_ID_CRED_PSK,
+					id_cred_psk, id_cred_psk_len);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 
 	ctx->status = status;
 	return EDHOC_SUCCESS;

@@ -37,6 +37,21 @@
 /* Module interface function definitions ----------------------------------- */
 
 /**
+ * \brief Get cipher suite 0 informations.
+ */
+const struct edhoc_cipher_suite *cipher_suite_0_get_info(void);
+
+/**
+ * \brief Get cipher suite 0 keys callbacks structure.
+ */
+const struct edhoc_keys *cipher_suite_0_get_keys_callbacks(void);
+
+/**
+ * \brief Get cipher suite 0 cipher algorithms callbacks structure.
+ */
+const struct edhoc_crypto *cipher_suite_0_get_cipher_callbacks(void);
+
+/**
  * \brief Crypto key generation.
  */
 int cipher_suite_0_key_import(void *user_context, enum edhoc_key_type key_type,

@@ -51,7 +51,7 @@
 /** 
  * \brief Check if integer might be encoded as CBOR one byte. 
  *
- * \param value                 Value for cbor encoding.
+ * \param value                 	Value for cbor encoding.
  *
  * \return True if might be encoded as one byte cbor integer,
  *         otherwise false.
@@ -61,109 +61,117 @@ static inline bool edhoc_cbor_is_one_byte_int(int32_t value);
 /**
  * \brief Compute required buffer length for C_R (message_2).
  * 
- * \param[in] cid               EDHOC connection identifier.
- * \param[out] len              On success, number of bytes that make up 
- *                              C_R length requirements.
+ * \param[in] connection_id             EDHOC connection identifier.
+ * \param[out] connection_id_length	On success, number of bytes that make up 
+ *                              	C_R length requirements.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
+static int
+compute_conn_id_length(const struct edhoc_connection_id *connection_id,
+		       size_t *connection_id_length);
 
 /**
  * \brief Compute required buffer length for ID_CRED (I/R).
  * 
- * \param[in] cred              Authentication credentials.
- * \param[out] len              On success, number of bytes that make up 
- *                              ID_CRED length requirements.
+ * \param[in] auth_credentials		Authentication credentials.
+ * \param[out] id_credentials_length   	On success, number of bytes that make up 
+ *                              	ID_CRED length requirements.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+static int
+compute_id_cred_length(const struct edhoc_auth_creds *auth_credentials,
+		       size_t *id_credentials_length);
 
 /**
  * \brief Compute required buffer length for TH (2/3).
  * 
- * \param th_len                Transcript hash length.
- * \param[out] len              On success, number of bytes that make up 
- *                              TH length requirements.
+ * \param th_length                	Transcript hash length.
+ * \param[out] cbor_th_length 		On success, number of bytes that make up 
+ *                              	TH length requirements.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_th_len(size_t th_len, size_t *len);
+static int compute_th_length(size_t th_length, size_t *cbor_th_length);
 
 /**
  * \brief Compute required buffer length for CRED (I/R).
  * 
- * \param[in] cred              Authentication credentials.
- * \param[out] len              On success, number of bytes that make up 
- *                              CRED length requirements.
+ * \param[in] auth_credentials		Authentication credentials.
+ * \param[out] credentials_length	On success, number of bytes that make up 
+ *                              	CRED length requirements.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+static int compute_cred_length(const struct edhoc_auth_creds *auth_credentials,
+			       size_t *credentials_length);
 
 /**
  * \brief Compute required buffer length for EAD (2/3).
  * 
- * \param[in] ctx               EDHOC context.
- * \param[out] len              On success, number of bytes that make up 
- *                              EAD buffer length requirements.
+ * \param[in] edhoc_context		EDHOC context.
+ * \param[out] ead_length              	On success, number of bytes that make up 
+ *                              	EAD buffer length requirements.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
+static int compute_ead_length(const struct edhoc_context *edhoc_context,
+			      size_t *ead_length);
 
 /**
  * \brief Perform compact encoding described in:
  *        - RFC 9528: 3.5.3.2. Compact Encoding of ID_CRED Fields for 'kid'.
  * 
- * \param[in] cred              Authentication credentials.
- * \param[in,out] mac_ctx       Structure containing the context_2.
+ * \param[in] auth_credentials 		Authentication credentials.
+ * \param[in,out] mac_context       	Structure containing the MAC context.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
-				struct mac_context *mac_ctx);
+static int kid_compact_encoding(const struct edhoc_auth_creds *auth_credentials,
+				struct mac_context *mac_context);
 
 /**
  * \brief Compute COSE_Sign1.
  * 
- * \param[in] ctx               EDHOC context.
- * \param[in] cred              Authentication credentials.
- * \param[in] mac_ctx           MAC context.
- * \param[in] mac               Buffer containing MAC 2/3.
- * \param mac_len               Size of the \p mac buffer in bytes.
- * \param[out] sign             Buffer containing signature.
- * \param sign_size             Size of the \p sign buffer in bytes.
- * \param[out] sign_len         On success, the number of bytes that make up the signature.
+ * \param[in] edhoc_context 		EDHOC context.
+ * \param[in] auth_credentials       	Authentication credentials.
+ * \param[in] mac_context           	MAC context.
+ * \param[in] mac               	Buffer containing MAC 2/3.
+ * \param mac_length               	Size of the \p mac buffer in bytes.
+ * \param[out] signature             	Buffer containing signature.
+ * \param signature_size             	Size of the \p signature buffer in bytes.
+ * \param[out] signature_length         On success, the number of bytes that make up the signature.
  * 
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int sign_cose_sign_1(const struct edhoc_context *ctx,
-			    const struct edhoc_auth_creds *cred,
-			    const struct mac_context *mac_ctx,
-			    const uint8_t *mac, size_t mac_len, uint8_t *sign,
-			    size_t sign_size, size_t *sign_len);
+static int sign_cose_sign_1(const struct edhoc_context *edhoc_context,
+			    const struct edhoc_auth_creds *auth_credentials,
+			    const struct mac_context *mac_context,
+			    const uint8_t *mac, size_t mac_length,
+			    uint8_t *signature, size_t signature_size,
+			    size_t *signature_length);
 
 /**
  * \brief Verify COSE_Sign1.
  * 
- * \param[in] ctx               EDHOC context.
- * \param[in] mac_ctx           MAC context.
- * \param[in] pub_key           Buffer containing public key.
- * \param pub_key_len           Size of the \p pub_key buffer in bytes.
- * \param[in] mac               Buffer containing MAC 2/3.
- * \param mac_len               Size of the \p mac buffer in bytes.
- * \param[out] sign             Buffer containing signature.
- * \param sign_len              Size of the \p sign buffer in bytes.
+ * \param[in] edhoc_context       	EDHOC context.
+ * \param[in] mac_context           	MAC context.
+ * \param[in] public_key           	Buffer containing public key.
+ * \param public_key_length           	Size of the \p pub_key buffer in bytes.
+ * \param[in] mac               	Buffer containing MAC 2/3.
+ * \param mac_length               	Size of the \p mac buffer in bytes.
+ * \param[out] signature             	Buffer containing signature.
+ * \param signature_length              Size of the \p signature buffer in bytes.
  * 
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int verify_cose_sign_1(const struct edhoc_context *ctx,
-			      const struct mac_context *mac_ctx,
-			      const uint8_t *pub_key, size_t pub_key_len,
-			      const uint8_t *mac, size_t mac_len,
-			      const uint8_t *sign, size_t sign_len);
+static int verify_cose_sign_1(const struct edhoc_context *edhoc_context,
+			      const struct mac_context *mac_context,
+			      const uint8_t *public_key,
+			      size_t public_key_length, const uint8_t *mac,
+			      size_t mac_length, const uint8_t *signature,
+			      size_t signature_length);
 
 /* Static function definitions --------------------------------------------- */
 
@@ -172,20 +180,21 @@ static inline bool edhoc_cbor_is_one_byte_int(int32_t value)
 	return 1 == edhoc_cbor_int_mem_req(value);
 }
 
-static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
+static int compute_conn_id_length(const struct edhoc_connection_id *cid,
+				  size_t *cid_len)
 {
-	if (NULL == cid || NULL == len)
+	if (NULL == cid || NULL == cid_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	*len = 0;
+	*cid_len = 0;
 
 	switch (cid->encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		*len = 1;
+		*cid_len = 1;
 		break;
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		*len += cid->bstr_length + 1;
-		*len += edhoc_cbor_bstr_oh(cid->bstr_length);
+		*cid_len += cid->bstr_length + 1;
+		*cid_len += edhoc_cbor_bstr_oh(cid->bstr_length);
 		break;
 	default:
 		return EDHOC_ERROR_NOT_PERMITTED;
@@ -194,30 +203,32 @@ static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
+static int compute_id_cred_length(const struct edhoc_auth_creds *auth_creds,
+				  size_t *id_cred_len)
 {
-	if (NULL == cred || NULL == len)
+	if (NULL == auth_creds || NULL == id_cred_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	*len = 0;
+	*id_cred_len = 0;
 	const size_t nr_of_items = 1;
 
-	switch (cred->label) {
+	switch (auth_creds->label) {
 	case EDHOC_COSE_ANY:
-		*len += cred->any.id_cred_len;
+		*id_cred_len += auth_creds->any.id_cred_len;
 		break;
 
 	case EDHOC_COSE_HEADER_KID:
-		*len += edhoc_cbor_map_oh(nr_of_items);
+		*id_cred_len += edhoc_cbor_map_oh(nr_of_items);
 
-		switch (cred->key_id.encode_type) {
+		switch (auth_creds->key_id.encode_type) {
 		case EDHOC_ENCODE_TYPE_INTEGER:
-			*len += edhoc_cbor_int_mem_req(cred->key_id.key_id_int);
+			*id_cred_len += edhoc_cbor_int_mem_req(
+				auth_creds->key_id.key_id_int);
 			break;
 		case EDHOC_ENCODE_TYPE_BYTE_STRING:
-			*len += cred->key_id.key_id_bstr_length;
-			*len += edhoc_cbor_bstr_oh(
-				cred->key_id.key_id_bstr_length);
+			*id_cred_len += auth_creds->key_id.key_id_bstr_length;
+			*id_cred_len += edhoc_cbor_bstr_oh(
+				auth_creds->key_id.key_id_bstr_length);
 			break;
 		default:
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -225,38 +236,41 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
-		*len += edhoc_cbor_map_oh(nr_of_items);
-		for (size_t i = 0; i < cred->x509_chain.nr_of_certs; ++i) {
-			*len += cred->x509_chain.cert_len[i];
-			*len += edhoc_cbor_bstr_oh(
-				cred->x509_chain.cert_len[i]);
+		*id_cred_len += edhoc_cbor_map_oh(nr_of_items);
+		for (size_t i = 0; i < auth_creds->x509_chain.nr_of_certs;
+		     ++i) {
+			*id_cred_len += auth_creds->x509_chain.cert_len[i];
+			*id_cred_len += edhoc_cbor_bstr_oh(
+				auth_creds->x509_chain.cert_len[i]);
 		}
 
-		if (cred->x509_chain.nr_of_certs > 1)
-			*len += edhoc_cbor_array_oh(
-				cred->x509_chain.nr_of_certs);
+		if (auth_creds->x509_chain.nr_of_certs > 1)
+			*id_cred_len += edhoc_cbor_array_oh(
+				auth_creds->x509_chain.nr_of_certs);
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		*len += edhoc_cbor_map_oh(nr_of_items);
-		*len += edhoc_cbor_array_oh(nr_of_items);
+		*id_cred_len += edhoc_cbor_map_oh(nr_of_items);
+		*id_cred_len += edhoc_cbor_array_oh(nr_of_items);
 
-		switch (cred->x509_hash.encode_type) {
+		switch (auth_creds->x509_hash.encode_type) {
 		case EDHOC_ENCODE_TYPE_INTEGER:
-			*len += edhoc_cbor_int_mem_req(cred->x509_hash.alg_int);
+			*id_cred_len += edhoc_cbor_int_mem_req(
+				auth_creds->x509_hash.alg_int);
 			break;
 		case EDHOC_ENCODE_TYPE_BYTE_STRING:
-			*len += cred->x509_hash.alg_bstr_length;
-			*len += edhoc_cbor_bstr_oh(
-				cred->x509_hash.alg_bstr_length);
+			*id_cred_len += auth_creds->x509_hash.alg_bstr_length;
+			*id_cred_len += edhoc_cbor_bstr_oh(
+				auth_creds->x509_hash.alg_bstr_length);
 			break;
 		default:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
-		*len += cred->x509_hash.cert_fp_len;
-		*len += edhoc_cbor_bstr_oh(cred->x509_hash.cert_fp_len);
+		*id_cred_len += auth_creds->x509_hash.cert_fp_len;
+		*id_cred_len +=
+			edhoc_cbor_bstr_oh(auth_creds->x509_hash.cert_fp_len);
 		break;
 
 	default:
@@ -266,44 +280,45 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_th_len(size_t th_len, size_t *len)
+static int compute_th_length(size_t th_len, size_t *cbor_th_len)
 {
-	if (0 == th_len || NULL == len)
+	if (0 == th_len || NULL == cbor_th_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	*len = 0;
-	*len += th_len;
-	*len += edhoc_cbor_bstr_oh(th_len);
+	*cbor_th_len = 0;
+	*cbor_th_len += th_len;
+	*cbor_th_len += edhoc_cbor_bstr_oh(th_len);
 
 	return EDHOC_SUCCESS;
 }
 
-static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
+static int compute_cred_length(const struct edhoc_auth_creds *auth_creds,
+			       size_t *cred_len)
 {
-	if (NULL == cred || NULL == len)
+	if (NULL == auth_creds || NULL == cred_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	switch (cred->label) {
+	switch (auth_creds->label) {
 	case EDHOC_COSE_ANY:
-		*len += cred->any.cred_len;
+		*cred_len += auth_creds->any.cred_len;
 		break;
 
 	case EDHOC_COSE_HEADER_KID:
-		*len += cred->key_id.cred_len;
-		*len += edhoc_cbor_bstr_oh(cred->key_id.cred_len);
+		*cred_len += auth_creds->key_id.cred_len;
+		*cred_len += edhoc_cbor_bstr_oh(auth_creds->key_id.cred_len);
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
 		const size_t end_entity_idx = 0;
-		*len += cred->x509_chain.cert_len[end_entity_idx];
-		*len += edhoc_cbor_bstr_oh(
-			cred->x509_chain.cert_len[end_entity_idx]);
+		*cred_len += auth_creds->x509_chain.cert_len[end_entity_idx];
+		*cred_len += edhoc_cbor_bstr_oh(
+			auth_creds->x509_chain.cert_len[end_entity_idx]);
 		break;
 	}
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		*len += cred->x509_hash.cert_len;
-		*len += edhoc_cbor_bstr_oh(cred->x509_hash.cert_len);
+		*cred_len += auth_creds->x509_hash.cert_len;
+		*cred_len += edhoc_cbor_bstr_oh(auth_creds->x509_hash.cert_len);
 		break;
 
 	default:
@@ -313,21 +328,21 @@ static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
+static int compute_ead_length(const struct edhoc_context *ctx, size_t *ead_len)
 {
-	if (NULL == ctx || NULL == len)
+	if (NULL == ctx || NULL == ead_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-		*len += edhoc_cbor_int_mem_req(ctx->ead_token[i].label);
-		*len += ctx->ead_token[i].value_len;
-		*len += edhoc_cbor_bstr_oh(ctx->ead_token[i].value_len);
+		*ead_len += edhoc_cbor_int_mem_req(ctx->ead_token[i].label);
+		*ead_len += ctx->ead_token[i].value_len;
+		*ead_len += edhoc_cbor_bstr_oh(ctx->ead_token[i].value_len);
 	}
 
 	return EDHOC_SUCCESS;
 }
 
-static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
+static int kid_compact_encoding(const struct edhoc_auth_creds *auth_creds,
 				struct mac_context *mac_ctx)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -335,17 +350,17 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 
 	mac_ctx->id_cred_is_comp_enc = true;
 
-	switch (cred->key_id.encode_type) {
+	switch (auth_creds->key_id.encode_type) {
 	case EDHOC_ENCODE_TYPE_INTEGER: {
 		mac_ctx->id_cred_enc_type = EDHOC_ENCODE_TYPE_INTEGER;
-		if (true == cred->key_id.cred_is_cbor) {
-			mac_ctx->id_cred_int = cred->key_id.key_id_int;
+		if (true == auth_creds->key_id.cred_is_cbor) {
+			mac_ctx->id_cred_int = auth_creds->key_id.key_id_int;
 		} else {
 			len = 0;
 			ret = cbor_encode_integer_type_int_type(
 				(uint8_t *)&mac_ctx->id_cred_int,
 				sizeof(mac_ctx->id_cred_int),
-				&cred->key_id.key_id_int, &len);
+				&auth_creds->key_id.key_id_int, &len);
 
 			if (ZCBOR_SUCCESS != ret)
 				return EDHOC_ERROR_CBOR_FAILURE;
@@ -356,9 +371,9 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 	case EDHOC_ENCODE_TYPE_BYTE_STRING: {
 		mac_ctx->id_cred_enc_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
 
-		if (true == cred->key_id.cred_is_cbor) {
-			if (1 == cred->key_id.key_id_bstr_length) {
-				int32_t val = cred->key_id.key_id_bstr[0];
+		if (true == auth_creds->key_id.cred_is_cbor) {
+			if (1 == auth_creds->key_id.key_id_bstr_length) {
+				int32_t val = auth_creds->key_id.key_id_bstr[0];
 				int32_t result = 0;
 
 				len = 0;
@@ -379,13 +394,14 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 			}
 
 			mac_ctx->id_cred_bstr_len =
-				cred->key_id.key_id_bstr_length;
-			memcpy(mac_ctx->id_cred_bstr, cred->key_id.key_id_bstr,
-			       cred->key_id.key_id_bstr_length);
+				auth_creds->key_id.key_id_bstr_length;
+			memcpy(mac_ctx->id_cred_bstr,
+			       auth_creds->key_id.key_id_bstr,
+			       auth_creds->key_id.key_id_bstr_length);
 		} else {
 			const struct zcbor_string input = {
-				.value = cred->key_id.key_id_bstr,
-				.len = cred->key_id.key_id_bstr_length,
+				.value = auth_creds->key_id.key_id_bstr,
+				.len = auth_creds->key_id.key_id_bstr_length,
 			};
 
 			ret = cbor_encode_byte_string_type_bstr_type(
@@ -406,7 +422,7 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 }
 
 static int sign_cose_sign_1(const struct edhoc_context *ctx,
-			    const struct edhoc_auth_creds *cred,
+			    const struct edhoc_auth_creds *auth_creds,
 			    const struct mac_context *mac_ctx,
 			    const uint8_t *mac, size_t mac_len, uint8_t *sign,
 			    size_t sign_size, size_t *sign_len)
@@ -445,7 +461,7 @@ static int sign_cose_sign_1(const struct edhoc_context *ctx,
 	if (ZCBOR_SUCCESS != ret)
 		return EDHOC_ERROR_CBOR_FAILURE;
 
-	ret = ctx->crypto.signature(ctx->user_ctx, cred->priv_key_id,
+	ret = ctx->crypto.signature(ctx->user_ctx, auth_creds->priv_key_id,
 				    cose_sign_1_buf, cose_sign_1_buf_len, sign,
 				    sign_size, sign_len);
 
@@ -612,7 +628,7 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 		}
 
 		len = 0;
-		ret = comp_cid_len(cid, &len);
+		ret = compute_conn_id_length(cid, &len);
 
 		if (EDHOC_SUCCESS != ret)
 			return ret;
@@ -622,7 +638,7 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 
 	/* ID_CRED length. */
 	len = 0;
-	ret = comp_id_cred_len(cred, &len);
+	ret = compute_id_cred_length(cred, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -631,7 +647,7 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 
 	/* TH length. */
 	len = 0;
-	ret = comp_th_len(ctx->th_len, &len);
+	ret = compute_th_length(ctx->th_len, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -640,7 +656,7 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 
 	/* CRED length. */
 	len = 0;
-	ret = comp_cred_len(cred, &len);
+	ret = compute_cred_length(cred, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -649,7 +665,7 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 
 	/* EAD length. */
 	len = 0;
-	ret = comp_ead_len(ctx, &len);
+	ret = compute_ead_length(ctx, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -699,7 +715,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		mac_ctx->conn_id = &mac_ctx->buf[0];
 
 		len = 0;
-		ret = comp_cid_len(cid, &len);
+		ret = compute_conn_id_length(cid, &len);
 
 		if (EDHOC_SUCCESS != ret)
 			return ret;
@@ -742,7 +758,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	mac_ctx->id_cred = &mac_ctx->buf[mac_ctx->conn_id_len];
 
 	len = 0;
-	ret = comp_id_cred_len(cred, &len);
+	ret = compute_id_cred_length(cred, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -897,7 +913,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	mac_ctx->th = &mac_ctx->id_cred[mac_ctx->id_cred_len];
 
 	len = 0;
-	ret = comp_th_len(ctx->th_len, &len);
+	ret = compute_th_length(ctx->th_len, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -923,7 +939,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	mac_ctx->cred = &mac_ctx->th[mac_ctx->th_len];
 
 	len = 0;
-	ret = comp_cred_len(cred, &len);
+	ret = compute_cred_length(cred, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -978,7 +994,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	/* EAD length. */
 	if (0 != ctx->nr_of_ead_tokens) {
 		len = 0;
-		ret = comp_ead_len(ctx, &len);
+		ret = compute_ead_length(ctx, &len);
 
 		if (EDHOC_SUCCESS != ret)
 			return ret;
@@ -1051,6 +1067,7 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 			*mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -1068,6 +1085,7 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 			*mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -1181,6 +1199,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 			*sign_or_mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -1198,6 +1217,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 			*sign_or_mac_len = csuite.mac_length;
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -1230,6 +1250,7 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			memcpy(sign, mac, mac_len);
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -1249,6 +1270,7 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			memcpy(sign, mac, mac_len);
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -1284,6 +1306,7 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -1305,10 +1328,82 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 			return EDHOC_SUCCESS;
 
+		case EDHOC_METHOD_PSK:
 		case EDHOC_METHOD_MAX:
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
 	return EDHOC_ERROR_BAD_STATE;
+}
+
+int edhoc_comp_keystream(const struct edhoc_context *ctx, size_t prk_label,
+			 const uint8_t *prk, size_t prk_len, uint8_t *kstr,
+			 size_t kstr_len)
+{
+	if (NULL == ctx || NULL == prk || 0 == prk_len || NULL == kstr ||
+	    0 == kstr_len)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+
+	switch (prk_label) {
+	case EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2:
+		if (EDHOC_TH_STATE_2 != ctx->th_state ||
+		    EDHOC_PRK_STATE_2E != ctx->prk_state)
+			return EDHOC_ERROR_BAD_STATE;
+		break;
+	case EDHOC_EXTRACT_PRK_INFO_LABEL_PSK_KEYSTREAM_3:
+		if (EDHOC_TH_STATE_3 != ctx->th_state ||
+		    EDHOC_PRK_STATE_3E2M != ctx->prk_state)
+			return EDHOC_ERROR_BAD_STATE;
+		break;
+	default:
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
+
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	const struct info input_info = {
+		.info_label = (int32_t)prk_label,
+		.info_context.value = ctx->th,
+		.info_context.len = ctx->th_len,
+		.info_length = (uint32_t)kstr_len,
+	};
+
+	size_t len = 0;
+	len += edhoc_cbor_int_mem_req((int32_t)prk_label);
+	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
+	len += edhoc_cbor_int_mem_req((int32_t)kstr_len);
+
+	VLA_ALLOC(uint8_t, info, len);
+	memset(info, 0, VLA_SIZEOF(info));
+
+	len = 0;
+	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+
+	if (ZCBOR_SUCCESS != ret || VLA_SIZE(info) != len)
+		return EDHOC_ERROR_CBOR_FAILURE;
+
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk, prk_len,
+				   key_id);
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, VLA_SIZE(info),
+				 kstr, kstr_len);
+	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
+
+	if (EDHOC_SUCCESS != ret)
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+
+	return EDHOC_SUCCESS;
+}
+
+inline void edhoc_xor_arrays(uint8_t *restrict dst, const uint8_t *restrict src,
+			     size_t count)
+{
+	for (size_t i = 0; i < count; ++i)
+		dst[i] ^= src[i];
 }

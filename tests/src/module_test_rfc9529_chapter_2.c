@@ -764,6 +764,7 @@ TEST_SETUP(rfc9529_chapter_2)
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
 
+	const enum edhoc_mode mode = EDHOC_MODE_CLASSIC_RFC_9528;
 	const enum edhoc_method methods[] = { METHOD };
 	const struct edhoc_cipher_suite cipher_suites[] = {
 		edhoc_cipher_suite_0,
@@ -781,6 +782,9 @@ TEST_SETUP(rfc9529_chapter_2)
 	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
 
 	ret = edhoc_context_init(init_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_mode(init_ctx, mode);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_methods(init_ctx, methods, ARRAY_SIZE(methods));
@@ -803,6 +807,9 @@ TEST_SETUP(rfc9529_chapter_2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_init(resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_mode(resp_ctx, mode);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_methods(resp_ctx, methods, ARRAY_SIZE(methods));
@@ -906,6 +913,7 @@ TEST(rfc9529_chapter_2, message_1_process)
 TEST(rfc9529_chapter_2, message_2_compose)
 {
 	/* Required injections. */
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_RECEIVED_M1;
 	resp_ctx->chosen_method = METHOD;
 
@@ -957,6 +965,7 @@ TEST(rfc9529_chapter_2, message_2_compose_any)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* Required injections. */
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_RECEIVED_M1;
 	resp_ctx->chosen_method = METHOD;
 
@@ -1004,6 +1013,7 @@ TEST(rfc9529_chapter_2, message_2_compose_any)
 TEST(rfc9529_chapter_2, message_2_process)
 {
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_WAIT_M2;
 	init_ctx->chosen_method = METHOD;
 
@@ -1048,6 +1058,7 @@ TEST(rfc9529_chapter_2, message_2_process)
 TEST(rfc9529_chapter_2, message_3_compose)
 {
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_VERIFIED_M2;
 	init_ctx->chosen_method = METHOD;
 
@@ -1096,6 +1107,7 @@ TEST(rfc9529_chapter_2, message_3_compose_any)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_VERIFIED_M2;
 	init_ctx->chosen_method = METHOD;
 
@@ -1140,6 +1152,7 @@ TEST(rfc9529_chapter_2, message_3_compose_any)
 TEST(rfc9529_chapter_2, message_3_process)
 {
 	/* Required injections. */
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_WAIT_M3;
 	resp_ctx->chosen_method = METHOD;
 
@@ -1178,6 +1191,7 @@ TEST(rfc9529_chapter_2, message_3_process)
 TEST(rfc9529_chapter_2, message_4_compose)
 {
 	/* Required injections. */
+	resp_ctx->role = EDHOC_RESPONDER;
 	resp_ctx->status = EDHOC_SM_COMPLETED;
 	resp_ctx->is_oscore_export_allowed = true;
 
@@ -1219,6 +1233,7 @@ TEST(rfc9529_chapter_2, message_4_compose)
 TEST(rfc9529_chapter_2, message_4_process)
 {
 	/* Required injections. */
+	init_ctx->role = EDHOC_INITIATOR;
 	init_ctx->status = EDHOC_SM_COMPLETED;
 	init_ctx->is_oscore_export_allowed = true;
 
@@ -1671,7 +1686,7 @@ TEST(rfc9529_chapter_2, prk_exporter)
 
 	/* EDHOC PRK exporter - OSCORE master secret. */
 	ret = edhoc_export_prk_exporter(init_ctx,
-					OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+					OSCORE_EXPORTER_LABEL_MASTER_SECRET,
 					master_secret,
 					ARRAY_SIZE(master_secret));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -1682,7 +1697,7 @@ TEST(rfc9529_chapter_2, prk_exporter)
 
 	/* EDHOC PRK exporter - OSCORE master salt. */
 	ret = edhoc_export_prk_exporter(init_ctx,
-					OSCORE_EXTRACT_LABEL_MASTER_SALT,
+					OSCORE_EXPORTER_LABEL_MASTER_SALT,
 					master_salt, ARRAY_SIZE(master_salt));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Salt, master_salt,
@@ -2606,6 +2621,9 @@ TEST(rfc9529_chapter_2, handshake_real_crypto_ead_many)
 			init_ead_ctx.token[i].value,
 			init_ead_ctx.token[i].value_len);
 	}
+
+	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
+	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));
 
 	/* Derive OSCORE master secret and master salt. */
 	uint8_t init_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };

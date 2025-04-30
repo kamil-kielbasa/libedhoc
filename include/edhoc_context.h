@@ -68,6 +68,16 @@
  */
 
 /**
+ * \brief TBD later.
+ */
+enum edhoc_mode {
+	/** EDHOC classical. */
+	EDHOC_MODE_CLASSIC_RFC_9528,
+	/** EDHOC with pre-shared key. */
+	EDHOC_MODE_PSK_DRAFT,
+};
+
+/**
  * \brief RFC 9528: 2. EDHOC Outline.
  */
 enum edhoc_role {
@@ -132,6 +142,8 @@ enum edhoc_method {
 	EDHOC_METHOD_2 = 2,
 	/** Initiator static DH Key to responder static DH Key. */
 	EDHOC_METHOD_3 = 3,
+	/** Pre-Shared Key (PSK) between initiator and responder. */
+	EDHOC_METHOD_PSK = 4,
 	/** Sanity check maximum. */
 	EDHOC_METHOD_MAX,
 };
@@ -239,6 +251,9 @@ struct edhoc_error_info {
  * \brief EDHOC context.
  */
 struct edhoc_context {
+	/** EDHOC mode. */
+	enum edhoc_mode EDHOC_PRIVATE(mode);
+
 	/** EDHOC chosen method. */
 	enum edhoc_method EDHOC_PRIVATE(chosen_method);
 
@@ -288,6 +303,8 @@ struct edhoc_context {
 	bool EDHOC_PRIVATE(is_init);
 	/** Is OSCORE security session export allowed? */
 	bool EDHOC_PRIVATE(is_oscore_export_allowed);
+	/** Is PSK export allowed? */
+	bool EDHOC_PRIVATE(is_psk_export_allowed);
 	/** EDHOC context state machine. */
 	enum edhoc_state_machine EDHOC_PRIVATE(status);
 	/** Current processing EDHOC message. */

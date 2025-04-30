@@ -24,8 +24,14 @@ set(BACKEND_CBOR_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_message_error_encode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_2_decode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_2_encode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_2b_decode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_2b_encode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_3_decode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_3_encode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_3a_decode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_3a_encode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_3b_decode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_3b_encode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_4_decode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_plaintext_4_encode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_sig_structure_decode.c

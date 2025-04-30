@@ -42,27 +42,10 @@
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 
-static const struct edhoc_keys keys = {
-	.import_key = cipher_suite_0_key_import,
-	.destroy_key = cipher_suite_0_key_destroy,
-};
-
-static const struct edhoc_crypto crypto = {
-	.make_key_pair = cipher_suite_0_make_key_pair,
-	.key_agreement = cipher_suite_0_key_agreement,
-	.signature = cipher_suite_0_signature,
-	.verify = cipher_suite_0_verify,
-	.extract = cipher_suite_0_extract,
-	.expand = cipher_suite_0_expand,
-	.encrypt = cipher_suite_0_encrypt,
-	.decrypt = cipher_suite_0_decrypt,
-	.hash = cipher_suite_0_hash,
-};
-
-static const struct edhoc_keys *edhoc_keys = &keys;
-static const struct edhoc_crypto *edhoc_crypto = &crypto;
-
 static int ret = PSA_ERROR_GENERIC_ERROR;
+
+static const struct edhoc_keys *edhoc_keys = NULL;
+static const struct edhoc_crypto *edhoc_crypto = NULL;
 
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
@@ -73,6 +56,12 @@ TEST_GROUP(cipher_suite_0);
 TEST_SETUP(cipher_suite_0)
 {
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, psa_crypto_init());
+
+	edhoc_keys = cipher_suite_0_get_keys_callbacks();
+	TEST_ASSERT_NOT_NULL(edhoc_keys);
+
+	edhoc_crypto = cipher_suite_0_get_cipher_callbacks();
+	TEST_ASSERT_NOT_NULL(edhoc_crypto);
 }
 
 TEST_TEAR_DOWN(cipher_suite_0)

@@ -89,6 +89,14 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	/* 1b. Choose most preferred method. */
 	ctx->chosen_method = ctx->method[0];
 
+	if (EDHOC_METHOD_PSK != ctx->chosen_method &&
+	    EDHOC_MODE_PSK_DRAFT == ctx->mode)
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (EDHOC_METHOD_PSK == ctx->chosen_method &&
+	    EDHOC_MODE_CLASSIC_RFC_9528 == ctx->mode)
+		return EDHOC_ERROR_BAD_STATE;
+
 	/* 2. Generate ephemeral Diffie-Hellmann key pair. */
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR, NULL,
@@ -304,6 +312,14 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	if (false == method_match)
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
+
+	if (EDHOC_METHOD_PSK != ctx->chosen_method &&
+	    EDHOC_MODE_PSK_DRAFT == ctx->mode)
+		return EDHOC_ERROR_BAD_STATE;
+
+	if (EDHOC_METHOD_PSK == ctx->chosen_method &&
+	    EDHOC_MODE_CLASSIC_RFC_9528 == ctx->mode)
+		return EDHOC_ERROR_BAD_STATE;
 
 	/* 3b. Verify cipher suite. */
 	switch (cbor_dec_msg_1.message_1_SUITES_I.suites_choice) {

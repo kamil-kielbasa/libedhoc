@@ -150,17 +150,34 @@
 /** PRK_out from RFC 9528: 4.1.3. PRK_out. */
 #define EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT ((size_t)11)
 
+/** KEYSTREAM_3 from draft-ietf-lake-edhoc-psk-03: 4. Key Derivation. */
+#define EDHOC_EXTRACT_PRK_INFO_LABEL_PSK_KEYSTREAM_3 ((size_t)12)
+
+/** K_3 from draft-ietf-lake-edhoc-psk-03: 4. Key Derivation. */
+#define EDHOC_EXTRACT_PRK_INFO_LABEL_PSK_K_3 ((size_t)13)
+
+/** IV_3 from draft-ietf-lake-edhoc-psk-03: 4. Key Derivation. */
+#define EDHOC_EXTRACT_PRK_INFO_LABEL_PSK_IV_3 ((size_t)14)
+
 /**
  * \brief RFC 9528: A.1. Deriving the OSCORE Security Context
  */
 
 /** EDHOC exporter label for OSCORE Master Secret from
  * RFC 9528: A.1. Deriving the OSCORE Security Context. */
-#define OSCORE_EXTRACT_LABEL_MASTER_SECRET ((size_t)0)
+#define OSCORE_EXPORTER_LABEL_MASTER_SECRET ((size_t)0)
 
 /** EDHOC exporter label for OSCORE Master Salt from
  * RFC 9528: A.1. Deriving the OSCORE Security Context. */
-#define OSCORE_EXTRACT_LABEL_MASTER_SALT ((size_t)1)
+#define OSCORE_EXPORTER_LABEL_MASTER_SALT ((size_t)1)
+
+/** EDHOC-PSK exporter label for CRED_PSK from
+ * draft-ietf-lake-edhoc-psk-03: 7. PSK usage for Session Resumtpion. */
+#define EDHOC_EXPORTER_LABEL_CRED_PSK ((size_t)2)
+
+/** EDHOC-PSK exporter label for ID_CRED_PSK from
+ * draft-ietf-lake-edhoc-psk-03: 7. PSK usage for Session Resumtpion. */
+#define EDHOC_EXPORTER_LABEL_ID_CRED_PSK ((size_t)3)
 
 /**
  * \brief RFC 9528: 10.1. EDHOC Exporter Label Registry
