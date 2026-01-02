@@ -31,8 +31,14 @@ set(BACKEND_CBOR_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_sig_structure_decode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_sig_structure_encode.c)
 
-add_library(${BACKEND_CBOR_NAME} STATIC ${BACKEND_CBOR_SOURCES})
+if(TARGET zephyr_interface)
+    zephyr_library_named(${BACKEND_CBOR_NAME})
+    target_sources(${BACKEND_CBOR_NAME} PRIVATE ${BACKEND_CBOR_SOURCES})
+else()
+    add_library(${BACKEND_CBOR_NAME} STATIC ${BACKEND_CBOR_SOURCES})
+    target_link_libraries(${BACKEND_CBOR_NAME} PUBLIC
+                        zcbor)
+endif()
+
 target_include_directories(${BACKEND_CBOR_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/cbor/include)
-target_link_libraries(${BACKEND_CBOR_NAME} PUBLIC
-                      zcbor)

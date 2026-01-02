@@ -494,6 +494,13 @@ static const uint8_t OSCORE_Master_Salt[] = {
 };
 
 /**
+ * \brief OSCORE Sender and Recipient IDs (CBOR-encoded connection identifiers).
+ *        C_I = -24 encodes to 0x37, C_R = -8 encodes to 0x27.
+ */
+static const uint8_t OSCORE_C_I[] = { 0x37 };
+static const uint8_t OSCORE_C_R[] = { 0x27 };
+
+/**
  * \brief OSCORE security session after EDHOC key update.
  */
 

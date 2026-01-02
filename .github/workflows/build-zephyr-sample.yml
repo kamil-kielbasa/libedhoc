@@ -1,0 +1,37 @@
+name: Build Zephyr Sample
+
+on: [push, pull_request]
+
+jobs:
+  build-zephyr-sample:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci:v0.26.13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: libedhoc
+
+      - name: Initialize West workspace
+        run: |
+          west init -l libedhoc
+          west update --narrow -o=--depth=1
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r zephyr/scripts/requirements-base.txt
+
+      - name: Build sample for native_sim
+        env:
+          ZEPHYR_TOOLCHAIN_VARIANT: host
+        run: |
+          west build -b native_sim libedhoc/sample
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-sample-native_sim
+          path: build/zephyr/zephyr.exe
+

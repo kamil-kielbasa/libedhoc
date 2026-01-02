@@ -1,0 +1,25 @@
+manifest:
+  remotes:
+    - name: zephyrproject-rtos
+      url-base: https://github.com/zephyrproject-rtos
+    - name: github
+      url-base: https://github.com
+
+  projects:
+    - name: zephyr
+      remote: zephyrproject-rtos
+      revision: main
+      import:
+        name-allowlist:
+          - zcbor
+          - mbedtls
+
+    - name: compact25519
+      remote: github
+      repo-path: DavyLandman/compact25519
+      revision: main
+      path: modules/lib/compact25519
+
+  self:
+    path: libedhoc
+

@@ -1,5 +1,7 @@
 config LIBEDHOC_ENABLE
     bool "Enable libedhoc."
+    imply ZCBOR
+    imply ZCBOR_CANONICAL
     default n
     help
         Enable building libedhoc for Zephyr target.

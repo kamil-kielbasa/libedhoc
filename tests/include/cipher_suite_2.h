@@ -35,6 +35,9 @@
 #define ECC_ECDSA_SIGN_LEN (64)
 #define ECC_ECDH_KEY_AGREEMENT_LEN (32)
 
+#define AEAD_TAG_LEN (8)
+#define AEAD_KEY_LEN (16)
+
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */

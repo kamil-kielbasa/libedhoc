@@ -2,7 +2,10 @@ project(libedhoc)
 
 set(CMAKE_C_COMPILER ${LIBEDHOC_COMPILER})
 
-add_library(${PROJECT_NAME} STATIC)
+# For Zephyr builds, the library is already created by zephyr_library_named()
+if(NOT TARGET ${PROJECT_NAME})
+    add_library(${PROJECT_NAME} STATIC)
+endif()
 
 target_sources(${PROJECT_NAME} PRIVATE
                edhoc.c
@@ -17,21 +20,26 @@ target_sources(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(LIBEDHOC_DEFINITIONS
-    CONFIG_LIBEDHOC_ENABLE=${CONFIG_LIBEDHOC_ENABLE}
-    CONFIG_LIBEDHOC_KEY_ID_LEN=${CONFIG_LIBEDHOC_KEY_ID_LEN}
-    CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES=${CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES}
-    CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID}
-    CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY=${CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY}
-    CONFIG_LIBEDHOC_MAX_LEN_OF_MAC=${CONFIG_LIBEDHOC_MAX_LEN_OF_MAC}
-    CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=${CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS}
-    CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID}
-    CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=${CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG}
-    CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=${CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN})
+if(NOT TARGET zephyr_interface)
+    # For Zephyr targets it causes warnings/errors because of the duplicate definitions
+    set(LIBEDHOC_DEFINITIONS
+        CONFIG_LIBEDHOC_ENABLE=${CONFIG_LIBEDHOC_ENABLE}
+        CONFIG_LIBEDHOC_KEY_ID_LEN=${CONFIG_LIBEDHOC_KEY_ID_LEN}
+        CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES=${CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES}
+        CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID}
+        CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY=${CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY}
+        CONFIG_LIBEDHOC_MAX_LEN_OF_MAC=${CONFIG_LIBEDHOC_MAX_LEN_OF_MAC}
+        CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=${CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS}
+        CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID}
+        CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=${CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG}
+        CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=${CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN})
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBEDHOC_DEFINITIONS})
+    target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBEDHOC_DEFINITIONS})
+endif()
 
-if (LIBEDHOC_BUILD_COMPILER_GCC)
+# Only apply strict compile options for standalone builds, not Zephyr builds
+# (Zephyr has its own flags and uses -std=c99 which conflicts with -pedantic)
+if (LIBEDHOC_BUILD_COMPILER_GCC AND NOT TARGET zephyr_interface)
     target_compile_options(${PROJECT_NAME} PRIVATE
                            -g3
                            -O0
@@ -73,7 +81,11 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       libedhoc_api
-                      mbedtls
-                      compact25519
-                      zcbor
                       backend_cbor)
+
+if (NOT TARGET zephyr_interface)
+    target_link_libraries(${PROJECT_NAME} PUBLIC
+                            mbedtls
+                            compact25519
+                            zcbor)
+endif()
