@@ -1,3 +1,10 @@
+Version 1.1.1
+-------------
+
+:Date: January 8, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed Zephyr build github workflow.
+
 Version 1.1.0
 -------------
 
