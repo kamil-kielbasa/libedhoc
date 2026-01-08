@@ -110,7 +110,7 @@ static int prepare_plaintext_3(const struct mac_context *mac_ctx,
  *
  * \retval EDHOC_SUCCESS on success, otherwise failure.s
  */
-static int32_t comp_aad_3_len(const struct edhoc_context *ctx,
+static int comp_aad_3_len(const struct edhoc_context *ctx,
 			      size_t *aad_3_len);
 
 /**

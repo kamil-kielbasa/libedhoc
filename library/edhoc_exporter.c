@@ -29,6 +29,7 @@
 
 /* CBOR headers: */
 #include <zcbor_common.h>
+#include <backend_cbor_int_type_encode.h>
 #include <backend_cbor_info_encode.h>
 
 #ifdef __clang__
@@ -469,10 +470,14 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	/* 3. Copy OSCORE sender ID. */
 	switch (ctx->peer_cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		*sid_len = sizeof(ctx->peer_cid.int_value);
-		memcpy(sid, &ctx->peer_cid.int_value,
-		       sizeof(ctx->peer_cid.int_value));
+	{
+		/* See RFC9528 section 3.3.3 */
+		int32_t int_value = ctx->peer_cid.int_value;
+		ret = cbor_encode_integer_type_int_type(sid, sid_size, &int_value, sid_len);
+		if (ZCBOR_SUCCESS != ret)
+			return EDHOC_ERROR_CBOR_FAILURE;
 		break;
+	}
 	case EDHOC_CID_TYPE_BYTE_STRING:
 		if (sid_size < ctx->peer_cid.bstr_length)
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
@@ -506,9 +511,14 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	/* 4. Copy OSCORE recipient ID. */
 	switch (ctx->cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		*rid_len = sizeof(ctx->cid.int_value);
-		memcpy(rid, &ctx->cid.int_value, sizeof(ctx->cid.int_value));
+	{
+		/* See RFC9528 section 3.3.3 */
+		int32_t int_value = ctx->cid.int_value;
+		ret = cbor_encode_integer_type_int_type(rid, rid_size, &int_value, rid_len);
+		if (ZCBOR_SUCCESS != ret)
+			return EDHOC_ERROR_CBOR_FAILURE;
 		break;
+	}
 	case EDHOC_CID_TYPE_BYTE_STRING:
 		if (rid_size < ctx->cid.bstr_length)
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;

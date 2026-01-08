@@ -1,3 +1,12 @@
+Version 1.1.0
+-------------
+
+:Date: January 7, 2026
+
+* Added Zephyr build system support.
+* Added Zephyr sample application for build verification (native_sim).
+* Added west manifest (west.yml) for Zephyr workspace initialization.
+
 Version 1.0.0
 -------------
 

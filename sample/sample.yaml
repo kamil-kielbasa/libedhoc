@@ -1,0 +1,10 @@
+sample:
+  name: libedhoc build check
+  description: Minimal sample to verify libedhoc builds under Zephyr
+common:
+  tags: edhoc security
+  platform_allow: native_sim
+tests:
+  sample.libedhoc.build:
+    build_only: true
+

@@ -742,6 +742,14 @@ static const uint8_t OSCORE_Master_Salt[] = {
 };
 
 /**
+ * \brief OSCORE Sender and Recipient IDs.
+ *        C_I = -14 (one-byte int) CBOR encodes to 0x2d.
+ *        C_R = 24 (byte string) is copied as-is: { 0x18 }.
+ */
+static const uint8_t OSCORE_C_I[] = { 0x2d };
+static const uint8_t OSCORE_C_R[] = { 0x18 };
+
+/**
  * \brief OSCORE security session after EDHOC key update.
  */
 

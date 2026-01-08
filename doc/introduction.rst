@@ -29,6 +29,7 @@ Features
 * Any CBOR operations are hidden away from user.
 * Any memory operations are performed on stack, using `VLA`_ feature.
 * Code has been verified by *cppcheck* and *valgrind*.
+* Zephyr RTOS support with west manifest for easy integration.
 
 .. _CoAP: https://datatracker.ietf.org/doc/html/rfc7252
 .. _OSCORE: https://datatracker.ietf.org/doc/html/rfc8613

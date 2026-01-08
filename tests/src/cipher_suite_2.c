@@ -32,9 +32,6 @@
 #include <mbedtls/pk.h>
 
 /* Module defines ---------------------------------------------------------- */
-#define AEAD_TAG_LEN (8)
-#define AEAD_KEY_LEN (16)
-
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */

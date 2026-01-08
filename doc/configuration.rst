@@ -46,3 +46,24 @@ Linux target
 
 | All of above library configuration parameters must be passed for building process.
 | Please add prefix :C:`CONFIG_`.
+
+Zephyr target
+*************
+
+| The library can be used as a Zephyr module. A west manifest is provided for easy integration.
+
+**Initialize workspace:**
+
+.. code-block:: bash
+
+   west init -l libedhoc
+   west update
+
+**Build sample application:**
+
+.. code-block:: bash
+
+   west build -b native_sim libedhoc/sample
+
+| All Kconfig options are automatically prefixed with :C:`CONFIG_` by the Zephyr build system.
+| Dependencies (zcbor, mbedtls) are automatically pulled via the west manifest.
