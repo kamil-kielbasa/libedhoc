@@ -1,6 +1,8 @@
 project(libedhoc)
 
-set(CMAKE_C_COMPILER ${LIBEDHOC_COMPILER})
+if(LIBEDHOC_BUILD_EXTERNAL_DEPS)
+    set(CMAKE_C_COMPILER ${LIBEDHOC_COMPILER})
+endif()
 
 # For Zephyr builds, the library is already created by zephyr_library_named()
 if(NOT TARGET ${PROJECT_NAME})
@@ -25,7 +27,8 @@ endif()
 target_sources(${PROJECT_NAME} PRIVATE ${LIBEDHOC_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
-                           ${CMAKE_CURRENT_SOURCE_DIR})
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+                           $<INSTALL_INTERFACE:include>)
 
 if(NOT TARGET zephyr_interface)
     # For Zephyr targets it causes warnings/errors because of the duplicate definitions
@@ -98,7 +101,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
 
 if (NOT TARGET zephyr_interface)
     target_link_libraries(${PROJECT_NAME} PUBLIC
-                            mbedtls
-                            compact25519
-                            zcbor)
+                          $<BUILD_INTERFACE:mbedtls>
+                          $<BUILD_INTERFACE:compact25519>
+                          $<BUILD_INTERFACE:zcbor>)
 endif()
