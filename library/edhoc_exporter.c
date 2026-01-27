@@ -122,12 +122,19 @@ static inline size_t cbor_bstr_overhead(size_t len)
 
 static int compute_prk_out(struct edhoc_context *ctx)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("Invalid arguments in compute_prk_out");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_TH_STATE_4 != ctx->th_state ||
-	    EDHOC_PRK_STATE_4E3M != ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Bad state: TH state=%d (exp=%d), PRK state=%d (exp=%d)",
+			ctx->th_state, EDHOC_TH_STATE_4, ctx->prk_state,
+			EDHOC_PRK_STATE_4E3M);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -154,26 +161,31 @@ static int compute_prk_out(struct edhoc_context *ctx)
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode PRK_out info: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for PRK_out: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
 				 ctx->prk_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to expand PRK_out: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PRK_out", ctx->prk, ctx->prk_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->prk, ctx->prk_len, "PRK_out");
 
 	ctx->prk_state = EDHOC_PRK_STATE_OUT;
 	return EDHOC_SUCCESS;
@@ -182,11 +194,16 @@ static int compute_prk_out(struct edhoc_context *ctx)
 static int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("Invalid arguments in compute_new_prk_out");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_PRK_STATE_OUT != ctx->prk_state)
+	if (EDHOC_PRK_STATE_OUT != ctx->prk_state) {
+		EDHOC_LOG_ERR("Bad state: PRK state=%d, expected PRK_OUT",
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -213,23 +230,30 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode new PRK_out info: %d",
+			      ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for new PRK_out: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
 				 ctx->prk_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to expand new PRK_out: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ctx->prk_state = EDHOC_PRK_STATE_OUT;
 	return EDHOC_SUCCESS;
@@ -238,11 +262,16 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 static int compute_prk_exporter(const struct edhoc_context *ctx,
 				uint8_t *prk_exp, size_t prk_exp_len)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("Invalid arguments in compute_prk_exporter");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_PRK_STATE_OUT != ctx->prk_state)
+	if (EDHOC_PRK_STATE_OUT != ctx->prk_state) {
+		EDHOC_LOG_ERR("Bad state: PRK state=%d, expected PRK_OUT",
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -268,27 +297,32 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode PRK_exporter info: %d",
+			      ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for PRK_exporter: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, prk_exp,
 				 prk_exp_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to expand PRK_exporter: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PRK_exporter", prk_exp,
-			    prk_exp_len);
+	EDHOC_LOG_HEXDUMP_INF(prk_exp, prk_exp_len, "PRK_exporter");
 
 	return EDHOC_SUCCESS;
 }
@@ -306,18 +340,27 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 			      uint8_t *secret, size_t secret_len)
 {
 	if (NULL == ctx || EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label ||
-	    NULL == secret || 0 == secret_len)
+	    NULL == secret || 0 == secret_len) {
+		EDHOC_LOG_ERR(
+			"Invalid arguments in edhoc_export_prk_exporter: label=%zu",
+			label);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (OSCORE_EXTRACT_LABEL_MASTER_SECRET != label &&
 	    OSCORE_EXTRACT_LABEL_MASTER_SALT != label &&
 	    (EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM > label ||
-	     EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label))
+	     EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label)) {
+		EDHOC_LOG_ERR("Bad state: invalid label: %zu", label);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	if (EDHOC_SM_PERSISTED < ctx->status ||
-	    EDHOC_PRK_STATE_4E3M > ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M > ctx->prk_state) {
+		EDHOC_LOG_ERR("Bad state: status=%d, PRK state=%d", ctx->status,
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -325,8 +368,10 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	if (EDHOC_PRK_STATE_4E3M == ctx->prk_state) {
 		ret = compute_prk_out(ctx);
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to compute PRK_out: %d", ret);
 			return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+		}
 	}
 
 	/* 2. Choose most preferred cipher suite. */
@@ -339,8 +384,10 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 
 	ret = compute_prk_exporter(ctx, prk_exporter, VLA_SIZE(prk_exporter));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute PRK_exporter: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
 	/* 4. Derive secret. */
 	size_t len = 0;
@@ -361,27 +408,33 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode exporter secret info: %d",
+			      ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_exporter,
 				   VLA_SIZE(prk_exporter), key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for exporter secret: %d",
+			      ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, secret,
 				 secret_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to expand exporter secret: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PRK exporter secret", secret,
-			    secret_len);
+	EDHOC_LOG_HEXDUMP_INF(secret, secret_len, "PRK exporter secret");
 
 	return EDHOC_SUCCESS;
 }
@@ -389,12 +442,17 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *entropy,
 			    size_t entropy_len)
 {
-	if (NULL == ctx || NULL == entropy || 0 == entropy_len)
+	if (NULL == ctx || NULL == entropy || 0 == entropy_len) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_export_key_update");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_SM_COMPLETED > ctx->status ||
-	    EDHOC_PRK_STATE_4E3M > ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M > ctx->prk_state) {
+		EDHOC_LOG_ERR("Bad state: status=%d, PRK state=%d", ctx->status,
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	const enum edhoc_state_machine status = ctx->status;
 	ctx->status = EDHOC_SM_ABORTED;
@@ -404,18 +462,22 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *entropy,
 	if (EDHOC_PRK_STATE_4E3M == ctx->prk_state) {
 		ret = compute_prk_out(ctx);
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR(
+				"Failed to compute PRK_out for key update: %d",
+				ret);
 			return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+		}
 	}
 
 	ret = compute_new_prk_out(ctx, entropy, entropy_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute new PRK_out: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "new PRK_out", ctx->prk,
-			    ctx->prk_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->prk, ctx->prk_len, "new PRK_out");
 
 	ctx->status = status;
 	ctx->is_oscore_export_allowed = true;
@@ -437,15 +499,24 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 {
 	if (NULL == ctx || NULL == secret || 0 == secret_len || NULL == salt ||
 	    0 == salt_len || NULL == sid || 0 == sid_size || NULL == sid_len ||
-	    NULL == rid || 0 == rid_size || NULL == rid_len)
+	    NULL == rid || 0 == rid_size || NULL == rid_len) {
+		EDHOC_LOG_ERR(
+			"Invalid arguments in edhoc_export_oscore_session");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (false == ctx->is_oscore_export_allowed)
+	if (false == ctx->is_oscore_export_allowed) {
+		EDHOC_LOG_ERR(
+			"OSCORE export not allowed in current context state");
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	if (EDHOC_SM_COMPLETED > ctx->status ||
-	    EDHOC_PRK_STATE_4E3M > ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M > ctx->prk_state) {
+		EDHOC_LOG_ERR("Bad state: status=%d, PRK state=%d", ctx->status,
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	const enum edhoc_state_machine status = ctx->status;
 	ctx->status = EDHOC_SM_ABORTED;
@@ -457,94 +528,120 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
 					secret, secret_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to derive OSCORE master secret: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
 	/* 2. Derive OSCORE master salt. */
 	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT,
 					salt, salt_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to derive OSCORE master salt: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
 	/* 3. Copy OSCORE sender ID. */
 	switch (ctx->peer_cid.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-	{
+	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
 		/* See RFC9528 section 3.3.3 */
 		int32_t int_value = ctx->peer_cid.int_value;
-		ret = cbor_encode_integer_type_int_type(sid, sid_size, &int_value, sid_len);
-		if (ZCBOR_SUCCESS != ret)
+		ret = cbor_encode_integer_type_int_type(sid, sid_size,
+							&int_value, sid_len);
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR(
+				"Failed to CBOR encode OSCORE sender ID: %d",
+				ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 		break;
 	}
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		if (sid_size < ctx->peer_cid.bstr_length)
+		if (sid_size < ctx->peer_cid.bstr_length) {
+			EDHOC_LOG_ERR(
+				"Buffer too small for sender ID: size=%zu, required=%zu",
+				sid_size, ctx->peer_cid.bstr_length);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		}
 
 		*sid_len = ctx->peer_cid.bstr_length;
 		memcpy(sid, ctx->peer_cid.bstr_value,
 		       ctx->peer_cid.bstr_length);
 		break;
 	default:
+		EDHOC_LOG_ERR(
+			"Not permitted: invalid peer CID encode type in logger: %d",
+			ctx->peer_cid.encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	if (NULL != ctx->logger) {
-		switch (ctx->peer_cid.encode_type) {
-		case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-			ctx->logger(ctx->user_ctx, "OSCORE sender ID",
-				    (const uint8_t *)&ctx->peer_cid.int_value,
-				    sizeof(ctx->peer_cid.int_value));
-			break;
-		case EDHOC_CID_TYPE_BYTE_STRING:
-			ctx->logger(ctx->user_ctx, "OSCORE sender ID",
-				    ctx->peer_cid.bstr_value,
-				    ctx->peer_cid.bstr_length);
-			break;
-
-		default:
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	switch (ctx->peer_cid.encode_type) {
+	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+		EDHOC_LOG_HEXDUMP_INF((const uint8_t *)&ctx->peer_cid.int_value,
+				      sizeof(ctx->peer_cid.int_value),
+				      "OSCORE sender ID");
+		break;
+	case EDHOC_CID_TYPE_BYTE_STRING:
+		EDHOC_LOG_HEXDUMP_INF(ctx->peer_cid.bstr_value,
+				      ctx->peer_cid.bstr_length,
+				      "OSCORE sender ID");
+		break;
+	default:
+		EDHOC_LOG_ERR(
+			"Not permitted: invalid peer CID encode type in logger: %d",
+			ctx->peer_cid.encode_type);
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	/* 4. Copy OSCORE recipient ID. */
 	switch (ctx->cid.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-	{
+	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
 		/* See RFC9528 section 3.3.3 */
 		int32_t int_value = ctx->cid.int_value;
-		ret = cbor_encode_integer_type_int_type(rid, rid_size, &int_value, rid_len);
-		if (ZCBOR_SUCCESS != ret)
+		ret = cbor_encode_integer_type_int_type(rid, rid_size,
+							&int_value, rid_len);
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR(
+				"Failed to CBOR encode OSCORE recipient ID: %d",
+				ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 		break;
 	}
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		if (rid_size < ctx->cid.bstr_length)
+		if (rid_size < ctx->cid.bstr_length) {
+			EDHOC_LOG_ERR(
+				"Buffer too small for recipient ID: size=%zu, required=%zu",
+				rid_size, ctx->cid.bstr_length);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		}
 
 		*rid_len = ctx->cid.bstr_length;
 		memcpy(rid, ctx->cid.bstr_value, ctx->cid.bstr_length);
 		break;
 	default:
+		EDHOC_LOG_ERR("Not permitted: invalid CID encode type: %d",
+			      ctx->cid.encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	if (NULL != ctx->logger) {
-		switch (ctx->cid.encode_type) {
-		case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-			ctx->logger(ctx->user_ctx, "OSCORE sender ID",
-				    (const uint8_t *)&ctx->cid.int_value,
-				    sizeof(ctx->cid.int_value));
-			break;
-		case EDHOC_CID_TYPE_BYTE_STRING:
-			ctx->logger(ctx->user_ctx, "OSCORE sender ID",
-				    ctx->cid.bstr_value, ctx->cid.bstr_length);
-			break;
+	switch (ctx->cid.encode_type) {
+	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+		EDHOC_LOG_HEXDUMP_INF((const uint8_t *)&ctx->cid.int_value,
+				      sizeof(ctx->cid.int_value),
+				      "OSCORE recipient ID");
+		break;
+	case EDHOC_CID_TYPE_BYTE_STRING:
+		EDHOC_LOG_HEXDUMP_INF(ctx->cid.bstr_value, ctx->cid.bstr_length,
+				      "OSCORE recipient ID");
+		break;
 
-		default:
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	default:
+		EDHOC_LOG_ERR(
+			"Not permitted: invalid CID encode type in logger: %d",
+			ctx->cid.encode_type);
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	ctx->status = status;

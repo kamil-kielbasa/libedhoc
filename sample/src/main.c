@@ -8,9 +8,9 @@ int main(void)
 
 	ret = edhoc_context_init(&ctx);
 	if (ret == EDHOC_SUCCESS) {
-		printk("libedhoc: context init success\n");
+		EDHOC_LOG_INF("context init success\n");
 	} else {
-		printk("libedhoc: context init failed: %d\n", ret);
+		EDHOC_LOG_INF("context init failed: %d\n", ret);
 	}
 
 	return 0;

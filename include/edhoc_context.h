@@ -171,12 +171,6 @@ enum edhoc_prk_state {
 };
 
 /**
- * \brief EDHOC logger callback.
- */
-typedef void (*edhoc_logger_t)(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length);
-
-/**
  * \brief EDHOC connection identifier encoding type.
  */
 enum edhoc_connection_id_type {
@@ -329,9 +323,6 @@ struct edhoc_context {
 
 	/** EDHOC error code. */
 	enum edhoc_error_code EDHOC_PRIVATE(error_code);
-
-	/** User logger callback. */
-	edhoc_logger_t logger;
 };
 
 /* Module interface variables and constants -------------------------------- */

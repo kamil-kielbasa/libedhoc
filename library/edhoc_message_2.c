@@ -268,8 +268,10 @@ static int comp_grx(struct edhoc_context *ctx,
 
 static int gen_dh_keys(struct edhoc_context *ctx)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("NULL context");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -278,8 +280,11 @@ static int gen_dh_keys(struct edhoc_context *ctx)
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR, NULL,
 				   0, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for DH key generation: %d",
+			      ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	/* Choose most preferred cipher suite. */
 	const struct edhoc_cipher_suite csuite =
@@ -297,16 +302,22 @@ static int gen_dh_keys(struct edhoc_context *ctx)
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
 	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != priv_key_len ||
-	    csuite.ecc_key_length != pub_key_len)
+	    csuite.ecc_key_length != pub_key_len) {
+		EDHOC_LOG_ERR(
+			"DH key pair generation failed: ret=%d, expected=%zu, priv=%zu, pub=%zu",
+			ret, csuite.ecc_key_length, priv_key_len, pub_key_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
 
 static int comp_dh_secret(struct edhoc_context *ctx)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("NULL context");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -314,8 +325,10 @@ static int comp_dh_secret(struct edhoc_context *ctx)
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_KEY_AGREEMENT,
 				   ctx->dh_priv_key, ctx->dh_priv_key_len,
 				   key_id);
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for DH secret: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
@@ -329,19 +342,28 @@ static int comp_dh_secret(struct edhoc_context *ctx)
 					&secret_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
-	if (EDHOC_SUCCESS != ret || secret_len != csuite.ecc_key_length)
+	if (EDHOC_SUCCESS != ret || secret_len != csuite.ecc_key_length) {
+		EDHOC_LOG_ERR(
+			"Key agreement failed: ret=%d, expected=%zu, got=%zu",
+			ret, csuite.ecc_key_length, secret_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
 
 static int comp_th_2(struct edhoc_context *ctx)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("NULL context");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_TH_STATE_1 != ctx->th_state)
+	if (EDHOC_TH_STATE_1 != ctx->th_state) {
+		EDHOC_LOG_ERR("Invalid TH state: expected=%d, got=%d",
+			      EDHOC_TH_STATE_1, ctx->th_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -375,6 +397,7 @@ static int comp_th_2(struct edhoc_context *ctx)
 		cbor_bstr.len = ctx->dh_pub_key_len;
 		break;
 	default:
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -382,8 +405,12 @@ static int comp_th_2(struct edhoc_context *ctx)
 	ret = cbor_encode_byte_string_type_bstr_type(th_2, g_y_len, &cbor_bstr,
 						     &len_out);
 
-	if (ZCBOR_SUCCESS != ret || g_y_len != len_out)
+	if (ZCBOR_SUCCESS != ret || g_y_len != len_out) {
+		EDHOC_LOG_ERR(
+			"CBOR encoding G_Y failed: ret=%d, expected=%zu, got=%zu",
+			ret, g_y_len, len_out);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	offset += len_out;
 
@@ -395,13 +422,20 @@ static int comp_th_2(struct edhoc_context *ctx)
 	ret = cbor_encode_byte_string_type_bstr_type(&th_2[offset], hash_len,
 						     &cbor_bstr, &len_out);
 
-	if (ZCBOR_SUCCESS != ret || hash_len != len_out)
+	if (ZCBOR_SUCCESS != ret || hash_len != len_out) {
+		EDHOC_LOG_ERR(
+			"CBOR encoding H(msg_1) failed: ret=%d, expected=%zu, got=%zu",
+			ret, hash_len, len_out);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	offset += len_out;
 
-	if (VLA_SIZE(th_2) < offset)
+	if (VLA_SIZE(th_2) < offset) {
+		EDHOC_LOG_ERR("Buffer too small for TH_2: size=%zu, offset=%zu",
+			      VLA_SIZE(th_2), offset);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	/* Calculate TH_2. */
 	ctx->th_len = csuite.hash_length;
@@ -410,8 +444,11 @@ static int comp_th_2(struct edhoc_context *ctx)
 	ret = ctx->crypto.hash(ctx->user_ctx, th_2, VLA_SIZE(th_2), ctx->th,
 			       ctx->th_len, &hash_length);
 
-	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_length)
+	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_length) {
+		EDHOC_LOG_ERR("TH_2 hash failed: ret=%d, expected=%zu, got=%zu",
+			      ret, csuite.hash_length, hash_length);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ctx->th_state = EDHOC_TH_STATE_2;
 	return EDHOC_SUCCESS;
@@ -419,12 +456,18 @@ static int comp_th_2(struct edhoc_context *ctx)
 
 static int comp_prk_2e(struct edhoc_context *ctx)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("NULL context");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_TH_STATE_2 != ctx->th_state ||
-	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
+	    EDHOC_PRK_STATE_INVALID != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Invalid state for PRK_2e: th_state=%d, prk_state=%d",
+			ctx->th_state, ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -434,16 +477,22 @@ static int comp_prk_2e(struct edhoc_context *ctx)
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXTRACT,
 				   ctx->dh_secret, ctx->dh_secret_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for PRK_2e: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	size_t out_len = 0;
 	ret = ctx->crypto.extract(ctx->user_ctx, key_id, ctx->th, ctx->th_len,
 				  ctx->prk, ctx->prk_len, &out_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
-	if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len)
+	if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
+		EDHOC_LOG_ERR(
+			"PRK_2e extract failed: ret=%d, expected=%zu, got=%zu",
+			ret, ctx->prk_len, out_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ctx->prk_state = EDHOC_PRK_STATE_2E;
 	return EDHOC_SUCCESS;
@@ -453,11 +502,16 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 			 const struct edhoc_auth_creds *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len)
 {
-	if (NULL == ctx)
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("NULL context");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_PRK_STATE_2E != ctx->prk_state)
+	if (EDHOC_PRK_STATE_2E != ctx->prk_state) {
+		EDHOC_LOG_ERR("Invalid PRK state for PRK_3e2m: %d",
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	switch (ctx->chosen_method) {
 	case EDHOC_METHOD_0:
@@ -475,12 +529,13 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 
 		int ret = comp_salt_3e2m(ctx, salt_3e2m, VLA_SIZE(salt_3e2m));
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to compute SALT_3e2m: %d", ret);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
 
-		if (NULL != ctx->logger)
-			ctx->logger(ctx->user_ctx, "SALT_3e2m", salt_3e2m,
-				    VLA_SIZE(salt_3e2m));
+		EDHOC_LOG_HEXDUMP_INF(salt_3e2m, VLA_SIZE(salt_3e2m),
+				      "SALT_3e2m");
 
 		const size_t ecc_key_len =
 			ctx->csuite[ctx->chosen_csuite_idx].ecc_key_length;
@@ -491,11 +546,12 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 		ret = comp_grx(ctx, auth_cred, pub_key, pub_key_len, grx,
 			       VLA_SIZE(grx));
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to compute G_RX: %d", ret);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
 
-		if (NULL != ctx->logger)
-			ctx->logger(ctx->user_ctx, "G_RX", grx, VLA_SIZE(grx));
+		EDHOC_LOG_HEXDUMP_INF(grx, VLA_SIZE(grx), "G_RX");
 
 		ctx->prk_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
@@ -504,8 +560,11 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 					   VLA_SIZE(grx), key_id);
 		memset(grx, 0, VLA_SIZEOF(grx));
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to import key for PRK_3e2m: %d",
+				      ret);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
 
 		size_t out_len = 0;
 		ret = ctx->crypto.extract(ctx->user_ctx, key_id, salt_3e2m,
@@ -513,17 +572,23 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 					  ctx->prk_len, &out_len);
 		ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
-		if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len)
+		if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
+			EDHOC_LOG_ERR(
+				"PRK_3e2m extract failed: ret=%d, expected=%zu, got=%zu",
+				ret, ctx->prk_len, out_len);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
 
 		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
 	}
 
 	case EDHOC_METHOD_MAX:
+		EDHOC_LOG_ERR("Invalid method: EDHOC_METHOD_MAX");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
+	EDHOC_LOG_ERR("Unsupported method: %d", ctx->chosen_method);
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
@@ -532,8 +597,10 @@ static int comp_plaintext_2_len(const struct edhoc_context *ctx,
 				size_t sign_len, size_t *plaintext_2_len)
 {
 	if (NULL == ctx || NULL == mac_ctx || 0 == sign_len ||
-	    NULL == plaintext_2_len)
+	    NULL == plaintext_2_len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_plaintext_2_len");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	size_t len = 0;
 
@@ -586,8 +653,10 @@ static int prepare_plaintext_2(const struct edhoc_context *ctx,
 		ret = cbor_encode_integer_type_int_type(
 			ptxt, ptxt_size - offset, &value, &len);
 
-		if (ZCBOR_SUCCESS != ret)
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to CBOR encode C_I integer");
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 
 		offset += len;
 		break;
@@ -601,13 +670,17 @@ static int prepare_plaintext_2(const struct edhoc_context *ctx,
 		ret = cbor_encode_byte_string_type_bstr_type(
 			ptxt, ptxt_size - offset, &input, &len);
 
-		if (ZCBOR_SUCCESS != ret)
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to CBOR encode C_I byte string");
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 
 		offset += len;
 		break;
 	}
 	default:
+		EDHOC_LOG_ERR("Invalid C_I encode type: %d",
+			      ctx->cid.encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -623,6 +696,8 @@ static int prepare_plaintext_2(const struct edhoc_context *ctx,
 			offset += mac_ctx->id_cred_bstr_len;
 			break;
 		default:
+			EDHOC_LOG_ERR("Invalid ID_CRED_R encode type: %d",
+				      mac_ctx->id_cred_enc_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	} else {
@@ -640,8 +715,10 @@ static int prepare_plaintext_2(const struct edhoc_context *ctx,
 		&ptxt[offset], sign_len + edhoc_cbor_bstr_oh(sign_len) + 1,
 		&cbor_sign_or_mac_2, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode Signature_or_MAC_2");
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	offset += len;
 
@@ -650,8 +727,12 @@ static int prepare_plaintext_2(const struct edhoc_context *ctx,
 		offset += mac_ctx->ead_len;
 	}
 
-	if (offset > ptxt_size)
+	if (offset > ptxt_size) {
+		EDHOC_LOG_ERR(
+			"Buffer too small for plaintext_2: offset=%zu, size=%zu",
+			offset, ptxt_size);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	*ptxt_len = offset;
 
@@ -663,11 +744,16 @@ static int comp_keystream(const struct edhoc_context *ctx,
 			  uint8_t *keystream, size_t keystream_len)
 {
 	if (NULL == ctx || NULL == prk_2e || 0 == prk_2e_len ||
-	    NULL == keystream || 0 == keystream_len)
+	    NULL == keystream || 0 == keystream_len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_keystream");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_TH_STATE_2 != ctx->th_state)
+	if (EDHOC_TH_STATE_2 != ctx->th_state) {
+		EDHOC_LOG_ERR("Invalid TH state for keystream_2: %d",
+			      ctx->th_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -689,22 +775,33 @@ static int comp_keystream(const struct edhoc_context *ctx,
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret || VLA_SIZE(info) != len)
+	if (ZCBOR_SUCCESS != ret || VLA_SIZE(info) != len) {
+		EDHOC_LOG_ERR(
+			"Failed to CBOR encode info for keystream_2: ret=%d, expected_len=%zu, actual_len=%zu",
+			ret, VLA_SIZE(info), len);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_2e,
 				   prk_2e_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import PRK_2e for keystream: error=%d",
+			      ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, VLA_SIZE(info),
 				 keystream, keystream_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR(
+			"Failed to expand keystream_2: error=%d, keystream_len=%zu",
+			ret, keystream_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -721,8 +818,10 @@ static int prepare_message_2(const struct edhoc_context *ctx,
 			     size_t *msg_2_len)
 {
 	if (NULL == ctx || NULL == ctxt || 0 == ctxt_len || NULL == msg_2 ||
-	    0 == msg_2_size || NULL == msg_2_len)
+	    0 == msg_2_size || NULL == msg_2_len) {
+		EDHOC_LOG_ERR("Invalid arguments in prepare_message_2");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	size_t offset = 0;
@@ -740,8 +839,12 @@ static int prepare_message_2(const struct edhoc_context *ctx,
 	memcpy(&buffer[offset], ctxt, ctxt_len);
 	offset += ctxt_len;
 
-	if (VLA_SIZE(buffer) < offset)
+	if (VLA_SIZE(buffer) < offset) {
+		EDHOC_LOG_ERR(
+			"Buffer overflow in prepare_message_2: buffer_size=%zu, offset=%zu",
+			VLA_SIZE(buffer), offset);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	const struct zcbor_string cbor_msg_2 = {
 		.value = buffer,
@@ -751,8 +854,10 @@ static int prepare_message_2(const struct edhoc_context *ctx,
 	ret = cbor_encode_message_2_G_Y_CIPHERTEXT_2(msg_2, msg_2_size,
 						     &cbor_msg_2, msg_2_len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode message_2: error=%d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -768,11 +873,17 @@ static int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 	ret = cbor_decode_message_2_G_Y_CIPHERTEXT_2(msg_2, msg_2_len,
 						     &dec_msg_2, &len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR decode message_2: error=%d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (len > msg_2_len)
+	if (len > msg_2_len) {
+		EDHOC_LOG_ERR(
+			"Decoded length exceeds buffer: decoded=%zu, msg_2_len=%zu",
+			len, msg_2_len);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	len = dec_msg_2.len;
 	len -= ctx->csuite[ctx->chosen_csuite_idx].ecc_key_length;
@@ -791,11 +902,17 @@ static int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 	ret = cbor_decode_message_2_G_Y_CIPHERTEXT_2(msg_2, msg_2_len,
 						     &dec_msg_2, &len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR decode message_2: error=%d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (len > msg_2_len)
+	if (len > msg_2_len) {
+		EDHOC_LOG_ERR(
+			"Message 2 length mismatch: decoded=%zu, actual=%zu",
+			len, msg_2_len);
 		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
+	}
 
 	/* Get Diffie-Hellmann peer public key (G_Y). */
 	const struct edhoc_cipher_suite csuite =
@@ -813,8 +930,11 @@ static int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 			   size_t ptxt_len, struct plaintext *parsed_ptxt)
 {
-	if (NULL == ctx || NULL == ptxt || 0 == ptxt_len || NULL == parsed_ptxt)
+	if (NULL == ctx || NULL == ptxt || 0 == ptxt_len ||
+	    NULL == parsed_ptxt) {
+		EDHOC_LOG_ERR("Invalid arguments in parse_plaintext");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	size_t len = 0;
@@ -822,8 +942,11 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 	struct plaintext_2 cbor_ptxt_2 = { 0 };
 	ret = cbor_decode_plaintext_2(ptxt, ptxt_len, &cbor_ptxt_2, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR decode plaintext_2: error=%d",
+			      ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	/* C_R */
 	switch (cbor_ptxt_2.plaintext_2_C_R_choice) {
@@ -831,8 +954,14 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 		if (ONE_BYTE_CBOR_INT_MIN_VALUE >
 			    (int8_t)cbor_ptxt_2.plaintext_2_C_R_int ||
 		    ONE_BYTE_CBOR_INT_MAX_VALUE <
-			    (int8_t)cbor_ptxt_2.plaintext_2_C_R_int)
+			    (int8_t)cbor_ptxt_2.plaintext_2_C_R_int) {
+			EDHOC_LOG_ERR(
+				"C_R integer out of range: %d (expected %d to %d)",
+				(int8_t)cbor_ptxt_2.plaintext_2_C_R_int,
+				ONE_BYTE_CBOR_INT_MIN_VALUE,
+				ONE_BYTE_CBOR_INT_MAX_VALUE);
 			return EDHOC_ERROR_NOT_PERMITTED;
+		}
 
 		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 		ctx->peer_cid.int_value =
@@ -841,8 +970,13 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	case plaintext_2_C_R_bstr_c:
 		if (ARRAY_SIZE(ctx->peer_cid.bstr_value) <
-		    cbor_ptxt_2.plaintext_2_C_R_bstr.len)
+		    cbor_ptxt_2.plaintext_2_C_R_bstr.len) {
+			EDHOC_LOG_ERR(
+				"C_R byte string too large: %zu (max %zu)",
+				cbor_ptxt_2.plaintext_2_C_R_bstr.len,
+				ARRAY_SIZE(ctx->peer_cid.bstr_value));
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		}
 
 		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
 		ctx->peer_cid.bstr_length =
@@ -853,6 +987,8 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 		break;
 
 	default:
+		EDHOC_LOG_ERR("Invalid C_R choice: %d",
+			      cbor_ptxt_2.plaintext_2_C_R_choice);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -900,8 +1036,16 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 			case COSE_X509_certs_l_c: {
 				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_chain
 						       .cert) <
-				    cose_x509->COSE_X509_certs_l_certs_count)
+				    cose_x509->COSE_X509_certs_l_certs_count) {
+					EDHOC_LOG_ERR(
+						"X.509 certificate chain too large: %zu (max %zu)",
+						cose_x509->COSE_X509_certs_l_certs_count,
+						ARRAY_SIZE(
+							parsed_ptxt->auth_cred
+								.x509_chain
+								.cert));
 					return EDHOC_ERROR_BUFFER_TOO_SMALL;
+				}
 
 				parsed_ptxt->auth_cred.x509_chain.nr_of_certs =
 					cose_x509->COSE_X509_certs_l_certs_count;
@@ -927,6 +1071,8 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 			}
 
 			default:
+				EDHOC_LOG_ERR("Invalid COSE_X509 choice: %d",
+					      cose_x509->COSE_X509_choice);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 		}
@@ -953,8 +1099,18 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 			case COSE_CertHash_hashAlg_tstr_c:
 				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_hash
 						       .alg_bstr) <
-				    cose_x509->COSE_CertHash_hashAlg_tstr.len)
+				    cose_x509->COSE_CertHash_hashAlg_tstr.len) {
+					EDHOC_LOG_ERR(
+						"X.509 hash algorithm string too large: %zu (max %zu)",
+						cose_x509
+							->COSE_CertHash_hashAlg_tstr
+							.len,
+						ARRAY_SIZE(
+							parsed_ptxt->auth_cred
+								.x509_hash
+								.alg_bstr));
 					return EDHOC_ERROR_BUFFER_TOO_SMALL;
+				}
 
 				parsed_ptxt->auth_cred.x509_hash.encode_type =
 					EDHOC_ENCODE_TYPE_BYTE_STRING;
@@ -969,6 +1125,9 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 					       .len);
 				break;
 			default:
+				EDHOC_LOG_ERR(
+					"Invalid COSE_CertHash_hashAlg choice: %d",
+					cose_x509->COSE_CertHash_hashAlg_choice);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 
@@ -1008,11 +1167,16 @@ static int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len)
 {
-	if (NULL == ctx || NULL == mac_ctx || NULL == ptxt || 0 == ptxt_len)
+	if (NULL == ctx || NULL == mac_ctx || NULL == ptxt || 0 == ptxt_len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_th_3");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_TH_STATE_2 != ctx->th_state)
+	if (EDHOC_TH_STATE_2 != ctx->th_state) {
+		EDHOC_LOG_ERR("Bad TH state in comp_th_3: %d (expected %d)",
+			      ctx->th_state, EDHOC_TH_STATE_2);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -1035,8 +1199,11 @@ static int comp_th_3(struct edhoc_context *ctx,
 		&th_3[offset], VLA_SIZE(th_3), &bstr, &len);
 	offset += len;
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode TH_2 for TH_3: error=%d",
+			      ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	memcpy(&th_3[offset], ptxt, ptxt_len);
 	offset += ptxt_len;
@@ -1044,8 +1211,12 @@ static int comp_th_3(struct edhoc_context *ctx,
 	memcpy(&th_3[offset], mac_ctx->cred, mac_ctx->cred_len);
 	offset += mac_ctx->cred_len;
 
-	if (VLA_SIZE(th_3) < offset)
+	if (VLA_SIZE(th_3) < offset) {
+		EDHOC_LOG_ERR(
+			"Buffer overflow in comp_th_3: buffer_size=%zu, offset=%zu",
+			VLA_SIZE(th_3), offset);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	/* Calculate TH_3. */
 	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
@@ -1054,8 +1225,10 @@ static int comp_th_3(struct edhoc_context *ctx,
 	ret = ctx->crypto.hash(ctx->user_ctx, th_3, VLA_SIZE(th_3), ctx->th,
 			       ctx->th_len, &hash_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to hash TH_3: error=%d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ctx->th_state = EDHOC_TH_STATE_3;
 	return EDHOC_SUCCESS;
@@ -1064,12 +1237,19 @@ static int comp_th_3(struct edhoc_context *ctx,
 static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len)
 {
-	if (NULL == ctx || NULL == salt || 0 == salt_len)
+	if (NULL == ctx || NULL == salt || 0 == salt_len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_salt_3e2m");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_TH_STATE_2 != ctx->th_state ||
-	    EDHOC_PRK_STATE_2E != ctx->prk_state)
+	    EDHOC_PRK_STATE_2E != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Bad state in comp_salt_3e2m: TH=%d (expected %d), PRK=%d (expected %d)",
+			ctx->th_state, EDHOC_TH_STATE_2, ctx->prk_state,
+			EDHOC_PRK_STATE_2E);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	const size_t hash_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
@@ -1092,22 +1272,33 @@ static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret || VLA_SIZE(info) != len)
+	if (ZCBOR_SUCCESS != ret || VLA_SIZE(info) != len) {
+		EDHOC_LOG_ERR(
+			"Failed to CBOR encode info for salt_3e2m: ret=%d, expected_len=%zu, actual_len=%zu",
+			ret, VLA_SIZE(info), len);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import PRK_2e for salt_3e2m: error=%d",
+			      ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, VLA_SIZE(info),
 				 salt, salt_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR(
+			"Failed to expand salt_3e2m: error=%d, salt_len=%zu",
+			ret, salt_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -1117,8 +1308,10 @@ static int comp_grx(struct edhoc_context *ctx,
 		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *grx,
 		    size_t grx_len)
 {
-	if (NULL == ctx || NULL == auth_cred || NULL == grx || 0 == grx_len)
+	if (NULL == ctx || NULL == auth_cred || NULL == grx || 0 == grx_len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_grx");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -1132,8 +1325,12 @@ static int comp_grx(struct edhoc_context *ctx,
 		ctx->dh_priv_key_len = 0;
 		memset(ctx->dh_priv_key, 0, ARRAY_SIZE(ctx->dh_priv_key));
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR(
+				"Failed to import DH private key for GRX (initiator): error=%d",
+				ret);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
 
 		size_t secret_len = 0;
 		ret = ctx->crypto.key_agreement(ctx->user_ctx, key_id, pub_key,
@@ -1143,8 +1340,12 @@ static int comp_grx(struct edhoc_context *ctx,
 		ctx->keys.destroy_key(ctx->user_ctx, key_id);
 		memset(key_id, 0, sizeof(key_id));
 
-		if (EDHOC_SUCCESS != ret || secret_len != grx_len)
+		if (EDHOC_SUCCESS != ret || secret_len != grx_len) {
+			EDHOC_LOG_ERR(
+				"Failed key agreement for GRX (initiator): error=%d, expected_len=%zu, actual_len=%zu",
+				ret, grx_len, secret_len);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
 
 		return EDHOC_SUCCESS;
 	}
@@ -1157,16 +1358,22 @@ static int comp_grx(struct edhoc_context *ctx,
 						ctx->dh_peer_pub_key_len, grx,
 						grx_len, &secret_len);
 
-		if (EDHOC_SUCCESS != ret || secret_len != grx_len)
+		if (EDHOC_SUCCESS != ret || secret_len != grx_len) {
+			EDHOC_LOG_ERR(
+				"Failed key agreement for GRX (responder): error=%d, expected_len=%zu, actual_len=%zu",
+				ret, grx_len, secret_len);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
 
 		return EDHOC_SUCCESS;
 	}
 
 	default:
+		EDHOC_LOG_ERR("Invalid role in comp_grx: %d", ctx->role);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
+	EDHOC_LOG_ERR("Unreachable code in comp_grx - should not reach here");
 	return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 }
 
@@ -1196,14 +1403,22 @@ static int comp_grx(struct edhoc_context *ctx,
 int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			    size_t msg_2_size, size_t *msg_2_len)
 {
+	EDHOC_LOG_DBG("Composing EDHOC message 2");
+
 	if (NULL == ctx || msg_2 == NULL || 0 == msg_2_size ||
-	    NULL == msg_2_len)
+	    NULL == msg_2_len) {
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_SM_RECEIVED_M1 != ctx->status ||
 	    EDHOC_TH_STATE_1 != ctx->th_state ||
-	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
+	    EDHOC_PRK_STATE_INVALID != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Bad state in compose: status=%d, th_state=%d, prk_state=%d",
+			ctx->status, ctx->th_state, ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
@@ -1215,43 +1430,43 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	/* 1. Generate ephemeral Diffie-Hellmann key pair. */
 	ret = gen_dh_keys(ctx);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to generate DH keys: %d", ret);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
-
-	if (NULL != ctx->logger) {
-		ctx->logger(ctx->user_ctx, "G_Y", ctx->dh_pub_key,
-			    ctx->dh_pub_key_len);
-		ctx->logger(ctx->user_ctx, "Y", ctx->dh_priv_key,
-			    ctx->dh_priv_key_len);
 	}
+
+	EDHOC_LOG_HEXDUMP_INF(ctx->dh_pub_key, ctx->dh_pub_key_len, "G_Y");
+	EDHOC_LOG_HEXDUMP_INF(ctx->dh_priv_key, ctx->dh_priv_key_len, "Y");
 
 	/* 2. Compute Diffie-Hellmann shared secret. */
 	ret = comp_dh_secret(ctx);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute DH secret: %d", ret);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "G_XY", ctx->dh_secret,
-			    ctx->dh_secret_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->dh_secret, ctx->dh_secret_len, "G_XY");
 
 	/* 3. Compute Transcript Hash 2 (TH_2). */
 	ret = comp_th_2(ctx);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute TH_2: %d", ret);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "TH_2", ctx->th, ctx->th_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->th, ctx->th_len, "TH_2");
 
 	/* 4a. Compute Pseudo Random Key 2 (PRK_2e). */
 	ret = comp_prk_2e(ctx);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute PRK_2e: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PRK_2e", ctx->prk, ctx->prk_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->prk, ctx->prk_len, "PRK_2e");
 
 	/* 4b. Copy of Pseudo Random Key 2 for keystream (step 11). */
 	VLA_ALLOC(uint8_t, prk_2e, ctx->prk_len);
@@ -1261,8 +1476,10 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	struct edhoc_auth_creds auth_cred = { 0 };
 	ret = ctx->cred.fetch(ctx->user_ctx, &auth_cred);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to fetch credentials: %d", ret);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
 
 	/* 6. Compose EAD_2 if present. */
 	if (NULL != ctx->ead.compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
@@ -1272,23 +1489,25 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 				       &ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS != ret ||
-		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens)
+		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens) {
+			EDHOC_LOG_ERR(
+				"EAD_2 compose failure: ret=%d, tokens=%zu, max=%zu",
+				ret, ctx->nr_of_ead_tokens,
+				ARRAY_SIZE(ctx->ead_token) - 1);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
+		}
 
-		if (NULL != ctx->logger) {
-			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-				ctx->logger(ctx->user_ctx,
-					    "EAD_2 compose label",
-					    (const uint8_t *)&ctx->ead_token[i]
-						    .label,
-					    sizeof(ctx->ead_token[i].label));
+		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+			EDHOC_LOG_HEXDUMP_INF(
+				(const uint8_t *)&ctx->ead_token[i].label,
+				sizeof(ctx->ead_token[i].label),
+				"EAD_2 compose label");
 
-				if (0 != ctx->ead_token[i].value_len)
-					ctx->logger(
-						ctx->user_ctx,
-						"EAD_2 compose value",
-						ctx->ead_token[i].value,
-						ctx->ead_token[i].value_len);
+			if (0 != ctx->ead_token[i].value_len) {
+				EDHOC_LOG_HEXDUMP_INF(
+					ctx->ead_token[i].value,
+					ctx->ead_token[i].value_len,
+					"EAD_2 compose value");
 			}
 		}
 	}
@@ -1296,11 +1515,12 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	/* 7. Compute psuedo random key (PRK_3e2m). */
 	ret = comp_prk_3e2m(ctx, &auth_cred, NULL, 0);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute PRK_3e2m: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PRK_3e2m", ctx->prk, ctx->prk_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->prk, ctx->prk_len, "PRK_3e2m");
 
 	/* 8a. Compute required buffer length for context_2. */
 	size_t mac_ctx_len = 0;
@@ -1321,18 +1541,12 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 
-	if (NULL != ctx->logger) {
-		ctx->logger(ctx->user_ctx, "C_R", mac_ctx->conn_id,
-			    mac_ctx->conn_id_len);
-		ctx->logger(ctx->user_ctx, "ID_CRED_R", mac_ctx->id_cred,
-			    mac_ctx->id_cred_len);
-		ctx->logger(ctx->user_ctx, "TH_2", mac_ctx->th,
-			    mac_ctx->th_len);
-		ctx->logger(ctx->user_ctx, "CRED_R", mac_ctx->cred,
-			    mac_ctx->cred_len);
-		ctx->logger(ctx->user_ctx, "context_2", mac_ctx->buf,
-			    mac_ctx->buf_len);
-	}
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->conn_id, mac_ctx->conn_id_len, "C_R");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->id_cred, mac_ctx->id_cred_len,
+			      "ID_CRED_R");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->th, mac_ctx->th_len, "TH_2");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->cred, mac_ctx->cred_len, "CRED_R");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->buf, mac_ctx->buf_len, "context_2");
 
 	/* 8c. Compute Message Authentication Code (MAC_2). */
 	size_t mac_length = 0;
@@ -1361,17 +1575,18 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "Signature_or_MAC_2", signature,
-			    signature_length);
+	EDHOC_LOG_HEXDUMP_INF(signature, signature_length,
+			      "Signature_or_MAC_2");
 
 	/* 10. Prepare plaintext (PLAINTEXT_2). */
 	size_t plaintext_len = 0;
 	ret = comp_plaintext_2_len(ctx, mac_ctx, signature_length,
 				   &plaintext_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute plaintext_2 length: %d", ret);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	VLA_ALLOC(uint8_t, plaintext, plaintext_len);
 	memset(plaintext, 0, VLA_SIZEOF(plaintext));
@@ -1381,12 +1596,12 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 				  plaintext, VLA_SIZE(plaintext),
 				  &plaintext_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to prepare plaintext_2: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PLAINTEXT_2", plaintext,
-			    plaintext_len);
+	EDHOC_LOG_HEXDUMP_INF(plaintext, plaintext_len, "PLAINTEXT_2");
 
 	/* 11. Compute key stream (KEYSTREAM_2). */
 	VLA_ALLOC(uint8_t, keystream, plaintext_len);
@@ -1396,40 +1611,40 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			     VLA_SIZE(keystream));
 	memset(prk_2e, 0, VLA_SIZEOF(prk_2e));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute keystream_2: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "KEYSTREAM_2", keystream,
-			    VLA_SIZE(keystream));
+	EDHOC_LOG_HEXDUMP_INF(keystream, VLA_SIZE(keystream), "KEYSTREAM_2");
 
 	/* 12. Compute Transcript Hash 3 (TH_3). */
 	ret = comp_th_3(ctx, mac_ctx, plaintext, plaintext_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute TH_3 in compose: %d", ret);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "TH_3", ctx->th, ctx->th_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->th, ctx->th_len, "TH_3");
 
 	/* 13. Compute ciphertext (CIPHERTEXT_2). */
 	xor_arrays(plaintext, keystream, plaintext_len);
 	const uint8_t *ciphertext = plaintext;
 	const size_t ciphertext_len = plaintext_len;
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "CIPHERTEXT_2", ciphertext,
-			    ciphertext_len);
+	EDHOC_LOG_HEXDUMP_INF(ciphertext, ciphertext_len, "CIPHERTEXT_2");
 
 	/* 14. Cborise items for message 2. */
 	ret = prepare_message_2(ctx, ciphertext, ciphertext_len, msg_2,
 				msg_2_size, msg_2_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to prepare message_2: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "message_2", msg_2, *msg_2_len);
+	EDHOC_LOG_HEXDUMP_INF(msg_2, *msg_2_len, "message_2");
 
 	/* 15. Clean-up EAD tokens. */
 	ctx->nr_of_ead_tokens = 0;
@@ -1463,13 +1678,21 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			    size_t msg_2_len)
 {
-	if (NULL == ctx || NULL == msg_2 || 0 == msg_2_len)
+	EDHOC_LOG_DBG("Processing EDHOC message 2");
+
+	if (NULL == ctx || NULL == msg_2 || 0 == msg_2_len) {
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_SM_WAIT_M2 != ctx->status ||
 	    EDHOC_TH_STATE_1 != ctx->th_state ||
-	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
+	    EDHOC_PRK_STATE_INVALID != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Bad state in process: status=%d, th_state=%d, prk_state=%d",
+			ctx->status, ctx->th_state, ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
@@ -1482,8 +1705,10 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	/* 1. Compute required length for ciphertext. */
 	ret = comp_ciphertext_2_len(ctx, msg_2, msg_2_len, &len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute ciphertext length: %d", ret);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	VLA_ALLOC(uint8_t, ciphertext_2, len);
 	memset(ciphertext_2, 0, VLA_SIZEOF(ciphertext_2));
@@ -1492,40 +1717,44 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	ret = parse_msg_2(ctx, msg_2, msg_2_len, ciphertext_2,
 			  VLA_SIZE(ciphertext_2));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to parse message 2: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "CIPHERTEXT_2", ciphertext_2,
-			    VLA_SIZE(ciphertext_2));
+	EDHOC_LOG_HEXDUMP_INF(ciphertext_2, VLA_SIZE(ciphertext_2),
+			      "CIPHERTEXT_2");
 
 	/* 3. Compute Diffie-Hellmann shared secret (G_XY). */
 	ret = comp_dh_secret(ctx);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute DH secret in process: %d",
+			      ret);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "G_XY", ctx->dh_secret,
-			    ctx->dh_secret_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->dh_secret, ctx->dh_secret_len, "G_XY");
 
 	/* 4. Compute Transcript Hash 2 (TH_2). */
 	ret = comp_th_2(ctx);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute TH_2 in process: %d", ret);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "TH_2", ctx->th, ctx->th_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->th, ctx->th_len, "TH_2");
 
 	/* 5. Compute Pseudo Random Key 2 (PRK_2e). */
 	ret = comp_prk_2e(ctx);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute PRK_2e in process: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PRK_2e", ctx->prk, ctx->prk_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->prk, ctx->prk_len, "PRK_2e");
 
 	/* 6. Compute key stream (KEYSTREAM_2). */
 	VLA_ALLOC(uint8_t, keystream, VLA_SIZE(ciphertext_2));
@@ -1534,45 +1763,43 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	ret = comp_keystream(ctx, ctx->prk, ctx->prk_len, keystream,
 			     VLA_SIZE(keystream));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute keystream: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "KEYSTREAM", keystream,
-			    VLA_SIZE(keystream));
+	EDHOC_LOG_HEXDUMP_INF(keystream, VLA_SIZE(keystream), "KEYSTREAM_2");
 
 	/* 7. Compute plaintext (PLAINTEXT_2). */
 	xor_arrays(ciphertext_2, keystream, VLA_SIZE(ciphertext_2));
 	const uint8_t *plaintext = ciphertext_2;
 	const size_t plaintext_len = VLA_SIZE(ciphertext_2);
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PLAINTEXT_2", plaintext,
-			    plaintext_len);
+	EDHOC_LOG_HEXDUMP_INF(plaintext, plaintext_len, "PLAINTEXT_2");
 
 	/* 8. Parse plaintext (PLAINTEXT_2). */
 	struct plaintext parsed_ptxt = { 0 };
 	ret = parse_plaintext(ctx, plaintext, plaintext_len, &parsed_ptxt);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to parse plaintext: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (NULL != ctx->logger) {
-		switch (ctx->peer_cid.encode_type) {
-		case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-			ctx->logger(ctx->user_ctx, "C_R",
-				    (const uint8_t *)&ctx->peer_cid.int_value,
-				    sizeof(ctx->peer_cid.int_value));
-			break;
-		case EDHOC_CID_TYPE_BYTE_STRING:
-			ctx->logger(ctx->user_ctx, "C_R",
-				    ctx->peer_cid.bstr_value,
-				    ctx->peer_cid.bstr_length);
-			break;
+	switch (ctx->peer_cid.encode_type) {
+	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+		EDHOC_LOG_HEXDUMP_INF((const uint8_t *)&ctx->peer_cid.int_value,
+				      sizeof(ctx->peer_cid.int_value), "C_R");
+		break;
+	case EDHOC_CID_TYPE_BYTE_STRING:
+		EDHOC_LOG_HEXDUMP_INF(ctx->peer_cid.bstr_value,
+				      ctx->peer_cid.bstr_length, "C_R");
+		break;
 
-		default:
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	default:
+		EDHOC_LOG_ERR("Invalid peer CID type in logger: %d",
+			      ctx->peer_cid.encode_type);
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	/* 9. Process EAD if present. */
@@ -1581,23 +1808,22 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		ret = ctx->ead.process(ctx->user_ctx, ctx->message,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("EAD_2 process failure: %d", ret);
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
+		}
 
-		if (NULL != ctx->logger) {
-			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-				ctx->logger(ctx->user_ctx,
-					    "EAD_2 process label",
-					    (const uint8_t *)&ctx->ead_token[i]
-						    .label,
-					    sizeof(ctx->ead_token[i].label));
+		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+			EDHOC_LOG_HEXDUMP_INF(
+				(const uint8_t *)&ctx->ead_token[i].label,
+				sizeof(ctx->ead_token[i].label),
+				"EAD_2 process label");
 
-				if (0 != ctx->ead_token[i].value_len)
-					ctx->logger(
-						ctx->user_ctx,
-						"EAD_2 process value",
-						ctx->ead_token[i].value,
-						ctx->ead_token[i].value_len);
+			if (0 != ctx->ead_token[i].value_len) {
+				EDHOC_LOG_HEXDUMP_INF(
+					ctx->ead_token[i].value,
+					ctx->ead_token[i].value_len,
+					"EAD_2 process value");
 			}
 		}
 	}
@@ -1610,6 +1836,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			       &pub_key_len);
 
 	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Credentials verification failed: %d", ret);
 		ctx->error_code =
 			EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -1618,19 +1845,22 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	/* 11. Compute psuedo random key (PRK_3e2m). */
 	ret = comp_prk_3e2m(ctx, &parsed_ptxt.auth_cred, pub_key, pub_key_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute PRK_3e2m in process: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PRK_3e2m", ctx->prk, ctx->prk_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->prk, ctx->prk_len, "PRK_3e2m");
 
 	/* 12. Compute required buffer length for context_2. */
 	size_t mac_context_len = 0;
 	ret = edhoc_comp_mac_context_length(ctx, &parsed_ptxt.auth_cred,
 					    &mac_context_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute MAC context length: %d", ret);
 		return EDHOC_ERROR_INVALID_MAC_2;
+	}
 
 	/* 13. Cborise items required by context_2. */
 	VLA_ALLOC(uint8_t, mac_ctx_buf,
@@ -1644,18 +1874,12 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 
-	if (NULL != ctx->logger) {
-		ctx->logger(ctx->user_ctx, "C_R", mac_ctx->conn_id,
-			    mac_ctx->conn_id_len);
-		ctx->logger(ctx->user_ctx, "ID_CRED_R", mac_ctx->id_cred,
-			    mac_ctx->id_cred_len);
-		ctx->logger(ctx->user_ctx, "TH_2", mac_ctx->th,
-			    mac_ctx->th_len);
-		ctx->logger(ctx->user_ctx, "CRED_R", mac_ctx->cred,
-			    mac_ctx->cred_len);
-		ctx->logger(ctx->user_ctx, "context_2", mac_ctx->buf,
-			    mac_ctx->buf_len);
-	}
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->conn_id, mac_ctx->conn_id_len, "C_R");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->id_cred, mac_ctx->id_cred_len,
+			      "ID_CRED_R");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->th, mac_ctx->th_len, "TH_2");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->cred, mac_ctx->cred_len, "CRED_R");
+	EDHOC_LOG_HEXDUMP_INF(mac_ctx->buf, mac_ctx->buf_len, "context_2");
 
 	/* 14. Compute Message Authentication Code (MAC_2). */
 	size_t mac_length = 0;
@@ -1675,17 +1899,21 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 				       parsed_ptxt.sign_or_mac_len, mac_buf,
 				       mac_length);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Signature or MAC_2 verification failed: %d",
+			      ret);
 		return EDHOC_ERROR_INVALID_SIGN_OR_MAC_2;
+	}
 
 	/* 16. Compute Transcript Hash 3 (TH_3). */
 	ret = comp_th_3(ctx, mac_ctx, plaintext, plaintext_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute TH_3: %d", ret);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "TH_3", ctx->th, ctx->th_len);
+	EDHOC_LOG_HEXDUMP_INF(ctx->th, ctx->th_len, "TH_3");
 
 	/* 17. Clean-up EAD tokens. */
 	ctx->nr_of_ead_tokens = 0;

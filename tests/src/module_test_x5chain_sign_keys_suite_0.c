@@ -113,12 +113,6 @@ static int auth_cred_verify_resp_many_certs(void *user_ctx,
 					    const uint8_t **pub_key,
 					    size_t *pub_key_len);
 
-/**
- * \brief Helper function for printing arrays.
- */
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length);
-
 /* Static variables and constants ------------------------------------------ */
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -483,24 +477,6 @@ static int auth_cred_verify_resp_many_certs(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length)
-{
-	(void)user_context;
-
-	printf("%s:\tLEN( %zu )\n", name, buffer_length);
-
-	for (size_t i = 0; i < buffer_length; ++i) {
-		if (0 == i % 16 && i > 0) {
-			printf("\n");
-		}
-
-		printf("%02x ", buffer[i]);
-	}
-
-	printf("\n\n");
-}
-
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(x5chain_sign_keys_suite_0);
@@ -563,11 +539,6 @@ TEST_SETUP(x5chain_sign_keys_suite_0)
 
 	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-#if defined(TEST_TRACES)
-	init_ctx->logger = print_array;
-	resp_ctx->logger = print_array;
-#endif
 }
 
 TEST_TEAR_DOWN(x5chain_sign_keys_suite_0)

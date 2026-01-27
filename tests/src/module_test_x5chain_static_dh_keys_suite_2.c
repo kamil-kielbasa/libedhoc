@@ -108,12 +108,6 @@ static int ead_process_single_token(void *user_context,
 				    const struct edhoc_ead_token *ead_token,
 				    size_t ead_token_size);
 
-/**
- * \brief Helper function for printing arrays.
- */
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length);
-
 /* Static variables and constants ------------------------------------------ */
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -410,24 +404,6 @@ static int ead_process_single_token(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length)
-{
-	(void)user_context;
-
-	printf("%s:\tLEN( %zu )\n", name, buffer_length);
-
-	for (size_t i = 0; i < buffer_length; ++i) {
-		if (0 == i % 16 && i > 0) {
-			printf("\n");
-		}
-
-		printf("%02x ", buffer[i]);
-	}
-
-	printf("\n\n");
-}
-
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(x5chain_static_dh_keys_suite_2);
@@ -510,11 +486,6 @@ TEST_SETUP(x5chain_static_dh_keys_suite_2)
 	ret = edhoc_bind_credentials(resp_ctx,
 				     &edhoc_auth_cred_single_cert_mocked_resp);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-#if defined(TEST_TRACES)
-	init_ctx->logger = print_array;
-	resp_ctx->logger = print_array;
-#endif
 }
 
 TEST_TEAR_DOWN(x5chain_static_dh_keys_suite_2)

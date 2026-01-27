@@ -16,11 +16,6 @@ add_executable(${PROJECT_NAME}
                src/module_test_x5t_sign_keys_suite_2.c
                src/module_test_api.c)
 
-if (LIBEDHOC_ENABLE_MODULE_TESTS_TRACES)
-        target_compile_definitions(${PROJECT_NAME} PUBLIC
-                                   TEST_TRACES)
-endif()
-
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

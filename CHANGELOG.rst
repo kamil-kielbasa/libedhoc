@@ -1,3 +1,15 @@
+Version 1.2.0
+-------------
+
+:Date: January 27, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added new logging module:
+
+  * Logging module has the same signatures to the Zephyr logging module.
+  * Added logging backends for Linux and Zephyr platforms.
+  * Added EDHOC_LOG_ERR for the entire library.
+  * Replaced context.logger with new logging hexdump functionlike-macros.
+
 Version 1.1.1
 -------------
 
