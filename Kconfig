@@ -42,4 +42,36 @@ if LIBEDHOC_ENABLE
     config LIBEDHOC_MAX_LEN_OF_HASH_ALG
         int "Maximum length of authentication credentials hash algorithm in bytes."
         default 1
+
+    choice LIBEDHOC_LOG_LEVEL_CHOICE
+        prompt "Select compile-time log level for libedhoc."
+        default LIBEDHOC_LOG_LEVEL_NONE
+
+        config LIBEDHOC_LOG_LEVEL_NONE
+            bool "No logging"
+        config LIBEDHOC_LOG_LEVEL_ERR
+            bool "Minimal level of verbosity is error"
+        config LIBEDHOC_LOG_LEVEL_WRN
+            bool "Minimal level of verbosity is warning"
+        config LIBEDHOC_LOG_LEVEL_INF
+            bool "Minimal level of verbosity is information"
+        config LIBEDHOC_LOG_LEVEL_DBG
+            bool "Minimal level of verbosity is debug"
+    endchoice
+
+    config LIBEDHOC_LOG_LEVEL
+        int
+        default 0 if LIBEDHOC_LOG_LEVEL_NONE
+        default 1 if LIBEDHOC_LOG_LEVEL_ERR
+        default 2 if LIBEDHOC_LOG_LEVEL_WRN
+        default 3 if LIBEDHOC_LOG_LEVEL_INF
+        default 4 if LIBEDHOC_LOG_LEVEL_DBG
+        range 0 4
+        help
+            0 No logs
+            1 Error
+            2 Warning
+            3 Information
+            4 Debug
+
 endif # LIBEDHOC_ENABLE

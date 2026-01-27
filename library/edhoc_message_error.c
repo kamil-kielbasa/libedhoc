@@ -49,12 +49,17 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 				size_t *msg_err_len, enum edhoc_error_code code,
 				const struct edhoc_error_info *info)
 {
-	if (NULL == msg_err || 0 == msg_err_size || NULL == msg_err_len)
+	if (NULL == msg_err || 0 == msg_err_size || NULL == msg_err_len) {
+		EDHOC_LOG_ERR(
+			"Invalid arguments in edhoc_message_error_compose");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_ERROR_CODE_SUCCESS > code ||
-	    EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED < code)
+	    EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED < code) {
+		EDHOC_LOG_ERR("Unknown error code: %d", code);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct message_error input = { .message_error_ERR_CODE =
@@ -68,11 +73,18 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 
 	case EDHOC_ERROR_CODE_UNSPECIFIED_ERROR: {
 		if (NULL == info || NULL == info->text_string ||
-		    0 == info->total_entries || 0 == info->written_entries)
+		    0 == info->total_entries || 0 == info->written_entries) {
+			EDHOC_LOG_ERR(
+				"Invalid arguments for unspecified error: info missing or empty");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
 
-		if (info->written_entries > info->total_entries)
+		if (info->written_entries > info->total_entries) {
+			EDHOC_LOG_ERR(
+				"Invalid arguments: written_entries=%zu > total_entries=%zu",
+				info->written_entries, info->total_entries);
 			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
 
 		input.message_error_ERR_INFO_present = true;
 		input.message_error_ERR_INFO.message_error_ERR_INFO_choice =
@@ -90,11 +102,18 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 			message_error_ERR_INFO_suites_m_c;
 
 		if (NULL == info || NULL == info->cipher_suites ||
-		    0 == info->total_entries || 0 == info->written_entries)
+		    0 == info->total_entries || 0 == info->written_entries) {
+			EDHOC_LOG_ERR(
+				"Invalid arguments for wrong cipher suite: info missing or empty");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
 
-		if (info->written_entries > info->total_entries)
+		if (info->written_entries > info->total_entries) {
+			EDHOC_LOG_ERR(
+				"Invalid arguments: written_entries=%zu > total_entries=%zu",
+				info->written_entries, info->total_entries);
 			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
 
 		struct suites_r *suites =
 			&input.message_error_ERR_INFO
@@ -105,8 +124,13 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 			suites->suites_int = *info->cipher_suites;
 		} else {
 			if (ARRAY_SIZE(suites->suites_int_l_int) <
-			    info->written_entries)
+			    info->written_entries) {
+				EDHOC_LOG_ERR(
+					"Buffer too small: array_size=%zu < written_entries=%zu",
+					ARRAY_SIZE(suites->suites_int_l_int),
+					info->written_entries);
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
+			}
 
 			suites->suites_choice = suites_int_l_c;
 			suites->suites_int_l_int_count = info->written_entries;
@@ -126,14 +150,17 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 	}
 
 	default:
+		EDHOC_LOG_ERR("Not permitted: unknown error code: %d", code);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	ret = cbor_encode_message_error(msg_err, msg_err_size, &input,
 					msg_err_len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode error message: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -142,8 +169,11 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 				enum edhoc_error_code *code,
 				struct edhoc_error_info *info)
 {
-	if (NULL == msg_err || 0 == msg_err_len || NULL == code)
+	if (NULL == msg_err || 0 == msg_err_len || NULL == code) {
+		EDHOC_LOG_ERR(
+			"Invalid arguments in edhoc_message_error_process");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct message_error result = { 0 };
@@ -151,8 +181,10 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 	size_t len = 0;
 	ret = cbor_decode_message_error(msg_err, msg_err_len, &result, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR decode error message: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	switch (result.message_error_ERR_CODE) {
 	case EDHOC_ERROR_CODE_SUCCESS: {
@@ -172,8 +204,12 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 				&result.message_error_ERR_INFO
 					 .message_error_ERR_INFO_tstr;
 
-			if (tstr->len > info->total_entries)
+			if (tstr->len > info->total_entries) {
+				EDHOC_LOG_ERR(
+					"Buffer too small: text_len=%zu > total_entries=%zu",
+					tstr->len, info->total_entries);
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
+			}
 
 			info->written_entries = tstr->len;
 			memcpy(info->text_string, tstr->value,
@@ -204,8 +240,13 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 
 			case suites_int_l_c: {
 				if (suites->suites_int_l_int_count >
-				    info->total_entries)
+				    info->total_entries) {
+					EDHOC_LOG_ERR(
+						"Buffer too small: suites_count=%zu > total_entries=%zu",
+						suites->suites_int_l_int_count,
+						info->total_entries);
 					return EDHOC_ERROR_BUFFER_TOO_SMALL;
+				}
 
 				info->written_entries =
 					suites->suites_int_l_int_count;
@@ -217,6 +258,9 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 			}
 
 			default:
+				EDHOC_LOG_ERR(
+					"Not permitted: invalid suites choice: %d",
+					suites->suites_choice);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 		}
@@ -231,6 +275,9 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 	}
 
 	default:
+		EDHOC_LOG_ERR(
+			"Not permitted: unknown error code in message: %d",
+			result.message_error_ERR_CODE);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 

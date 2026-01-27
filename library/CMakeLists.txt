@@ -7,15 +7,22 @@ if(NOT TARGET ${PROJECT_NAME})
     add_library(${PROJECT_NAME} STATIC)
 endif()
 
-target_sources(${PROJECT_NAME} PRIVATE
-               edhoc.c
-               edhoc_message_1.c
-               edhoc_message_2.c
-               edhoc_message_3.c
-               edhoc_message_4.c
-               edhoc_message_error.c
-               edhoc_exporter.c
-               edhoc_common.c)
+set(LIBEDHOC_SOURCES
+    edhoc.c
+    edhoc_message_1.c
+    edhoc_message_2.c
+    edhoc_message_3.c
+    edhoc_message_4.c
+    edhoc_message_error.c
+    edhoc_exporter.c
+    edhoc_common.c)
+
+if(TARGET zephyr_interface)
+    list(APPEND LIBEDHOC_SOURCES
+        ../port/log/zephyr/edhoc_log_backend.c)
+endif()
+
+target_sources(${PROJECT_NAME} PRIVATE ${LIBEDHOC_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR})
@@ -32,7 +39,8 @@ if(NOT TARGET zephyr_interface)
         CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=${CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS}
         CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID}
         CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=${CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG}
-        CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=${CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN})
+        CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=${CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN}
+        CONFIG_LIBEDHOC_LOG_LEVEL=${CONFIG_LIBEDHOC_LOG_LEVEL})
 
     target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBEDHOC_DEFINITIONS})
 endif()

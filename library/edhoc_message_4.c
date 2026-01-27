@@ -263,8 +263,10 @@ static inline size_t cbor_bstr_overhead(size_t len)
 static int compute_plaintext_4_len(const struct edhoc_context *ctx,
 				   size_t *ptxt_4_len)
 {
-	if (NULL == ctx || NULL == ptxt_4_len)
+	if (NULL == ctx || NULL == ptxt_4_len) {
+		EDHOC_LOG_ERR("Invalid arguments in compute_plaintext_4_len");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	size_t len = 0;
 
@@ -281,15 +283,21 @@ static int compute_plaintext_4_len(const struct edhoc_context *ctx,
 static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 			       size_t ptxt_size, size_t *ptxt_len)
 {
-	if (NULL == ctx || NULL == ptxt || NULL == ptxt_len)
+	if (NULL == ctx || NULL == ptxt || NULL == ptxt_len) {
+		EDHOC_LOG_ERR("Invalid arguments in prepare_plaintext_4");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	struct plaintext_4 ead_4 = { .plaintext_4_present = false };
 
-	if (ARRAY_SIZE(ead_4.plaintext_4.EAD_4) < ctx->nr_of_ead_tokens)
+	if (ARRAY_SIZE(ead_4.plaintext_4.EAD_4) < ctx->nr_of_ead_tokens) {
+		EDHOC_LOG_ERR("EAD_4 buffer too small: %zu (max %zu)",
+			      ctx->nr_of_ead_tokens,
+			      ARRAY_SIZE(ead_4.plaintext_4.EAD_4));
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	if (0 != ctx->nr_of_ead_tokens) {
 		ead_4.plaintext_4_present = true;
@@ -311,8 +319,10 @@ static int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 
 	ret = cbor_encode_plaintext_4(ptxt, ptxt_size, &ead_4, ptxt_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode PLAINTEXT_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -333,12 +343,19 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 			      uint8_t *aad, size_t aad_len)
 {
 	if (NULL == ctx || NULL == key || 0 == key_len || NULL == iv ||
-	    0 == iv_len || NULL == aad || 0 == aad_len)
+	    0 == iv_len || NULL == aad || 0 == aad_len) {
+		EDHOC_LOG_ERR("Invalid arguments in compute_key_iv_aad");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_TH_STATE_4 != ctx->th_state ||
-	    EDHOC_PRK_STATE_4E3M != ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Bad state in compute_key_iv_aad: TH=%d (expected %d), PRK=%d (expected %d)",
+			ctx->th_state, EDHOC_TH_STATE_4, ctx->prk_state,
+			EDHOC_PRK_STATE_4E3M);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -369,22 +386,28 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode info for K_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for K_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, key,
 				 key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to expand K_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	/* Generate IV_3. */
 	input_info = (struct info){
@@ -398,21 +421,27 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	len = 0;
 	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode info for IV_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for IV_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, iv, iv_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to expand IV_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	/* Generate AAD_3. */
 	struct enc_structure cose_enc_0 = {
@@ -425,8 +454,10 @@ static int compute_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	len = 0;
 	ret = cbor_encode_enc_structure(aad, aad_len, &cose_enc_0, &len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode AAD_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -444,8 +475,10 @@ static int compute_ciphertext(const struct edhoc_context *ctx,
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_ENCRYPT, key,
 				   key_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for encryption: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.encrypt(ctx->user_ctx, key_id, iv, iv_len, aad,
 				  aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
@@ -453,8 +486,10 @@ static int compute_ciphertext(const struct edhoc_context *ctx,
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to encrypt CIPHERTEXT_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -463,8 +498,10 @@ static int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
 		     size_t msg_4_size, size_t *msg_4_len)
 {
 	if (NULL == ctxt || 0 == ctxt_len || NULL == msg_4 || 0 == msg_4_size ||
-	    NULL == msg_4_len)
+	    NULL == msg_4_len) {
+		EDHOC_LOG_ERR("Invalid arguments in gen_msg_4");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -476,8 +513,10 @@ static int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
 	ret = cbor_encode_message_4_CIPHERTEXT_4(msg_4, msg_4_size, &input_bstr,
 						 msg_4_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode message_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -486,8 +525,10 @@ static int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 		       const uint8_t **ctxt_4, size_t *ctxt_4_len)
 {
 	if (NULL == msg_4 || 0 == msg_4_len || NULL == ctxt_4 ||
-	    NULL == ctxt_4_len)
+	    NULL == ctxt_4_len) {
+		EDHOC_LOG_ERR("Invalid arguments in parse_msg_4");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -496,8 +537,10 @@ static int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 	ret = cbor_decode_message_4_CIPHERTEXT_4(msg_4, msg_4_len, &dec_msg_4,
 						 &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR decode message_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	*ctxt_4 = dec_msg_4.value;
 	*ctxt_4_len = dec_msg_4.len;
@@ -518,8 +561,10 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_DECRYPT, key,
 				   key_len, key_id);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for decryption: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	size_t len = 0;
 	ret = ctx->crypto.decrypt(ctx->user_ctx, key_id, iv, iv_len, aad,
@@ -528,8 +573,12 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
-	if (EDHOC_SUCCESS != ret || ptxt_len != len)
+	if (EDHOC_SUCCESS != ret || ptxt_len != len) {
+		EDHOC_LOG_ERR(
+			"Failed to decrypt CIPHERTEXT_4: ret=%d, expected_len=%zu, actual_len=%zu",
+			ret, ptxt_len, len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -537,8 +586,10 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 			   size_t ptxt_len)
 {
-	if (NULL == ctx || NULL == ptxt)
+	if (NULL == ctx || NULL == ptxt) {
+		EDHOC_LOG_ERR("Invalid arguments in parse_plaintext");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -546,8 +597,10 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 	struct plaintext_4 ead_4 = { 0 };
 	ret = cbor_decode_plaintext_4(ptxt, ptxt_len, &ead_4, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR decode PLAINTEXT_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	ctx->nr_of_ead_tokens = ead_4.plaintext_4.EAD_4_count;
 	for (size_t i = 0; i < ead_4.plaintext_4.EAD_4_count; ++i) {
@@ -577,14 +630,23 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 			    size_t msg_4_size, size_t *msg_4_len)
 {
+	EDHOC_LOG_DBG("Composing EDHOC message 4");
+
 	if (NULL == ctx || NULL == msg_4 || 0 == msg_4_size ||
-	    NULL == msg_4_len)
+	    NULL == msg_4_len) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_message_4_compose");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_SM_COMPLETED != ctx->status ||
 	    EDHOC_TH_STATE_4 != ctx->th_state ||
-	    EDHOC_PRK_STATE_4E3M != ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Bad state in edhoc_message_4_compose: SM=%d (expected %d), TH=%d (expected %d), PRK=%d (expected %d)",
+			ctx->status, EDHOC_SM_COMPLETED, ctx->th_state,
+			EDHOC_TH_STATE_4, ctx->prk_state, EDHOC_PRK_STATE_4E3M);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
@@ -605,23 +667,24 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 				       &ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS != ret ||
-		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens)
+		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens) {
+			EDHOC_LOG_ERR(
+				"EAD_4 compose failed: ret=%d, max_tokens=%zu, actual_tokens=%zu",
+				ret, ARRAY_SIZE(ctx->ead_token) - 1,
+				ctx->nr_of_ead_tokens);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
+		}
 
-		if (NULL != ctx->logger) {
-			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-				ctx->logger(ctx->user_ctx,
-					    "EAD_4 compose label",
-					    (const uint8_t *)&ctx->ead_token[i]
-						    .label,
-					    sizeof(ctx->ead_token[i].label));
-
-				if (0 != ctx->ead_token[i].value_len)
-					ctx->logger(
-						ctx->user_ctx,
-						"EAD_4 compose value",
-						ctx->ead_token[i].value,
-						ctx->ead_token[i].value_len);
+		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+			EDHOC_LOG_HEXDUMP_INF(
+				(const uint8_t *)&ctx->ead_token[i].label,
+				sizeof(ctx->ead_token[i].label),
+				"EAD_4 compose label");
+			if (0 != ctx->ead_token[i].value_len) {
+				EDHOC_LOG_HEXDUMP_INF(
+					ctx->ead_token[i].value,
+					ctx->ead_token[i].value_len,
+					"EAD_4 compose value");
 			}
 		}
 	}
@@ -630,8 +693,10 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	size_t plaintext_len = 0;
 	ret = compute_plaintext_4_len(ctx, &plaintext_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute PLAINTEXT_4 length: %d", ret);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	VLA_ALLOC(uint8_t, plaintext, plaintext_len);
 	memset(plaintext, 0, VLA_SIZEOF(plaintext));
@@ -640,12 +705,12 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	ret = prepare_plaintext_4(ctx, plaintext, VLA_SIZE(plaintext),
 				  &plaintext_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to prepare PLAINTEXT_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", plaintext,
-			    plaintext_len);
+	EDHOC_LOG_HEXDUMP_INF(plaintext, plaintext_len, "PLAINTEXT_4");
 
 	/* 4. Compute K_4, IV_4 and AAD_4. */
 	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
@@ -661,14 +726,14 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	ret = compute_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
 				 VLA_SIZE(aad));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute K_4/IV_4/AAD_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
-
-	if (NULL != ctx->logger) {
-		ctx->logger(ctx->user_ctx, "K_4", key, VLA_SIZE(key));
-		ctx->logger(ctx->user_ctx, "IV_4", iv, VLA_SIZE(iv));
-		ctx->logger(ctx->user_ctx, "AAD_4", aad, VLA_SIZE(aad));
 	}
+
+	EDHOC_LOG_HEXDUMP_INF(key, VLA_SIZE(key), "K_4");
+	EDHOC_LOG_HEXDUMP_INF(iv, VLA_SIZE(iv), "IV_4");
+	EDHOC_LOG_HEXDUMP_INF(aad, VLA_SIZE(aad), "AAD_4");
 
 	/* 5. Compute ciphertext. */
 	size_t ciphertext_len = 0;
@@ -681,22 +746,23 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 				 ciphertext, VLA_SIZE(ciphertext),
 				 &ciphertext_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute CIPHERTEXT_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "CIPHERTEXT_4", ciphertext,
-			    ciphertext_len);
+	EDHOC_LOG_HEXDUMP_INF(ciphertext, ciphertext_len, "CIPHERTEXT_4");
 
 	/* 6. Generate edhoc message 4. */
 	ret = gen_msg_4(ciphertext, ciphertext_len, msg_4, msg_4_size,
 			msg_4_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to generate message_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "message_4", msg_4, *msg_4_len);
+	EDHOC_LOG_HEXDUMP_INF(msg_4, *msg_4_len, "message_4");
 
 	ctx->nr_of_ead_tokens = 0;
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
@@ -718,13 +784,22 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 			    size_t msg_4_len)
 {
-	if (NULL == ctx || NULL == msg_4 || 0 == msg_4_len)
+	EDHOC_LOG_DBG("Processing EDHOC message 4");
+
+	if (NULL == ctx || NULL == msg_4 || 0 == msg_4_len) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_message_4_process");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_SM_COMPLETED != ctx->status ||
 	    EDHOC_TH_STATE_4 != ctx->th_state ||
-	    EDHOC_PRK_STATE_4E3M != ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M != ctx->prk_state) {
+		EDHOC_LOG_ERR(
+			"Bad state in edhoc_message_4_process: SM=%d (expected %d), TH=%d (expected %d), PRK=%d (expected %d)",
+			ctx->status, EDHOC_SM_COMPLETED, ctx->th_state,
+			EDHOC_TH_STATE_4, ctx->prk_state, EDHOC_PRK_STATE_4E3M);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	ctx->status = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
@@ -743,11 +818,12 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 
 	ret = parse_msg_4(msg_4, msg_4_len, &ctxt, &ctxt_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to parse message_4: %d", ret);
 		return EDHOC_ERROR_MSG_4_PROCESS_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "CIPHERTEXT_4", ctxt, ctxt_len);
+	EDHOC_LOG_HEXDUMP_INF(ctxt, ctxt_len, "CIPHERTEXT_4");
 
 	/* 3. Compute K_4, IV_4 and AAD_4. */
 	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
@@ -763,14 +839,15 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	ret = compute_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
 				 VLA_SIZE(aad));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute K_4/IV_4/AAD_4 in process: %d",
+			      ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
-
-	if (NULL != ctx->logger) {
-		ctx->logger(ctx->user_ctx, "K_4", key, VLA_SIZE(key));
-		ctx->logger(ctx->user_ctx, "IV_4", iv, VLA_SIZE(iv));
-		ctx->logger(ctx->user_ctx, "AAD_4", aad, VLA_SIZE(aad));
 	}
+
+	EDHOC_LOG_HEXDUMP_INF(key, VLA_SIZE(key), "K_4");
+	EDHOC_LOG_HEXDUMP_INF(iv, VLA_SIZE(iv), "IV_4");
+	EDHOC_LOG_HEXDUMP_INF(aad, VLA_SIZE(aad), "AAD_4");
 
 	/* 4. Decrypt ciphertext. */
 	VLA_ALLOC(uint8_t, ptxt, ctxt_len - csuite.aead_tag_length);
@@ -780,17 +857,21 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 				 VLA_SIZE(aad), ctxt, ctxt_len, ptxt,
 				 VLA_SIZE(ptxt));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to decrypt CIPHERTEXT_4 in process: %d",
+			      ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
-	if (NULL != ctx->logger)
-		ctx->logger(ctx->user_ctx, "PLAINTEXT_4", ptxt, VLA_SIZE(ptxt));
+	EDHOC_LOG_HEXDUMP_INF(ptxt, VLA_SIZE(ptxt), "PLAINTEXT_4");
 
 	/* 5. Parse CBOR plaintext (PLAINTEXT_4). */
 	ret = parse_plaintext(ctx, ptxt, VLA_SIZE(ptxt));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to parse PLAINTEXT_4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	/* 6. Process EAD_4 if present. */
 	if (NULL != ctx->ead.process && 0 != ARRAY_SIZE(ctx->ead_token) - 1 &&
@@ -798,23 +879,22 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 		ret = ctx->ead.process(ctx->user_ctx, ctx->message,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("EAD_4 process failed: %d", ret);
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
+		}
 
-		if (NULL != ctx->logger) {
-			for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-				ctx->logger(ctx->user_ctx,
-					    "EAD_4 process label",
-					    (const uint8_t *)&ctx->ead_token[i]
-						    .label,
-					    sizeof(ctx->ead_token[i].label));
+		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+			EDHOC_LOG_HEXDUMP_INF(
+				(const uint8_t *)&ctx->ead_token[i].label,
+				sizeof(ctx->ead_token[i].label),
+				"EAD_4 process label");
 
-				if (0 != ctx->ead_token[i].value_len)
-					ctx->logger(
-						ctx->user_ctx,
-						"EAD_4 process value",
-						ctx->ead_token[i].value,
-						ctx->ead_token[i].value_len);
+			if (0 != ctx->ead_token[i].value_len) {
+				EDHOC_LOG_HEXDUMP_INF(
+					ctx->ead_token[i].value,
+					ctx->ead_token[i].value_len,
+					"EAD_4 process value");
 			}
 		}
 	}

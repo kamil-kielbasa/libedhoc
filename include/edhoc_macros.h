@@ -40,9 +40,11 @@
 /**
  * \brief Macro for calculating arrays length.
  */
+#ifndef __ZEPHYR__
 #ifndef ARRAY_SIZE
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
-#endif
+#endif /* ARRAY_SIZE */
+#endif /* __ZEPHYR__ */
 
 /**
  * \brief Macro which allows for private access into structure members.

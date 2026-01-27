@@ -174,8 +174,10 @@ static inline bool edhoc_cbor_is_one_byte_int(int32_t value)
 
 static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
 {
-	if (NULL == cid || NULL == len)
+	if (NULL == cid || NULL == len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_cid_len");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	*len = 0;
 
@@ -188,6 +190,7 @@ static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
 		*len += edhoc_cbor_bstr_oh(cid->bstr_length);
 		break;
 	default:
+		EDHOC_LOG_ERR("Invalid CID encode type: %d", cid->encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -196,8 +199,10 @@ static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
 
 static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 {
-	if (NULL == cred || NULL == len)
+	if (NULL == cred || NULL == len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_id_cred_len");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	*len = 0;
 	const size_t nr_of_items = 1;
@@ -220,6 +225,8 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 				cred->key_id.key_id_bstr_length);
 			break;
 		default:
+			EDHOC_LOG_ERR("Invalid key_id encode type: %d",
+				      cred->key_id.encode_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
@@ -252,6 +259,8 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 				cred->x509_hash.alg_bstr_length);
 			break;
 		default:
+			EDHOC_LOG_ERR("Invalid x509_hash encode type: %d",
+				      cred->x509_hash.encode_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
@@ -260,6 +269,7 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 		break;
 
 	default:
+		EDHOC_LOG_ERR("Unsupported credential label: %d", cred->label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -268,8 +278,11 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 
 static int comp_th_len(size_t th_len, size_t *len)
 {
-	if (0 == th_len || NULL == len)
+	if (0 == th_len || NULL == len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_th_len: th_len=%zu",
+			      th_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	*len = 0;
 	*len += th_len;
@@ -280,8 +293,10 @@ static int comp_th_len(size_t th_len, size_t *len)
 
 static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 {
-	if (NULL == cred || NULL == len)
+	if (NULL == cred || NULL == len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_cred_len");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	switch (cred->label) {
 	case EDHOC_COSE_ANY:
@@ -307,6 +322,9 @@ static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 		break;
 
 	default:
+		EDHOC_LOG_ERR(
+			"Unsupported credential label in comp_cred_len: %d",
+			cred->label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -315,8 +333,10 @@ static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 
 static int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 {
-	if (NULL == ctx || NULL == len)
+	if (NULL == ctx || NULL == len) {
+		EDHOC_LOG_ERR("Invalid arguments in comp_ead_len");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
 		*len += edhoc_cbor_int_mem_req(ctx->ead_token[i].label);
@@ -347,8 +367,12 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 				sizeof(mac_ctx->id_cred_int),
 				&cred->key_id.key_id_int, &len);
 
-			if (ZCBOR_SUCCESS != ret)
+			if (ZCBOR_SUCCESS != ret) {
+				EDHOC_LOG_ERR(
+					"Failed to CBOR encode key_id integer: %d",
+					ret);
 				return EDHOC_ERROR_CBOR_FAILURE;
+			}
 		}
 		break;
 	}
@@ -366,8 +390,12 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 					(uint8_t *)&val, sizeof(val), &result,
 					&len);
 
-				if (ZCBOR_SUCCESS != ret)
+				if (ZCBOR_SUCCESS != ret) {
+					EDHOC_LOG_ERR(
+						"Failed to CBOR decode key_id byte string: %d",
+						ret);
 					return EDHOC_ERROR_CBOR_FAILURE;
+				}
 
 				if (true ==
 				    edhoc_cbor_is_one_byte_int(result)) {
@@ -393,12 +421,19 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 				ARRAY_SIZE(mac_ctx->id_cred_bstr) - 1, &input,
 				&mac_ctx->id_cred_bstr_len);
 
-			if (ZCBOR_SUCCESS != ret)
+			if (ZCBOR_SUCCESS != ret) {
+				EDHOC_LOG_ERR(
+					"Failed to CBOR encode key_id byte string: %d",
+					ret);
 				return EDHOC_ERROR_CBOR_FAILURE;
+			}
 		}
 		break;
 	}
 	default:
+		EDHOC_LOG_ERR(
+			"Invalid key_id encode type in compact encoding: %d",
+			cred->key_id.encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -442,15 +477,20 @@ static int sign_cose_sign_1(const struct edhoc_context *ctx,
 					VLA_SIZE(cose_sign_1_buf), &cose_sign_1,
 					&cose_sign_1_buf_len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode Signature1 structure: %d",
+			      ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	ret = ctx->crypto.signature(ctx->user_ctx, cred->priv_key_id,
 				    cose_sign_1_buf, cose_sign_1_buf_len, sign,
 				    sign_size, sign_len);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to compute signature: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -492,23 +532,31 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 					VLA_SIZE(cose_sign_1_buf), &cose_sign_1,
 					&cose_sign_1_buf_len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR(
+			"Failed to CBOR encode Signature1 structure for verification: %d",
+			ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	uint8_t kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_VERIFY, pub_key,
 				   pub_key_len, kid);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import verification key: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.verify(ctx->user_ctx, kid, cose_sign_1_buf,
 				 cose_sign_1_buf_len, sign, sign_len);
 	ctx->keys.destroy_key(ctx->user_ctx, kid);
 	memset(kid, 0, sizeof(kid));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to verify signature: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -582,14 +630,21 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 				  const struct edhoc_auth_creds *cred,
 				  size_t *mac_ctx_len)
 {
-	if (NULL == ctx || NULL == cred || NULL == mac_ctx_len)
+	if (NULL == ctx || NULL == cred || NULL == mac_ctx_len) {
+		EDHOC_LOG_ERR(
+			"Invalid arguments in edhoc_comp_mac_context_length");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role)
+	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
+		EDHOC_LOG_ERR("Bad state: invalid role: %d", ctx->role);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
-	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message)
+	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message) {
+		EDHOC_LOG_ERR("Bad state: invalid message: %d", ctx->message);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	*mac_ctx_len = 0;
 
@@ -608,6 +663,9 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 			cid = &ctx->cid;
 			break;
 		default:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid role in C_R computation: %d",
+				ctx->role);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
@@ -663,20 +721,32 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			   const struct edhoc_auth_creds *cred,
 			   struct mac_context *mac_ctx)
 {
-	if (NULL == ctx || NULL == cred || NULL == mac_ctx)
+	if (NULL == ctx || NULL == cred || NULL == mac_ctx) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_comp_mac_context");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role)
+	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
+		EDHOC_LOG_ERR("Bad state: invalid role: %d", ctx->role);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
-	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message)
+	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message) {
+		EDHOC_LOG_ERR("Bad state: invalid message: %d", ctx->message);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
-	if (EDHOC_MSG_2 == ctx->message && EDHOC_TH_STATE_2 != ctx->th_state)
+	if (EDHOC_MSG_2 == ctx->message && EDHOC_TH_STATE_2 != ctx->th_state) {
+		EDHOC_LOG_ERR("Bad state: invalid TH state for message 2: %d",
+			      ctx->th_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
-	if (EDHOC_MSG_3 == ctx->message && EDHOC_TH_STATE_3 != ctx->th_state)
+	if (EDHOC_MSG_3 == ctx->message && EDHOC_TH_STATE_3 != ctx->th_state) {
+		EDHOC_LOG_ERR("Bad state: invalid TH state for message 3: %d",
+			      ctx->th_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	size_t len = 0;
@@ -693,6 +763,9 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			cid = &ctx->cid;
 			break;
 		default:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid role in C_R encoding: %d",
+				ctx->role);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
@@ -729,11 +802,16 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			break;
 		}
 		default:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid CID encode type: %d",
+				cid->encode_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
-		if (ZCBOR_SUCCESS != ret)
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to CBOR encode C_R: %d", ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 
 		mac_ctx->conn_id_len = len;
 	}
@@ -775,14 +853,20 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 				cred->key_id.key_id_bstr_length;
 			break;
 		default:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid key_id encode type in ID_CRED: %d",
+				cred->key_id.encode_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
-		if (0 == cred->x509_chain.nr_of_certs)
+		if (0 == cred->x509_chain.nr_of_certs) {
+			EDHOC_LOG_ERR(
+				"Bad state: x509_chain has no certificates");
 			return EDHOC_ERROR_BAD_STATE;
+		}
 
 		id_cred.id_cred_x_x5chain_present = true;
 
@@ -797,8 +881,15 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 				cred->x509_chain.cert_len[0];
 		} else {
 			if (ARRAY_SIZE(cose_x509->COSE_X509_certs_l_certs) <
-			    cred->x509_chain.nr_of_certs)
+			    cred->x509_chain.nr_of_certs) {
+				EDHOC_LOG_ERR(
+					"Buffer too small for x509_chain: %zu < %zu",
+					ARRAY_SIZE(
+						cose_x509
+							->COSE_X509_certs_l_certs),
+					cred->x509_chain.nr_of_certs);
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
+			}
 
 			cose_x509->COSE_X509_choice = COSE_X509_certs_l_c;
 			cose_x509->COSE_X509_certs_l_certs_count =
@@ -842,11 +933,17 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 				cred->x509_hash.alg_bstr_length;
 			break;
 		default:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid x509_hash encode type: %d",
+				cred->x509_hash.encode_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
 	}
 	default:
+		EDHOC_LOG_ERR(
+			"Credentials failure: unsupported credential label: %d",
+			cred->label);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
@@ -857,8 +954,10 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		len = 0;
 		ret = cbor_encode_id_cred_x(
 			mac_ctx->id_cred, mac_ctx->id_cred_len, &id_cred, &len);
-		if (ZCBOR_SUCCESS != ret)
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to CBOR encode ID_CRED: %d", ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 
 		mac_ctx->id_cred_len = len;
 	}
@@ -867,8 +966,11 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	if (EDHOC_COSE_HEADER_KID == cred->label) {
 		ret = kid_compact_encoding(cred, mac_ctx);
 
-		if (EDHOC_SUCCESS != ret)
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to compactly encode ID_CRED: %d",
+				      ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 	}
 
 	if (EDHOC_COSE_ANY == cred->label &&
@@ -889,6 +991,9 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			       cred->any.id_cred_comp_enc_length);
 			break;
 		default:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid encode type in compact ID_CRED: %d",
+				cred->any.encode_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
@@ -914,8 +1019,10 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	ret = cbor_encode_byte_string_type_bstr_type(
 		mac_ctx->th, mac_ctx->th_len, &th, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode TH: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
 	mac_ctx->th_len = len;
 
@@ -955,6 +1062,9 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		break;
 
 	default:
+		EDHOC_LOG_ERR(
+			"Credentials failure: unsupported credential label in CRED: %d",
+			cred->label);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
@@ -969,8 +1079,10 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		ret = cbor_encode_byte_string_type_bstr_type(
 			mac_ctx->cred, mac_ctx->cred_len, &_cred, &len);
 
-		if (ZCBOR_SUCCESS != ret)
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to CBOR encode CRED: %d", ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 
 		mac_ctx->cred_len = len;
 	}
@@ -1011,8 +1123,10 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		ret = cbor_encode_ead(mac_ctx->ead, mac_ctx->ead_len, &tmp_ead,
 				      &len);
 
-		if (ZCBOR_SUCCESS != ret)
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Failed to CBOR encode EAD: %d", ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
+		}
 
 		mac_ctx->ead_len = len;
 	}
@@ -1021,8 +1135,12 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 				     mac_ctx->id_cred_len + mac_ctx->th_len +
 				     mac_ctx->cred_len + mac_ctx->ead_len;
 
-	if (encoded_bytes > mac_ctx->buf_len)
+	if (encoded_bytes > mac_ctx->buf_len) {
+		EDHOC_LOG_ERR(
+			"Buffer too small: encoded_bytes=%zu > buf_len=%zu",
+			encoded_bytes, mac_ctx->buf_len);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
 
 	mac_ctx->buf_len = encoded_bytes;
 	return EDHOC_SUCCESS;
@@ -1030,11 +1148,15 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 
 int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 {
-	if (NULL == ctx || NULL == mac_len)
+	if (NULL == ctx || NULL == mac_len) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_comp_mac_length");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role)
+	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
+		EDHOC_LOG_ERR("Bad state: invalid role: %d", ctx->role);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
@@ -1052,6 +1174,9 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 2: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
@@ -1069,10 +1194,14 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 3: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
+	EDHOC_LOG_ERR("Not permitted: invalid message: %d", ctx->message);
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
@@ -1080,19 +1209,29 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 		   const struct mac_context *mac_ctx, uint8_t *mac,
 		   size_t mac_len)
 {
-	if (NULL == ctx || NULL == mac_ctx || NULL == mac || 0 == mac_len)
+	if (NULL == ctx || NULL == mac_ctx || NULL == mac || 0 == mac_len) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_comp_mac");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message)
+	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message) {
+		EDHOC_LOG_ERR("Bad state: invalid message: %d", ctx->message);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	if (EDHOC_MSG_2 == ctx->message &&
-	    EDHOC_PRK_STATE_3E2M != ctx->prk_state)
+	    EDHOC_PRK_STATE_3E2M != ctx->prk_state) {
+		EDHOC_LOG_ERR("Bad state: invalid PRK state for message 2: %d",
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	if (EDHOC_MSG_3 == ctx->message &&
-	    EDHOC_PRK_STATE_4E3M != ctx->prk_state)
+	    EDHOC_PRK_STATE_4E3M != ctx->prk_state) {
+		EDHOC_LOG_ERR("Bad state: invalid PRK state for message 3: %d",
+			      ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -1120,39 +1259,46 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	len = 0;
 	ret = cbor_encode_info(info_buf, VLA_SIZE(info_buf), &info, &len);
 
-	if (ZCBOR_SUCCESS != ret)
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to CBOR encode MAC info: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
 
-	if (NULL != ctx->logger) {
-		switch (ctx->message) {
-		case EDHOC_MSG_2:
-			ctx->logger(ctx->user_ctx, "MAC_2 info", info_buf, len);
-			break;
-		case EDHOC_MSG_3:
-			ctx->logger(ctx->user_ctx, "MAC_3 info", info_buf, len);
-			break;
+	switch (ctx->message) {
+	case EDHOC_MSG_2:
+		EDHOC_LOG_HEXDUMP_INF(info_buf, len, "MAC_2 info");
+		break;
+	case EDHOC_MSG_3:
+		EDHOC_LOG_HEXDUMP_INF(info_buf, len, "MAC_3 info");
+		break;
 
-		case EDHOC_MSG_1:
-		case EDHOC_MSG_4:
-		default:
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	case EDHOC_MSG_1:
+	case EDHOC_MSG_4:
+	default:
+		EDHOC_LOG_ERR(
+			"Not permitted: invalid message for MAC logging: %d",
+			ctx->message);
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	uint8_t kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
 				   ctx->prk_len, kid);
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to import key for MAC: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, kid, info_buf, len, mac,
 				 mac_len);
 	ctx->keys.destroy_key(ctx->user_ctx, kid);
 	memset(kid, 0, sizeof(kid));
 
-	if (EDHOC_SUCCESS != ret)
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to expand MAC: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -1160,11 +1306,16 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 				  size_t *sign_or_mac_len)
 {
-	if (NULL == ctx || NULL == sign_or_mac_len)
+	if (NULL == ctx || NULL == sign_or_mac_len) {
+		EDHOC_LOG_ERR(
+			"Invalid arguments in edhoc_comp_sign_or_mac_length");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role)
+	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
+		EDHOC_LOG_ERR("Bad state: invalid role: %d", ctx->role);
 		return EDHOC_ERROR_BAD_STATE;
+	}
 
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
@@ -1182,6 +1333,9 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 2 sign_or_mac: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
@@ -1199,10 +1353,15 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 3 sign_or_mac: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
+	EDHOC_LOG_ERR("Not permitted: invalid message for sign_or_mac: %d",
+		      ctx->message);
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
@@ -1213,8 +1372,11 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			   size_t sign_size, size_t *sign_len)
 {
 	if (NULL == ctx || NULL == cred || NULL == mac_ctx || NULL == mac ||
-	    0 == mac_len || NULL == sign || 0 == sign_size || NULL == sign_len)
+	    0 == mac_len || NULL == sign || 0 == sign_size ||
+	    NULL == sign_len) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_comp_sign_or_mac");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_MSG_2 == ctx->message) {
 		switch (ctx->chosen_method) {
@@ -1231,6 +1393,9 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 2 comp_sign_or_mac: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
@@ -1250,10 +1415,15 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 3 comp_sign_or_mac: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
+	EDHOC_LOG_ERR("Bad state: invalid message for comp_sign_or_mac: %d",
+		      ctx->message);
 	return EDHOC_ERROR_BAD_STATE;
 }
 
@@ -1265,8 +1435,10 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 {
 	if (NULL == ctx || NULL == mac_ctx || NULL == pub_key ||
 	    0 == pub_key_len || NULL == sign_or_mac || 0 == sign_or_mac_len ||
-	    NULL == mac || 0 == mac_len)
+	    NULL == mac || 0 == mac_len) {
+		EDHOC_LOG_ERR("Invalid arguments in edhoc_verify_sign_or_mac");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (EDHOC_MSG_2 == ctx->message) {
 		switch (ctx->chosen_method) {
@@ -1279,12 +1451,18 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_3:
 			if (mac_len != sign_or_mac_len ||
-			    0 != memcmp(sign_or_mac, mac, mac_len))
+			    0 != memcmp(sign_or_mac, mac, mac_len)) {
+				EDHOC_LOG_ERR(
+					"Invalid Signature_or_MAC_2: MAC mismatch");
 				return EDHOC_ERROR_INVALID_SIGN_OR_MAC_2;
+			}
 
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 2 verify_sign_or_mac: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
@@ -1300,15 +1478,23 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 		case EDHOC_METHOD_2:
 		case EDHOC_METHOD_3:
 			if (mac_len != sign_or_mac_len ||
-			    0 != memcmp(sign_or_mac, mac, mac_len))
+			    0 != memcmp(sign_or_mac, mac, mac_len)) {
+				EDHOC_LOG_ERR(
+					"Invalid Signature_or_MAC_3: MAC mismatch");
 				return EDHOC_ERROR_INVALID_SIGN_OR_MAC_2;
+			}
 
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
+			EDHOC_LOG_ERR(
+				"Not permitted: invalid method for message 3 verify_sign_or_mac: %d",
+				ctx->chosen_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
+	EDHOC_LOG_ERR("Bad state: invalid message for verify_sign_or_mac: %d",
+		      ctx->message);
 	return EDHOC_ERROR_BAD_STATE;
 }

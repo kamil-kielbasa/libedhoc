@@ -26,6 +26,7 @@
 #include "edhoc_ead.h"
 #include "edhoc_macros.h"
 #include "edhoc_values.h"
+#include "edhoc_log.h"
 
 /* Defines ----------------------------------------------------------------- */
 

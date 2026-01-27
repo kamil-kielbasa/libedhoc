@@ -152,12 +152,6 @@ static int ead_process_multiple_tokens(void *user_context,
 				       const struct edhoc_ead_token *ead_token,
 				       size_t ead_token_size);
 
-/**
- * \brief Helper function for printing arrays.
- */
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length);
-
 /* Static variables and constants ------------------------------------------ */
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -737,24 +731,6 @@ static int ead_process_multiple_tokens(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length)
-{
-	(void)user_context;
-
-	printf("%s:\tLEN( %zu )\n", name, buffer_length);
-
-	for (size_t i = 0; i < buffer_length; ++i) {
-		if (0 == i % 16 && i > 0) {
-			printf("\n");
-		}
-
-		printf("%02x ", buffer[i]);
-	}
-
-	printf("\n\n");
-}
-
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(rfc9529_chapter_2);
@@ -823,11 +799,6 @@ TEST_SETUP(rfc9529_chapter_2)
 
 	ret = edhoc_bind_credentials(resp_ctx, &edhoc_auth_cred_mocked_resp);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-#if defined(TEST_TRACES)
-	init_ctx->logger = print_array;
-	resp_ctx->logger = print_array;
-#endif
 }
 
 TEST_TEAR_DOWN(rfc9529_chapter_2)
@@ -1537,10 +1508,12 @@ TEST(rfc9529_chapter_2, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, init_recipient_id,
 				      init_recipient_id_len);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_I), resp_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, resp_sender_id, resp_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, resp_sender_id,
+				      resp_sender_id_len);
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), init_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, init_sender_id, init_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, init_sender_id,
+				      init_sender_id_len);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), resp_recipient_id_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, resp_recipient_id,
 				      resp_recipient_id_len);
@@ -1638,10 +1611,12 @@ TEST(rfc9529_chapter_2, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, init_recipient_id,
 				      init_recipient_id_len);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_I), resp_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, resp_sender_id, resp_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, resp_sender_id,
+				      resp_sender_id_len);
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), init_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, init_sender_id, init_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, init_sender_id,
+				      init_sender_id_len);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), resp_recipient_id_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, resp_recipient_id,
 				      resp_recipient_id_len);
@@ -1698,27 +1673,15 @@ TEST(rfc9529_chapter_2, prk_exporter)
 		ARRAY_SIZE(secret_1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-#if defined(TEST_TRACES)
-	print_array(NULL, "Secret 1", secret_1, ARRAY_SIZE(secret_1));
-#endif
-
 	ret = edhoc_export_prk_exporter(
 		init_ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM, secret_2,
 		ARRAY_SIZE(secret_2));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-#if defined(TEST_TRACES)
-	print_array(NULL, "Secret 2", secret_2, ARRAY_SIZE(secret_2));
-#endif
-
 	const size_t label = 45737;
 	ret = edhoc_export_prk_exporter(init_ctx, label, secret_3,
 					ARRAY_SIZE(secret_3));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-#if defined(TEST_TRACES)
-	print_array(NULL, "Secret 3", secret_3, ARRAY_SIZE(secret_3));
-#endif
 }
 
 TEST(rfc9529_chapter_2, handshake_real_crypto)

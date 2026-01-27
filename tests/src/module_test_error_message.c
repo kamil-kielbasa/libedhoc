@@ -33,33 +33,7 @@ static int ret = EDHOC_ERROR_GENERIC_ERROR;
 static enum edhoc_error_code recv_error_code = -1;
 
 /* Static function declarations -------------------------------------------- */
-
-/**
- * \brief Helper function for printing arrays.
- */
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length);
-
 /* Static function definitions --------------------------------------------- */
-
-static inline void print_array(void *user_context, const char *name,
-			       const uint8_t *buffer, size_t buffer_length)
-{
-	(void)user_context;
-
-	printf("%s:\tLEN( %zu )\n", name, buffer_length);
-
-	for (size_t i = 0; i < buffer_length; ++i) {
-		if (0 == i % 16 && i > 0) {
-			printf("\n");
-		}
-
-		printf("%02x ", buffer[i]);
-	}
-
-	printf("\n\n");
-}
-
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(error_message);
@@ -81,10 +55,6 @@ TEST(error_message, success)
 	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-#if defined(TEST_TRACES)
-	print_array(NULL, "error msg - success", buffer, buffer_len);
-#endif
 
 	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
 					  NULL);
@@ -110,10 +80,6 @@ TEST(error_message, unspecified_error)
 					  &buffer_len, error_code, &error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-#if defined(TEST_TRACES)
-	print_array(NULL, "error msg - unspecified error", buffer, buffer_len);
-#endif
-
 	char recv_text_string[100] = { 0 };
 	struct edhoc_error_info recv_error_info = {
 		.text_string = recv_text_string,
@@ -130,10 +96,6 @@ TEST(error_message, unspecified_error)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(error_info.text_string,
 				      recv_error_info.text_string,
 				      error_info.written_entries);
-
-#if defined(TEST_TRACES)
-	printf("Received message: %s\n\n", error_info.text_string);
-#endif
 }
 
 TEST(error_message, wrong_selected_cipher_suite_one)
@@ -153,11 +115,6 @@ TEST(error_message, wrong_selected_cipher_suite_one)
 	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, &error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-#if defined(TEST_TRACES)
-	print_array(NULL, "error msg - wrong selected cipher suite", buffer,
-		    buffer_len);
-#endif
 
 	int32_t recv_cipher_suites[10] = { 0 };
 	struct edhoc_error_info recv_error_info = {
@@ -195,11 +152,6 @@ TEST(error_message, wrong_selected_cipher_suite_many)
 					  &buffer_len, error_code, &error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-#if defined(TEST_TRACES)
-	print_array(NULL, "error msg - wrong selected cipher suite", buffer,
-		    buffer_len);
-#endif
-
 	int32_t recv_cipher_suites[10] = { 0 };
 	struct edhoc_error_info recv_error_info = {
 		.cipher_suites = recv_cipher_suites,
@@ -229,11 +181,6 @@ TEST(error_message, unknown_credential_referenced)
 	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-#if defined(TEST_TRACES)
-	print_array(NULL, "error msg - wrong selected cipher suite", buffer,
-		    buffer_len);
-#endif
 
 	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
 					  NULL);
