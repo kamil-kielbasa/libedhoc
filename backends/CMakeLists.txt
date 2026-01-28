@@ -2,6 +2,8 @@ set(BACKEND_CBOR_NAME backend_cbor)
 set(BACKEND_CBOR_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_bstr_type_decode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_bstr_type_encode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_connection_identifier_decode.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_connection_identifier_encode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_ead_decode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_ead_encode.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cbor/src/backend_cbor_enc_structure_decode.c

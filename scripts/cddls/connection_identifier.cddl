@@ -1,0 +1,4 @@
+; Definition of connection identifier used in edhoc over coap.
+;
+
+connection_identifier = (bstr / -24..23)

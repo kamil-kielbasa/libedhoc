@@ -16,7 +16,8 @@ models = {
     "EDHOC": "cddls/edhoc.cddl",
     "COSE": "cddls/cose.cddl",
     "COSE_X509": "cddls/cose_x509.cddl",
-    "TYPES": "cddls/types.cddl"
+    "TYPES": "cddls/types.cddl",
+    "CONNECTION_IDENTIFIER": "cddls/connection_identifier.cddl"
 }
 src_dir = "../backends/cbor/src"
 inc_dir = "../backends/cbor/include"

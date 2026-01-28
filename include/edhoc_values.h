@@ -110,6 +110,18 @@
 
 /**@}*/
 
+/** \defgroup edhoc-values-cbor-primitive EDHOC CBOR primitive values
+ *
+ * Standard CBOR primitive values that may be used in EDHOC implementations.
+ *
+ * @{
+ */
+
+/** CBOR encoding for boolean true (RFC 8949: 3.3.1. Major Type 7). */
+#define EDHOC_CBOR_TRUE ((uint8_t)0xf5)
+
+/**@}*/
+
 /** \defgroup edhoc-values-extract EDHOC extract labels
  * @{
  */

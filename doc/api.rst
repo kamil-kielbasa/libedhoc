@@ -86,3 +86,16 @@ EDHOC common
 .. doxygengroup:: edhoc-common-sign-or-mac
    :project: libedhoc
    :members:
+
+EDHOC helpers
+*************
+
+| Header file: :file:`helpers/include/edhoc_helpers.h`.
+
+.. doxygengroup:: edhoc-api-connection-id
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-api-buffer-utils
+   :project: libedhoc
+   :members:
