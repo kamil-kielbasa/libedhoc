@@ -80,14 +80,15 @@ TEST(edhoc_helpers, connection_id_equal_same_bstr)
 	
 	struct edhoc_connection_id conn_id_1 = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = bstr1,
 		.bstr_length = 3
 	};
+	memcpy(conn_id_1.bstr_value, bstr1, 3);
+	
 	struct edhoc_connection_id conn_id_2 = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = bstr2,
 		.bstr_length = 3
 	};
+	memcpy(conn_id_2.bstr_value, bstr2, 3);
 
 	TEST_ASSERT_TRUE(edhoc_connection_id_equal(&conn_id_1, &conn_id_2));
 }
@@ -99,14 +100,15 @@ TEST(edhoc_helpers, connection_id_equal_different_bstr)
 	
 	struct edhoc_connection_id conn_id_1 = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = bstr1,
 		.bstr_length = 3
 	};
+	memcpy(conn_id_1.bstr_value, bstr1, 3);
+	
 	struct edhoc_connection_id conn_id_2 = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = bstr2,
 		.bstr_length = 3
 	};
+	memcpy(conn_id_2.bstr_value, bstr2, 3);
 
 	TEST_ASSERT_FALSE(edhoc_connection_id_equal(&conn_id_1, &conn_id_2));
 }
@@ -118,14 +120,15 @@ TEST(edhoc_helpers, connection_id_equal_different_bstr_length)
 	
 	struct edhoc_connection_id conn_id_1 = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = bstr1,
 		.bstr_length = 3
 	};
+	memcpy(conn_id_1.bstr_value, bstr1, 3);
+	
 	struct edhoc_connection_id conn_id_2 = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = bstr2,
 		.bstr_length = 2
 	};
+	memcpy(conn_id_2.bstr_value, bstr2, 2);
 
 	TEST_ASSERT_FALSE(edhoc_connection_id_equal(&conn_id_1, &conn_id_2));
 }
@@ -139,9 +142,9 @@ TEST(edhoc_helpers, connection_id_equal_different_type)
 	uint8_t bstr[] = {0x05};
 	struct edhoc_connection_id conn_id_2 = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = bstr,
 		.bstr_length = 1
 	};
+	memcpy(conn_id_2.bstr_value, bstr, 1);
 
 	TEST_ASSERT_FALSE(edhoc_connection_id_equal(&conn_id_1, &conn_id_2));
 }
@@ -246,9 +249,9 @@ TEST(edhoc_helpers, prepend_connection_id_bstr_success)
 	uint8_t cid_bstr[] = {0x01, 0x02, 0x03};
 	struct edhoc_connection_id conn_id = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = cid_bstr,
 		.bstr_length = 3
 	};
+	memcpy(conn_id.bstr_value, cid_bstr, 3);
 	struct edhoc_prepended_fields prepended_fields = {
 		.buffer = buffer,
 		.buffer_size = sizeof(buffer),
@@ -307,10 +310,8 @@ TEST(edhoc_helpers, prepend_connection_id_null_buffer)
 TEST(edhoc_helpers, prepend_connection_id_bstr_zero_length)
 {
 	uint8_t buffer[100] = {0};
-	uint8_t cid_bstr[] = {};
 	struct edhoc_connection_id conn_id = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = cid_bstr,
 		.bstr_length = 0
 	};
 	struct edhoc_prepended_fields prepended_fields = {
@@ -585,9 +586,9 @@ TEST(edhoc_helpers, prepend_and_extract_connection_id_roundtrip)
 	uint8_t cid_bstr[] = {0x01, 0x02, 0x03};
 	struct edhoc_connection_id conn_id = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
-		.bstr_value = cid_bstr,
 		.bstr_length = 3
 	};
+	memcpy(conn_id.bstr_value, cid_bstr, 3);
 	struct edhoc_prepended_fields prepended_fields = {
 		.buffer = buffer,
 		.buffer_size = sizeof(buffer),
@@ -609,5 +610,47 @@ TEST(edhoc_helpers, prepend_and_extract_connection_id_roundtrip)
 	ret = edhoc_extract_connection_id(&extracted_fields);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(edhoc_connection_id_equal(&conn_id, &extracted_fields.extracted_conn_id));
+}
+
+TEST_GROUP_RUNNER(edhoc_helpers)
+{
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_same_int);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_different_int);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_same_bstr);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_different_bstr);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_different_bstr_length);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_different_type);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_null_first);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_null_second);
+	RUN_TEST_CASE(edhoc_helpers, connection_id_equal_both_null);
+	RUN_TEST_CASE(edhoc_helpers, prepend_flow_success);
+	RUN_TEST_CASE(edhoc_helpers, prepend_flow_null_fields);
+	RUN_TEST_CASE(edhoc_helpers, prepend_flow_null_buffer);
+	RUN_TEST_CASE(edhoc_helpers, prepend_flow_buffer_too_small);
+	RUN_TEST_CASE(edhoc_helpers, prepend_connection_id_int_success);
+	RUN_TEST_CASE(edhoc_helpers, prepend_connection_id_bstr_success);
+	RUN_TEST_CASE(edhoc_helpers, prepend_connection_id_null_fields);
+	RUN_TEST_CASE(edhoc_helpers, prepend_connection_id_null_conn_id);
+	RUN_TEST_CASE(edhoc_helpers, prepend_connection_id_null_buffer);
+	RUN_TEST_CASE(edhoc_helpers, prepend_connection_id_bstr_zero_length);
+	RUN_TEST_CASE(edhoc_helpers, prepend_recalculate_size_success);
+	RUN_TEST_CASE(edhoc_helpers, prepend_recalculate_size_null_fields);
+	RUN_TEST_CASE(edhoc_helpers, prepend_recalculate_size_null_buffer);
+	RUN_TEST_CASE(edhoc_helpers, prepend_recalculate_size_zero_buffer_size);
+	RUN_TEST_CASE(edhoc_helpers, prepend_recalculate_size_null_message_ptr);
+	RUN_TEST_CASE(edhoc_helpers, prepend_recalculate_size_zero_message_size);
+	RUN_TEST_CASE(edhoc_helpers, prepend_recalculate_size_total_exceeds_buffer);
+	RUN_TEST_CASE(edhoc_helpers, extract_flow_info_forward_flow);
+	RUN_TEST_CASE(edhoc_helpers, extract_flow_info_reverse_flow);
+	RUN_TEST_CASE(edhoc_helpers, extract_flow_info_no_flow_indicator);
+	RUN_TEST_CASE(edhoc_helpers, extract_flow_info_null_fields);
+	RUN_TEST_CASE(edhoc_helpers, extract_flow_info_single_byte_buffer);
+	RUN_TEST_CASE(edhoc_helpers, extract_connection_id_int_success);
+	RUN_TEST_CASE(edhoc_helpers, extract_connection_id_bstr_success);
+	RUN_TEST_CASE(edhoc_helpers, extract_connection_id_null_fields);
+	RUN_TEST_CASE(edhoc_helpers, extract_connection_id_null_buffer);
+	RUN_TEST_CASE(edhoc_helpers, extract_connection_id_zero_buffer_size);
+	RUN_TEST_CASE(edhoc_helpers, prepend_and_extract_flow_roundtrip);
+	RUN_TEST_CASE(edhoc_helpers, prepend_and_extract_connection_id_roundtrip);
 }
 
