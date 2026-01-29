@@ -16,7 +16,7 @@
 #include <edhoc.h>
 
 /* Cipher suite 2: */
-#include "cipher_suite_2.h"
+#include "edhoc_cipher_suite_2.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -47,38 +47,38 @@ static const uint8_t G_X[] = {
 };
 
 static int
-cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
+edhoc_cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
 				  uint8_t *priv_key, size_t priv_key_size,
 				  size_t *priv_key_len, uint8_t *pub_key,
 				  size_t pub_key_size, size_t *pub_key_len);
 
 static const struct edhoc_keys edhoc_keys = {
-	.import_key = cipher_suite_2_key_import,
-	.destroy_key = cipher_suite_2_key_destroy,
+	.import_key = edhoc_cipher_suite_2_key_import,
+	.destroy_key = edhoc_cipher_suite_2_key_destroy,
 };
 
 static const struct edhoc_crypto edhoc_crypto_mocked_init = {
-	.make_key_pair = cipher_suite_2_make_key_pair_init,
-	.key_agreement = cipher_suite_2_key_agreement,
-	.signature = cipher_suite_2_signature,
-	.verify = cipher_suite_2_verify,
-	.extract = cipher_suite_2_extract,
-	.expand = cipher_suite_2_expand,
-	.encrypt = cipher_suite_2_encrypt,
-	.decrypt = cipher_suite_2_decrypt,
-	.hash = cipher_suite_2_hash,
+	.make_key_pair = edhoc_cipher_suite_2_make_key_pair_init,
+	.key_agreement = edhoc_cipher_suite_2_key_agreement,
+	.signature = edhoc_cipher_suite_2_signature,
+	.verify = edhoc_cipher_suite_2_verify,
+	.extract = edhoc_cipher_suite_2_extract,
+	.expand = edhoc_cipher_suite_2_expand,
+	.encrypt = edhoc_cipher_suite_2_encrypt,
+	.decrypt = edhoc_cipher_suite_2_decrypt,
+	.hash = edhoc_cipher_suite_2_hash,
 };
 
 static const struct edhoc_crypto edhoc_crypto_mocked_resp = {
-	.make_key_pair = cipher_suite_2_make_key_pair,
-	.key_agreement = cipher_suite_2_key_agreement,
-	.signature = cipher_suite_2_signature,
-	.verify = cipher_suite_2_verify,
-	.extract = cipher_suite_2_extract,
-	.expand = cipher_suite_2_expand,
-	.encrypt = cipher_suite_2_encrypt,
-	.decrypt = cipher_suite_2_decrypt,
-	.hash = cipher_suite_2_hash,
+	.make_key_pair = edhoc_cipher_suite_2_make_key_pair,
+	.key_agreement = edhoc_cipher_suite_2_key_agreement,
+	.signature = edhoc_cipher_suite_2_signature,
+	.verify = edhoc_cipher_suite_2_verify,
+	.extract = edhoc_cipher_suite_2_extract,
+	.expand = edhoc_cipher_suite_2_expand,
+	.encrypt = edhoc_cipher_suite_2_encrypt,
+	.decrypt = edhoc_cipher_suite_2_decrypt,
+	.hash = edhoc_cipher_suite_2_hash,
 };
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -87,7 +87,7 @@ static int ret = EDHOC_ERROR_GENERIC_ERROR;
 /* Static function definitions --------------------------------------------- */
 
 static int
-cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
+edhoc_cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
 				  uint8_t *priv_key, size_t priv_key_size,
 				  size_t *priv_key_len, uint8_t *pub_key,
 				  size_t pub_key_size, size_t *pub_key_len)

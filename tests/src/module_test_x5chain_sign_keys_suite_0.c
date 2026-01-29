@@ -18,7 +18,7 @@
 #include "test_vector_x5chain_sign_keys_suite_0.h"
 
 /* Cipher suite 0 header: */
-#include "cipher_suite_0.h"
+#include "edhoc_cipher_suite_0.h"
 
 /* Standard library headers: */
 #include <stdio.h>
@@ -137,20 +137,20 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
 };
 
 static const struct edhoc_keys edhoc_keys = {
-	.import_key = cipher_suite_0_key_import,
-	.destroy_key = cipher_suite_0_key_destroy,
+	.import_key = edhoc_cipher_suite_0_key_import,
+	.destroy_key = edhoc_cipher_suite_0_key_destroy,
 };
 
 static const struct edhoc_crypto edhoc_crypto = {
-	.make_key_pair = cipher_suite_0_make_key_pair,
-	.key_agreement = cipher_suite_0_key_agreement,
-	.signature = cipher_suite_0_signature,
-	.verify = cipher_suite_0_verify,
-	.extract = cipher_suite_0_extract,
-	.expand = cipher_suite_0_expand,
-	.encrypt = cipher_suite_0_encrypt,
-	.decrypt = cipher_suite_0_decrypt,
-	.hash = cipher_suite_0_hash,
+	.make_key_pair = edhoc_cipher_suite_0_make_key_pair,
+	.key_agreement = edhoc_cipher_suite_0_key_agreement,
+	.signature = edhoc_cipher_suite_0_signature,
+	.verify = edhoc_cipher_suite_0_verify,
+	.extract = edhoc_cipher_suite_0_extract,
+	.expand = edhoc_cipher_suite_0_expand,
+	.encrypt = edhoc_cipher_suite_0_encrypt,
+	.decrypt = edhoc_cipher_suite_0_decrypt,
+	.hash = edhoc_cipher_suite_0_hash,
 };
 
 static const struct edhoc_credentials edhoc_auth_cred_single_cert_mocked_init = {
@@ -188,7 +188,7 @@ static int auth_cred_fetch_init_single_cert(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_I, ARRAY_SIZE(SK_I),
 						  auth_cred->priv_key_id);
 
@@ -211,7 +211,7 @@ static int auth_cred_fetch_resp_single_cert(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_R, ARRAY_SIZE(SK_R),
 						  auth_cred->priv_key_id);
 
@@ -326,7 +326,7 @@ static int auth_cred_fetch_init_many_certs(void *user_ctx,
 	auth_cred->x509_chain.cert[1] = CRED_R;
 	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_R);
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_I, ARRAY_SIZE(SK_I),
 						  auth_cred->priv_key_id);
 
@@ -353,7 +353,7 @@ static int auth_cred_fetch_resp_many_certs(void *user_ctx,
 	auth_cred->x509_chain.cert[1] = CRED_I;
 	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_I);
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_R, ARRAY_SIZE(SK_R),
 						  auth_cred->priv_key_id);
 
