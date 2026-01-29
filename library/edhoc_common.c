@@ -14,10 +14,16 @@
 
 /* Include files ----------------------------------------------------------- */
 
+#ifdef __ZEPHYR__
+#include <zephyr/logging/log.h>
+LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
+#endif
+
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 #include "edhoc_common.h"
+#include "edhoc_log.h"
 
 #ifdef __clang__
 #pragma clang diagnostic push

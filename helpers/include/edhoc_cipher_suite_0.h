@@ -1,5 +1,5 @@
 /**
- * \file    cipher_suite_0.h
+ * \file    edhoc_cipher_suite_0.h
  * \author  Kamil Kielbasa
  * \brief   Cipher suite 0 conatins:
  *            - AEAD algorithm                      = AES-CCM-16-64-128
@@ -16,8 +16,8 @@
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef CIPHER_SUITE_0_H
-#define CIPHER_SUITE_0_H
+#ifndef EDHOC_CIPHER_SUITE_0_H
+#define EDHOC_CIPHER_SUITE_0_H
 
 /* Include files ----------------------------------------------------------- */
 
@@ -31,6 +31,17 @@
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
+
+/**
+ * \brief Get EDHOC crypto structure for cipher suite 0.
+ */
+const struct edhoc_crypto *edhoc_cipher_suite_0_get_crypto(void);
+
+/**
+ * \brief Get EDHOC keys structure for cipher suite 0.
+ */
+const struct edhoc_keys *edhoc_cipher_suite_0_get_keys(void);
+
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
@@ -39,19 +50,19 @@
 /**
  * \brief Crypto key generation.
  */
-int cipher_suite_0_key_import(void *user_context, enum edhoc_key_type key_type,
+int edhoc_cipher_suite_0_key_import(void *user_context, enum edhoc_key_type key_type,
 			      const uint8_t *raw_key, size_t raw_key_len,
 			      void *kid);
 
 /**
  * \brief Crypto key destroy.
  */
-int cipher_suite_0_key_destroy(void *user_context, void *kid);
+int edhoc_cipher_suite_0_key_destroy(void *user_context, void *kid);
 
 /**
  * \brief ECDH make key pair.
  */
-int cipher_suite_0_make_key_pair(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_make_key_pair(void *user_context, const void *key_id,
 				 uint8_t *private_key, size_t private_key_size,
 				 size_t *private_key_length,
 				 uint8_t *public_key, size_t public_key_size,
@@ -60,7 +71,7 @@ int cipher_suite_0_make_key_pair(void *user_context, const void *key_id,
 /**
  * \brief ECDH key agreement.
  */
-int cipher_suite_0_key_agreement(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_key_agreement(void *user_context, const void *key_id,
 				 const uint8_t *peer_public_key,
 				 size_t peer_public_key_length,
 				 uint8_t *shared_secret,
@@ -70,7 +81,7 @@ int cipher_suite_0_key_agreement(void *user_context, const void *key_id,
 /**
  * \brief ECDSA signature.
  */
-int cipher_suite_0_signature(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_signature(void *user_context, const void *key_id,
 			     const uint8_t *input, size_t input_length,
 			     uint8_t *signature, size_t signature_size,
 			     size_t *signature_length);
@@ -78,14 +89,14 @@ int cipher_suite_0_signature(void *user_context, const void *key_id,
 /**
  * \brief ECDSA signature verification.
  */
-int cipher_suite_0_verify(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_verify(void *user_context, const void *key_id,
 			  const uint8_t *input, size_t input_length,
 			  const uint8_t *signature, size_t signature_length);
 
 /**
  * \brief HKDF extract.
  */
-int cipher_suite_0_extract(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_extract(void *user_context, const void *key_id,
 			   const uint8_t *salt, size_t salt_len,
 			   uint8_t *psuedo_random_key,
 			   size_t psuedo_random_key_size,
@@ -94,7 +105,7 @@ int cipher_suite_0_extract(void *user_context, const void *key_id,
 /**
  * \brief HKDF expand.
  */
-int cipher_suite_0_expand(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_expand(void *user_context, const void *key_id,
 			  const uint8_t *info, size_t info_length,
 			  uint8_t *output_keying_material,
 			  size_t output_keying_material_length);
@@ -102,7 +113,7 @@ int cipher_suite_0_expand(void *user_context, const void *key_id,
 /**
  * \brief AEAD encrypt.
  */
-int cipher_suite_0_encrypt(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_encrypt(void *user_context, const void *key_id,
 			   const uint8_t *nonce, size_t nonce_length,
 			   const uint8_t *additional_data,
 			   size_t additional_data_length,
@@ -113,7 +124,7 @@ int cipher_suite_0_encrypt(void *user_context, const void *key_id,
 /**
  * \brief AEAD decrypt.
  */
-int cipher_suite_0_decrypt(void *user_context, const void *key_id,
+int edhoc_cipher_suite_0_decrypt(void *user_context, const void *key_id,
 			   const uint8_t *nonce, size_t nonce_length,
 			   const uint8_t *additional_data,
 			   size_t additional_data_length,
@@ -124,8 +135,9 @@ int cipher_suite_0_decrypt(void *user_context, const void *key_id,
 /**
  * \brief Hash function.
  */
-int cipher_suite_0_hash(void *user_context, const uint8_t *input,
+int edhoc_cipher_suite_0_hash(void *user_context, const uint8_t *input,
 			size_t input_length, uint8_t *hash, size_t hash_size,
 			size_t *hash_length);
 
-#endif /* CIPHER_SUITE_0_H */
+#endif /* EDHOC_CIPHER_SUITE_0_H */
+

@@ -1,3 +1,13 @@
+Version 1.3.0
+-------------
+
+:Date: January 27, 2026
+
+* `@magdalena-szumny <https://github.com/magdalenaszumny>`__ : 
+  * Added EDHOC helpers module with connection ID and buffer utilities.
+  * Renamed cipher suite files and functions to edhoc_cipher_suite_X for consistency.
+  * Refactored cipher suite implementations to expose struct edhoc_crypto and struct edhoc_keys.
+
 Version 1.2.0
 -------------
 

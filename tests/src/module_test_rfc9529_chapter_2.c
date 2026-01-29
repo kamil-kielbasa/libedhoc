@@ -15,7 +15,7 @@
 #include "test_vector_rfc9529_chapter_2.h"
 
 /* Cipher suite 0 header: */
-#include "cipher_suite_0.h"
+#include "edhoc_cipher_suite_0.h"
 
 /* Standard library headers: */
 #include <stdio.h>
@@ -63,7 +63,7 @@ struct ead_context {
 /**
  * \brief Mocked EDHOC crypto function ECDH make key pair for initiator.
  */
-static int cipher_suite_0_make_key_pair_init(
+static int edhoc_cipher_suite_0_make_key_pair_init(
 	void *user_context, const void *key_id, uint8_t *private_key,
 	size_t private_key_size, size_t *private_key_length,
 	uint8_t *public_key, size_t public_key_size, size_t *public_key_length);
@@ -71,7 +71,7 @@ static int cipher_suite_0_make_key_pair_init(
 /**
  * \brief Mocked EDHOC crypto function ECDH make key pair for responder.
  */
-static int cipher_suite_0_make_key_pair_resp(
+static int edhoc_cipher_suite_0_make_key_pair_resp(
 	void *user_context, const void *key_id, uint8_t *private_key,
 	size_t private_key_size, size_t *private_key_length,
 	uint8_t *public_key, size_t public_key_size, size_t *public_key_length);
@@ -175,45 +175,42 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
 	.ecc_sign_length = 64,
 };
 
-static const struct edhoc_keys edhoc_keys = {
-	.import_key = cipher_suite_0_key_import,
-	.destroy_key = cipher_suite_0_key_destroy,
-};
+static const struct edhoc_keys *edhoc_keys;
 
 static const struct edhoc_crypto edhoc_crypto_mocked_init = {
-	.make_key_pair = cipher_suite_0_make_key_pair_init,
-	.key_agreement = cipher_suite_0_key_agreement,
-	.signature = cipher_suite_0_signature,
-	.verify = cipher_suite_0_verify,
-	.extract = cipher_suite_0_extract,
-	.expand = cipher_suite_0_expand,
-	.encrypt = cipher_suite_0_encrypt,
-	.decrypt = cipher_suite_0_decrypt,
-	.hash = cipher_suite_0_hash,
+	.make_key_pair = edhoc_cipher_suite_0_make_key_pair_init,
+	.key_agreement = edhoc_cipher_suite_0_key_agreement,
+	.signature = edhoc_cipher_suite_0_signature,
+	.verify = edhoc_cipher_suite_0_verify,
+	.extract = edhoc_cipher_suite_0_extract,
+	.expand = edhoc_cipher_suite_0_expand,
+	.encrypt = edhoc_cipher_suite_0_encrypt,
+	.decrypt = edhoc_cipher_suite_0_decrypt,
+	.hash = edhoc_cipher_suite_0_hash,
 };
 
 static const struct edhoc_crypto edhoc_crypto_mocked_resp = {
-	.make_key_pair = cipher_suite_0_make_key_pair_resp,
-	.key_agreement = cipher_suite_0_key_agreement,
-	.signature = cipher_suite_0_signature,
-	.verify = cipher_suite_0_verify,
-	.extract = cipher_suite_0_extract,
-	.expand = cipher_suite_0_expand,
-	.encrypt = cipher_suite_0_encrypt,
-	.decrypt = cipher_suite_0_decrypt,
-	.hash = cipher_suite_0_hash,
+	.make_key_pair = edhoc_cipher_suite_0_make_key_pair_resp,
+	.key_agreement = edhoc_cipher_suite_0_key_agreement,
+	.signature = edhoc_cipher_suite_0_signature,
+	.verify = edhoc_cipher_suite_0_verify,
+	.extract = edhoc_cipher_suite_0_extract,
+	.expand = edhoc_cipher_suite_0_expand,
+	.encrypt = edhoc_cipher_suite_0_encrypt,
+	.decrypt = edhoc_cipher_suite_0_decrypt,
+	.hash = edhoc_cipher_suite_0_hash,
 };
 
 static const struct edhoc_crypto edhoc_crypto = {
-	.make_key_pair = cipher_suite_0_make_key_pair,
-	.key_agreement = cipher_suite_0_key_agreement,
-	.signature = cipher_suite_0_signature,
-	.verify = cipher_suite_0_verify,
-	.extract = cipher_suite_0_extract,
-	.expand = cipher_suite_0_expand,
-	.encrypt = cipher_suite_0_encrypt,
-	.decrypt = cipher_suite_0_decrypt,
-	.hash = cipher_suite_0_hash,
+	.make_key_pair = edhoc_cipher_suite_0_make_key_pair,
+	.key_agreement = edhoc_cipher_suite_0_key_agreement,
+	.signature = edhoc_cipher_suite_0_signature,
+	.verify = edhoc_cipher_suite_0_verify,
+	.extract = edhoc_cipher_suite_0_extract,
+	.expand = edhoc_cipher_suite_0_expand,
+	.encrypt = edhoc_cipher_suite_0_encrypt,
+	.decrypt = edhoc_cipher_suite_0_decrypt,
+	.hash = edhoc_cipher_suite_0_hash,
 };
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
@@ -319,7 +316,7 @@ static const struct edhoc_ead_token ead_multiple_tokens_msg_4[] = {
 /* Static function definitions --------------------------------------------- */
 
 static int
-cipher_suite_0_make_key_pair_init(void *user_ctx, const void *kid,
+edhoc_cipher_suite_0_make_key_pair_init(void *user_ctx, const void *kid,
 				  uint8_t *priv_key, size_t priv_key_size,
 				  size_t *priv_key_len, uint8_t *pub_key,
 				  size_t pub_key_size, size_t *pub_key_len)
@@ -341,7 +338,7 @@ cipher_suite_0_make_key_pair_init(void *user_ctx, const void *kid,
 }
 
 static int
-cipher_suite_0_make_key_pair_resp(void *user_ctx, const void *kid,
+edhoc_cipher_suite_0_make_key_pair_resp(void *user_ctx, const void *kid,
 				  uint8_t *priv_key, size_t priv_key_size,
 				  size_t *priv_key_len, uint8_t *pub_key,
 				  size_t pub_key_size, size_t *pub_key_len)
@@ -385,7 +382,7 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_I, ARRAY_SIZE(SK_I),
 						  auth_cred->priv_key_id);
 
@@ -409,7 +406,7 @@ static int auth_cred_fetch_init_any(void *user_ctx,
 	auth_cred->any.cred = CRED_I_cborised;
 	auth_cred->any.cred_len = ARRAY_SIZE(CRED_I_cborised);
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_I, ARRAY_SIZE(SK_I),
 						  auth_cred->priv_key_id);
 
@@ -442,7 +439,7 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_R, ARRAY_SIZE(SK_R),
 						  auth_cred->priv_key_id);
 
@@ -466,7 +463,7 @@ static int auth_cred_fetch_resp_any(void *user_ctx,
 	auth_cred->any.cred = CRED_R_cborised;
 	auth_cred->any.cred_len = ARRAY_SIZE(CRED_R_cborised);
 
-	const int res = cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
+	const int res = edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_SIGNATURE,
 						  SK_R, ARRAY_SIZE(SK_R),
 						  auth_cred->priv_key_id);
 
@@ -739,6 +736,7 @@ TEST_SETUP(rfc9529_chapter_2)
 {
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
+	edhoc_keys = edhoc_cipher_suite_0_get_keys();
 
 	const enum edhoc_method methods[] = { METHOD };
 	const struct edhoc_cipher_suite cipher_suites[] = {
@@ -769,7 +767,7 @@ TEST_SETUP(rfc9529_chapter_2)
 	ret = edhoc_set_connection_id(init_ctx, &init_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(init_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(init_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto_mocked_init);
@@ -791,7 +789,7 @@ TEST_SETUP(rfc9529_chapter_2)
 	ret = edhoc_set_connection_id(resp_ctx, &resp_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(resp_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(resp_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto_mocked_resp);

@@ -11,8 +11,8 @@
 
 /* Include files ----------------------------------------------------------- */
 
-/* Cipher suite 0 header: */
-#include "cipher_suite_2.h"
+/* Cipher suite 2 header: */
+#include "edhoc_cipher_suite_2.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -37,25 +37,9 @@
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
-static const struct edhoc_keys keys = {
-	.import_key = cipher_suite_2_key_import,
-	.destroy_key = cipher_suite_2_key_destroy,
-};
 
-static const struct edhoc_crypto crypto = {
-	.make_key_pair = cipher_suite_2_make_key_pair,
-	.key_agreement = cipher_suite_2_key_agreement,
-	.signature = cipher_suite_2_signature,
-	.verify = cipher_suite_2_verify,
-	.extract = cipher_suite_2_extract,
-	.expand = cipher_suite_2_expand,
-	.encrypt = cipher_suite_2_encrypt,
-	.decrypt = cipher_suite_2_decrypt,
-	.hash = cipher_suite_2_hash,
-};
-
-static const struct edhoc_keys *edhoc_keys = &keys;
-static const struct edhoc_crypto *edhoc_crypto = &crypto;
+static const struct edhoc_keys *edhoc_keys;
+static const struct edhoc_crypto *edhoc_crypto;
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -68,6 +52,8 @@ TEST_GROUP(cipher_suite_2);
 TEST_SETUP(cipher_suite_2)
 {
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, psa_crypto_init());
+	edhoc_keys = edhoc_cipher_suite_2_get_keys();
+	edhoc_crypto = edhoc_cipher_suite_2_get_crypto();
 }
 
 TEST_TEAR_DOWN(cipher_suite_2)

@@ -19,7 +19,7 @@
 #include "test_vector_x5chain_static_dh_keys_suite_2.h"
 
 /* Cipher suite 2 header: */
-#include "cipher_suite_2.h"
+#include "edhoc_cipher_suite_2.h"
 
 /* Standard library headers: */
 #include <stdio.h>
@@ -176,21 +176,18 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_2 = {
 	.ecc_sign_length = 64,
 };
 
-static const struct edhoc_keys edhoc_keys = {
-	.import_key = cipher_suite_2_key_import,
-	.destroy_key = cipher_suite_2_key_destroy,
-};
+static const struct edhoc_keys *edhoc_keys;
 
 static const struct edhoc_crypto edhoc_crypto = {
-	.make_key_pair = cipher_suite_2_make_key_pair,
-	.key_agreement = cipher_suite_2_key_agreement,
-	.signature = cipher_suite_2_signature,
-	.verify = cipher_suite_2_verify,
-	.extract = cipher_suite_2_extract,
-	.expand = cipher_suite_2_expand,
-	.encrypt = cipher_suite_2_encrypt,
-	.decrypt = cipher_suite_2_decrypt,
-	.hash = cipher_suite_2_hash,
+	.make_key_pair = edhoc_cipher_suite_2_make_key_pair,
+	.key_agreement = edhoc_cipher_suite_2_key_agreement,
+	.signature = edhoc_cipher_suite_2_signature,
+	.verify = edhoc_cipher_suite_2_verify,
+	.extract = edhoc_cipher_suite_2_extract,
+	.expand = edhoc_cipher_suite_2_expand,
+	.encrypt = edhoc_cipher_suite_2_encrypt,
+	.decrypt = edhoc_cipher_suite_2_decrypt,
+	.hash = edhoc_cipher_suite_2_hash,
 };
 
 static const struct edhoc_credentials edhoc_auth_cred_single_cert_mocked_init = {
@@ -220,7 +217,7 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	const int res = cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
+	const int res = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
 						  SK_I, ARRAY_SIZE(SK_I),
 						  auth_cred->priv_key_id);
 
@@ -240,7 +237,7 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	const int res = cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
+	const int res = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
 						  SK_R, ARRAY_SIZE(SK_R),
 						  auth_cred->priv_key_id);
 
@@ -412,6 +409,7 @@ TEST_SETUP(x5chain_static_dh_keys_suite_2)
 {
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
+	edhoc_keys = edhoc_cipher_suite_2_get_keys();
 
 	const enum edhoc_method methods[] = { METHOD };
 	const struct edhoc_cipher_suite cipher_suites[] = {
@@ -448,7 +446,7 @@ TEST_SETUP(x5chain_static_dh_keys_suite_2)
 	ret = edhoc_bind_ead(init_ctx, &edhoc_ead_single_token);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(init_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(init_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto);
@@ -477,7 +475,7 @@ TEST_SETUP(x5chain_static_dh_keys_suite_2)
 	ret = edhoc_bind_ead(resp_ctx, &edhoc_ead_single_token);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(resp_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(resp_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto);
