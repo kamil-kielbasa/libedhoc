@@ -16,7 +16,6 @@
 #include <zephyr/logging/log.h>
 
 /* Defines ----------------------------------------------------------------- */
-LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 #define EDHOC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
 #define EDHOC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)

@@ -1,5 +1,5 @@
 /**
- * \file    cipher_suite_0.c
+ * \file    edhoc_cipher_suite_0.c
  * \author  Kamil Kielbasa
  * \brief   Example implementation of cipher suite 0.
  * \version 1.0
@@ -12,7 +12,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test header: */
-#include "cipher_suite_0.h"
+#include "edhoc_cipher_suite_0.h"
 
 /* Standard library header: */
 #include <stdint.h>
@@ -44,7 +44,7 @@
 
 /* Module interface function definitions ----------------------------------- */
 
-int cipher_suite_0_key_import(void *user_ctx, enum edhoc_key_type key_type,
+int edhoc_cipher_suite_0_key_import(void *user_ctx, enum edhoc_key_type key_type,
 			      const uint8_t *raw_key, size_t raw_key_len,
 			      void *kid)
 {
@@ -131,7 +131,7 @@ int cipher_suite_0_key_import(void *user_ctx, enum edhoc_key_type key_type,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_0_key_destroy(void *user_ctx, void *kid)
+int edhoc_cipher_suite_0_key_destroy(void *user_ctx, void *kid)
 {
 	(void)user_ctx;
 
@@ -146,7 +146,7 @@ int cipher_suite_0_key_destroy(void *user_ctx, void *kid)
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_0_make_key_pair(void *user_ctx, const void *kid,
+int edhoc_cipher_suite_0_make_key_pair(void *user_ctx, const void *kid,
 				 uint8_t *priv_key, size_t priv_key_size,
 				 size_t *priv_key_len, uint8_t *pub_key,
 				 size_t pub_key_size, size_t *pub_key_len)
@@ -174,7 +174,7 @@ int cipher_suite_0_make_key_pair(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int cipher_suite_0_key_agreement(void *user_ctx, const void *kid,
+int edhoc_cipher_suite_0_key_agreement(void *user_ctx, const void *kid,
 				 const uint8_t *peer_pub_key,
 				 size_t peer_pub_key_len, uint8_t *shr_sec,
 				 size_t shr_sec_size, size_t *shr_sec_len)
@@ -209,7 +209,7 @@ int cipher_suite_0_key_agreement(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int cipher_suite_0_signature(void *user_ctx, const void *kid,
+int edhoc_cipher_suite_0_signature(void *user_ctx, const void *kid,
 			     const uint8_t *input, size_t input_len,
 			     uint8_t *sign, size_t sign_size, size_t *sign_len)
 {
@@ -238,7 +238,7 @@ int cipher_suite_0_signature(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int cipher_suite_0_verify(void *user_ctx, const void *kid, const uint8_t *input,
+int edhoc_cipher_suite_0_verify(void *user_ctx, const void *kid, const uint8_t *input,
 			  size_t input_len, const uint8_t *sign,
 			  size_t sign_len)
 {
@@ -267,7 +267,7 @@ int cipher_suite_0_verify(void *user_ctx, const void *kid, const uint8_t *input,
 	return (true == verified) ? EDHOC_SUCCESS : EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_0_extract(void *user_ctx, const void *kid, const uint8_t *salt,
+int edhoc_cipher_suite_0_extract(void *user_ctx, const void *kid, const uint8_t *salt,
 			   size_t salt_len, uint8_t *prk, size_t prk_size,
 			   size_t *prk_len)
 {
@@ -319,7 +319,7 @@ psa_error:
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_0_expand(void *user_ctx, const void *kid, const uint8_t *info,
+int edhoc_cipher_suite_0_expand(void *user_ctx, const void *kid, const uint8_t *info,
 			  size_t info_len, uint8_t *okm, size_t okm_len)
 {
 	(void)user_ctx;
@@ -368,7 +368,7 @@ psa_error:
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_0_encrypt(void *user_ctx, const void *kid,
+int edhoc_cipher_suite_0_encrypt(void *user_ctx, const void *kid,
 			   const uint8_t *nonce, size_t nonce_len,
 			   const uint8_t *ad, size_t ad_len,
 			   const uint8_t *ptxt, size_t ptxt_len, uint8_t *ctxt,
@@ -398,7 +398,7 @@ int cipher_suite_0_encrypt(void *user_ctx, const void *kid,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_0_decrypt(void *user_ctx, const void *kid,
+int edhoc_cipher_suite_0_decrypt(void *user_ctx, const void *kid,
 			   const uint8_t *nonce, size_t nonce_len,
 			   const uint8_t *ad, size_t ad_len,
 			   const uint8_t *ctxt, size_t ctxt_len, uint8_t *ptxt,
@@ -428,7 +428,7 @@ int cipher_suite_0_decrypt(void *user_ctx, const void *kid,
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int cipher_suite_0_hash(void *user_ctx, const uint8_t *input, size_t input_len,
+int edhoc_cipher_suite_0_hash(void *user_ctx, const uint8_t *input, size_t input_len,
 			uint8_t *hash, size_t hash_size, size_t *hash_len)
 {
 	(void)user_ctx;
@@ -443,3 +443,23 @@ int cipher_suite_0_hash(void *user_ctx, const uint8_t *input, size_t input_len,
 	return (PSA_SUCCESS == ret) ? EDHOC_SUCCESS :
 				      EDHOC_ERROR_CRYPTO_FAILURE;
 }
+
+/* Module interface variables and constants -------------------------------- */
+
+static const struct edhoc_crypto edhoc_cipher_suite_0_crypto = {
+	.make_key_pair = edhoc_cipher_suite_0_make_key_pair,
+	.key_agreement = edhoc_cipher_suite_0_key_agreement,
+	.signature = edhoc_cipher_suite_0_signature,
+	.verify = edhoc_cipher_suite_0_verify,
+	.extract = edhoc_cipher_suite_0_extract,
+	.expand = edhoc_cipher_suite_0_expand,
+	.encrypt = edhoc_cipher_suite_0_encrypt,
+	.decrypt = edhoc_cipher_suite_0_decrypt,
+	.hash = edhoc_cipher_suite_0_hash,
+};
+
+const struct edhoc_crypto *edhoc_cipher_suite_0_get_crypto(void)
+{
+	return &edhoc_cipher_suite_0_crypto;
+}
+

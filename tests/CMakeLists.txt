@@ -14,8 +14,8 @@ add_executable(${PROJECT_NAME}
                src/module_test_x5t_sign_keys_suite_2.c
                src/module_test_api.c
                src/module_test_edhoc_helpers.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/cipher_suite_0.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/cipher_suite_2.c
+               ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_0.c
+               ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_2.c
                ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_helpers.c)
 
 if (LIBEDHOC_ENABLE_MODULE_TESTS_TRACES)

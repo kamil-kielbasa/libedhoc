@@ -29,6 +29,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 if(NOT TARGET zephyr_interface)
     # For Zephyr targets it causes warnings/errors because of the duplicate definitions
+    # Set default log level for Linux builds if not already defined
+    if(NOT DEFINED CONFIG_LIBEDHOC_LOG_LEVEL)
+        set(CONFIG_LIBEDHOC_LOG_LEVEL 3)  # EDHOC_LOG_LEVEL_INF
+    endif()
+    
     set(LIBEDHOC_DEFINITIONS
         CONFIG_LIBEDHOC_ENABLE=${CONFIG_LIBEDHOC_ENABLE}
         CONFIG_LIBEDHOC_KEY_ID_LEN=${CONFIG_LIBEDHOC_KEY_ID_LEN}

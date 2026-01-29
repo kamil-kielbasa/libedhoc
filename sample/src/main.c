@@ -1,5 +1,5 @@
-#include <zephyr/kernel.h>
 #include <edhoc.h>
+#include <zephyr/sys/printk.h>
 
 int main(void)
 {
@@ -8,9 +8,9 @@ int main(void)
 
 	ret = edhoc_context_init(&ctx);
 	if (ret == EDHOC_SUCCESS) {
-		EDHOC_LOG_INF("context init success\n");
+		printk("context init success\n");
 	} else {
-		EDHOC_LOG_INF("context init failed: %d\n", ret);
+		printk("context init failed: %d\n", ret);
 	}
 
 	return 0;
