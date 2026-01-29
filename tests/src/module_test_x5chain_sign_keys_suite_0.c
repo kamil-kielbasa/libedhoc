@@ -136,10 +136,7 @@ static const struct edhoc_cipher_suite edhoc_cipher_suite_0 = {
 	.ecc_sign_length = 64,
 };
 
-static const struct edhoc_keys edhoc_keys = {
-	.import_key = edhoc_cipher_suite_0_key_import,
-	.destroy_key = edhoc_cipher_suite_0_key_destroy,
-};
+static const struct edhoc_keys *edhoc_keys;
 
 static const struct edhoc_crypto edhoc_crypto = {
 	.make_key_pair = edhoc_cipher_suite_0_make_key_pair,
@@ -485,6 +482,7 @@ TEST_SETUP(x5chain_sign_keys_suite_0)
 {
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
+	edhoc_keys = edhoc_cipher_suite_0_get_keys();
 
 	const enum edhoc_method methods[] = { METHOD };
 	const struct edhoc_cipher_suite cipher_suites[] = {
@@ -515,7 +513,7 @@ TEST_SETUP(x5chain_sign_keys_suite_0)
 	ret = edhoc_set_connection_id(init_ctx, &init_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(init_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(init_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto);
@@ -534,7 +532,7 @@ TEST_SETUP(x5chain_sign_keys_suite_0)
 	ret = edhoc_set_connection_id(resp_ctx, &resp_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(resp_ctx, &edhoc_keys);
+	ret = edhoc_bind_keys(resp_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto);

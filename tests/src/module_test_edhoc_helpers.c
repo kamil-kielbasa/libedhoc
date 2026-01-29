@@ -227,7 +227,7 @@ TEST(edhoc_helpers, prepend_connection_id_int_success)
 	uint8_t buffer[100] = {0};
 	struct edhoc_connection_id conn_id = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5  /* Use value in valid CBOR range 0-23 */
+		.int_value = 5  /* Use value in valid CBOR one-byte integer range (-24 to 23) */
 	};
 	struct edhoc_prepended_fields prepended_fields = {
 		.buffer = buffer,
@@ -489,8 +489,8 @@ TEST(edhoc_helpers, extract_flow_info_single_byte_buffer)
 
 TEST(edhoc_helpers, extract_connection_id_int_success)
 {
-	/* Use value 5 which is in valid CBOR range (0-23) where raw byte is valid CBOR */
-	uint8_t buffer[] = {0x05};  /* Integer 5 (valid CBOR for range 0-23) */
+	/* Use value 5 which is in valid CBOR one-byte integer range (-24 to 23) where raw byte is valid CBOR */
+	uint8_t buffer[] = {0x05};  /* Integer 5 (valid CBOR one-byte integer) */
 	struct edhoc_extracted_fields extracted_fields = {
 		.buffer = buffer,
 		.buffer_size = sizeof(buffer),

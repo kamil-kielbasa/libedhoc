@@ -28,6 +28,48 @@
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
+
+/** \defgroup edhoc-api-buffer-utils EDHOC Buffer Utilities API
+ * @{
+ */
+
+/**
+ * \brief Helper structure for prepending data before EDHOC messages.
+ */
+struct edhoc_prepended_fields {
+    /** Complete buffer including prepended data and EDHOC message. */
+    uint8_t *buffer;
+    /** Total size of the buffer. */
+    size_t buffer_size;
+    /** Pointer to where EDHOC message should be written (after prepended data). */
+    uint8_t *edhoc_message_ptr;
+    /** Available size for EDHOC message (after composition, contains actual message length). */
+    size_t edhoc_message_size;
+};
+
+/**
+ * \brief Helper structure for extracting data from received messages.
+ */
+struct edhoc_extracted_fields {
+    /** Complete received buffer. */
+    const uint8_t *buffer;
+    /** Size of received buffer. */
+    size_t buffer_size;
+    /** Pointer to EDHOC message (after extracted data). */
+    const uint8_t *edhoc_message_ptr;
+    /** Size of EDHOC message. */
+    size_t edhoc_message_size;
+    
+    /** True if forward flow detected (CBOR true found, set by edhoc_extract_flow_info). */
+    bool is_forward_flow;
+    /** True if reverse flow detected (empty buffer, set by edhoc_extract_flow_info). */
+    bool is_reverse_flow;
+    /** Extracted connection identifier (set by edhoc_extract_connection_id). */
+    struct edhoc_connection_id extracted_conn_id;
+};
+
+/**@}*/
+
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
@@ -53,20 +95,6 @@ bool edhoc_connection_id_equal(
 /** \defgroup edhoc-api-buffer-utils EDHOC Buffer Utilities API
  * @{
  */
-
-/**
- * \brief Helper structure for prepending data before EDHOC messages.
- */
-struct edhoc_prepended_fields {
-    /** Complete buffer including prepended data and EDHOC message. */
-    uint8_t *buffer;
-    /** Total size of the buffer. */
-    size_t buffer_size;
-    /** Pointer to where EDHOC message should be written (after prepended data). */
-    uint8_t *edhoc_message_ptr;
-    /** Available size for EDHOC message (after composition, contains actual message length). */
-    size_t edhoc_message_size;
-};
 
 /**
  * \note Initialize prepend buffer directly using struct initialization:
@@ -131,27 +159,6 @@ int edhoc_prepend_connection_id(
  */
 int edhoc_prepend_recalculate_size(
     struct edhoc_prepended_fields *prepended_fields);
-
-/**
- * \brief Helper structure for extracting data from received messages.
- */
-struct edhoc_extracted_fields {
-    /** Complete received buffer. */
-    const uint8_t *buffer;
-    /** Size of received buffer. */
-    size_t buffer_size;
-    /** Pointer to EDHOC message (after extracted data). */
-    const uint8_t *edhoc_message_ptr;
-    /** Size of EDHOC message. */
-    size_t edhoc_message_size;
-    
-    /** True if forward flow detected (CBOR true found, set by edhoc_extract_flow_info). */
-    bool is_forward_flow;
-    /** True if reverse flow detected (empty buffer, set by edhoc_extract_flow_info). */
-    bool is_reverse_flow;
-    /** Extracted connection identifier (set by edhoc_extract_connection_id). */
-    struct edhoc_connection_id extracted_conn_id;
-};
 
 /**
  * \note Initialize extract buffer directly using struct initialization:

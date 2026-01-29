@@ -37,25 +37,9 @@
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
-static const struct edhoc_keys keys = {
-	.import_key = edhoc_cipher_suite_2_key_import,
-	.destroy_key = edhoc_cipher_suite_2_key_destroy,
-};
 
-static const struct edhoc_crypto crypto = {
-	.make_key_pair = edhoc_cipher_suite_2_make_key_pair,
-	.key_agreement = edhoc_cipher_suite_2_key_agreement,
-	.signature = edhoc_cipher_suite_2_signature,
-	.verify = edhoc_cipher_suite_2_verify,
-	.extract = edhoc_cipher_suite_2_extract,
-	.expand = edhoc_cipher_suite_2_expand,
-	.encrypt = edhoc_cipher_suite_2_encrypt,
-	.decrypt = edhoc_cipher_suite_2_decrypt,
-	.hash = edhoc_cipher_suite_2_hash,
-};
-
-static const struct edhoc_keys *edhoc_keys = &keys;
-static const struct edhoc_crypto *edhoc_crypto = &crypto;
+static const struct edhoc_keys *edhoc_keys;
+static const struct edhoc_crypto *edhoc_crypto;
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -68,6 +52,8 @@ TEST_GROUP(cipher_suite_2);
 TEST_SETUP(cipher_suite_2)
 {
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, psa_crypto_init());
+	edhoc_keys = edhoc_cipher_suite_2_get_keys();
+	edhoc_crypto = edhoc_cipher_suite_2_get_crypto();
 }
 
 TEST_TEAR_DOWN(cipher_suite_2)

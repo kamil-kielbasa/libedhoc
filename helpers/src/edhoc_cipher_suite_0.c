@@ -446,6 +446,11 @@ int edhoc_cipher_suite_0_hash(void *user_ctx, const uint8_t *input, size_t input
 
 /* Module interface variables and constants -------------------------------- */
 
+static const struct edhoc_keys edhoc_cipher_suite_0_keys = {
+	.import_key = edhoc_cipher_suite_0_key_import,
+	.destroy_key = edhoc_cipher_suite_0_key_destroy,
+};
+
 static const struct edhoc_crypto edhoc_cipher_suite_0_crypto = {
 	.make_key_pair = edhoc_cipher_suite_0_make_key_pair,
 	.key_agreement = edhoc_cipher_suite_0_key_agreement,
@@ -457,6 +462,11 @@ static const struct edhoc_crypto edhoc_cipher_suite_0_crypto = {
 	.decrypt = edhoc_cipher_suite_0_decrypt,
 	.hash = edhoc_cipher_suite_0_hash,
 };
+
+const struct edhoc_keys *edhoc_cipher_suite_0_get_keys(void)
+{
+	return &edhoc_cipher_suite_0_keys;
+}
 
 const struct edhoc_crypto *edhoc_cipher_suite_0_get_crypto(void)
 {

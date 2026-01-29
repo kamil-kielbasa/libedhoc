@@ -31,6 +31,17 @@
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
+
+/**
+ * \brief Get EDHOC crypto structure for cipher suite 0.
+ */
+const struct edhoc_crypto *edhoc_cipher_suite_0_get_crypto(void);
+
+/**
+ * \brief Get EDHOC keys structure for cipher suite 0.
+ */
+const struct edhoc_keys *edhoc_cipher_suite_0_get_keys(void);
+
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
@@ -127,11 +138,6 @@ int edhoc_cipher_suite_0_decrypt(void *user_context, const void *key_id,
 int edhoc_cipher_suite_0_hash(void *user_context, const uint8_t *input,
 			size_t input_length, uint8_t *hash, size_t hash_size,
 			size_t *hash_length);
-
-/**
- * \brief Get EDHOC crypto structure for cipher suite 0.
- */
-extern const struct edhoc_crypto *edhoc_cipher_suite_0_get_crypto(void);
 
 #endif /* EDHOC_CIPHER_SUITE_0_H */
 
