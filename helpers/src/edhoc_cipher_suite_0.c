@@ -23,6 +23,7 @@
 #include "edhoc_crypto.h"
 #include "edhoc_values.h"
 #include "edhoc_macros.h"
+#include "edhoc_log.h"
 
 /* PSA crypto header: */
 #include <psa/crypto.h>
@@ -155,8 +156,11 @@ int edhoc_cipher_suite_0_make_key_pair(void *user_ctx, const void *kid,
 
 	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
 	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
-	    NULL == pub_key_len)
+	    NULL == pub_key_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, priv_key=%p, priv_key_size=%zu, priv_key_len=%p, pub_key=%p, pub_key_size=%zu, pub_key_len=%p",
+			      kid, priv_key, priv_key_size, priv_key_len, pub_key, pub_key_size, pub_key_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (X25519_KEY_SIZE != priv_key_size || X25519_KEY_SIZE != pub_key_size)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -182,8 +186,11 @@ int edhoc_cipher_suite_0_key_agreement(void *user_ctx, const void *kid,
 	(void)user_ctx;
 
 	if (NULL == kid || NULL == peer_pub_key || 0 == peer_pub_key_len ||
-	    NULL == shr_sec || 0 == shr_sec_size || NULL == shr_sec_len)
+	    NULL == shr_sec || 0 == shr_sec_size || NULL == shr_sec_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, peer_pub_key=%p, peer_pub_key_len=%zu, shr_sec=%p, shr_sec_size=%zu, shr_sec_len=%p",
+			      kid, peer_pub_key, peer_pub_key_len, shr_sec, shr_sec_size, shr_sec_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (X25519_KEY_SIZE != peer_pub_key_len ||
 	    X25519_SHARED_SIZE != shr_sec_size)
@@ -216,8 +223,11 @@ int edhoc_cipher_suite_0_signature(void *user_ctx, const void *kid,
 	(void)user_ctx;
 
 	if (NULL == kid || NULL == input || 0 == input_len || NULL == sign ||
-	    0 == sign_size || NULL == sign_len)
+	    0 == sign_size || NULL == sign_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, input=%p, input_len=%zu, sign=%p, sign_size=%zu, sign_len=%p",
+			      kid, input, input_len, sign, sign_size, sign_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (ED25519_SIGNATURE_SIZE != sign_size)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -245,8 +255,11 @@ int edhoc_cipher_suite_0_verify(void *user_ctx, const void *kid, const uint8_t *
 	(void)user_ctx;
 
 	if (NULL == kid || NULL == input || 0 == input_len || NULL == sign ||
-	    0 == sign_len)
+	    0 == sign_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, input=%p, input_len=%zu, sign=%p, sign_len=%zu",
+			      kid, input, input_len, sign, sign_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (ED25519_SIGNATURE_SIZE != sign_len)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -274,8 +287,11 @@ int edhoc_cipher_suite_0_extract(void *user_ctx, const void *kid, const uint8_t 
 	(void)user_ctx;
 
 	if (NULL == kid || NULL == salt || 0 == salt_len || NULL == prk ||
-	    0 == prk_size || NULL == prk_len)
+	    0 == prk_size || NULL == prk_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, salt=%p, salt_len=%zu, prk=%p, prk_size=%zu, prk_len=%p",
+			      kid, salt, salt_len, prk, prk_size, prk_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	psa_status_t ret = PSA_ERROR_GENERIC_ERROR;
 
@@ -325,8 +341,11 @@ int edhoc_cipher_suite_0_expand(void *user_ctx, const void *kid, const uint8_t *
 	(void)user_ctx;
 
 	if (NULL == kid || NULL == info || 0 == info_len || NULL == okm ||
-	    0 == okm_len)
+	    0 == okm_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, info=%p, info_len=%zu, okm=%p, okm_len=%zu",
+			      kid, info, info_len, okm, okm_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	psa_status_t ret = PSA_ERROR_GENERIC_ERROR;
 
@@ -378,8 +397,11 @@ int edhoc_cipher_suite_0_encrypt(void *user_ctx, const void *kid,
 
 	/* Plaintext might be zero length buffer. */
 	if (NULL == kid || NULL == nonce || 0 == nonce_len || NULL == ad ||
-	    0 == ad_len || NULL == ctxt || 0 == ctxt_size || NULL == ctxt_len)
+	    0 == ad_len || NULL == ctxt || 0 == ctxt_size || NULL == ctxt_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, nonce=%p, nonce_len=%zu, ad=%p, ad_len=%zu, ctxt=%p, ctxt_size=%zu, ctxt_len=%p",
+			      kid, nonce, nonce_len, ad, ad_len, ctxt, ctxt_size, ctxt_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	psa_status_t ret = PSA_ERROR_GENERIC_ERROR;
 	const psa_key_id_t *psa_kid = kid;
@@ -408,8 +430,11 @@ int edhoc_cipher_suite_0_decrypt(void *user_ctx, const void *kid,
 
 	/* Plaintext might be zero length buffer. */
 	if (NULL == kid || NULL == nonce || 0 == nonce_len || NULL == ad ||
-	    0 == ad_len || NULL == ctxt || 0 == ctxt_len || NULL == ptxt_len)
+	    0 == ad_len || NULL == ctxt || 0 == ctxt_len || NULL == ptxt_len) {
+		EDHOC_LOG_ERR("Invalid arguments: kid=%p, nonce=%p, nonce_len=%zu, ad=%p, ad_len=%zu, ctxt=%p, ctxt_len=%zu, ptxt_len=%p",
+			      kid, nonce, nonce_len, ad, ad_len, ctxt, ctxt_len, ptxt_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	psa_status_t ret = PSA_ERROR_GENERIC_ERROR;
 	const psa_key_id_t *psa_kid = kid;
@@ -434,14 +459,21 @@ int edhoc_cipher_suite_0_hash(void *user_ctx, const uint8_t *input, size_t input
 	(void)user_ctx;
 
 	if (NULL == input || 0 == input_len || NULL == hash || 0 == hash_size ||
-	    NULL == hash_len)
+	    NULL == hash_len) {
+		EDHOC_LOG_ERR("Invalid arguments: input=%p, input_len=%zu, hash=%p, hash_size=%zu, hash_len=%p",
+			      input, input_len, hash, hash_size, hash_len);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	const psa_status_t ret = psa_hash_compute(
 		PSA_ALG_SHA_256, input, input_len, hash, hash_size, hash_len);
 
-	return (PSA_SUCCESS == ret) ? EDHOC_SUCCESS :
-				      EDHOC_ERROR_CRYPTO_FAILURE;
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("SHA256 hash computation failed, PSA status: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 /* Module interface variables and constants -------------------------------- */
