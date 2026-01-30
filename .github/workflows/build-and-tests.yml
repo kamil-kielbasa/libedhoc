@@ -1,4 +1,4 @@
-name: Build and Test on Linux
+name: Linux CI (Build & Test)
 
 on: [push, pull_request]
 

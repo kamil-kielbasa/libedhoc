@@ -1,4 +1,4 @@
-name: Sandbox Build
+name: Yocto Sandbox CI (Build)
 
 on: [push, pull_request]
 

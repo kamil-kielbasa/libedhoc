@@ -1,4 +1,4 @@
-name: Documentation
+name: Docs CI (Build & Publish)
 
 on: [push, pull_request, workflow_dispatch]
 

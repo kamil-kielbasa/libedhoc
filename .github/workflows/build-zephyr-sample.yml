@@ -1,4 +1,4 @@
-name: Build Zephyr Sample
+name: Zephyr Sample CI (Build)
 
 on: [push, pull_request]
 
