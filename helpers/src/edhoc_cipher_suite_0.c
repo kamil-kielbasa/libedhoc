@@ -10,6 +10,10 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+#ifdef __ZEPHYR__
+#include <zephyr/logging/log.h>
+LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
+#endif
 
 /* Internal test header: */
 #include "edhoc_cipher_suite_0.h"

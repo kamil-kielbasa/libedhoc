@@ -1,3 +1,12 @@
+Version 1.4.1
+-------------
+
+:Date: January 30, 2026
+
+* `@tgujda <https://github.com/tgujda>`__ : 
+
+  * Added log module declaration for EDHOC helpers.
+
 Version 1.4.0
 -------------
 
