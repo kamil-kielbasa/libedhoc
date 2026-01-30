@@ -1,5 +1,6 @@
 [![Build and Test on Linux](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-and-tests.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-and-tests.yml)
 [![Build Zephyr Sample](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-zephyr-sample.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-zephyr-sample.yml)
+[![Build Sandbox](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/test-sandbox-build.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/test-sandbox-build.yml)
 [![Documentation](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/documentation.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/documentation.yml)
 
 # libedhoc: A C implementation of the Ephemeral Diffie-Hellman Over COSE (RFC 9528)

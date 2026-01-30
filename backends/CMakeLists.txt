@@ -43,4 +43,4 @@ else()
 endif()
 
 target_include_directories(${BACKEND_CBOR_NAME} PUBLIC
-                           ${CMAKE_CURRENT_SOURCE_DIR}/cbor/include)
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cbor/include>)
