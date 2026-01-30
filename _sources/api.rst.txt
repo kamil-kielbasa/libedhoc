@@ -1,0 +1,119 @@
+EDHOC API & interfaces
+======================
+
+Main API
+********
+
+| Header file: :file:`include/edhoc.h`.
+
+.. doxygengroup:: edhoc-api-version
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-api-setters
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-api-messages
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-api-exporters
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-api-error
+   :project: libedhoc
+   :members:
+
+Authentication credentials
+**************************
+
+| Header file: :file:`include/edhoc_credentials.h`.
+
+.. doxygengroup:: edhoc-interface-credentials
+   :project: libedhoc
+   :members:
+
+Cryptographic operations
+************************
+
+| Header file: :file:`include/edhoc_crypto.h`.
+
+.. doxygengroup:: edhoc-interface-crypto-keys
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-interface-crypto-operations
+   :project: libedhoc
+   :members:
+
+External Authorization Data
+***************************
+
+| Header file: :file:`include/edhoc_ead.h`.
+
+.. doxygengroup:: edhoc-interface-ead
+   :project: libedhoc
+   :members:
+
+EDHOC context
+*************
+
+| Header file: :file:`include/edhoc_context.h`.
+
+.. doxygengroup:: edhoc-context
+   :project: libedhoc
+   :members:
+
+EDHOC common
+************
+
+| Header file: :file:`include/edhoc_common.h`.
+
+.. doxygengroup:: edhoc-common-structures
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-common-cbor
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-common-mac-context
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-common-sign-or-mac
+   :project: libedhoc
+   :members:
+
+EDHOC cipher suites 0
+*********************
+
+| Header file: :file:`helpers/include/edhoc_cipher_suite_0.h`.
+
+.. doxygengroup:: edhoc-cipher-suite-0-api
+   :project: libedhoc
+   :members:
+
+EDHOC cipher suites 2
+*********************
+
+| Header file: :file:`helpers/include/edhoc_cipher_suite_2.h`.
+
+.. doxygengroup:: edhoc-cipher-suite-2-api
+   :project: libedhoc
+   :members:
+
+EDHOC helpers
+*************
+
+| Header file: :file:`helpers/include/edhoc_helpers.h`.
+
+.. doxygengroup:: edhoc-api-connection-id
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-api-buffer-utils
+   :project: libedhoc
+   :members:

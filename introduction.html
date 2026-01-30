@@ -1,0 +1,315 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Introduction &mdash; libedhoc  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="EDHOC API &amp; interfaces" href="api.html" />
+    <link rel="prev" title="Welcome to the libedhoc documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            libedhoc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Introduction</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#about-libedhoc">About libedhoc</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#features">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#edhoc-methods">EDHOC methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#edhoc-cipher-suites">EDHOC cipher suites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#authentication-credentials">Authentication credentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#api-usage-example">API usage example</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">EDHOC API &amp; interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">EDHOC error codes &amp; values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_tests.html">Module tests scenarios</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="links.html">Links</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">libedhoc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Introduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/introduction.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="introduction">
+<h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
+<section id="about-libedhoc">
+<h2>About libedhoc<a class="headerlink" href="#about-libedhoc" title="Link to this heading"></a></h2>
+<p><strong>libedhoc</strong> is a C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC)
+protocol — a lightweight authenticated key exchange designed for constrained devices.
+It provides mutual authentication, forward secrecy, and identity protection.
+EDHOC is standardized by the IETF as <a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc9528">RFC 9528</a>.
+The implementation has been tested for conformance with <a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc9529">RFC 9529</a>.</p>
+</section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Context-based API: all operations use a context handle for safe access control.</p></li>
+<li><p><a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc7252">CoAP</a>-friendly message composition and processing.</p></li>
+<li><p>Dedicated API for exporting cryptographic material to establish <a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc8613">OSCORE</a> sessions.</p></li>
+<li><p>Clear separation of concerns with distinct interfaces for:</p>
+<ul>
+<li><p>cryptographic keys</p></li>
+<li><p>cryptographic operations</p></li>
+<li><p>authentication credentials</p></li>
+<li><p>external authorization data (EAD)</p></li>
+</ul>
+</li>
+<li><p>Secure key handling: private authentication keys are accessible only by identifier;
+direct access to raw key material is prohibited.</p></li>
+<li><p>CBOR encoding/decoding is fully encapsulated and hidden from the user.</p></li>
+<li><p>Predictable memory usage: all operations use stack allocation via the <a class="reference external" href="https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf">VLA</a> feature;
+no heap allocations.</p></li>
+<li><p>Code quality verified with static analysis (<em>cppcheck</em>) and dynamic analysis (<em>valgrind</em>).</p></li>
+<li><p>Native Zephyr RTOS support with west manifest for seamless integration.</p></li>
+</ul>
+</section>
+<section id="edhoc-methods">
+<h2>EDHOC methods<a class="headerlink" href="#edhoc-methods" title="Link to this heading"></a></h2>
+<table class="docutils align-default" id="id1">
+<caption><span class="caption-text">Supported authentication methods.</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<tbody>
+<tr class="row-odd"><td><p><strong>Value</strong></p></td>
+<td><p><strong>Initiator Authentication Key</strong></p></td>
+<td><p><strong>Responder Authentication Key</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>Signature Key</p></td>
+<td><p>Signature Key</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>Signature Key</p></td>
+<td><p>Static DH Key</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>Static DH Key</p></td>
+<td><p>Signature Key</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>Static DH Key</p></td>
+<td><p>Static DH Key</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="edhoc-cipher-suites">
+<h2>EDHOC cipher suites<a class="headerlink" href="#edhoc-cipher-suites" title="Link to this heading"></a></h2>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Supported cipher suites implemented in the library.</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<tbody>
+<tr class="row-odd"><td><p><strong>Value</strong></p></td>
+<td><p><strong>Array</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>0</p></td>
+<td><div class="line-block">
+<div class="line">10, -16, 8, 4,</div>
+<div class="line">-8, 10, -16</div>
+</div>
+</td>
+<td><div class="line-block">
+<div class="line">AES-CCM-16-64-128, SHA-256, 8,</div>
+<div class="line">X25519, EdDSA, AES-CCM-16-64-128, SHA-256</div>
+</div>
+</td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><div class="line-block">
+<div class="line">10, -16, 8,</div>
+<div class="line">1, -7, 10, -16</div>
+</div>
+</td>
+<td><div class="line-block">
+<div class="line">AES-CCM-16-64-128, SHA-256, 8,</div>
+<div class="line">P-256, ES256, AES-CCM-16-64-128, SHA-256</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="authentication-credentials">
+<h2>Authentication credentials<a class="headerlink" href="#authentication-credentials" title="Link to this heading"></a></h2>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Supported authentication methods from <a class="reference external" href="https://www.iana.org/assignments/cose/cose.xhtml">COSE IANA</a>.</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
+<tbody>
+<tr class="row-odd"><td><p><strong>Label</strong></p></td>
+<td><p><strong>Name</strong></p></td>
+<td><p><strong>Description</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>kid</p></td>
+<td><p>Key identifier</p></td>
+</tr>
+<tr class="row-odd"><td><p>33</p></td>
+<td><p>x5chain</p></td>
+<td><p>An ordered chain of X.509 certificates</p></td>
+</tr>
+<tr class="row-even"><td><p>34</p></td>
+<td><p>x5t</p></td>
+<td><p>Hash of an X.509 certificate</p></td>
+</tr>
+</tbody>
+</table>
+<p>The authentication credentials interface provides the following benefits:</p>
+<ol class="arabic simple">
+<li><p>Flexible credential verification: users control the verification logic and determine
+what data to persist in the application context.</p></li>
+<li><p>Support for Certificate Revocation Lists (<a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc5280">CRL</a>).</p></li>
+<li><p>Extensibility for additional authorization-specific checks as needed.</p></li>
+</ol>
+</section>
+<section id="api-usage-example">
+<h2>API usage example<a class="headerlink" href="#api-usage-example" title="Link to this heading"></a></h2>
+<p>The diagram below illustrates a typical EDHOC message flow integrated with CoAP.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>                         <span class="n">EDHOC</span> <span class="n">API</span> <span class="n">flow</span>
+                      <span class="o">====================</span>
+<span class="n">Initiator</span>                                                   <span class="n">Responder</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_context_init</span><span class="p">()</span>                         <span class="n">edhoc_context_init</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_set_methods</span><span class="p">()</span>                           <span class="n">edhoc_set_methods</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_set_cipher_suites</span><span class="p">()</span>               <span class="n">edhoc_set_cipher_suites</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_set_conn_id</span><span class="p">()</span>                           <span class="n">edhoc_set_conn_id</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_bind_ead</span><span class="p">()</span>                                 <span class="n">edhoc_bind_ead</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_bind_keys</span><span class="p">()</span>                               <span class="n">edhoc_bind_keys</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_bind_crypto</span><span class="p">()</span>                           <span class="n">edhoc_bind_crypto</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_bind_credentials</span><span class="p">()</span>                 <span class="n">edhoc_bind_credentials</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_message_1_compose</span><span class="p">()</span>                                         <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span>                     <span class="n">Header</span><span class="p">:</span> <span class="n">POST</span> <span class="p">(</span><span class="n">Code</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>                      <span class="o">|</span>
+<span class="o">|</span>                   <span class="n">Uri</span><span class="o">-</span><span class="n">Path</span><span class="p">:</span> <span class="s2">&quot;/.well-known/edhoc&quot;</span>                  <span class="o">|</span>
+<span class="o">|</span>          <span class="n">Content</span><span class="o">-</span><span class="n">Format</span><span class="p">:</span> <span class="n">application</span><span class="o">/</span><span class="n">cid</span><span class="o">-</span><span class="n">edhoc</span><span class="o">+</span><span class="n">cbor</span><span class="o">-</span><span class="n">seq</span>           <span class="o">|</span>
+<span class="o">|</span>                  <span class="n">Payload</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span> <span class="n">EDHOC</span> <span class="n">message_1</span>                   <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">+---------------------------</span> <span class="n">POST</span> <span class="o">---------------------------------&gt;|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span>                                         <span class="n">edhoc_message_1_process</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span>                                         <span class="n">edhoc_message_2_compose</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span>                      <span class="n">Header</span><span class="p">:</span> <span class="mf">2.04</span> <span class="n">Changed</span>                         <span class="o">|</span>
+<span class="o">|</span>             <span class="n">Content</span><span class="o">-</span><span class="n">Format</span><span class="p">:</span> <span class="n">application</span><span class="o">/</span><span class="n">edhoc</span><span class="o">+</span><span class="n">cbor</span><span class="o">-</span><span class="n">seq</span>            <span class="o">|</span>
+<span class="o">|</span>                     <span class="n">Payload</span><span class="p">:</span> <span class="n">EDHOC</span> <span class="n">message_2</span>                      <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|&lt;----------------------------</span> <span class="mf">2.04</span> <span class="o">--------------------------------+</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_message_2_process</span><span class="p">()</span>                                         <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_message_3_compose</span><span class="p">()</span>                                         <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span>                     <span class="n">Header</span><span class="p">:</span> <span class="n">POST</span> <span class="p">(</span><span class="n">Code</span><span class="o">=</span><span class="mf">0.02</span><span class="p">)</span>                      <span class="o">|</span>
+<span class="o">|</span>                     <span class="n">Uri</span><span class="o">-</span><span class="n">Path</span><span class="p">:</span> <span class="s2">&quot;/.well-known/edhoc&quot;</span>                <span class="o">|</span>
+<span class="o">|</span>          <span class="n">Content</span><span class="o">-</span><span class="n">Format</span><span class="p">:</span> <span class="n">application</span><span class="o">/</span><span class="n">cid</span><span class="o">-</span><span class="n">edhoc</span><span class="o">+</span><span class="n">cbor</span><span class="o">-</span><span class="n">seq</span>           <span class="o">|</span>
+<span class="o">|</span>                     <span class="n">Payload</span><span class="p">:</span> <span class="n">C_R</span><span class="p">,</span> <span class="n">EDHOC</span> <span class="n">message_3</span>                 <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">+---------------------------</span> <span class="n">POST</span> <span class="o">---------------------------------&gt;|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span>                                         <span class="n">edhoc_message_3_process</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span>                                         <span class="n">edhoc_message_4_compose</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span>                       <span class="n">Header</span><span class="p">:</span> <span class="mf">2.04</span> <span class="n">Changed</span>                        <span class="o">|</span>
+<span class="o">|</span>             <span class="n">Content</span><span class="o">-</span><span class="n">Format</span><span class="p">:</span> <span class="n">application</span><span class="o">/</span><span class="n">edhoc</span><span class="o">+</span><span class="n">cbor</span><span class="o">-</span><span class="n">seq</span>            <span class="o">|</span>
+<span class="o">|</span>                     <span class="n">Payload</span><span class="p">:</span> <span class="n">EDHOC</span> <span class="n">message_4</span>                      <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|&lt;----------------------------</span> <span class="mf">2.04</span> <span class="o">--------------------------------+</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_message_4_process</span><span class="p">()</span>                                         <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_export_oscore_session</span><span class="p">()</span>       <span class="n">edhoc_export_oscore_session</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_export_key_update</span><span class="p">()</span>               <span class="n">edhoc_export_key_update</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_export_oscore_session</span><span class="p">()</span>       <span class="n">edhoc_export_oscore_session</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span> <span class="n">edhoc_context_deinit</span><span class="p">()</span>                     <span class="n">edhoc_context_deinit</span><span class="p">()</span> <span class="o">|</span>
+<span class="o">|</span>                                                                   <span class="o">|</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to the libedhoc documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="EDHOC API &amp; interfaces" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Kamil Kielbasa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

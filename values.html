@@ -1,0 +1,481 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EDHOC error codes &amp; values &mdash; libedhoc  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration" href="configuration.html" />
+    <link rel="prev" title="EDHOC API &amp; interfaces" href="api.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            libedhoc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">EDHOC API &amp; interfaces</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">EDHOC error codes &amp; values</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#error-codes">Error codes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_SUCCESS"><code class="docutils literal notranslate"><span class="pre">EDHOC_SUCCESS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_GENERIC_ERROR"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_GENERIC_ERROR</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_NOT_SUPPORTED"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_NOT_SUPPORTED</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_NOT_PERMITTED"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_NOT_PERMITTED</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_BUFFER_TOO_SMALL"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_BUFFER_TOO_SMALL</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_BAD_STATE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_BAD_STATE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_INVALID_ARGUMENT"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_INVALID_ARGUMENT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_CBOR_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_CBOR_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_CRYPTO_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_CRYPTO_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_CREDENTIALS_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_CREDENTIALS_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_EAD_COMPOSE_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_EAD_COMPOSE_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_EAD_PROCESS_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_EAD_PROCESS_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_MSG_1_PROCESS_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_MSG_1_PROCESS_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_MSG_2_PROCESS_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_MSG_2_PROCESS_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_MSG_3_PROCESS_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_MSG_3_PROCESS_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_MSG_4_PROCESS_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_MSG_4_PROCESS_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_INVALID_MAC_2"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_INVALID_MAC_2</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_2"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_INVALID_SIGN_OR_MAC_2</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_INVALID_MAC_3"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_INVALID_MAC_3</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_3"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_INVALID_SIGN_OR_MAC_3</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#values-cbor-one-byte-primitive">Values - CBOR one-byte &amp; primitive</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c.ONE_BYTE_CBOR_INT_MIN_VALUE"><code class="docutils literal notranslate"><span class="pre">ONE_BYTE_CBOR_INT_MIN_VALUE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.ONE_BYTE_CBOR_INT_MAX_VALUE"><code class="docutils literal notranslate"><span class="pre">ONE_BYTE_CBOR_INT_MAX_VALUE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_CBOR_TRUE"><code class="docutils literal notranslate"><span class="pre">EDHOC_CBOR_TRUE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#values-extract">Values - extract</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_K_3"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_K_3</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_K_4"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_K_4</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT"><code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.OSCORE_EXTRACT_LABEL_MASTER_SECRET"><code class="docutils literal notranslate"><span class="pre">OSCORE_EXTRACT_LABEL_MASTER_SECRET</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.OSCORE_EXTRACT_LABEL_MASTER_SALT"><code class="docutils literal notranslate"><span class="pre">OSCORE_EXTRACT_LABEL_MASTER_SALT</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM"><code class="docutils literal notranslate"><span class="pre">EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM"><code class="docutils literal notranslate"><span class="pre">EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="module_tests.html">Module tests scenarios</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="links.html">Links</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">libedhoc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">EDHOC error codes &amp; values</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/values.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="edhoc-error-codes-values">
+<h1>EDHOC error codes &amp; values<a class="headerlink" href="#edhoc-error-codes-values" title="Link to this heading"></a></h1>
+<p>The EDHOC error codes and value documentation is presented in this chapter.</p>
+<section id="error-codes">
+<h2>Error codes<a class="headerlink" href="#error-codes" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">Header file: <code class="file docutils literal notranslate"><span class="pre">include/edhoc_values.h</span></code>.</div>
+</div>
+<dl>
+<dt class="sig sig-object cpp">
+<span class="target" id="group__edhoc-error-codes"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">EDHOC</span> <span class="pre">error</span> <span class="pre">codes</span></span></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-defines">Defines</p>
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_SUCCESS">
+<span class="target" id="group__edhoc-error-codes_1gafaff39453992c81ef7905d63829195ee"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_SUCCESS</span></span></span><a class="headerlink" href="#c.EDHOC_SUCCESS" title="Link to this definition"></a><br /></dt>
+<dd><p>The action was completed successfully. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_GENERIC_ERROR">
+<span class="target" id="group__edhoc-error-codes_1gac411c146300cee744427e76d503d73f5"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_GENERIC_ERROR</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_GENERIC_ERROR" title="Link to this definition"></a><br /></dt>
+<dd><p>An error occurred that does not correspond to any defined failure cause. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_NOT_SUPPORTED">
+<span class="target" id="group__edhoc-error-codes_1ga7b81ae6b1bb84912e46a788dd07534eb"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_NOT_SUPPORTED</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_NOT_SUPPORTED" title="Link to this definition"></a><br /></dt>
+<dd><p>The requested operation or a parameter is not supported by this implementation. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_NOT_PERMITTED">
+<span class="target" id="group__edhoc-error-codes_1ga610ac12625d168f8bae56e623b060d5f"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_NOT_PERMITTED</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_NOT_PERMITTED" title="Link to this definition"></a><br /></dt>
+<dd><p>The requested action is denied by a EDHOC specification. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_BUFFER_TOO_SMALL">
+<span class="target" id="group__edhoc-error-codes_1gab25443e8256614f01e9a355b3465647c"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_BUFFER_TOO_SMALL</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_BUFFER_TOO_SMALL" title="Link to this definition"></a><br /></dt>
+<dd><p>An output buffer is too small. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_BAD_STATE">
+<span class="target" id="group__edhoc-error-codes_1ga9a2480f8fcb3b8a55cba2dccd7b90626"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_BAD_STATE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_BAD_STATE" title="Link to this definition"></a><br /></dt>
+<dd><p>The requested action cannot be performed in the current state. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_INVALID_ARGUMENT">
+<span class="target" id="group__edhoc-error-codes_1ga7f5bf59bf48a612bd9975dbf6762c95b"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_INVALID_ARGUMENT</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_INVALID_ARGUMENT" title="Link to this definition"></a><br /></dt>
+<dd><p>The parameters passed to the function are invalid. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_CBOR_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1gac93616f7b57a2f00ac34e21081fdb2c4"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_CBOR_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_CBOR_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>There was a CBOR failure inside implementation. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_CRYPTO_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga022c4e7ce9775df3eb5bfe01eaadc10f"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_CRYPTO_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_CRYPTO_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>There was a cryptographic operation failure inside implementation. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_CREDENTIALS_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga9ef3d92872ee7fe3b95f46ef58cb42a4"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_CREDENTIALS_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_CREDENTIALS_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>There was a credentials failure inside implementation. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_EAD_COMPOSE_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga80f34c21fdcad7460e7a9dcc9a1414de"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_EAD_COMPOSE_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_EAD_COMPOSE_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>External authorization data compose failed. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_EAD_PROCESS_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1gaf9d366bb3a8ca8aacf7fb1bb322770b9"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_EAD_PROCESS_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_EAD_PROCESS_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>External authorization data process failed. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_MSG_1_PROCESS_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga879833afd69da8167b0c5ba84f53e040"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_MSG_1_PROCESS_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_MSG_1_PROCESS_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC processing of message 1 failure was detected. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_MSG_2_PROCESS_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1gaf3eb63f9adfc80c7d193362e4401891b"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_MSG_2_PROCESS_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_MSG_2_PROCESS_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC processing of message 2 failure was detected. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_MSG_3_PROCESS_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga2bf100a88258c1f6f5f726fbd08d8ec6"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_MSG_3_PROCESS_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_MSG_3_PROCESS_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC processing of message 3 failure was detected. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_MSG_4_PROCESS_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga7eb8c4e8e3fe463edb26aa7a79c432e6"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_MSG_4_PROCESS_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_MSG_4_PROCESS_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC processing of message 4 failure was detected. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1gaa32f9132532851bdc85f4572c9ce3243"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC ephemeral Diffie-Hellman key agreement failure was detected. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga3580698e15194cbfe8b3ea432ab694b1"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC computing of transcript hash failure was detected. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE">
+<span class="target" id="group__edhoc-error-codes_1ga6c6f7631e1f92a81c0332cb80873e4b3"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC computing of pseudorandom key failure was detected. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_INVALID_MAC_2">
+<span class="target" id="group__edhoc-error-codes_1ga7cef857dba5bc3072226c0ae8e9911e5"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_INVALID_MAC_2</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_INVALID_MAC_2" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC MAC_2 is incorrect. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_2">
+<span class="target" id="group__edhoc-error-codes_1gaec0f531850f9eeb8d6b089091535812f"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_INVALID_SIGN_OR_MAC_2</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_2" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC Signature_2 or MAC_2 is incorrect. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_INVALID_MAC_3">
+<span class="target" id="group__edhoc-error-codes_1ga673e446cb73c55cb8080823bee243ab9"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_INVALID_MAC_3</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_INVALID_MAC_3" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC MAC_3 is incorrect. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_3">
+<span class="target" id="group__edhoc-error-codes_1ga2720ac3e8a6a252ee740bce7a1ad8dde"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_INVALID_SIGN_OR_MAC_3</span></span></span><a class="headerlink" href="#c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_3" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC Signature_3 or MAC_3 is incorrect. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="values-cbor-one-byte-primitive">
+<h2>Values - CBOR one-byte &amp; primitive<a class="headerlink" href="#values-cbor-one-byte-primitive" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">Header file: <code class="file docutils literal notranslate"><span class="pre">include/edhoc_values.h</span></code>.</div>
+</div>
+<dl>
+<dt class="sig sig-object cpp">
+<span class="target" id="group__edhoc-values-cbor-one-byte"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">EDHOC</span> <span class="pre">CBOR</span> <span class="pre">one</span> <span class="pre">byte</span></span></dt>
+<dd><div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It must follow the RFC 9528: 3.3.2. Representation of Byte String Identifiers. </p>
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-defines">Defines</p>
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.ONE_BYTE_CBOR_INT_MIN_VALUE">
+<span class="target" id="group__edhoc-values-cbor-one-byte_1ga3ac839310cd5d08d72e739f031e34a4c"></span><span class="sig-name descname"><span class="n"><span class="pre">ONE_BYTE_CBOR_INT_MIN_VALUE</span></span></span><a class="headerlink" href="#c.ONE_BYTE_CBOR_INT_MIN_VALUE" title="Link to this definition"></a><br /></dt>
+<dd><p>Minimum value for CBOR one byte integer. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.ONE_BYTE_CBOR_INT_MAX_VALUE">
+<span class="target" id="group__edhoc-values-cbor-one-byte_1gaf79dda2c6406f42f9d7b8fbfc578a6a3"></span><span class="sig-name descname"><span class="n"><span class="pre">ONE_BYTE_CBOR_INT_MAX_VALUE</span></span></span><a class="headerlink" href="#c.ONE_BYTE_CBOR_INT_MAX_VALUE" title="Link to this definition"></a><br /></dt>
+<dd><p>Maximum value for CBOR one byte integer. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl>
+<dt class="sig sig-object cpp">
+<span class="target" id="group__edhoc-values-cbor-primitive"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">EDHOC</span> <span class="pre">CBOR</span> <span class="pre">primitive</span> <span class="pre">values</span></span></dt>
+<dd><p>Standard CBOR primitive values that may be used in EDHOC implementations. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-defines">Defines</p>
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_CBOR_TRUE">
+<span class="target" id="group__edhoc-values-cbor-primitive_1gadc50770f4a2f24a83cd09b74bb36c116"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_CBOR_TRUE</span></span></span><a class="headerlink" href="#c.EDHOC_CBOR_TRUE" title="Link to this definition"></a><br /></dt>
+<dd><p>CBOR encoding for boolean true (RFC 8949: 3.3.1. Major Type 7). </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="values-extract">
+<h2>Values - extract<a class="headerlink" href="#values-extract" title="Link to this heading"></a></h2>
+<div class="line-block">
+<div class="line">Header file: <code class="file docutils literal notranslate"><span class="pre">include/edhoc_values.h</span></code>.</div>
+</div>
+<dl>
+<dt class="sig sig-object cpp">
+<span class="target" id="group__edhoc-values-extract"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">EDHOC</span> <span class="pre">extract</span> <span class="pre">labels</span></span></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-defines">Defines</p>
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2">
+<span class="target" id="group__edhoc-values-extract_1ga8662aba5a9432f91a9953c37eef379b4"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2" title="Link to this definition"></a><br /></dt>
+<dd><p>KEYSTREAM_2 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M">
+<span class="target" id="group__edhoc-values-extract_1ga198f09b37314c69b50b891f3b5263646"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M" title="Link to this definition"></a><br /></dt>
+<dd><p>SALT_3e2m from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2">
+<span class="target" id="group__edhoc-values-extract_1ga3b5cdda668698ea30eade088b1a5f6da"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2" title="Link to this definition"></a><br /></dt>
+<dd><p>MAC_2 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_K_3">
+<span class="target" id="group__edhoc-values-extract_1ga5924341cfb9eaac5e073d9d411e17f4c"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_K_3</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_K_3" title="Link to this definition"></a><br /></dt>
+<dd><p>K_3 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3">
+<span class="target" id="group__edhoc-values-extract_1ga49292d33f0c4a2a7b151b15511652a51"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3" title="Link to this definition"></a><br /></dt>
+<dd><p>IV_3 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M">
+<span class="target" id="group__edhoc-values-extract_1gadb2bd6ee81deefa69f0a8ccf3b866a5d"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M" title="Link to this definition"></a><br /></dt>
+<dd><p>SALT_4e3m from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3">
+<span class="target" id="group__edhoc-values-extract_1ga7ac65b01f5dc3739701ad3b1b077cf94"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3" title="Link to this definition"></a><br /></dt>
+<dd><p>MAC_3 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT">
+<span class="target" id="group__edhoc-values-extract_1ga19d4a158b455593a08e32077814d41cf"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT" title="Link to this definition"></a><br /></dt>
+<dd><p>PRK_out from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_K_4">
+<span class="target" id="group__edhoc-values-extract_1gab166db14334816cbd4ccdb6a33b15db0"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_K_4</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_K_4" title="Link to this definition"></a><br /></dt>
+<dd><p>K_4 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4">
+<span class="target" id="group__edhoc-values-extract_1ga360b92976d308d3e794f4599ce98224f"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4" title="Link to this definition"></a><br /></dt>
+<dd><p>IV_4 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER">
+<span class="target" id="group__edhoc-values-extract_1gacff20b133e82063c6d0295c54a67169f"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER" title="Link to this definition"></a><br /></dt>
+<dd><p>PRK_Exporter from RFC 9528: 4.2.1. EDHOC_Exporter. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT">
+<span class="target" id="group__edhoc-values-extract_1gaa467e8f7d8e22c0b1fbd93b7af349dd6"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT</span></span></span><a class="headerlink" href="#c.EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT" title="Link to this definition"></a><br /></dt>
+<dd><p>PRK_out from RFC 9528: 4.1.3. PRK_out. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.OSCORE_EXTRACT_LABEL_MASTER_SECRET">
+<span class="target" id="group__edhoc-values-extract_1gaf5542ad0b42cf3bce6ec4b1322e19c7e"></span><span class="sig-name descname"><span class="n"><span class="pre">OSCORE_EXTRACT_LABEL_MASTER_SECRET</span></span></span><a class="headerlink" href="#c.OSCORE_EXTRACT_LABEL_MASTER_SECRET" title="Link to this definition"></a><br /></dt>
+<dd><p>RFC 9528: A.1. Deriving the OSCORE Security Context. </p>
+<p>EDHOC exporter label for OSCORE Master Secret from RFC 9528: A.1. Deriving the OSCORE Security Context. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.OSCORE_EXTRACT_LABEL_MASTER_SALT">
+<span class="target" id="group__edhoc-values-extract_1ga4c88625b4a1f9c72d31a6631f098ec8f"></span><span class="sig-name descname"><span class="n"><span class="pre">OSCORE_EXTRACT_LABEL_MASTER_SALT</span></span></span><a class="headerlink" href="#c.OSCORE_EXTRACT_LABEL_MASTER_SALT" title="Link to this definition"></a><br /></dt>
+<dd><p>EDHOC exporter label for OSCORE Master Salt from RFC 9528: A.1. Deriving the OSCORE Security Context. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM">
+<span class="target" id="group__edhoc-values-extract_1gaa8f83b408d6403992b8d59ebe12c4b17"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM</span></span></span><a class="headerlink" href="#c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM" title="Link to this definition"></a><br /></dt>
+<dd><p>RFC 9528: 10.1. EDHOC Exporter Label Registry. </p>
+<p>Minimum value for EDHOC exporter label for private usage. </p>
+</dd></dl>
+
+<dl class="cpp macro">
+<dt class="sig sig-object cpp" id="c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM">
+<span class="target" id="group__edhoc-values-extract_1ga50cc4a317ae66bc48587313c23598ef5"></span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM</span></span></span><a class="headerlink" href="#c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM" title="Link to this definition"></a><br /></dt>
+<dd><p>Maximum value for EDHOC exporter label for private usage. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="api.html" class="btn btn-neutral float-left" title="EDHOC API &amp; interfaces" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="configuration.html" class="btn btn-neutral float-right" title="Configuration" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Kamil Kielbasa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
