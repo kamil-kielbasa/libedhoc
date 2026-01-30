@@ -208,11 +208,10 @@ static const struct edhoc_credentials edhoc_auth_cred_mocked_resp_any = {
 
 /* Static function definitions --------------------------------------------- */
 
-static int
-edhoc_cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
-				  uint8_t *priv_key, size_t priv_key_size,
-				  size_t *priv_key_len, uint8_t *pub_key,
-				  size_t pub_key_size, size_t *pub_key_len)
+static int edhoc_cipher_suite_2_make_key_pair_init(
+	void *user_ctx, const void *kid, uint8_t *priv_key,
+	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
+	size_t pub_key_size, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -230,11 +229,10 @@ edhoc_cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-static int
-edhoc_cipher_suite_2_make_key_pair_resp(void *user_ctx, const void *kid,
-				  uint8_t *priv_key, size_t priv_key_size,
-				  size_t *priv_key_len, uint8_t *pub_key,
-				  size_t pub_key_size, size_t *pub_key_len)
+static int edhoc_cipher_suite_2_make_key_pair_resp(
+	void *user_ctx, const void *kid, uint8_t *priv_key,
+	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
+	size_t pub_key_size, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -267,9 +265,10 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->key_id.key_id_bstr_length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
-						  SK_I, ARRAY_SIZE(SK_I),
-						  auth_cred->priv_key_id);
+	const int res = edhoc_cipher_suite_2_key_import(NULL,
+							EDHOC_KT_KEY_AGREEMENT,
+							SK_I, ARRAY_SIZE(SK_I),
+							auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -293,9 +292,10 @@ static int auth_cred_fetch_init_any(void *user_ctx,
 	auth_cred->any.cred = CRED_I_cborised;
 	auth_cred->any.cred_len = ARRAY_SIZE(CRED_I_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
-						  SK_I, ARRAY_SIZE(SK_I),
-						  auth_cred->priv_key_id);
+	const int res = edhoc_cipher_suite_2_key_import(NULL,
+							EDHOC_KT_KEY_AGREEMENT,
+							SK_I, ARRAY_SIZE(SK_I),
+							auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -318,9 +318,10 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->key_id.key_id_bstr_length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
-						  SK_R, ARRAY_SIZE(SK_R),
-						  auth_cred->priv_key_id);
+	const int res = edhoc_cipher_suite_2_key_import(NULL,
+							EDHOC_KT_KEY_AGREEMENT,
+							SK_R, ARRAY_SIZE(SK_R),
+							auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -344,9 +345,10 @@ static int auth_cred_fetch_resp_any(void *user_ctx,
 	auth_cred->any.cred = CRED_R_cborised;
 	auth_cred->any.cred_len = ARRAY_SIZE(CRED_R_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
-						  SK_R, ARRAY_SIZE(SK_R),
-						  auth_cred->priv_key_id);
+	const int res = edhoc_cipher_suite_2_key_import(NULL,
+							EDHOC_KT_KEY_AGREEMENT,
+							SK_R, ARRAY_SIZE(SK_R),
+							auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;

@@ -12,12 +12,16 @@ Error codes
    :project: libedhoc
    :members:
 
-Values - cbor one byte
-**********************
+Values - CBOR one-byte & primitive
+**********************************
 
 | Header file: :file:`include/edhoc_values.h`.
 
 .. doxygengroup:: edhoc-values-cbor-one-byte
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-values-cbor-primitive
    :project: libedhoc
    :members:
 

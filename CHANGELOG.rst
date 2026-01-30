@@ -1,21 +1,23 @@
+Version 1.4.2
+
+:Date: January 30, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Documentation improvements and updates.
+
 Version 1.4.1
 -------------
 
 :Date: January 30, 2026
 
-* `@tgujda <https://github.com/tgujda>`__ : 
-
-  * Added log module declaration for EDHOC helpers.
+* `@tgujda <https://github.com/tgujda>`__ : Added log module declaration for EDHOC helpers.
 
 Version 1.4.0
 -------------
 
 :Date: January 30, 2026
 
-* `@magdalena-szumny <https://github.com/magdalenaszumny>`__ : 
-
-  * Added cmake install target for library installation.
-  * Added extra logs for EDHOC helpers module.
+* `@tgujda <https://github.com/tgujda>`__ : Added cmake install target for library installation.
+* `@magdalena-szumny <https://github.com/magdalenaszumny>`__ : Added extra logs for EDHOC helpers module
 
 Version 1.3.0
 -------------
@@ -27,6 +29,8 @@ Version 1.3.0
   * Added EDHOC helpers module with connection ID and buffer utilities.
   * Renamed cipher suite files and functions to edhoc_cipher_suite_X for consistency.
   * Refactored cipher suite implementations to expose struct edhoc_crypto and struct edhoc_keys.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed Zephyr logging backend.
 
 Version 1.2.0
 -------------

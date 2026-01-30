@@ -87,6 +87,24 @@ EDHOC common
    :project: libedhoc
    :members:
 
+EDHOC cipher suites 0
+*********************
+
+| Header file: :file:`helpers/include/edhoc_cipher_suite_0.h`.
+
+.. doxygengroup:: edhoc-cipher-suite-0-api
+   :project: libedhoc
+   :members:
+
+EDHOC cipher suites 2
+*********************
+
+| Header file: :file:`helpers/include/edhoc_cipher_suite_2.h`.
+
+.. doxygengroup:: edhoc-cipher-suite-2-api
+   :project: libedhoc
+   :members:
+
 EDHOC helpers
 *************
 

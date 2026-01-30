@@ -389,8 +389,10 @@ TEST(api, bindings)
 
 	ret = edhoc_bind_crypto(&ctx, edhoc_crypto);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_crypto->make_key_pair, ctx.crypto.make_key_pair);
-	TEST_ASSERT_EQUAL(edhoc_crypto->key_agreement, ctx.crypto.key_agreement);
+	TEST_ASSERT_EQUAL(edhoc_crypto->make_key_pair,
+			  ctx.crypto.make_key_pair);
+	TEST_ASSERT_EQUAL(edhoc_crypto->key_agreement,
+			  ctx.crypto.key_agreement);
 	TEST_ASSERT_EQUAL(edhoc_crypto->signature, ctx.crypto.signature);
 	TEST_ASSERT_EQUAL(edhoc_crypto->verify, ctx.crypto.verify);
 	TEST_ASSERT_EQUAL(edhoc_crypto->extract, ctx.crypto.extract);

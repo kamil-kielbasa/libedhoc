@@ -4,10 +4,11 @@ Introduction
 About libedhoc
 **************
 
-**libedhoc** is a C implementation of a lightweight authenticated Diffie-Hellman 
-key exchange with ephemeral keys for constrained devices. It provides mutual authentication,
-forward secrecy, and identity protection. This protocol, EDHOC, is standardized by the IETF
-as `RFC 9528`_. Code has been tested according to `RFC 9529`_.
+**libedhoc** is a C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC)
+protocol — a lightweight authenticated key exchange designed for constrained devices.
+It provides mutual authentication, forward secrecy, and identity protection.
+EDHOC is standardized by the IETF as `RFC 9528`_.
+The implementation has been tested for conformance with `RFC 9529`_.
 
 .. _RFC 9528: https://datatracker.ietf.org/doc/html/rfc9528
 .. _RFC 9529: https://datatracker.ietf.org/doc/html/rfc9529
@@ -15,21 +16,23 @@ as `RFC 9528`_. Code has been tested according to `RFC 9529`_.
 Features
 ********
 
-* Any access for API is possible only by context handle.
-* EDHOC messages compose & process are `CoAP`_ friendly.
-* Dedicated API for exporting cryptographic material for `OSCORE`_ session.
-* Separate interface for:
+* Context-based API: all operations use a context handle for safe access control.
+* `CoAP`_-friendly message composition and processing.
+* Dedicated API for exporting cryptographic material to establish `OSCORE`_ sessions.
+* Clear separation of concerns with distinct interfaces for:
 
-  * cryptographics keys.
-  * cryptographics operations.
-  * authentication credentials.
-  * external authorization data.
+  * cryptographic keys
+  * cryptographic operations
+  * authentication credentials
+  * external authorization data (EAD)
 
-* For private authentication keys only key identifier is available. Binary format of cryptographics keys is forbidden.
-* Any CBOR operations are hidden away from user.
-* Any memory operations are performed on stack, using `VLA`_ feature.
-* Code has been verified by *cppcheck* and *valgrind*.
-* Zephyr RTOS support with west manifest for easy integration.
+* Secure key handling: private authentication keys are accessible only by identifier;
+  direct access to raw key material is prohibited.
+* CBOR encoding/decoding is fully encapsulated and hidden from the user.
+* Predictable memory usage: all operations use stack allocation via the `VLA`_ feature;
+  no heap allocations.
+* Code quality verified with static analysis (*cppcheck*) and dynamic analysis (*valgrind*).
+* Native Zephyr RTOS support with west manifest for seamless integration.
 
 .. _CoAP: https://datatracker.ietf.org/doc/html/rfc7252
 .. _OSCORE: https://datatracker.ietf.org/doc/html/rfc8613
@@ -59,21 +62,21 @@ EDHOC methods
 EDHOC cipher suites
 *******************
 
-.. list-table:: Example implementations of cipher suites.
+.. list-table:: Supported cipher suites implemented in the library.
 
    * - **Value**
      - **Array**
      - **Description**
    * - 0
-     - | 10, -16,  8, 4,
+     - | 10, -16, 8, 4,
        | -8, 10, -16
-     - | AES-CCM-16-64-128, SHA-256, 8, 
-       | X25519, EdDSA, AES‑CCM‑16‑64‑128, SHA-256
+     - | AES-CCM-16-64-128, SHA-256, 8,
+       | X25519, EdDSA, AES-CCM-16-64-128, SHA-256
    * - 2
      - | 10, -16, 8,
        | 1, -7, 10, -16
-     - | AES-CCM-16-64-128, SHA-256, 8
-       | P-256, ES256, AES‑CCM‑16‑64‑128, SHA-256
+     - | AES-CCM-16-64-128, SHA-256, 8,
+       | P-256, ES256, AES-CCM-16-64-128, SHA-256
 
 Authentication credentials
 **************************
@@ -95,16 +98,19 @@ Authentication credentials
 
 .. _COSE IANA: https://www.iana.org/assignments/cose/cose.xhtml
 
-Interface for authentication credentials gives following benefits:
+The authentication credentials interface provides the following benefits:
 
-#. User decide how to verify credentials and which data needs to be save in *user context*.
-#. Possibility to introduce `CRL`_.
-#. Perform extra checks e.g. to the needs of authorization.
+#. Flexible credential verification: users control the verification logic and determine
+   what data to persist in the application context.
+#. Support for Certificate Revocation Lists (`CRL`_).
+#. Extensibility for additional authorization-specific checks as needed.
 
 .. _CRL: https://datatracker.ietf.org/doc/html/rfc5280
 
 API usage example
 *****************
+
+The diagram below illustrates a typical EDHOC message flow integrated with CoAP.
 
 ::
 

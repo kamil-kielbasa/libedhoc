@@ -4,7 +4,7 @@ Welcome to the libedhoc documentation!
 .. toctree::
    :maxdepth: 10
    :hidden:
-   :caption: documentation
+   :caption: Documentation
 
    introduction
    api
@@ -24,26 +24,26 @@ Documentation
 -------------
 
 :doc:`introduction`
-  Learn about library, features and read example usage.
+  Learn about the library, features, and example usage.
 
 :doc:`api`
-  Documentation for API and interfaces.
+  Complete API reference and interface documentation.
 
 :doc:`values`
-  Documentation for error codes and values.
+  Error codes and enumeration values reference.
 
 :doc:`configuration`
-  Documentation for library configuration.
+  Library configuration options and settings.
 
 :doc:`module_tests`
-  Documentation for module tests scenarios.
+  Module test scenarios and validation documentation.
 
 References
 ----------
 
 :doc:`changelog`
-  See what’s new in **libedhoc**.
+  See what's new in **libedhoc**.
 
 :doc:`links`
-  This document refers to the following documents.
+  External references and related documentation.
 

@@ -1,6 +1,9 @@
 Module tests scenarios
 ======================
 
+:file:`module_test_api.c`
+      | Tests for EDHOC public API functions.
+
 :file:`module_test_rfc9529_chapter_2.c`
       | Test vector was taken from `RFC9529`_ chapter 2.
       | It contains authentication with signatures, X.509 identified by 'x5t'.
@@ -86,6 +89,15 @@ Module tests scenarios
       | Full handshake with real crypto where we verify if OSCORE session are equals.
       | It contains authentication with signatures, X.509 identified by 'x5t', cipher suite 2.
       | We verify certificate hashes with single EAD token.
+
+:file:`module_test_cipher_suite_0.c`
+      | Verification of EDHOC cipher suite 0 implementation for ECDSA, ECDH, HKDF, AEAD and HASH.
+
+:file:`module_test_cipher_suite_2.c`
+      | Verification of EDHOC cipher suite 2 implementation for ECDSA, ECDH, HKDF, AEAD and HASH.
+
+:file:`module_test_edhoc_helpers.c`
+      | Tests for helper functions that facilitate interactions between EDHOC and CoAP transport.
 
 .. _`RFC9528`: https://datatracker.ietf.org/doc/html/rfc9528
 .. _`RFC9529`: https://datatracker.ietf.org/doc/html/rfc9529

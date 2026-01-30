@@ -46,11 +46,10 @@ static const uint8_t G_X[] = {
 	0x0b, 0x96, 0xc1, 0xb7, 0xc8, 0xdb, 0xca, 0x2f, 0xc3, 0xb6,
 };
 
-static int
-edhoc_cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
-				  uint8_t *priv_key, size_t priv_key_size,
-				  size_t *priv_key_len, uint8_t *pub_key,
-				  size_t pub_key_size, size_t *pub_key_len);
+static int edhoc_cipher_suite_2_make_key_pair_init(
+	void *user_ctx, const void *kid, uint8_t *priv_key,
+	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
+	size_t pub_key_size, size_t *pub_key_len);
 
 static const struct edhoc_keys *edhoc_keys;
 
@@ -83,11 +82,10 @@ static int ret = EDHOC_ERROR_GENERIC_ERROR;
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
 
-static int
-edhoc_cipher_suite_2_make_key_pair_init(void *user_ctx, const void *kid,
-				  uint8_t *priv_key, size_t priv_key_size,
-				  size_t *priv_key_len, uint8_t *pub_key,
-				  size_t pub_key_size, size_t *pub_key_len)
+static int edhoc_cipher_suite_2_make_key_pair_init(
+	void *user_ctx, const void *kid, uint8_t *priv_key,
+	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
+	size_t pub_key_size, size_t *pub_key_len)
 {
 	(void)user_ctx;
 	(void)kid;

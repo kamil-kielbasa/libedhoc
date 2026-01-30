@@ -16,9 +16,9 @@ import subprocess
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'libedhoc'
-copyright = '2025, Kamil Kielbasa'
+copyright = '2026, Kamil Kielbasa'
 author = 'Kamil Kielbasa'
-version = 'v1.0.0'
+version = 'v1.4.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -40,8 +40,6 @@ master_doc = "index"
 
 templates_path = ['_templates']
 exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
