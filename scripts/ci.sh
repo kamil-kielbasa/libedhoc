@@ -133,18 +133,33 @@ cmd_coverage() {
     cmd_test
 
     cd "${BUILD_DIR}"
+
+    # lcov 2.0 (Ubuntu 24.04) changed --rc syntax and added stricter gcov
+    # checks.  Build an options array that works for both lcov 1.x and 2.x.
+    local lcov_ver
+    lcov_ver=$(lcov --version 2>&1 | grep -oP '\d+' | head -1)
+    local lcov_rc=(--rc lcov_branch_coverage=1)
+    local lcov_ignore=()
+    if [[ "$lcov_ver" -ge 2 ]]; then
+        lcov_rc=(--rc branch_coverage=1)
+        lcov_ignore=(--ignore-errors mismatch,mismatch
+                     --ignore-errors gcov,gcov
+                     --ignore-errors unused,unused)
+    fi
+
     lcov --capture --directory . --output-file coverage_raw.info \
-         --rc lcov_branch_coverage=1
+         "${lcov_rc[@]}" "${lcov_ignore[@]}"
     lcov --remove coverage_raw.info \
          '*/externals/*' '*/tests/*' '*/backends/cbor/src/*' '/usr/*' \
-         --output-file coverage.info --rc lcov_branch_coverage=1
+         --output-file coverage.info "${lcov_rc[@]}" "${lcov_ignore[@]}"
 
     genhtml coverage.info --output-directory coverage_html \
-            --branch-coverage --title "libedhoc code coverage"
+            --branch-coverage --title "libedhoc code coverage" \
+            "${lcov_ignore[@]}"
 
     echo ""
     echo "=== Coverage Summary ==="
-    lcov --summary coverage.info --rc lcov_branch_coverage=1
+    lcov --summary coverage.info "${lcov_rc[@]}"
     ok "\nHTML report: ${BUILD_DIR}/coverage_html/index.html"
 
     if [[ "$open_report" == true ]]; then
