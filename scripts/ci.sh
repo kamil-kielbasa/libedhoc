@@ -134,8 +134,9 @@ cmd_coverage() {
 
     cd "${BUILD_DIR}"
 
-    # lcov 2.0 (Ubuntu 24.04) changed --rc syntax and added stricter gcov
-    # checks.  Build an options array that works for both lcov 1.x and 2.x.
+    # lcov 2.0 (Ubuntu 24.04) changed --rc syntax and geninfo is much
+    # stricter about gcov data from GCC 13+.  Build options that work for
+    # both lcov 1.x and 2.x.
     local lcov_ver
     lcov_ver=$(lcov --version 2>&1 | sed -n 's/.*LCOV version \([0-9]*\).*/\1/p')
     lcov_ver="${lcov_ver:-1}"
@@ -144,8 +145,13 @@ cmd_coverage() {
     if [[ "$lcov_ver" -ge 2 ]]; then
         lcov_rc=(--rc branch_coverage=1)
         lcov_ignore=(--ignore-errors mismatch
+                     --ignore-errors inconsistent
                      --ignore-errors gcov
-                     --ignore-errors unused)
+                     --ignore-errors unused
+                     --ignore-errors empty
+                     --ignore-errors negative
+                     --ignore-errors count
+                     --ignore-errors source)
     fi
 
     lcov --capture --directory . --output-file coverage_raw.info \
@@ -160,7 +166,7 @@ cmd_coverage() {
 
     echo ""
     echo "=== Coverage Summary ==="
-    lcov --summary coverage.info "${lcov_rc[@]}"
+    lcov --summary coverage.info "${lcov_rc[@]}" "${lcov_ignore[@]}"
     ok "\nHTML report: ${BUILD_DIR}/coverage_html/index.html"
 
     if [[ "$open_report" == true ]]; then
