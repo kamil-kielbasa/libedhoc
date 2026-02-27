@@ -137,14 +137,15 @@ cmd_coverage() {
     # lcov 2.0 (Ubuntu 24.04) changed --rc syntax and added stricter gcov
     # checks.  Build an options array that works for both lcov 1.x and 2.x.
     local lcov_ver
-    lcov_ver=$(lcov --version 2>&1 | grep -oP '\d+' | head -1)
+    lcov_ver=$(lcov --version 2>&1 | sed -n 's/.*LCOV version \([0-9]*\).*/\1/p')
+    lcov_ver="${lcov_ver:-1}"
     local lcov_rc=(--rc lcov_branch_coverage=1)
     local lcov_ignore=()
     if [[ "$lcov_ver" -ge 2 ]]; then
         lcov_rc=(--rc branch_coverage=1)
-        lcov_ignore=(--ignore-errors mismatch,mismatch
-                     --ignore-errors gcov,gcov
-                     --ignore-errors unused,unused)
+        lcov_ignore=(--ignore-errors mismatch
+                     --ignore-errors gcov
+                     --ignore-errors unused)
     fi
 
     lcov --capture --directory . --output-file coverage_raw.info \
