@@ -53,46 +53,100 @@ if(NOT TARGET zephyr_interface)
     target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBEDHOC_DEFINITIONS})
 endif()
 
-# Only apply strict compile options for standalone builds, not Zephyr builds
-# (Zephyr has its own flags and uses -std=c99 which conflicts with -pedantic)
-if (LIBEDHOC_BUILD_COMPILER_GCC AND NOT TARGET zephyr_interface)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-                           -g3
-                           -O0
-                           -Werror
-                           -Wno-format-security
-                           -Wall
-                           -Wextra
-                           -pedantic
-                           -Wcast-align
-                           -Winit-self
-                           -Wlogical-op
-                           -Wmissing-include-dirs
-                           -Wshadow
-                           -Wundef
-                           -Wwrite-strings
-                           -Wpointer-arith
-                           -Wmissing-declarations
-                           -Wuninitialized
-                           -Wold-style-definition
-                           -Wstrict-prototypes
-                           -Wmissing-prototypes
-                           -Wnested-externs
-                           -Wunreachable-code)
+# Strict warning flags shared by both GCC and Clang (standalone builds only).
+# Zephyr has its own flags and uses -std=c99 which conflicts with -pedantic.
+if (NOT TARGET zephyr_interface)
+
+    set(LIBEDHOC_COMMON_WARNINGS
+        -Werror
+        -Wall
+        -Wextra
+        -pedantic
+
+        # Type safety
+        -Wconversion
+        -Wsign-conversion
+        -Wcast-align
+        -Wdouble-promotion
+
+        # Format strings
+        -Wformat=2
+
+        # Control flow
+        -Wunreachable-code
+
+        # Declarations
+        -Wmissing-declarations
+        -Wmissing-prototypes
+        -Wstrict-prototypes
+        -Wold-style-definition
+        -Wnested-externs
+
+        # General
+        -Wshadow
+        -Wundef
+        -Wwrite-strings
+        -Wpointer-arith
+        -Wuninitialized
+        -Wmissing-include-dirs
+        -Wnull-dereference)
+
+    if (LIBEDHOC_BUILD_COMPILER_GCC)
+        target_compile_options(${PROJECT_NAME} PRIVATE
+                               ${LIBEDHOC_COMMON_WARNINGS}
+
+                               # GCC-specific
+                               -Wformat-overflow=2
+                               -Wformat-truncation=2
+                               -Wswitch-enum
+                               -Wjump-misses-init
+                               -Wduplicated-cond
+                               -Wduplicated-branches
+                               -Wlogical-op
+                               -Winit-self)
+    endif()
+
+    if (LIBEDHOC_BUILD_COMPILER_CLANG)
+        target_compile_options(${PROJECT_NAME} PRIVATE
+                               ${LIBEDHOC_COMMON_WARNINGS}
+
+                               # Clang-specific
+                               -Wno-vla
+                               -Wno-declaration-after-statement
+                               -Wno-covered-switch-default
+                               -Wno-padded
+                               -Wno-switch-default)
+
+        # -Wunsafe-buffer-usage exists in Clang 16+; suppress if available.
+        # Test the positive form because Clang silently ignores unknown -Wno-*.
+        include(CheckCCompilerFlag)
+        check_c_compiler_flag(-Wunsafe-buffer-usage HAS_WUNSAFE_BUFFER_USAGE)
+        if (HAS_WUNSAFE_BUFFER_USAGE)
+            target_compile_options(${PROJECT_NAME} PRIVATE -Wno-unsafe-buffer-usage)
+        endif()
+    endif()
+
+    # Stack hardening (disabled under sanitizers — conflicts with ASan)
+    if (NOT LIBEDHOC_ENABLE_SANITIZERS)
+        target_compile_options(${PROJECT_NAME} PRIVATE -fstack-protector-strong)
+    endif()
+
 endif()
-    
-if (LIBEDHOC_BUILD_COMPILER_CLANG)
+
+if (LIBEDHOC_ENABLE_MODULE_TESTS)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LIBEDHOC_TEST_HOOKS)
+endif()
+
+if (LIBEDHOC_ENABLE_COVERAGE)
+    target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
+    target_link_options(${PROJECT_NAME} PUBLIC --coverage)
+endif()
+
+if (LIBEDHOC_ENABLE_SANITIZERS)
     target_compile_options(${PROJECT_NAME} PRIVATE
-                           -g3
-                           -O0
-                           -Werror
-                           -Weverything
-                           -Wno-vla
-                           -Wno-declaration-after-statement
-                           -Wno-covered-switch-default
-                           -Wno-padded
-                           -Wno-unsafe-buffer-usage
-                           -Wno-switch-default)
+                           -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(${PROJECT_NAME} PUBLIC
+                        -fsanitize=address,undefined)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC

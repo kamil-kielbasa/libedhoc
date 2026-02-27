@@ -299,7 +299,7 @@ int edhoc_extract_connection_id(struct edhoc_extracted_fields *extracted_fields)
 		extracted_fields->extracted_conn_id.encode_type =
 			EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 		extracted_fields->extracted_conn_id.int_value =
-			extracted_fields->buffer[0];
+			(int8_t)extracted_fields->buffer[0];
 		break;
 	case connection_identifier_bstr_c:
 		if (cid_r.connection_identifier_bstr.len >

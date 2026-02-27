@@ -8,7 +8,7 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: main
+      revision: v4.2.0
       import:
         name-allowlist:
           - zcbor
@@ -17,7 +17,7 @@ manifest:
     - name: compact25519
       remote: github
       repo-path: DavyLandman/compact25519
-      revision: main
+      revision: v1.1.0
       path: modules/lib/compact25519
 
   self:

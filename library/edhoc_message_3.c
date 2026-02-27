@@ -1681,3 +1681,95 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
+
+/* Test hooks ------------------------------------------------------------- */
+
+#ifdef LIBEDHOC_TEST_HOOKS
+#include "edhoc_test_hooks.h"
+
+int edhoc_test_comp_prk_4e3m(struct edhoc_context *ctx,
+			     const struct edhoc_auth_creds *auth_cred,
+			     const uint8_t *pub_key, size_t pub_key_len)
+{
+	return comp_prk_4e3m(ctx, auth_cred, pub_key, pub_key_len);
+}
+
+int edhoc_test_comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
+			      size_t salt_len)
+{
+	return comp_salt_4e3m(ctx, salt, salt_len);
+}
+
+int edhoc_test_comp_key_iv_aad_3(const struct edhoc_context *ctx, uint8_t *key,
+				 size_t key_len, uint8_t *iv, size_t iv_len,
+				 uint8_t *aad, size_t aad_len)
+{
+	return comp_key_iv_aad(ctx, key, key_len, iv, iv_len, aad, aad_len);
+}
+
+int edhoc_test_comp_th_4(struct edhoc_context *ctx,
+			 const struct mac_context *mac_ctx, const uint8_t *ptxt,
+			 size_t ptxt_len)
+{
+	return comp_th_4(ctx, mac_ctx, ptxt, ptxt_len);
+}
+
+int edhoc_test_comp_giy(struct edhoc_context *ctx,
+			const struct edhoc_auth_creds *auth_cred,
+			const uint8_t *pub_key, size_t pub_key_len,
+			uint8_t *giy, size_t giy_len)
+{
+	return comp_giy(ctx, auth_cred, pub_key, pub_key_len, giy, giy_len);
+}
+
+int edhoc_test_comp_plaintext_3_len(const struct edhoc_context *ctx,
+				    const struct mac_context *mac_ctx,
+				    size_t sign_len, size_t *plaintext_3_len)
+{
+	return comp_plaintext_3_len(ctx, mac_ctx, sign_len, plaintext_3_len);
+}
+
+int edhoc_test_prepare_plaintext_3(const struct mac_context *mac_ctx,
+				   const uint8_t *sign, size_t sign_len,
+				   uint8_t *ptxt, size_t ptxt_size,
+				   size_t *ptxt_len)
+{
+	return prepare_plaintext_3(mac_ctx, sign, sign_len, ptxt, ptxt_size,
+				   ptxt_len);
+}
+
+int edhoc_test_comp_aad_3_len(const struct edhoc_context *ctx,
+			      size_t *aad_3_len)
+{
+	return comp_aad_3_len(ctx, aad_3_len);
+}
+
+int edhoc_test_gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
+			 size_t msg_3_size, size_t *msg_3_len)
+{
+	return gen_msg_3(ctxt, ctxt_len, msg_3, msg_3_size, msg_3_len);
+}
+
+int edhoc_test_parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
+			   const uint8_t **ctxt_3, size_t *ctxt_3_len)
+{
+	return parse_msg_3(msg_3, msg_3_len, ctxt_3, ctxt_3_len);
+}
+
+int edhoc_test_decrypt_ciphertext_3(const struct edhoc_context *ctx,
+				    const uint8_t *key, size_t key_len,
+				    const uint8_t *iv, size_t iv_len,
+				    const uint8_t *aad, size_t aad_len,
+				    const uint8_t *ctxt, size_t ctxt_len,
+				    uint8_t *ptxt, size_t ptxt_len)
+{
+	return decrypt_ciphertext(ctx, key, key_len, iv, iv_len, aad, aad_len,
+				  ctxt, ctxt_len, ptxt, ptxt_len);
+}
+
+int edhoc_test_parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
+				 size_t ptxt_len, struct plaintext *parsed_ptxt)
+{
+	return parse_plaintext(ctx, ptxt, ptxt_len, parsed_ptxt);
+}
+#endif /* LIBEDHOC_TEST_HOOKS */

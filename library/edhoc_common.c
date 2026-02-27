@@ -789,6 +789,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		/* Cborise C_R. */
 		switch (cid->encode_type) {
 		case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
+			/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 			const int32_t value = cid->int_value;
 			len = 0;
 			ret = cbor_encode_integer_type_int_type(
@@ -1504,3 +1505,41 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 		      ctx->message);
 	return EDHOC_ERROR_BAD_STATE;
 }
+
+/* Test hooks ------------------------------------------------------------- */
+
+#ifdef LIBEDHOC_TEST_HOOKS
+#include "edhoc_test_hooks.h"
+
+int edhoc_test_comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
+{
+	return comp_cid_len(cid, len);
+}
+
+int edhoc_test_comp_id_cred_len(const struct edhoc_auth_creds *cred,
+				size_t *len)
+{
+	return comp_id_cred_len(cred, len);
+}
+
+int edhoc_test_comp_th_len(size_t th_len, size_t *len)
+{
+	return comp_th_len(th_len, len);
+}
+
+int edhoc_test_comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
+{
+	return comp_cred_len(cred, len);
+}
+
+int edhoc_test_comp_ead_len(const struct edhoc_context *ctx, size_t *len)
+{
+	return comp_ead_len(ctx, len);
+}
+
+int edhoc_test_kid_compact_encoding(const struct edhoc_auth_creds *cred,
+				    struct mac_context *mac_ctx)
+{
+	return kid_compact_encoding(cred, mac_ctx);
+}
+#endif /* LIBEDHOC_TEST_HOOKS */

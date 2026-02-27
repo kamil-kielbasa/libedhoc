@@ -1,0 +1,101 @@
+name: CI / Linux
+
+on: [push, pull_request]
+
+jobs:
+  build-gcc:
+    name: GCC + Coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y lcov
+
+      - name: Build, test, and generate coverage
+        run: bash scripts/ci.sh coverage
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: build/coverage.info
+          flags: unittests
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  build-clang:
+    name: Clang
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang ninja-build
+
+      - name: Build and test
+        run: |
+          bash scripts/ci.sh build --clang
+          bash scripts/ci.sh test
+
+  asan-ubsan:
+    name: ASan + UBSan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build and test (GCC + ASan + UBSan)
+        run: bash scripts/ci.sh sanitizers asan-ubsan
+
+  valgrind:
+    name: Valgrind
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+
+      - name: Build and run valgrind
+        run: |
+          bash scripts/ci.sh build --gcc
+          bash scripts/ci.sh valgrind
+
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang ninja-build
+
+      - name: Run cppcheck
+        run: bash scripts/ci.sh cppcheck
+
+      - name: Run clang-tidy
+        run: bash scripts/ci.sh clang-tidy
+
+  fuzz:
+    name: Fuzz
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y clang ninja-build
+
+      - name: Build and fuzz (Clang + LibFuzzer, 60s per target)
+        run: bash scripts/ci.sh fuzz 60

@@ -38,64 +38,66 @@ static inline void edhoc_log_get_timestamp(char *buffer, size_t size)
 	const int milliseconds = (int)(tv.tv_usec / 1000);
 	const int microseconds = (int)(tv.tv_usec % 1000);
 
-	snprintf(buffer, size, "[%02d:%02d:%02d.%03d,%03d]", tm_info->tm_hour,
-		 tm_info->tm_min, tm_info->tm_sec, milliseconds, microseconds);
+	(void)snprintf(buffer, size, "[%02d:%02d:%02d.%03d,%03d]",
+		       tm_info->tm_hour % 24, tm_info->tm_min % 60,
+		       tm_info->tm_sec % 60, milliseconds % 1000,
+		       microseconds % 1000);
 }
 
-#define EDHOC_LOG_ERR(...)                                             \
-	do {                                                           \
-		char timestamp[32];                                    \
-		edhoc_log_get_timestamp(timestamp, sizeof(timestamp)); \
-		fflush(stdout);                                        \
-		fprintf(stderr,                                        \
-			"%s " ANSI_COLOR_RED "<err>" ANSI_COLOR_RESET  \
-			" libedhoc: ",                                 \
-			timestamp);                                    \
-		fprintf(stderr, __VA_ARGS__);                          \
-		fprintf(stderr, "\n");                                 \
-		fflush(stderr);                                        \
+#define EDHOC_LOG_ERR(...)                                                  \
+	do {                                                                \
+		char timestamp[32];                                         \
+		edhoc_log_get_timestamp(timestamp, sizeof(timestamp));      \
+		(void)fflush(stdout);                                       \
+		(void)fprintf(stderr,                                       \
+			      "%s " ANSI_COLOR_RED "<err>" ANSI_COLOR_RESET \
+			      " libedhoc: ",                                \
+			      timestamp);                                   \
+		(void)fprintf(stderr, __VA_ARGS__);                         \
+		(void)fprintf(stderr, "\n");                                \
+		(void)fflush(stderr);                                       \
 	} while (0)
 
-#define EDHOC_LOG_WRN(...)                                               \
-	do {                                                             \
-		char timestamp[32];                                      \
-		edhoc_log_get_timestamp(timestamp, sizeof(timestamp));   \
-		fflush(stdout);                                          \
-		fprintf(stdout,                                          \
-			"%s " ANSI_COLOR_YELLOW "<wrn>" ANSI_COLOR_RESET \
-			" libedhoc: ",                                   \
-			timestamp);                                      \
-		fprintf(stdout, __VA_ARGS__);                            \
-		fprintf(stdout, "\n");                                   \
-		fflush(stdout);                                          \
+#define EDHOC_LOG_WRN(...)                                                     \
+	do {                                                                   \
+		char timestamp[32];                                            \
+		edhoc_log_get_timestamp(timestamp, sizeof(timestamp));         \
+		(void)fflush(stdout);                                          \
+		(void)fprintf(stdout,                                          \
+			      "%s " ANSI_COLOR_YELLOW "<wrn>" ANSI_COLOR_RESET \
+			      " libedhoc: ",                                   \
+			      timestamp);                                      \
+		(void)fprintf(stdout, __VA_ARGS__);                            \
+		(void)fprintf(stdout, "\n");                                   \
+		(void)fflush(stdout);                                          \
 	} while (0)
 
-#define EDHOC_LOG_INF(...)                                              \
-	do {                                                            \
-		char timestamp[32];                                     \
-		edhoc_log_get_timestamp(timestamp, sizeof(timestamp));  \
-		fflush(stdout);                                         \
-		fprintf(stdout,                                         \
-			"%s " ANSI_COLOR_GREEN "<inf>" ANSI_COLOR_RESET \
-			" libedhoc: ",                                  \
-			timestamp);                                     \
-		fprintf(stdout, __VA_ARGS__);                           \
-		fprintf(stdout, "\n");                                  \
-		fflush(stdout);                                         \
+#define EDHOC_LOG_INF(...)                                                    \
+	do {                                                                  \
+		char timestamp[32];                                           \
+		edhoc_log_get_timestamp(timestamp, sizeof(timestamp));        \
+		(void)fflush(stdout);                                         \
+		(void)fprintf(stdout,                                         \
+			      "%s " ANSI_COLOR_GREEN "<inf>" ANSI_COLOR_RESET \
+			      " libedhoc: ",                                  \
+			      timestamp);                                     \
+		(void)fprintf(stdout, __VA_ARGS__);                           \
+		(void)fprintf(stdout, "\n");                                  \
+		(void)fflush(stdout);                                         \
 	} while (0)
 
-#define EDHOC_LOG_DBG(...)                                             \
-	do {                                                           \
-		char timestamp[32];                                    \
-		edhoc_log_get_timestamp(timestamp, sizeof(timestamp)); \
-		fflush(stdout);                                        \
-		fprintf(stdout,                                        \
-			"%s " ANSI_COLOR_CYAN "<dbg>" ANSI_COLOR_RESET \
-			" libedhoc: %s: ",                             \
-			timestamp, __func__);                          \
-		fprintf(stdout, __VA_ARGS__);                          \
-		fprintf(stdout, "\n");                                 \
-		fflush(stdout);                                        \
+#define EDHOC_LOG_DBG(...)                                                   \
+	do {                                                                 \
+		char timestamp[32];                                          \
+		edhoc_log_get_timestamp(timestamp, sizeof(timestamp));       \
+		(void)fflush(stdout);                                        \
+		(void)fprintf(stdout,                                        \
+			      "%s " ANSI_COLOR_CYAN "<dbg>" ANSI_COLOR_RESET \
+			      " libedhoc: %s: ",                             \
+			      timestamp, __func__);                          \
+		(void)fprintf(stdout, __VA_ARGS__);                          \
+		(void)fprintf(stdout, "\n");                                 \
+		(void)fflush(stdout);                                        \
 	} while (0)
 
 static inline void edhoc_log_hexdump_impl(const char *level, const char *color,
@@ -109,47 +111,50 @@ static inline void edhoc_log_hexdump_impl(const char *level, const char *color,
 	char timestamp[32];
 	edhoc_log_get_timestamp(timestamp, sizeof(timestamp));
 
-	fflush(stdout);
+	(void)fflush(stdout);
 
 	/* Print header with or without function name */
 	if (func != NULL) {
-		fprintf(stdout,
-			"%s %s%s" ANSI_COLOR_RESET " libedhoc: %s: %s\n\n",
-			timestamp, color, level, func, text);
+		(void)fprintf(stdout,
+			      "%s %s%s" ANSI_COLOR_RESET
+			      " libedhoc: %s: %s\n\n",
+			      timestamp, color, level, func, text);
 	} else {
-		fprintf(stdout, "%s %s%s" ANSI_COLOR_RESET " libedhoc: %s\n\n",
-			timestamp, color, level, text);
+		(void)fprintf(stdout,
+			      "%s %s%s" ANSI_COLOR_RESET " libedhoc: %s\n\n",
+			      timestamp, color, level, text);
 	}
 
 	/* Print hexdump in rows of 16 bytes */
 	for (size_t i = 0; i < length; i += 16) {
 		/* Print offset with indentation matching Zephyr output */
-		fprintf(stdout, "                                   ");
+		(void)fprintf(stdout, "                                   ");
 
 		/* Print hex values */
 		for (size_t j = 0; j < 16; j++) {
 			if (i + j < length) {
-				fprintf(stdout, "%02x ", data[i + j]);
+				(void)fprintf(stdout, "%02x ", data[i + j]);
 			} else {
-				fprintf(stdout, "   ");
+				(void)fprintf(stdout, "   ");
 			}
 			/* Add extra space in the middle */
 			if (j == 7) {
-				fprintf(stdout, " ");
+				(void)fprintf(stdout, " ");
 			}
 		}
 
 		/* Print ASCII representation */
-		fprintf(stdout, "|");
+		(void)fprintf(stdout, "|");
 		for (size_t j = 0; j < 16 && i + j < length; j++) {
 			uint8_t c = data[i + j];
-			fprintf(stdout, "%c", (c >= 32 && c <= 126) ? c : '.');
+			(void)fprintf(stdout, "%c",
+				      (c >= 32 && c <= 126) ? c : '.');
 		}
 
-		fprintf(stdout, "|\n");
+		(void)fprintf(stdout, "|\n");
 	}
 
-	fflush(stdout);
+	(void)fflush(stdout);
 }
 
 #define EDHOC_LOG_HEXDUMP_INF(data, length, text)                         \

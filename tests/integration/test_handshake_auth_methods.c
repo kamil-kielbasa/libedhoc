@@ -1,0 +1,483 @@
+/**
+ * \file    test_handshake_auth_methods.c
+ * \author  Kamil Kielbasa
+ * \brief   Tests for EDHOC authentication methods 1 and 2.
+ *          Method 1: Initiator signature / Responder static DH.
+ *          Method 2: Initiator static DH / Responder signature.
+ * \version 1.0
+ * \date    2025-04-14
+ * 
+ * \copyright Copyright (c) 2025
+ * 
+ */
+
+/* Include files ----------------------------------------------------------- */
+
+/* Cipher suite 2 header: */
+#include "edhoc_cipher_suite_2.h"
+
+/* Standard library headers: */
+#include <stdio.h>
+#include <string.h>
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+
+/* EDHOC header: */
+#define EDHOC_ALLOW_PRIVATE_ACCESS
+#include <edhoc.h>
+#include "test_cipher_suites.h"
+
+/* PSA crypto header: */
+#include <psa/crypto.h>
+
+/* Unity headers: */
+#include <unity.h>
+#include <unity_fixture.h>
+
+/* Module defines ---------------------------------------------------------- */
+
+#define OSCORE_MASTER_SECRET_LENGTH (16)
+#define OSCORE_MASTER_SALT_LENGTH (8)
+#define DH_KEY_AGREEMENT_LENGTH (32)
+
+/*
+ * P-256 keys shared by both sign and static-DH test vectors.
+ * Certificates (CRED_I, CRED_R) are the same in both the sign_keys
+ * and static_dh_keys test vector headers.
+ */
+
+/* Initiator private key (same for both sign and DH) */
+static const uint8_t TV_SK_I[] = {
+	0xfb, 0x13, 0xad, 0xeb, 0x65, 0x18, 0xce, 0xe5, 0xf8, 0x84, 0x17,
+	0x66, 0x08, 0x41, 0x14, 0x2e, 0x83, 0x0a, 0x81, 0xfe, 0x33, 0x43,
+	0x80, 0xa9, 0x53, 0x40, 0x6a, 0x13, 0x05, 0xe8, 0x70, 0x6b,
+};
+
+/* Initiator uncompressed public key (signature verification) */
+static const uint8_t TV_PK_I_SIG[] = {
+	0x04, 0xac, 0x75, 0xe9, 0xec, 0xe3, 0xe5, 0x0b, 0xfc, 0x8e, 0xd6,
+	0x03, 0x99, 0x88, 0x95, 0x22, 0x40, 0x5c, 0x47, 0xbf, 0x16, 0xdf,
+	0x96, 0x66, 0x0a, 0x41, 0x29, 0x8c, 0xb4, 0x30, 0x7f, 0x7e, 0xb6,
+	0x6e, 0x5d, 0xe6, 0x11, 0x38, 0x8a, 0x4b, 0x8a, 0x82, 0x11, 0x33,
+	0x4a, 0xc7, 0xd3, 0x7e, 0xcb, 0x52, 0xa3, 0x87, 0xd2, 0x57, 0xe6,
+	0xdb, 0x3c, 0x2a, 0x93, 0xdf, 0x21, 0xff, 0x3a, 0xff, 0xc8,
+};
+
+/* Initiator X-coordinate public key (DH key agreement) */
+static const uint8_t TV_PK_I_DH[] = {
+	0xac, 0x75, 0xe9, 0xec, 0xe3, 0xe5, 0x0b, 0xfc, 0x8e, 0xd6, 0x03,
+	0x99, 0x88, 0x95, 0x22, 0x40, 0x5c, 0x47, 0xbf, 0x16, 0xdf, 0x96,
+	0x66, 0x0a, 0x41, 0x29, 0x8c, 0xb4, 0x30, 0x7f, 0x7e, 0xb6,
+};
+
+/* Responder private key (same for both sign and DH) */
+static const uint8_t TV_SK_R[] = {
+	0x72, 0xcc, 0x47, 0x61, 0xdb, 0xd4, 0xc7, 0x8f, 0x75, 0x89, 0x31,
+	0xaa, 0x58, 0x9d, 0x34, 0x8d, 0x1e, 0xf8, 0x74, 0xa7, 0xe3, 0x03,
+	0xed, 0xe2, 0xf1, 0x40, 0xdc, 0xf3, 0xe6, 0xaa, 0x4a, 0xac,
+};
+
+/* Responder uncompressed public key (signature verification) */
+static const uint8_t TV_PK_R_SIG[] = {
+	0x04, 0xbb, 0xc3, 0x49, 0x60, 0x52, 0x6e, 0xa4, 0xd3, 0x2e, 0x94,
+	0x0c, 0xad, 0x2a, 0x23, 0x41, 0x48, 0xdd, 0xc2, 0x17, 0x91, 0xa1,
+	0x2a, 0xfb, 0xcb, 0xac, 0x93, 0x62, 0x20, 0x46, 0xdd, 0x44, 0xf0,
+	0x45, 0x19, 0xe2, 0x57, 0x23, 0x6b, 0x2a, 0x0c, 0xe2, 0x02, 0x3f,
+	0x09, 0x31, 0xf1, 0xf3, 0x86, 0xca, 0x7a, 0xfd, 0xa6, 0x4f, 0xcd,
+	0xe0, 0x10, 0x8c, 0x22, 0x4c, 0x51, 0xea, 0xbf, 0x60, 0x72,
+};
+
+/* Responder X-coordinate public key (DH key agreement) */
+static const uint8_t TV_PK_R_DH[] = {
+	0xbb, 0xc3, 0x49, 0x60, 0x52, 0x6e, 0xa4, 0xd3, 0x2e, 0x94, 0x0c,
+	0xad, 0x2a, 0x23, 0x41, 0x48, 0xdd, 0xc2, 0x17, 0x91, 0xa1, 0x2a,
+	0xfb, 0xcb, 0xac, 0x93, 0x62, 0x20, 0x46, 0xdd, 0x44, 0xf0,
+};
+
+/* Initiator certificate (same for sign and DH usage) */
+static const uint8_t TV_CRED_I[] = {
+	0x30, 0x82, 0x01, 0x1e, 0x30, 0x81, 0xc5, 0xa0, 0x03, 0x02, 0x01, 0x02,
+	0x02, 0x04, 0x62, 0x32, 0xef, 0x6f, 0x30, 0x0a, 0x06, 0x08, 0x2a, 0x86,
+	0x48, 0xce, 0x3d, 0x04, 0x03, 0x02, 0x30, 0x15, 0x31, 0x13, 0x30, 0x11,
+	0x06, 0x03, 0x55, 0x04, 0x03, 0x0c, 0x0a, 0x45, 0x44, 0x48, 0x4f, 0x43,
+	0x20, 0x52, 0x6f, 0x6f, 0x74, 0x30, 0x1e, 0x17, 0x0d, 0x32, 0x32, 0x30,
+	0x33, 0x31, 0x37, 0x30, 0x38, 0x32, 0x31, 0x30, 0x33, 0x5a, 0x17, 0x0d,
+	0x32, 0x39, 0x31, 0x32, 0x33, 0x31, 0x32, 0x33, 0x30, 0x30, 0x30, 0x30,
+	0x5a, 0x30, 0x1a, 0x31, 0x18, 0x30, 0x16, 0x06, 0x03, 0x55, 0x04, 0x03,
+	0x0c, 0x0f, 0x45, 0x44, 0x48, 0x4f, 0x43, 0x20, 0x49, 0x6e, 0x69, 0x74,
+	0x69, 0x61, 0x74, 0x6f, 0x72, 0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a,
+	0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce,
+	0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00, 0x04, 0xac, 0x75, 0xe9, 0xec,
+	0xe3, 0xe5, 0x0b, 0xfc, 0x8e, 0xd6, 0x03, 0x99, 0x88, 0x95, 0x22, 0x40,
+	0x5c, 0x47, 0xbf, 0x16, 0xdf, 0x96, 0x66, 0x0a, 0x41, 0x29, 0x8c, 0xb4,
+	0x30, 0x7f, 0x7e, 0xb6, 0x6e, 0x5d, 0xe6, 0x11, 0x38, 0x8a, 0x4b, 0x8a,
+	0x82, 0x11, 0x33, 0x4a, 0xc7, 0xd3, 0x7e, 0xcb, 0x52, 0xa3, 0x87, 0xd2,
+	0x57, 0xe6, 0xdb, 0x3c, 0x2a, 0x93, 0xdf, 0x21, 0xff, 0x3a, 0xff, 0xc8,
+	0x30, 0x0a, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02,
+	0x03, 0x48, 0x00, 0x30, 0x45, 0x02, 0x21, 0x00, 0x8c, 0x32, 0x3a, 0x1f,
+	0x33, 0x21, 0x38, 0xaa, 0xb9, 0xd0, 0xbe, 0xaf, 0xb8, 0x5f, 0x8d, 0x5a,
+	0x44, 0x07, 0x3c, 0x58, 0x0f, 0x59, 0x5b, 0xc5, 0x21, 0xef, 0x91, 0x3f,
+	0x6e, 0xf4, 0x8d, 0x11, 0x02, 0x20, 0x6c, 0x0a, 0xf1, 0xa1, 0x85, 0xa4,
+	0xe4, 0xde, 0x06, 0x35, 0x36, 0x99, 0x23, 0x1c, 0x73, 0x3a, 0x6e, 0x8d,
+	0xd2, 0xdf, 0x65, 0x13, 0x96, 0x6c, 0x91, 0x30, 0x15, 0x2a, 0x07, 0xa2,
+	0xbe, 0xde,
+};
+
+/* Responder certificate (same for sign and DH usage) */
+static const uint8_t TV_CRED_R[] = {
+	0x30, 0x82, 0x01, 0x1e, 0x30, 0x81, 0xc5, 0xa0, 0x03, 0x02, 0x01, 0x02,
+	0x02, 0x04, 0x61, 0xe9, 0x98, 0x1e, 0x30, 0x0a, 0x06, 0x08, 0x2a, 0x86,
+	0x48, 0xce, 0x3d, 0x04, 0x03, 0x02, 0x30, 0x15, 0x31, 0x13, 0x30, 0x11,
+	0x06, 0x03, 0x55, 0x04, 0x03, 0x0c, 0x0a, 0x45, 0x44, 0x48, 0x4f, 0x43,
+	0x20, 0x52, 0x6f, 0x6f, 0x74, 0x30, 0x1e, 0x17, 0x0d, 0x32, 0x32, 0x30,
+	0x31, 0x32, 0x30, 0x31, 0x37, 0x31, 0x33, 0x30, 0x32, 0x5a, 0x17, 0x0d,
+	0x32, 0x39, 0x31, 0x32, 0x33, 0x31, 0x32, 0x33, 0x30, 0x30, 0x30, 0x30,
+	0x5a, 0x30, 0x1a, 0x31, 0x18, 0x30, 0x16, 0x06, 0x03, 0x55, 0x04, 0x03,
+	0x0c, 0x0f, 0x45, 0x44, 0x48, 0x4f, 0x43, 0x20, 0x52, 0x65, 0x73, 0x70,
+	0x6f, 0x6e, 0x64, 0x65, 0x72, 0x30, 0x59, 0x30, 0x13, 0x06, 0x07, 0x2a,
+	0x86, 0x48, 0xce, 0x3d, 0x02, 0x01, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce,
+	0x3d, 0x03, 0x01, 0x07, 0x03, 0x42, 0x00, 0x04, 0xbb, 0xc3, 0x49, 0x60,
+	0x52, 0x6e, 0xa4, 0xd3, 0x2e, 0x94, 0x0c, 0xad, 0x2a, 0x23, 0x41, 0x48,
+	0xdd, 0xc2, 0x17, 0x91, 0xa1, 0x2a, 0xfb, 0xcb, 0xac, 0x93, 0x62, 0x20,
+	0x46, 0xdd, 0x44, 0xf0, 0x45, 0x19, 0xe2, 0x57, 0x23, 0x6b, 0x2a, 0x0c,
+	0xe2, 0x02, 0x3f, 0x09, 0x31, 0xf1, 0xf3, 0x86, 0xca, 0x7a, 0xfd, 0xa6,
+	0x4f, 0xcd, 0xe0, 0x10, 0x8c, 0x22, 0x4c, 0x51, 0xea, 0xbf, 0x60, 0x72,
+	0x30, 0x0a, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02,
+	0x03, 0x48, 0x00, 0x30, 0x45, 0x02, 0x20, 0x30, 0x19, 0x4e, 0xf5, 0xfc,
+	0x65, 0xc8, 0xb7, 0x95, 0xcd, 0xcd, 0x0b, 0xb4, 0x31, 0xbf, 0x83, 0xee,
+	0x67, 0x41, 0xc1, 0x37, 0x0c, 0x22, 0xc8, 0xeb, 0x8e, 0xe9, 0xed, 0xd2,
+	0xa7, 0x05, 0x19, 0x02, 0x21, 0x00, 0xb5, 0x83, 0x0e, 0x9c, 0x89, 0xa6,
+	0x2a, 0xc7, 0x3c, 0xe1, 0xeb, 0xce, 0x00, 0x61, 0x70, 0x7d, 0xb8, 0xa8,
+	0x8e, 0x23, 0x70, 0x9b, 0x4a, 0xcc, 0x58, 0xa1, 0x31, 0x3b, 0x13, 0x3d,
+	0x05, 0x58,
+};
+
+/* Module types and type definitiones -------------------------------------- */
+
+struct test_context {
+	enum edhoc_method method;
+	const uint8_t *init_pk;
+	size_t init_pk_len;
+	const uint8_t *resp_pk;
+	size_t resp_pk_len;
+	enum edhoc_key_type init_key_type;
+	enum edhoc_key_type resp_key_type;
+};
+
+/* Module interface variables and constants -------------------------------- */
+/* Static function declarations -------------------------------------------- */
+/* Static variables and constants ------------------------------------------ */
+
+static struct test_context current_test_ctx;
+
+/* Static function definitions --------------------------------------------- */
+
+static int auth_cred_fetch_init(void *user_ctx,
+				struct edhoc_auth_creds *auth_cred)
+{
+	(void)user_ctx;
+	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->x509_chain.nr_of_certs = 1;
+	auth_cred->x509_chain.cert[0] = TV_CRED_I;
+	auth_cred->x509_chain.cert_len[0] = sizeof(TV_CRED_I);
+
+	const int res = edhoc_cipher_suite_2_key_import(
+		NULL, current_test_ctx.init_key_type, TV_SK_I, sizeof(TV_SK_I),
+		auth_cred->priv_key_id);
+	if (EDHOC_SUCCESS != res)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	return EDHOC_SUCCESS;
+}
+
+static int auth_cred_fetch_resp(void *user_ctx,
+				struct edhoc_auth_creds *auth_cred)
+{
+	(void)user_ctx;
+	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->x509_chain.nr_of_certs = 1;
+	auth_cred->x509_chain.cert[0] = TV_CRED_R;
+	auth_cred->x509_chain.cert_len[0] = sizeof(TV_CRED_R);
+
+	const int res = edhoc_cipher_suite_2_key_import(
+		NULL, current_test_ctx.resp_key_type, TV_SK_R, sizeof(TV_SK_R),
+		auth_cred->priv_key_id);
+	if (EDHOC_SUCCESS != res)
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	return EDHOC_SUCCESS;
+}
+
+static int auth_cred_verify_init(void *user_ctx,
+				 struct edhoc_auth_creds *auth_cred,
+				 const uint8_t **pub_key, size_t *pub_key_len)
+{
+	(void)user_ctx;
+	(void)auth_cred;
+	*pub_key = current_test_ctx.init_pk;
+	*pub_key_len = current_test_ctx.init_pk_len;
+	return EDHOC_SUCCESS;
+}
+
+static int auth_cred_verify_resp(void *user_ctx,
+				 struct edhoc_auth_creds *auth_cred,
+				 const uint8_t **pub_key, size_t *pub_key_len)
+{
+	(void)user_ctx;
+	(void)auth_cred;
+	*pub_key = current_test_ctx.resp_pk;
+	*pub_key_len = current_test_ctx.resp_pk_len;
+	return EDHOC_SUCCESS;
+}
+
+static int ead_compose_stub(void *user_ctx, enum edhoc_message msg,
+			    struct edhoc_ead_token *ead_token,
+			    size_t ead_token_size, size_t *ead_token_len)
+{
+	(void)user_ctx;
+	(void)msg;
+	(void)ead_token;
+	(void)ead_token_size;
+	*ead_token_len = 0;
+	return EDHOC_SUCCESS;
+}
+
+static int ead_process_stub(void *user_ctx, enum edhoc_message msg,
+			    const struct edhoc_ead_token *ead_token,
+			    size_t ead_token_size)
+{
+	(void)user_ctx;
+	(void)msg;
+	(void)ead_token;
+	(void)ead_token_size;
+	return EDHOC_SUCCESS;
+}
+
+static int run_handshake(enum edhoc_method method)
+{
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	const struct edhoc_connection_id cid_i = {
+		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = -24,
+	};
+	const struct edhoc_connection_id cid_r = {
+		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = -8,
+	};
+
+	const struct edhoc_ead ead = {
+		.compose = ead_compose_stub,
+		.process = ead_process_stub,
+	};
+
+	const struct edhoc_credentials cred_init = {
+		.fetch = auth_cred_fetch_init,
+		.verify = auth_cred_verify_resp,
+	};
+	const struct edhoc_credentials cred_resp = {
+		.fetch = auth_cred_fetch_resp,
+		.verify = auth_cred_verify_init,
+	};
+
+	const struct edhoc_keys *keys = edhoc_cipher_suite_2_get_keys();
+	const struct edhoc_crypto *crypto = edhoc_cipher_suite_2_get_crypto();
+
+	/* Initiator context setup */
+	struct edhoc_context init_ctx = { 0 };
+	ret = edhoc_context_init(&init_ctx);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	const enum edhoc_method methods[] = { method };
+	ret = edhoc_set_methods(&init_ctx, methods, 1);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_set_cipher_suites(&init_ctx, &test_cipher_suite_2, 1);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_set_connection_id(&init_ctx, &cid_i);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_ead(&init_ctx, &ead);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_keys(&init_ctx, keys);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_crypto(&init_ctx, crypto);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_credentials(&init_ctx, &cred_init);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	/* Responder context setup */
+	struct edhoc_context resp_ctx = { 0 };
+	ret = edhoc_context_init(&resp_ctx);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_set_methods(&resp_ctx, methods, 1);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_set_cipher_suites(&resp_ctx, &test_cipher_suite_2, 1);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_set_connection_id(&resp_ctx, &cid_r);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_ead(&resp_ctx, &ead);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_keys(&resp_ctx, keys);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_crypto(&resp_ctx, crypto);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+	ret = edhoc_bind_credentials(&resp_ctx, &cred_resp);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	/* Message 1: Initiator -> Responder */
+	uint8_t msg_1[256] = { 0 };
+	size_t msg_1_len = 0;
+	ret = edhoc_message_1_compose(&init_ctx, msg_1, sizeof(msg_1),
+				      &msg_1_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	ret = edhoc_message_1_process(&resp_ctx, msg_1, msg_1_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	/* Message 2: Responder -> Initiator */
+	uint8_t msg_2[512] = { 0 };
+	size_t msg_2_len = 0;
+	ret = edhoc_message_2_compose(&resp_ctx, msg_2, sizeof(msg_2),
+				      &msg_2_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	ret = edhoc_message_2_process(&init_ctx, msg_2, msg_2_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	/* Message 3: Initiator -> Responder */
+	uint8_t msg_3[512] = { 0 };
+	size_t msg_3_len = 0;
+	ret = edhoc_message_3_compose(&init_ctx, msg_3, sizeof(msg_3),
+				      &msg_3_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	ret = edhoc_message_3_process(&resp_ctx, msg_3, msg_3_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	/* Export OSCORE from both sides and compare */
+	uint8_t init_ms[OSCORE_MASTER_SECRET_LENGTH] = { 0 };
+	uint8_t init_salt[OSCORE_MASTER_SALT_LENGTH] = { 0 };
+	uint8_t init_sid[8] = { 0 };
+	size_t init_sid_len = 0;
+	uint8_t init_rid[8] = { 0 };
+	size_t init_rid_len = 0;
+
+	ret = edhoc_export_oscore_session(&init_ctx, init_ms, sizeof(init_ms),
+					  init_salt, sizeof(init_salt),
+					  init_sid, sizeof(init_sid),
+					  &init_sid_len, init_rid,
+					  sizeof(init_rid), &init_rid_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	uint8_t resp_ms[OSCORE_MASTER_SECRET_LENGTH] = { 0 };
+	uint8_t resp_salt[OSCORE_MASTER_SALT_LENGTH] = { 0 };
+	uint8_t resp_sid[8] = { 0 };
+	size_t resp_sid_len = 0;
+	uint8_t resp_rid[8] = { 0 };
+	size_t resp_rid_len = 0;
+
+	ret = edhoc_export_oscore_session(&resp_ctx, resp_ms, sizeof(resp_ms),
+					  resp_salt, sizeof(resp_salt),
+					  resp_sid, sizeof(resp_sid),
+					  &resp_sid_len, resp_rid,
+					  sizeof(resp_rid), &resp_rid_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ms, resp_ms,
+				      OSCORE_MASTER_SECRET_LENGTH);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_salt, resp_salt,
+				      OSCORE_MASTER_SALT_LENGTH);
+
+	edhoc_context_deinit(&init_ctx);
+	edhoc_context_deinit(&resp_ctx);
+
+	return EDHOC_SUCCESS;
+}
+
+/* Module interface function definitions ----------------------------------- */
+
+TEST_GROUP(handshake_auth_methods);
+
+TEST_SETUP(handshake_auth_methods)
+{
+	psa_crypto_init();
+}
+
+TEST_TEAR_DOWN(handshake_auth_methods)
+{
+	mbedtls_psa_crypto_free();
+}
+
+/**
+ * @scenario  EDHOC method 1 handshake: Initiator signature, Responder static DH.
+ * @env       PSA crypto init, cipher suite 2, X.509 chain credentials; init sig key, resp DH key.
+ * @action    Run full M1->M2->M3 protocol flow and export OSCORE session from both sides.
+ * @expected  Handshake succeeds; initiator and responder derive identical OSCORE master secret and salt.
+ */
+TEST(handshake_auth_methods, method_1_handshake)
+{
+	current_test_ctx = (struct test_context){
+		.method = EDHOC_METHOD_1,
+		.init_pk = TV_PK_I_SIG,
+		.init_pk_len = sizeof(TV_PK_I_SIG),
+		.resp_pk = TV_PK_R_DH,
+		.resp_pk_len = sizeof(TV_PK_R_DH),
+		.init_key_type = EDHOC_KT_SIGNATURE,
+		.resp_key_type = EDHOC_KT_KEY_AGREEMENT,
+	};
+
+	int ret = run_handshake(EDHOC_METHOD_1);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+/**
+ * @scenario  EDHOC method 2 handshake: Initiator static DH, Responder signature.
+ * @env       PSA crypto init, cipher suite 2, X.509 chain credentials; init DH key, resp sig key.
+ * @action    Run full M1->M2->M3 protocol flow and export OSCORE session from both sides.
+ * @expected  Handshake succeeds; initiator and responder derive identical OSCORE master secret and salt.
+ */
+TEST(handshake_auth_methods, method_2_handshake)
+{
+	current_test_ctx = (struct test_context){
+		.method = EDHOC_METHOD_2,
+		.init_pk = TV_PK_I_DH,
+		.init_pk_len = sizeof(TV_PK_I_DH),
+		.resp_pk = TV_PK_R_SIG,
+		.resp_pk_len = sizeof(TV_PK_R_SIG),
+		.init_key_type = EDHOC_KT_KEY_AGREEMENT,
+		.resp_key_type = EDHOC_KT_SIGNATURE,
+	};
+
+	int ret = run_handshake(EDHOC_METHOD_2);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST_GROUP_RUNNER(handshake_auth_methods)
+{
+	RUN_TEST_CASE(handshake_auth_methods, method_1_handshake);
+	RUN_TEST_CASE(handshake_auth_methods, method_2_handshake);
+}

@@ -552,6 +552,7 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	switch (ctx->peer_cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
 		/* See RFC9528 section 3.3.3 */
+		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 		int32_t int_value = ctx->peer_cid.int_value;
 		ret = cbor_encode_integer_type_int_type(sid, sid_size,
 							&int_value, sid_len);
@@ -604,6 +605,7 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	switch (ctx->cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
 		/* See RFC9528 section 3.3.3 */
+		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 		int32_t int_value = ctx->cid.int_value;
 		ret = cbor_encode_integer_type_int_type(rid, rid_size,
 							&int_value, rid_len);
@@ -653,3 +655,26 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	ctx->status = status;
 	return EDHOC_SUCCESS;
 }
+
+/* Test hooks ------------------------------------------------------------- */
+
+#ifdef LIBEDHOC_TEST_HOOKS
+#include "edhoc_test_hooks.h"
+
+int edhoc_test_compute_prk_out(struct edhoc_context *ctx)
+{
+	return compute_prk_out(ctx);
+}
+
+int edhoc_test_compute_new_prk_out(struct edhoc_context *ctx,
+				   const uint8_t *entropy, size_t entropy_len)
+{
+	return compute_new_prk_out(ctx, entropy, entropy_len);
+}
+
+int edhoc_test_compute_prk_exporter(const struct edhoc_context *ctx,
+				    uint8_t *prk_exp, size_t prk_exp_len)
+{
+	return compute_prk_exporter(ctx, prk_exp, prk_exp_len);
+}
+#endif /* LIBEDHOC_TEST_HOOKS */
