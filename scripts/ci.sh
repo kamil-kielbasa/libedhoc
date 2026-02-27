@@ -137,11 +137,14 @@ cmd_coverage() {
     # lcov 2.0 (Ubuntu 24.04) changed --rc syntax and geninfo is much
     # stricter about gcov data from GCC 13+.  Build options that work for
     # both lcov 1.x and 2.x.
+    # NOTE: genhtml accepts a smaller set of --ignore-errors types than
+    # lcov/geninfo, so we keep separate arrays.
     local lcov_ver
     lcov_ver=$(lcov --version 2>&1 | sed -n 's/.*LCOV version \([0-9]*\).*/\1/p')
     lcov_ver="${lcov_ver:-1}"
     local lcov_rc=(--rc lcov_branch_coverage=1)
     local lcov_ignore=()
+    local genhtml_ignore=()
     if [[ "$lcov_ver" -ge 2 ]]; then
         lcov_rc=(--rc branch_coverage=1)
         lcov_ignore=(--ignore-errors mismatch
@@ -152,6 +155,9 @@ cmd_coverage() {
                      --ignore-errors negative
                      --ignore-errors count
                      --ignore-errors source)
+        genhtml_ignore=(--ignore-errors source
+                        --ignore-errors unmapped
+                        --ignore-errors unused)
     fi
 
     lcov --capture --directory . --output-file coverage_raw.info \
@@ -162,7 +168,7 @@ cmd_coverage() {
 
     genhtml coverage.info --output-directory coverage_html \
             --branch-coverage --title "libedhoc code coverage" \
-            "${lcov_ignore[@]}"
+            "${genhtml_ignore[@]}"
 
     echo ""
     echo "=== Coverage Summary ==="
