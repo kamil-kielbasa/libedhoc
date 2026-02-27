@@ -1,0 +1,58 @@
+name: CI / Zephyr
+
+on: [push, pull_request]
+
+jobs:
+  build-zephyr-benchmark:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.13
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          path: libedhoc
+
+      - name: Initialize West workspace
+        run: |
+          west init -l libedhoc
+          west update --narrow -o=--depth=1
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r zephyr/scripts/requirements-base.txt
+
+      - name: Build benchmark for native_sim
+        env:
+          ZEPHYR_TOOLCHAIN_VARIANT: host
+        run: |
+          west build -b native_sim libedhoc/sample/benchmark -p always
+
+      - name: Flash / RAM analysis
+        run: |
+          echo "=== libedhoc flash footprint (from nm) ===" | tee build/flash_report.txt
+          nm --print-size --size-sort --defined-only build/zephyr/zephyr.exe \
+            | grep -i edhoc \
+            | awk '{printf "%6d  %s\n", strtonum("0x"$2), $4}' \
+            | sort -rn \
+            | tee -a build/flash_report.txt
+          echo "---" | tee -a build/flash_report.txt
+          nm --print-size --size-sort --defined-only build/zephyr/zephyr.exe \
+            | grep -i edhoc \
+            | awk '{sum += strtonum("0x"$2)} END {printf "libedhoc total: %d bytes (%.1f KiB)\n", sum, sum/1024}' \
+            | tee -a build/flash_report.txt
+
+      - name: Run benchmark
+        run: |
+          ./build/zephyr/zephyr.exe 2>/dev/null \
+            | sed -n '/^{/,/^}/p' \
+            | tee build/benchmark_timing.json
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zephyr-benchmark-native_sim
+          path: |
+            build/flash_report.txt
+            build/benchmark_timing.json

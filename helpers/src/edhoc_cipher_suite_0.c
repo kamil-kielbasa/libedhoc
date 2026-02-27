@@ -69,21 +69,22 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 	case EDHOC_KT_KEY_AGREEMENT:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_EXPORT);
 		psa_set_key_type(&attr, PSA_KEY_TYPE_RAW_DATA);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(X25519_SHARED_SIZE));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(X25519_SHARED_SIZE));
 		break;
 
 	case EDHOC_KT_SIGNATURE:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_EXPORT);
 		psa_set_key_type(&attr, PSA_KEY_TYPE_RAW_DATA);
-		psa_set_key_bits(&attr,
-				 PSA_BYTES_TO_BITS(ED25519_PRIVATE_KEY_SIZE));
+		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(
+						ED25519_PRIVATE_KEY_SIZE));
 		break;
 
 	case EDHOC_KT_VERIFY:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_EXPORT);
 		psa_set_key_type(&attr, PSA_KEY_TYPE_RAW_DATA);
-		psa_set_key_bits(&attr,
-				 PSA_BYTES_TO_BITS(ED25519_PUBLIC_KEY_SIZE));
+		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(
+						ED25519_PUBLIC_KEY_SIZE));
 		break;
 
 	case EDHOC_KT_EXTRACT:
@@ -91,7 +92,7 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr,
 				      PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(raw_key_len));
+		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(raw_key_len));
 		break;
 
 	case EDHOC_KT_EXPAND:
@@ -99,7 +100,7 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr,
 				      PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_256));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(raw_key_len));
+		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(raw_key_len));
 		break;
 
 	case EDHOC_KT_ENCRYPT:
@@ -108,7 +109,8 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM,
 							       AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
 		break;
 
 	case EDHOC_KT_DECRYPT:
@@ -117,7 +119,8 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM,
 							       AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
 		break;
 
 	default:

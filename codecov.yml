@@ -1,0 +1,23 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  precision: 2
+  round: down
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
+
+ignore:
+  - "externals/**"
+  - "backends/cbor/src/**"
+  - "tests/**"
+  - "sample/**"
+  - "port/**"
+  - "doc/**"
+  - "scripts/**"

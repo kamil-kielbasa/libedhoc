@@ -81,24 +81,34 @@ static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 	mbedtls_mpi_init(&n);
 
 	/* x <= raw_key */
-	MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(&x, raw_key, p_len));
+	MBEDTLS_MPI_CHK(mbedtls_mpi_read_binary(
+		&x, raw_key,
+		p_len)); // NOLINT(bugprone-assignment-in-if-condition)
 
 	/* r = x^2 */
-	MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(&r, &x, &x));
+	MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(
+		&r, &x, &x)); // NOLINT(bugprone-assignment-in-if-condition)
 
 	/* r = x^2 + ad */
 	if (NULL == grp->A.MBEDTLS_PRIVATE(p)) {
 		// Special case where ad is -3
-		MBEDTLS_MPI_CHK(mbedtls_mpi_sub_int(&r, &r, 3));
+		MBEDTLS_MPI_CHK(mbedtls_mpi_sub_int(
+			&r, &r,
+			3)); // NOLINT(bugprone-assignment-in-if-condition)
 	} else {
-		MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(&r, &r, &grp->A));
+		MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(
+			&r, &r,
+			&grp->A)); // NOLINT(bugprone-assignment-in-if-condition)
 	}
 
 	/* r = x^3 + ax */
-	MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(&r, &r, &x));
+	MBEDTLS_MPI_CHK(mbedtls_mpi_mul_mpi(
+		&r, &r, &x)); // NOLINT(bugprone-assignment-in-if-condition)
 
 	/* r = x^3 + ax + b */
-	MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(&r, &r, &grp->B));
+	MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(
+		&r, &r,
+		&grp->B)); // NOLINT(bugprone-assignment-in-if-condition)
 
 	/* 
 	 * Calculate square root of r over finite field P:
@@ -106,18 +116,24 @@ static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 	 */
 
 	/* n = P + 1 */
-	MBEDTLS_MPI_CHK(mbedtls_mpi_add_int(&n, &grp->P, 1));
+	MBEDTLS_MPI_CHK(mbedtls_mpi_add_int(
+		&n, &grp->P, 1)); // NOLINT(bugprone-assignment-in-if-condition)
 
 	/* n = (P + 1) / 4 */
-	MBEDTLS_MPI_CHK(mbedtls_mpi_shift_r(&n, 2));
+	MBEDTLS_MPI_CHK(mbedtls_mpi_shift_r(
+		&n, 2)); // NOLINT(bugprone-assignment-in-if-condition)
 
 	/* r ^ ((P + 1) / 4) (mod p) */
-	MBEDTLS_MPI_CHK(mbedtls_mpi_exp_mod(&r, &r, &n, &grp->P, NULL));
+	MBEDTLS_MPI_CHK(mbedtls_mpi_exp_mod(
+		&r, &r, &n, &grp->P,
+		NULL)); // NOLINT(bugprone-assignment-in-if-condition)
 
 	/* Select solution that has the correct "sign" (equals odd/even solution in finite group) */
 	if ((raw_key[0] == 0x03) != mbedtls_mpi_get_bit(&r, 0)) {
 		/* r = p - r */
-		MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(&r, &grp->P, &r));
+		MBEDTLS_MPI_CHK(mbedtls_mpi_sub_mpi(
+			&r, &grp->P,
+			&r)); // NOLINT(bugprone-assignment-in-if-condition)
 	}
 
 	/* y => decomp_key */
@@ -155,7 +171,8 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr, PSA_ALG_ECDH);
 		psa_set_key_type(&attr, PSA_KEY_TYPE_ECC_KEY_PAIR(
 						PSA_ECC_FAMILY_SECP_R1));
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_KEY_AGREEMENT:
@@ -163,7 +180,8 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr, PSA_ALG_ECDH);
 		psa_set_key_type(&attr, PSA_KEY_TYPE_ECC_KEY_PAIR(
 						PSA_ECC_FAMILY_SECP_R1));
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_SIGNATURE:
@@ -172,7 +190,8 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_ECC_KEY_PAIR(
 						PSA_ECC_FAMILY_SECP_R1));
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_VERIFY:
@@ -182,7 +201,8 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_ECC_PUBLIC_KEY(
 						PSA_ECC_FAMILY_SECP_R1));
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_EXTRACT:
@@ -190,7 +210,7 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr,
 				      PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(raw_key_len));
+		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(raw_key_len));
 		break;
 
 	case EDHOC_KT_EXPAND:
@@ -198,7 +218,7 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 		psa_set_key_algorithm(&attr,
 				      PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_256));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(raw_key_len));
+		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(raw_key_len));
 		break;
 
 	case EDHOC_KT_ENCRYPT:
@@ -207,7 +227,8 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM,
 							       AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
 		break;
 
 	case EDHOC_KT_DECRYPT:
@@ -216,7 +237,8 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM,
 							       AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
-		psa_set_key_bits(&attr, PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
+		psa_set_key_bits(&attr,
+				 (size_t)PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
 		break;
 
 	default:

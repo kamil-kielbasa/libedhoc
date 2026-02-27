@@ -10,7 +10,7 @@ Welcome to the libedhoc documentation!
    api
    values
    configuration
-   module_tests
+   testing
 
 .. toctree::
    :maxdepth: 2
@@ -35,8 +35,8 @@ Documentation
 :doc:`configuration`
   Library configuration options and settings.
 
-:doc:`module_tests`
-  Module test scenarios and validation documentation.
+:doc:`testing`
+  Testing infrastructure, architecture, and guides.
 
 References
 ----------

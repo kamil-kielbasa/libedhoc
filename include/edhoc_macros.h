@@ -35,13 +35,13 @@
 #define VLA_SIZEOF(name) sizeof(name)
 #endif
 
-#define VLA_SIZE(x) (VLA_SIZEOF(x) / sizeof(x[0]))
+#define VLA_SIZE(x) (VLA_SIZEOF(x) / sizeof((x)[0]))
 
 /**
  * \brief Macro for calculating arrays length.
  */
 #ifndef ARRAY_SIZE
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif /* ARRAY_SIZE */
 
 /**

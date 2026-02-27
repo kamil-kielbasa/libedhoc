@@ -175,6 +175,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	switch (ctx->cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
 		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_int_c;
+		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 		cbor_enc_msg_1.message_1_C_I_int = ctx->cid.int_value;
 		break;
 

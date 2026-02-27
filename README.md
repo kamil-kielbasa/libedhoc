@@ -1,7 +1,8 @@
-[![Linux CI (Build & Test)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-and-tests.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-and-tests.yml)
-[![Zephyr Sample CI (Build)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-zephyr-sample.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/build-zephyr-sample.yml)
-[![Yocto Sandbox CI (Build)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/test-sandbox-build.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/test-sandbox-build.yml)
-[![Docs CI (Build & Publish)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/documentation.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/documentation.yml)
+[![CI / Linux](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-linux.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-linux.yml)
+[![CI / Zephyr](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-zephyr.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-zephyr.yml)
+[![CI / Sandbox](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-sandbox.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-sandbox.yml)
+[![CI / Documentation](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-docs.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-docs.yml)
+[![codecov](https://codecov.io/gh/kamil-kielbasa/libedhoc/branch/main/graph/badge.svg)](https://codecov.io/gh/kamil-kielbasa/libedhoc)
 
 # libedhoc: A C implementation of the Ephemeral Diffie-Hellman Over COSE (RFC 9528)
 
@@ -120,11 +121,61 @@ make
 ctest
 ```
 
+### Local Reproducibility
+
+Every CI job can be reproduced locally using the unified `scripts/ci.sh` script:
+
+| CI Job | Local Command |
+|--------|---------------|
+| GCC + Coverage | `./scripts/ci.sh coverage` |
+| Clang | `./scripts/ci.sh build --clang && ./scripts/ci.sh test` |
+| Sanitizers (asan-ubsan) | `./scripts/ci.sh sanitizers asan-ubsan` |
+| Valgrind | `./scripts/ci.sh build --gcc && ./scripts/ci.sh valgrind` |
+| Static Analysis | `./scripts/ci.sh cppcheck && ./scripts/ci.sh clang-tidy` |
+| Fuzz | `./scripts/ci.sh fuzz 60` |
+| Full pipeline | `./scripts/ci.sh all` |
+| Zephyr benchmark | `west build -b native_sim sample/benchmark -p always && ./build/zephyr/zephyr.exe` |
+
 ### Building Documentation
 
 ```bash
 sphinx-build doc build/doc
 ```
+
+## Memory Footprint
+
+The CI builds a Zephyr benchmark app (full handshake) for `native_sim` and
+analyses the final linked binary — check the
+[CI workflow artifacts](../../actions/workflows/ci-zephyr.yml) for the latest
+breakdown. Library flash footprint is **~20 KiB** (cipher suite 2, P-256/ES256).
+
+> Static RAM (data + bss) is 0 bytes — all state lives on the stack via VLA.
+
+To measure locally (requires west + Zephyr SDK):
+
+```bash
+west build -b native_sim sample/benchmark -p always
+
+# Per-function breakdown:
+nm --print-size --size-sort --defined-only build/zephyr/zephyr.exe \
+  | grep -i edhoc | awk '{printf "%6d  %s\n", strtonum("0x"$2), $4}' | sort -rn
+
+# Total flash (single number):
+nm --print-size --size-sort --defined-only build/zephyr/zephyr.exe \
+  | grep -i edhoc \
+  | awk '{sum += strtonum("0x"$2)} END {printf "libedhoc flash: %d bytes (%.1f KiB)\n", sum, sum/1024}'
+```
+
+## Test Suite
+
+| Category | Count | Description |
+|----------|-------|-------------|
+| Unit tests | ~450 | API, crypto, exporters, error messages, helpers, internals |
+| Integration tests | ~180 | Full handshakes (x5chain, x5t), RFC 9529 vectors, negotiation |
+| Fuzz targets | 5 | Message 1–4 processing + error message |
+| **Total** | **635+** | **100% function coverage, 92.8% line coverage** |
+
+Coverage measured with gcov/lcov. See the [Codecov dashboard](https://codecov.io/gh/kamil-kielbasa/libedhoc) for per-file details.
 
 ## Documentation
 

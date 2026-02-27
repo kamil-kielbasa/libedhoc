@@ -7,6 +7,10 @@ option(LIBEDHOC_ENABLE_MODULE_TESTS "Enable building module tests" OFF)
 option(LIBEDHOC_BUILD_COMPILER_GCC "Enable compiling library with gcc" OFF)
 option(LIBEDHOC_BUILD_COMPILER_CLANG "Enable compiling library with clang" OFF)
 option(LIBEDHOC_BUILD_EXTERNAL_DEPS "Enable building external dependencies" ON)
+option(LIBEDHOC_ENABLE_COVERAGE "Enable code coverage instrumentation (gcov)" OFF)
+option(LIBEDHOC_ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer" OFF)
+option(LIBEDHOC_ENABLE_FUZZING "Enable libFuzzer fuzz targets (requires Clang)" OFF)
+
 
 if (LIBEDHOC_BUILD_COMPILER_GCC AND LIBEDHOC_BUILD_COMPILER_CLANG)
     message(FATAL_ERROR "One compiler option must be chosen!")
@@ -34,6 +38,11 @@ add_subdirectory(library)
 if (LIBEDHOC_ENABLE_MODULE_TESTS)
     add_subdirectory(tests)
 endif()
+
+if (LIBEDHOC_ENABLE_FUZZING)
+    add_subdirectory(tests/fuzz)
+endif()
+
 
 if (NOT TARGET zephyr_interface AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     # Installation

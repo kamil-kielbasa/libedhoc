@@ -1,0 +1,18 @@
+---
+Checks: >
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  misc-*,
+  performance-*,
+  readability-implicit-bool-conversion,
+  -bugprone-easily-swappable-parameters,
+  -cert-dcl37-c,
+  -cert-dcl51-c,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+
+WarningsAsErrors: ''
+
+HeaderFilterRegex: '/(include/edhoc|library/|helpers/|port/|backends/).*\.h$'
+
+FormatStyle: none

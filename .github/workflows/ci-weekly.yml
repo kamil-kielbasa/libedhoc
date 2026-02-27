@@ -1,0 +1,44 @@
+name: CI / Weekly
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # Every Monday at 03:00 UTC
+  workflow_dispatch:       # Allow manual trigger
+
+jobs:
+  full-pipeline:
+    name: Full CI pipeline
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lcov clang clang-tidy cppcheck \
+                                  ninja-build valgrind
+
+      - name: GCC + Coverage
+        run: bash scripts/ci.sh coverage
+
+      - name: Clang build + test
+        run: |
+          bash scripts/ci.sh build --clang
+          bash scripts/ci.sh test
+
+      - name: ASan + UBSan
+        run: bash scripts/ci.sh sanitizers asan-ubsan
+
+      - name: Valgrind
+        run: bash scripts/ci.sh valgrind
+
+      - name: Cppcheck
+        run: bash scripts/ci.sh cppcheck
+
+      - name: Clang-tidy
+        run: bash scripts/ci.sh clang-tidy
+
+      - name: Fuzz (300s per target)
+        run: bash scripts/ci.sh fuzz 300

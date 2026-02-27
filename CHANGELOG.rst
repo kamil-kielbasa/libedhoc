@@ -1,3 +1,62 @@
+Version 1.5.0
+-------------
+
+:Date: February 27, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI/CD pipeline overhaul:
+
+  * Renamed and unified GitHub Actions workflow files (``ci-linux.yml``, ``ci-zephyr.yml``, ``ci-sandbox.yml``, ``ci-docs.yml``).
+  * Consolidated all CI jobs into a single ``scripts/ci.sh`` entry point.
+  * Removed redundant standalone scripts (``build-linux-gcc.sh``, ``build-linux-clang.sh``, ``coverage.sh``, ``verify_cppcheck.sh``, ``format.sh``).
+  * Added weekly scheduled CI workflow (``ci-weekly.yml``) running all jobs including extended fuzzing.
+  * Split sanitizer CI jobs: ASan+UBSan (GCC) runs separately.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Compiler flags hardening:
+
+  * Unified GCC and Clang warning flags into a shared ``LIBEDHOC_COMMON_WARNINGS`` set (~25 flags).
+  * Added GCC-specific flags: ``-Wformat-overflow=2``, ``-Wformat-truncation=2``, ``-Wswitch-enum``, ``-Wjump-misses-init``, ``-Wduplicated-cond``, ``-Wduplicated-branches``, ``-Wlogical-op``.
+  * Added ``-fstack-protector-strong`` (disabled under sanitizers).
+  * Made ``-Wno-unsafe-buffer-usage`` conditional on Clang 16+ via ``check_c_compiler_flag``.
+  * Removed hardcoded ``-g3 -O0`` (``CMAKE_BUILD_TYPE`` controls optimization).
+  * Applied same strict warning set to test targets with appropriate suppressions.
+  * Fixed ``-gdwarf-4`` for Valgrind compatibility with GCC 11+.
+  * Ensured ``-DCMAKE_C_COMPILER=clang`` is explicitly set for all Clang builds.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : clang-tidy clean:
+
+  * Fixed all 538 clang-tidy warnings (509 ``cert-err33-c``, 29 ``bugprone-*``).
+  * Added ``(void)`` casts to ``fflush``/``fprintf``/``snprintf`` in log macros.
+  * Fixed ``bugprone-macro-parentheses`` in ``ARRAY_SIZE``/``VLA_SIZE``.
+  * Suppressed intentional ``bugprone-signed-char-misuse`` for EDHOC connection ID conversions.
+  * Changed clang-tidy to use Clang compile database (avoids GCC-only flag errors).
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Zephyr benchmark application (``sample/benchmark/``):
+
+  * Full EDHOC handshake benchmark for Zephyr ``native_sim`` (cipher suite 2, P-256/ES256).
+  * Per-phase handshake timing using POSIX ``clock_gettime`` with JSON output.
+  * Library flash footprint analysis via ``nm`` on the final linked binary (~20 KiB).
+  * PSA crypto and mbedTLS PK module enabled via Kconfig and ``user-mbedtls.h`` overlay.
+  * NSI two-stage linking solved by providing mbedTLS archives to ``RUNNER_LINK_LIBRARIES``.
+  * Removed old x86-only benchmark binaries (``tests/benchmark/``) and ``./scripts/ci.sh benchmark``.
+  * Removed old minimal Zephyr sample (``sample/src/main.c``); only the benchmark app remains.
+  * CI uploads ``flash_report.txt`` and ``benchmark_timing.json`` as artifacts.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Test refactoring and audit:
+
+  * Extracted shared test helpers (``test_cipher_suites``, ``test_credentials``, ``test_ead``).
+  * Removed duplicated cipher suite definitions and callback stubs across unit, integration, and fuzz tests.
+  * Added missing negative test scenarios for ``edhoc_export_oscore_session`` and ``edhoc_message_1_compose/process``.
+  * Consolidated fuzz targets from ``fuzz/`` into ``tests/fuzz/``.
+  * Fixed GCC extension usage (non-constant struct initializers) for Clang compatibility.
+  * Fixed out-of-bounds write in ``test_internals.c`` (``alg_bstr`` array).
+  * Fixed ``-Wformat-truncation`` in log backend timestamp formatting.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Documentation updates:
+
+  * Updated test documentation with local reproducibility table and benchmark section.
+  * Added compiler selection table explaining GCC vs Clang usage per task.
+  * Updated memory footprint and performance benchmark tables in README to use Zephyr ``native_sim`` data.
+
 Version 1.4.2
 -------------
 

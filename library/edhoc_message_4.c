@@ -704,6 +704,7 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	/* NOLINTNEXTLINE(clang-analyzer-core.VLASize) */
 	VLA_ALLOC(uint8_t, plaintext, plaintext_len);
 	memset(plaintext, 0, VLA_SIZEOF(plaintext));
 
@@ -912,3 +913,47 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
+
+/* Test hooks ------------------------------------------------------------- */
+
+#ifdef LIBEDHOC_TEST_HOOKS
+#include "edhoc_test_hooks.h"
+
+int edhoc_test_compute_plaintext_4_len(const struct edhoc_context *ctx,
+				       size_t *ptxt_4_len)
+{
+	return compute_plaintext_4_len(ctx, ptxt_4_len);
+}
+
+int edhoc_test_compute_key_iv_aad_4(const struct edhoc_context *ctx,
+				    uint8_t *key, size_t key_len, uint8_t *iv,
+				    size_t iv_len, uint8_t *aad, size_t aad_len)
+{
+	return compute_key_iv_aad(ctx, key, key_len, iv, iv_len, aad, aad_len);
+}
+
+int edhoc_test_prepare_plaintext_4(const struct edhoc_context *ctx,
+				   uint8_t *ptxt, size_t ptxt_size,
+				   size_t *ptxt_len)
+{
+	return prepare_plaintext_4(ctx, ptxt, ptxt_size, ptxt_len);
+}
+
+int edhoc_test_gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
+			 size_t msg_4_size, size_t *msg_4_len)
+{
+	return gen_msg_4(ctxt, ctxt_len, msg_4, msg_4_size, msg_4_len);
+}
+
+int edhoc_test_parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
+			   const uint8_t **ctxt_4, size_t *ctxt_4_len)
+{
+	return parse_msg_4(msg_4, msg_4_len, ctxt_4, ctxt_4_len);
+}
+
+int edhoc_test_parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
+				 size_t ptxt_len)
+{
+	return parse_plaintext(ctx, ptxt, ptxt_len);
+}
+#endif /* LIBEDHOC_TEST_HOOKS */
