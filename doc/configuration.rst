@@ -16,7 +16,7 @@ Kconfig library configuration
 
 :C:`LIBEDHOC_MAX_NR_OF_CIPHER_SUITES`
     | Maximum number of cipher suites in chain for negotiation.
-    | Values bigger than `3` requires regeneration of CBOR backend.
+    | Values greater than ``3`` require regeneration of the CBOR backend.
 
 :C:`LIBEDHOC_MAX_LEN_OF_CONN_ID`
     | Maximum length of connection identifier in bytes.
@@ -29,11 +29,11 @@ Kconfig library configuration
 
 :C:`LIBEDHOC_MAX_NR_OF_EAD_TOKENS`
     | Maximum number of EAD (External Authorization Data) tokens.
-    | Values bigger than `3` requires regeneration of CBOR backend.
+    | Values greater than ``3`` require regeneration of the CBOR backend.
 
 :C:`LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN`
     | Maximum number of certificates in X.509 chain.
-    | Values bigger than `3` requires regeneration of CBOR backend.
+    | Values greater than ``3`` require regeneration of the CBOR backend.
 
 :C:`LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID`
     | Maximum length of authentication credentials key identifier in bytes.
@@ -44,8 +44,8 @@ Kconfig library configuration
 Linux target
 ************
 
-| All of above library configuration parameters must be passed for building process.
-| Please add prefix :C:`CONFIG_`.
+| All configuration parameters listed above must be passed as compiler defines during the build.
+| Each must be prefixed with :C:`CONFIG_`.
 
 Zephyr target
 *************
@@ -63,7 +63,7 @@ Zephyr target
 
 .. code-block:: bash
 
-   west build -b native_sim libedhoc/sample
+   west build -b native_sim libedhoc/sample/benchmark
 
 | All Kconfig options are automatically prefixed with :C:`CONFIG_` by the Zephyr build system.
 | Dependencies (zcbor, mbedtls) are automatically pulled via the west manifest.

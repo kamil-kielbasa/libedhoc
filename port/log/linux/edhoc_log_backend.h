@@ -21,12 +21,25 @@
 
 /* Defines ----------------------------------------------------------------- */
 
+/** ANSI escape: red (used for error level). */
 #define ANSI_COLOR_RED "\x1b[31m"
+/** ANSI escape: yellow (used for warning level). */
 #define ANSI_COLOR_YELLOW "\x1b[33m"
+/** ANSI escape: green (used for info level). */
 #define ANSI_COLOR_GREEN "\x1b[32m"
+/** ANSI escape: cyan (used for debug level). */
 #define ANSI_COLOR_CYAN "\x1b[36m"
+/** ANSI escape: reset terminal color. */
 #define ANSI_COLOR_RESET "\x1b[0m"
 
+/**
+ * \brief Format current wall-clock time into a timestamp string.
+ *
+ * Writes "[HH:MM:SS.mmm,uuu]" into \p buffer using gettimeofday().
+ *
+ * \param[out] buffer   Destination buffer (at least 22 bytes).
+ * \param      size     Size of \p buffer in bytes.
+ */
 static inline void edhoc_log_get_timestamp(char *buffer, size_t size)
 {
 	struct timeval tv;
@@ -100,6 +113,19 @@ static inline void edhoc_log_get_timestamp(char *buffer, size_t size)
 		(void)fflush(stdout);                                        \
 	} while (0)
 
+/**
+ * \brief Print a hex dump of a buffer to stdout.
+ *
+ * Formats \p data as rows of 16 bytes (hex + ASCII) prefixed with a
+ * colored severity tag and optional function name.
+ *
+ * \param[in] level     Severity tag string (e.g. "<inf>").
+ * \param[in] color     ANSI color escape sequence.
+ * \param[in] data      Pointer to the buffer to dump.
+ * \param     length    Number of bytes in \p data.
+ * \param[in] text      Descriptive text printed before the hex dump.
+ * \param[in] func      Calling function name, or NULL to omit.
+ */
 static inline void edhoc_log_hexdump_impl(const char *level, const char *color,
 					  const uint8_t *data, size_t length,
 					  const char *text, const char *func)

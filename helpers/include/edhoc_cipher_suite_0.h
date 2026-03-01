@@ -1,7 +1,7 @@
 /**
  * \file    edhoc_cipher_suite_0.h
  * \author  Kamil Kielbasa
- * \brief   Cipher suite 0 conatins:
+ * \brief   Cipher suite 0 contains:
  *            - AEAD algorithm                      = AES-CCM-16-64-128
  *            - hash algorithm                      = SHA-256
  *            - MAC length in bytes (Static DH)     = 8
@@ -29,7 +29,7 @@
 #include <stddef.h>
 
 /* Module defines ---------------------------------------------------------- */
-/* Module types and type definitiones -------------------------------------- */
+/* Module types and type definitions -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
@@ -221,9 +221,9 @@ int edhoc_cipher_suite_0_verify(void *user_context, const void *key_id,
  * \param[in] key_id                   Key identifier of the input keying material.
  * \param[in] salt                     Optional salt value (can be NULL).
  * \param salt_len                     Length of the \p salt buffer in bytes.
- * \param[out] psuedo_random_key       Buffer where the PRK will be written.
- * \param psuedo_random_key_size       Size of the \p psuedo_random_key buffer in bytes.
- * \param[out] psuedo_random_key_length On success, length of the generated PRK.
+ * \param[out] pseudo_random_key       Buffer where the PRK will be written.
+ * \param pseudo_random_key_size       Size of the \p pseudo_random_key buffer in bytes.
+ * \param[out] pseudo_random_key_length On success, length of the generated PRK.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
@@ -236,9 +236,9 @@ int edhoc_cipher_suite_0_verify(void *user_context, const void *key_id,
  */
 int edhoc_cipher_suite_0_extract(void *user_context, const void *key_id,
 				 const uint8_t *salt, size_t salt_len,
-				 uint8_t *psuedo_random_key,
-				 size_t psuedo_random_key_size,
-				 size_t *psuedo_random_key_length);
+				 uint8_t *pseudo_random_key,
+				 size_t pseudo_random_key_size,
+				 size_t *pseudo_random_key_length);
 
 /** 
  * \brief HKDF expand using SHA-256.

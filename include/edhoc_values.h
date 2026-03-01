@@ -33,7 +33,7 @@
 /** The requested operation or a parameter is not supported by this implementation. */
 #define EDHOC_ERROR_NOT_SUPPORTED ((int)-101)
 
-/** The requested action is denied by a EDHOC specification. */
+/** The requested action is denied by the EDHOC specification. */
 #define EDHOC_ERROR_NOT_PERMITTED ((int)-102)
 
 /** An output buffer is too small. */
@@ -45,13 +45,13 @@
 /** The parameters passed to the function are invalid. */
 #define EDHOC_ERROR_INVALID_ARGUMENT ((int)-105)
 
-/** There was a CBOR failure inside implementation. */
+/** CBOR encoding or decoding failed. */
 #define EDHOC_ERROR_CBOR_FAILURE ((int)-110)
 
-/** There was a cryptographic operation failure inside implementation. */
+/** A cryptographic operation failed. */
 #define EDHOC_ERROR_CRYPTO_FAILURE ((int)-111)
 
-/** There was a credentials failure inside implementation. */
+/** Authentication credentials fetch or verify callback failed. */
 #define EDHOC_ERROR_CREDENTIALS_FAILURE ((int)-112)
 
 /** External authorization data compose failed. */
@@ -60,37 +60,37 @@
 /** External authorization data process failed. */
 #define EDHOC_ERROR_EAD_PROCESS_FAILURE ((int)-121)
 
-/** EDHOC processing of message 1 failure was detected. */
+/** EDHOC message 1 processing failed. */
 #define EDHOC_ERROR_MSG_1_PROCESS_FAILURE ((int)-130)
 
-/** EDHOC processing of message 2 failure was detected. */
+/** EDHOC message 2 processing failed. */
 #define EDHOC_ERROR_MSG_2_PROCESS_FAILURE ((int)-131)
 
-/** EDHOC processing of message 3 failure was detected. */
+/** EDHOC message 3 processing failed. */
 #define EDHOC_ERROR_MSG_3_PROCESS_FAILURE ((int)-132)
 
-/** EDHOC processing of message 4 failure was detected. */
+/** EDHOC message 4 processing failed. */
 #define EDHOC_ERROR_MSG_4_PROCESS_FAILURE ((int)-133)
 
-/** EDHOC ephemeral Diffie-Hellman key agreement failure was detected. */
+/** Ephemeral Diffie-Hellman key generation or agreement failed. */
 #define EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE ((int)-134)
 
-/** EDHOC computing of transcript hash failure was detected. */
+/** Transcript hash computation failed. */
 #define EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE ((int)-135)
 
-/** EDHOC computing of pseudorandom key failure was detected. */
+/** Pseudorandom key derivation failed. */
 #define EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE ((int)-136)
 
-/** EDHOC MAC_2 is incorrect. */
+/** MAC_2 verification failed. */
 #define EDHOC_ERROR_INVALID_MAC_2 ((int)-137)
 
-/** EDHOC Signature_2 or MAC_2 is incorrect. */
+/** Signature_or_MAC_2 verification failed. */
 #define EDHOC_ERROR_INVALID_SIGN_OR_MAC_2 ((int)-138)
 
-/** EDHOC MAC_3 is incorrect. */
+/** MAC_3 verification failed. */
 #define EDHOC_ERROR_INVALID_MAC_3 ((int)-139)
 
-/** EDHOC Signature_3 or MAC_3 is incorrect. */
+/** Signature_or_MAC_3 verification failed. */
 #define EDHOC_ERROR_INVALID_SIGN_OR_MAC_3 ((int)-140)
 
 /**@}*/
@@ -127,7 +127,11 @@
  */
 
 /** KEYSTREAM_2 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2 ((size_t)0)
+#define EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2 ((size_t)0)
+
+/** \deprecated Use #EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2 instead. */
+#define EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2 \
+	EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2
 
 /** SALT_3e2m from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
 #define EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M ((size_t)1)

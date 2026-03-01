@@ -42,7 +42,7 @@ Naming Convention
 **Test groups by tier:**
 
 Unit tests:
-  - ``crypto_suite0`` — EDHOC cipher suite 0 (ECDSA, ECDH, HKDF, AEAD, HASH)
+  - ``crypto_suite0`` — EDHOC cipher suite 0 (EdDSA, ECDH, HKDF, AEAD, HASH)
   - ``crypto_suite2`` — EDHOC cipher suite 2 (ECDSA, ECDH, HKDF, AEAD, HASH)
   - ``api`` — EDHOC public API (context init, methods, cipher suites, bindings)
   - ``api_negative`` — Negative API tests (null args, invalid state, error paths)
@@ -274,7 +274,7 @@ Unit Tests
      - Negative tests: null pointers, invalid state, error paths for all API functions
    * - :file:`tests/unit/test_crypto_suite0.c`
      - ``crypto_suite0``
-     - Cipher suite 0: ECDSA, ECDH, HKDF, AEAD, HASH
+     - Cipher suite 0: EdDSA, ECDH, HKDF, AEAD, HASH
    * - :file:`tests/unit/test_crypto_suite2.c`
      - ``crypto_suite2``
      - Cipher suite 2: ECDSA, ECDH, HKDF, AEAD, HASH
@@ -386,11 +386,3 @@ The GitHub Actions workflow :file:`.github/workflows/ci-linux.yml` runs:
 The unified :file:`scripts/ci.sh` script can replicate most of this locally with
 ``./scripts/ci.sh all``.
 
-References
-----------
-
-- `RFC 9528`_ — Ephemeral Diffie-Hellman Over COSE (EDHOC)
-- `RFC 9529`_ — Test Vectors for EDHOC
-
-.. _RFC 9528: https://datatracker.ietf.org/doc/html/rfc9528
-.. _RFC 9529: https://datatracker.ietf.org/doc/html/rfc9529

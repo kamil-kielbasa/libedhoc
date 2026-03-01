@@ -34,7 +34,7 @@
 
 /* Types and type definitions ---------------------------------------------- */
 
-/** \defgroup edhoc-interface-credentials EDHOC interface credentials
+/** \defgroup edhoc-interface-credentials EDHOC authentication credentials interface
  * @{
  */
 
@@ -51,7 +51,7 @@ enum edhoc_encode_type {
 /**
  * \brief Supported IANA COSE header labels.
  *
- * \ref https://www.iana.org/assignments/cose/cose.xhtml
+ * \see https://www.iana.org/assignments/cose/cose.xhtml
  */
 enum edhoc_cose_header {
 	/** Any authentication credentials. */
@@ -69,8 +69,8 @@ enum edhoc_cose_header {
  *
  * \section fetch-kid For fetch callback we need to fill:
  * - any type of credentials:           \p cred and \p cred_len.
- * - is credentials cborised:           \p cred_is_cbor.
- * - encoding type of key identifer:    \p encode_type.
+ * - are credentials CBOR-encoded:      \p cred_is_cbor.
+ * - encoding type of key identifier:    \p encode_type.
  * - key identifier:                    \p key_id_int or
  *                                      \p key_id_bstr and \p key_id_bstr_length.
  *
@@ -80,25 +80,24 @@ enum edhoc_cose_header {
  *   \p key_id_bstr & \p key_id_bstr_length.
  *
  * If key id has been found in local storage, reference for \p cred and
- * \p cred_len needs to written for further EDHOC processing.
+ * \p cred_len needs to be written for further EDHOC processing.
  */
 struct edhoc_auth_cred_key_id {
-	/** Credentials buffor. */
+	/** Credentials buffer. */
 	const uint8_t *cred;
 	/** Size of the \p cred buffer in bytes. */
 	size_t cred_len;
-	/** Is credentials cborised? E.g. CWT, CCS. */
+	/** Are credentials CBOR-encoded? E.g. CWT, CCS. */
 	bool cred_is_cbor;
 
-	/** Encoding type of key identifier. 
-         *
-         * It must follow representation of byte string identifiers described in RFC 9528: 3.3.2. */
+	/** Encoding type of key identifier.
+	 *  It must follow representation of byte string identifiers described in RFC 9528: 3.3.2. */
 	enum edhoc_encode_type encode_type;
 
-	/** Key identifier as cbor integer. */
+	/** Key identifier as CBOR integer. */
 	int32_t key_id_int;
 
-	/** Key identifier as cbor byte string buffer. */
+	/** Key identifier as CBOR byte string buffer. */
 	uint8_t key_id_bstr[CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID + 1];
 	/** Size of the \p key_id_bstr buffer in bytes. */
 	size_t key_id_bstr_length;
@@ -143,7 +142,7 @@ struct edhoc_auth_cred_x509_chain {
  *   \p alg_bstr & \p alg_bstr_length.
  *
  * If certificate fingerprint has been found in local storage, reference for
- * \p cert and \p cert_len needs to written for further EDHOC processing.
+ * \p cert and \p cert_len needs to be written for further EDHOC processing.
  */
 struct edhoc_auth_cred_x509_hash {
 	/** Certificate buffer. */
@@ -159,10 +158,10 @@ struct edhoc_auth_cred_x509_hash {
 	/** Encoding type of certificate fingerprint algorithm. */
 	enum edhoc_encode_type encode_type;
 
-	/** Fingerprint algorithm as cbor integer. */
+	/** Fingerprint algorithm as CBOR integer. */
 	int32_t alg_int;
 
-	/** Fingerprint algorithm as cbor byte string buffer. */
+	/** Fingerprint algorithm as CBOR byte string buffer. */
 	uint8_t alg_bstr[CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG + 1];
 	/** Size of the \p alg_bstr buffer in bytes. */
 	size_t alg_bstr_length;
@@ -221,25 +220,36 @@ struct edhoc_auth_creds {
 };
 
 /**
- * \brief Authentication credentials fetch callback.
+ * \brief Fetch local authentication credentials.
+ *
+ * Called by the library to obtain the local party's authentication
+ * credentials (keys, certificates) for composing EDHOC messages.
  *
  * \param[in] user_context              User context.
- * \param[out] credentials              Authentication credentials handle.
+ * \param[out] credentials              Authentication credentials to populate.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_credentials_fetch_t)(void *user_context,
 					 struct edhoc_auth_creds *credentials);
 
 /**
- * \brief Authentication credentials verify callback.
+ * \brief Verify peer authentication credentials.
+ *
+ * Called by the library to let the application verify the peer's
+ * authentication credentials (e.g., certificate chain validation,
+ * revocation checks) and provide the peer's public key.
  *
  * \param[in] user_context              User context.
- * \param[in,out] credentials           Peer authentication credentials handle.
- * \param[out] public_key_reference     Pointer address where the public key address is to be written.
+ * \param[in,out] credentials           Peer authentication credentials to verify.
+ * \param[out] public_key_reference     On success, set to point to the peer's public key.
  * \param[out] public_key_length        On success, the number of bytes that make up the public key.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_credentials_verify_t)(void *user_context,
 					  struct edhoc_auth_creds *credentials,

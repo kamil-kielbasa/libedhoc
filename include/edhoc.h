@@ -37,7 +37,7 @@
 #define EDHOC_API_VERSION_MAJOR 1
 
 /** The minor version of this implementation of the EDHOC API. */
-#define EDHOC_API_VERSION_MINOR 4
+#define EDHOC_API_VERSION_MINOR 6
 
 /**@}*/
 
@@ -58,7 +58,7 @@
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Input parameter is recognized as invalid.
+ *         Input parameter is invalid.
  */
 int edhoc_context_init(struct edhoc_context *edhoc_context);
 
@@ -70,7 +70,7 @@ int edhoc_context_init(struct edhoc_context *edhoc_context);
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Input parameter is recognized as invalid.
+ *         Input parameter is invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -79,21 +79,21 @@ int edhoc_context_deinit(struct edhoc_context *edhoc_context);
 /** 
  * \brief Set EDHOC methods.
  *
- * According to RFC 9528: 3.2. Method.  It is required to set at least one method 
+ * According to RFC 9528: 3.2. Method. At least one method must be set,
  * but no more than \p EDHOC_METHOD_MAX.
  * 
- * Depends on processing side:
- * - Initiator will always read first value (method[0]) in message 1 compose.
- * - Responder will iterator over all method and try to match in message 1 process.
+ * Behavior depends on the role:
+ * - Initiator always uses the first value (method[0]) when composing message 1.
+ * - Responder iterates over all methods to find a match when processing message 1.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] method                    EDHOC method.
- * \param method_length			Number of the \p method.
+ * \param method_length			Number of entries in the \p method array.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -105,12 +105,12 @@ int edhoc_set_methods(struct edhoc_context *edhoc_context,
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] cipher_suite              EDHOC cipher suites.
- * \param cipher_suite_length           Number of the \p cipher_suite.
+ * \param cipher_suite_length           Number of entries in the \p cipher_suite array.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -127,7 +127,7 @@ int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -143,7 +143,7 @@ int edhoc_set_connection_id(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -159,7 +159,7 @@ int edhoc_set_user_context(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -175,7 +175,7 @@ int edhoc_bind_ead(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -191,7 +191,7 @@ int edhoc_bind_keys(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -207,7 +207,7 @@ int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -231,19 +231,21 @@ int edhoc_bind_credentials(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
+ * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
- *         Ephemeral Diffie-Hellman key pair or agreement failure.
+ *         Ephemeral Diffie-Hellman operation failed.
  * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         External authorization data compose failure.
+ *         EAD compose callback failed.
  */
 int edhoc_message_1_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_1, size_t message_1_size,
@@ -254,26 +256,26 @@ int edhoc_message_1_compose(struct edhoc_context *edhoc_context,
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_1                 Buffer containing the message 1.
- * \param message_1_length              Size of the \p message_1 buffer in bytes.
+ * \param message_1_length              Length of the \p message_1 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_MSG_1_PROCESS_FAILURE
- *         Error on EDHOC layer during processing. 
+ *         EDHOC message processing failed.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR decoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         External authorization data process failure.
+ *         EAD process callback failed.
  */
 int edhoc_message_1_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_1, size_t message_1_length);
@@ -289,27 +291,27 @@ int edhoc_message_1_process(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Computation of transcript hash failure.
+ *         Transcript hash computation failed.
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Computation of pseudorandom key failure.
+ *         Pseudorandom key derivation failed.
  * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
- *         Ephemeral Diffie-Hellman key pair or agreement failure.
+ *         Ephemeral Diffie-Hellman operation failed.
  * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials fetch/verify failure.
+ *         Authentication credentials operation failed.
  * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         External authorization data compose failure.
+ *         EAD compose callback failed.
  */
 int edhoc_message_2_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_2, size_t message_2_size,
@@ -320,38 +322,38 @@ int edhoc_message_2_compose(struct edhoc_context *edhoc_context,
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_2                 Buffer containing the message 2.
- * \param message_2_length              Size of the \p message_2 buffer in bytes.
+ * \param message_2_length              Length of the \p message_2 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_MSG_2_PROCESS_FAILURE
- *         Error on EDHOC layer during processing. 
+ *         EDHOC message processing failed.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR decoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Computation of transcript hash failure.
+ *         Transcript hash computation failed.
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Computation of pseudorandom key failure.
+ *         Pseudorandom key derivation failed.
  * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
- *         Ephemeral Diffie-Hellman key pair or agreement failure.
+ *         Ephemeral Diffie-Hellman operation failed.
  * \retval #EDHOC_ERROR_INVALID_MAC_2
- *         Invalid MAC_2.
+ *         MAC_2 verification failed.
  * \retval #EDHOC_ERROR_INVALID_SIGN_OR_MAC_2
- *         Invalid Signature_or_MAC_2.
+ *         Signature_or_MAC_2 verification failed.
  * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials fetch/verify failure.
+ *         Authentication credentials operation failed.
  * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         External authorization data process failure.
+ *         EAD process callback failed.
  */
 int edhoc_message_2_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_2, size_t message_2_length);
@@ -367,25 +369,25 @@ int edhoc_message_2_process(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Computation of transcript hash failure.
+ *         Transcript hash computation failed.
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Computation of pseudorandom key failure.
+ *         Pseudorandom key derivation failed.
  * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials fetch/verify failure.
+ *         Authentication credentials operation failed.
  * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         External authorization data compose failure.
+ *         EAD compose callback failed.
  */
 int edhoc_message_3_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_3, size_t message_3_size,
@@ -396,36 +398,36 @@ int edhoc_message_3_compose(struct edhoc_context *edhoc_context,
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_3                 Buffer containing the message 3.
- * \param message_3_length              Size of the \p message_3 buffer in bytes.
+ * \param message_3_length              Length of the \p message_3 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_MSG_3_PROCESS_FAILURE
- *         Error on EDHOC layer during processing. 
+ *         EDHOC message processing failed.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR decoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Computation of transcript hash failure.
+ *         Transcript hash computation failed.
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Computation of pseudorandom key failure.
+ *         Pseudorandom key derivation failed.
  * \retval #EDHOC_ERROR_INVALID_MAC_3
- *         Invalid EDHOC MAC_3.
+ *         MAC_3 verification failed.
  * \retval #EDHOC_ERROR_INVALID_SIGN_OR_MAC_3
- *         Invalid EDHOC Signature_or_MAC_3.
+ *         Signature_or_MAC_3 verification failed.
  * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials fetch/verify failure.
+ *         Authentication credentials operation failed.
  * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         External authorization data process failure.
+ *         EAD process callback failed.
  */
 int edhoc_message_3_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_3, size_t message_3_length);
@@ -441,15 +443,15 @@ int edhoc_message_3_process(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         External authorization data compose failure.
+ *         EAD compose callback failed.
  */
 int edhoc_message_4_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_4, size_t message_4_size,
@@ -460,24 +462,22 @@ int edhoc_message_4_compose(struct edhoc_context *edhoc_context,
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_4                 Buffer containing the message 4.
- * \param message_4_length              Size of the \p message_4 buffer in bytes.
+ * \param message_4_length              Length of the \p message_4 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_MSG4_PROCESS_FAILURE
- *         Error on EDHOC layer during processing. 
+ * \retval #EDHOC_ERROR_MSG_4_PROCESS_FAILURE
+ *         EDHOC message 4 processing failed.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR decoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
- * \retval #EDHOC_ERROR_MSG_4_PROCESS_FAILURE
- *         External authorization data process failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         External authorization data process failure.
+ *         EAD process callback failed.
  */
 int edhoc_message_4_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_4, size_t message_4_length);
@@ -494,13 +494,13 @@ int edhoc_message_4_process(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  */
@@ -514,20 +514,20 @@ int edhoc_message_error_compose(uint8_t *message_error,
  * \brief Process EDHOC message error.
  *
  * \param[in] message_error             Buffer containing the message error.
- * \param message_error_length          Size of the \p message_error buffer in bytes.
+ * \param message_error_length          Length of the \p message_error in bytes.
  * \param[out] error_code               EDHOC error code.
  * \param[out] error_info               EDHOC error information.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR decoding failure.
  */
@@ -543,7 +543,7 @@ int edhoc_message_error_process(const uint8_t *message_error,
  */
 
 /**
- * \brief Psuedorandom key exporter for derivation keying material.
+ * \brief Export derived keying material using the pseudorandom key exporter.
  * 
  * \param[in,out] edhoc_context         EDHOC context.
  * \param label                         PRK exporter label.
@@ -553,23 +553,23 @@ int edhoc_message_error_process(const uint8_t *message_error,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Computation of pseudorandom key failure.
+ *         Pseudorandom key derivation failed.
  */
 int edhoc_export_prk_exporter(struct edhoc_context *edhoc_context, size_t label,
 			      uint8_t *secret, size_t secret_length);
 
 /**
- * \brief Export key update for the new OSCORE security session.
+ * \brief Perform key update for subsequent OSCORE session exports.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] entropy                   Buffer containing the entropy for key update.
@@ -578,17 +578,17 @@ int edhoc_export_prk_exporter(struct edhoc_context *edhoc_context, size_t label,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Computation of pseudorandom key failure.
+ *         Pseudorandom key derivation failed.
  */
 int edhoc_export_key_update(struct edhoc_context *edhoc_context,
 			    const uint8_t *entropy, size_t entropy_length);
@@ -611,17 +611,19 @@ int edhoc_export_key_update(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Processing code branch is not permitted by implementation.
+ *         Operation not permitted in the current configuration.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
+ * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
+ *         Output buffer is too small.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographics operation failure.
+ *         Cryptographic operation failure.
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Computation of pseudorandom key failure.
+ *         Pseudorandom key derivation failed.
  */
 int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
 				uint8_t *master_secret,
@@ -647,7 +649,7 @@ int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  */
@@ -655,24 +657,24 @@ int edhoc_error_get_code(const struct edhoc_context *edhoc_context,
 			 enum edhoc_error_code *error_code);
 
 /**
- * \brief EDHOC own and peer cipher suites getter in case of \p EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE.
+ * \brief Retrieve own and peer cipher suites after \p EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE.
  * 
  * \param[in] edhoc_context             	EDHOC context. 
- * \param[out] cipher_suites			Buffer where the cipher suites values is to be written.
+ * \param[out] cipher_suites			Buffer where the own cipher suite values are written.
  * \param cipher_suites_size            	Size of the \p cipher_suites buffer in entries.
- * \param[out] cipher_suites_length     	On success, the number of entires that make up the cipher suites.
- * \param[out] peer_cipher_suites		Buffer where the peer cipher suites values is to be written.
+ * \param[out] cipher_suites_length     	On success, the number of entries written to \p cipher_suites.
+ * \param[out] peer_cipher_suites		Buffer where the peer cipher suite values are written.
  * \param peer_cipher_suites_size		Size of the \p peer_cipher_suites buffer in entries.
- * \param[out] peer_cipher_suites_length	On success, the number of entires that make up the peer cipher suites.
+ * \param[out] peer_cipher_suites_length	On success, the number of entries written to \p peer_cipher_suites.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Combination of input parameters are recognized as invalid.
+ *         One or more input parameters are invalid.
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Used buffer is too small.
+ *         Output buffer is too small.
  */
 int edhoc_error_get_cipher_suites(const struct edhoc_context *edhoc_context,
 				  int32_t *cipher_suites,

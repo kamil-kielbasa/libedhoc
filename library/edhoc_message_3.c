@@ -64,7 +64,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /**
- * \brief Compute psuedo random key (PRK_4e3m).
+ * \brief Compute pseudorandom key (PRK_4e3m).
  *
  * \param[in,out] ctx		EDHOC context.
  * \param[in] auth_cred         Authentication credentials.

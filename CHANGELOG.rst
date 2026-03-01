@@ -1,3 +1,52 @@
+Version 1.6.0
+-------------
+
+:Date: March 1, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : API symbol corrections (deprecated aliases preserved):
+
+  * Renamed ``EDHOC_SM_RECEVIED_M4`` → ``EDHOC_SM_RECEIVED_M4``.
+  * Renamed ``EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2`` → ``EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2``.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : API documentation audit:
+
+  * Standardized all ``\retval`` descriptions in ``edhoc.h`` for clarity and consistency.
+  * Added missing ``\retval #EDHOC_ERROR_BUFFER_TOO_SMALL`` for ``edhoc_message_1_compose`` and ``edhoc_export_oscore_session``.
+  * Corrected ``\param`` directions and descriptions in ``edhoc_crypto.h`` (e.g. ``public_key_length``, ``hash`` output direction).
+  * Fixed process function ``message_N_length`` descriptions (length of message, not buffer size).
+  * Fixed grammar and CBOR capitalization in ``edhoc_credentials.h`` and ``edhoc_context.h``.
+  * Added comprehensive Doxygen for all macros in ``edhoc_macros.h`` (``\defgroup edhoc-macros``).
+  * Added ``\author`` to ``edhoc_test_hooks.h``.
+  * Fixed duplicate ``\defgroup`` in ``edhoc_helpers.h``.
+  * Unified ``\return`` / ``\retval`` style across all callback typedefs and internal functions.
+  * Corrected ``\ref`` → ``\see`` for external URLs in Doxygen.
+  * Fixed ``#error`` message for ``CONFIG_LIBEDHOC_MAX_LEN_OF_MAC``.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Spelling corrections across all headers:
+
+  * ``psuedorandom`` → ``pseudorandom``, ``crypographics`` → ``cryptographic``.
+  * ``Diffie-Helmann`` → ``Diffie-Hellman``, ``registery`` → ``registry``.
+  * ``conatins`` → ``contains``, ``definitiones`` → ``definitions``.
+  * ``identifer`` → ``identifier``, ``buffor`` → ``buffer``.
+  * Renamed ``psuedo_random_key`` → ``pseudo_random_key`` in cipher suite header declarations.
+  * Corrected ``\file`` tag in Zephyr log backend to match actual filename.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added Doxygen for internal modules:
+
+  * Added ``\defgroup edhoc-log`` with documentation for all log levels and log macros.
+  * Added Doxygen for Linux log backend: ``edhoc_log_get_timestamp``, ``edhoc_log_hexdump_impl``, ANSI color defines.
+  * Added Doxygen for Zephyr log backend macro wrappers.
+  * Added ``\defgroup edhoc-test-hooks`` with ``\brief`` for all 40+ test hook functions.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Documentation improvements:
+
+  * Added "Lifecycle" section to ``api.rst`` with context initialization call order and code examples.
+  * Added "Error handling" section to ``api.rst`` with error code retrieval guidance.
+  * Fixed ``edhoc_set_conn_id()`` → ``edhoc_set_connection_id()`` in API flow diagram.
+  * Fixed cipher suite 0 algorithm description: ECDSA → EdDSA in ``testing.rst``.
+  * Fixed west build path for benchmark sample in ``configuration.rst``.
+  * Updated Sphinx ``conf.py`` version to v1.6.0.
+
 Version 1.5.0
 -------------
 
@@ -5,57 +54,43 @@ Version 1.5.0
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI/CD pipeline overhaul:
 
-  * Renamed and unified GitHub Actions workflow files (``ci-linux.yml``, ``ci-zephyr.yml``, ``ci-sandbox.yml``, ``ci-docs.yml``).
-  * Consolidated all CI jobs into a single ``scripts/ci.sh`` entry point.
-  * Removed redundant standalone scripts (``build-linux-gcc.sh``, ``build-linux-clang.sh``, ``coverage.sh``, ``verify_cppcheck.sh``, ``format.sh``).
-  * Added weekly scheduled CI workflow (``ci-weekly.yml``) running all jobs including extended fuzzing.
-  * Split sanitizer CI jobs: ASan+UBSan (GCC) runs separately.
+  * Consolidated all CI logic into a single ``scripts/ci.sh`` entry point for local reproducibility.
+  * Added code coverage measurement with gcov/lcov and Codecov integration.
+  * Added ASan + UBSan sanitizer CI job (GCC).
+  * Added LibFuzzer-based fuzz testing CI job (Clang).
+  * Added weekly scheduled CI workflow with extended fuzzing.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Compiler flags hardening:
 
-  * Unified GCC and Clang warning flags into a shared ``LIBEDHOC_COMMON_WARNINGS`` set (~25 flags).
-  * Added GCC-specific flags: ``-Wformat-overflow=2``, ``-Wformat-truncation=2``, ``-Wswitch-enum``, ``-Wjump-misses-init``, ``-Wduplicated-cond``, ``-Wduplicated-branches``, ``-Wlogical-op``.
-  * Added ``-fstack-protector-strong`` (disabled under sanitizers).
-  * Made ``-Wno-unsafe-buffer-usage`` conditional on Clang 16+ via ``check_c_compiler_flag``.
-  * Removed hardcoded ``-g3 -O0`` (``CMAKE_BUILD_TYPE`` controls optimization).
-  * Applied same strict warning set to test targets with appropriate suppressions.
-  * Fixed ``-gdwarf-4`` for Valgrind compatibility with GCC 11+.
-  * Ensured ``-DCMAKE_C_COMPILER=clang`` is explicitly set for all Clang builds.
+  * Unified GCC and Clang warning flags (~25 shared flags).
+  * Added GCC-specific warnings: ``-Wformat-overflow=2``, ``-Wformat-truncation=2``, ``-Wswitch-enum``, ``-Wjump-misses-init``, ``-Wduplicated-cond``, ``-Wduplicated-branches``, ``-Wlogical-op``.
+  * Added ``-fstack-protector-strong`` for non-sanitizer builds.
 
-* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : clang-tidy clean:
-
-  * Fixed all 538 clang-tidy warnings (509 ``cert-err33-c``, 29 ``bugprone-*``).
-  * Added ``(void)`` casts to ``fflush``/``fprintf``/``snprintf`` in log macros.
-  * Fixed ``bugprone-macro-parentheses`` in ``ARRAY_SIZE``/``VLA_SIZE``.
-  * Suppressed intentional ``bugprone-signed-char-misuse`` for EDHOC connection ID conversions.
-  * Changed clang-tidy to use Clang compile database (avoids GCC-only flag errors).
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Resolved all 538 clang-tidy warnings across the library.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Zephyr benchmark application (``sample/benchmark/``):
 
-  * Full EDHOC handshake benchmark for Zephyr ``native_sim`` (cipher suite 2, P-256/ES256).
-  * Per-phase handshake timing using POSIX ``clock_gettime`` with JSON output.
-  * Library flash footprint analysis via ``nm`` on the final linked binary (~20 KiB).
-  * PSA crypto and mbedTLS PK module enabled via Kconfig and ``user-mbedtls.h`` overlay.
+  * Full EDHOC handshake benchmark for ``native_sim`` (cipher suite 2, P-256/ES256, X.509 chain).
+  * Per-phase handshake timing with JSON output.
+  * Library flash footprint analysis (~20 KiB).
   * NSI two-stage linking solved by providing mbedTLS archives to ``RUNNER_LINK_LIBRARIES``.
-  * Removed old x86-only benchmark binaries (``tests/benchmark/``) and ``./scripts/ci.sh benchmark``.
-  * Removed old minimal Zephyr sample (``sample/src/main.c``); only the benchmark app remains.
   * CI uploads ``flash_report.txt`` and ``benchmark_timing.json`` as artifacts.
 
-* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Test refactoring and audit:
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Test improvements:
 
+  * Restructured tests into 3-tier architecture: unit, integration, and fuzz.
   * Extracted shared test helpers (``test_cipher_suites``, ``test_credentials``, ``test_ead``).
-  * Removed duplicated cipher suite definitions and callback stubs across unit, integration, and fuzz tests.
-  * Added missing negative test scenarios for ``edhoc_export_oscore_session`` and ``edhoc_message_1_compose/process``.
+  * Added negative test scenarios for ``edhoc_export_oscore_session`` and ``edhoc_message_1_compose/process``.
+  * Added mock-based failure injection tests for internal error paths.
   * Consolidated fuzz targets from ``fuzz/`` into ``tests/fuzz/``.
-  * Fixed GCC extension usage (non-constant struct initializers) for Clang compatibility.
+  * Achieved 92.8% line coverage and 100% function coverage (635+ tests).
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Bug fixes:
+
   * Fixed out-of-bounds write in ``test_internals.c`` (``alg_bstr`` array).
+  * Fixed GCC extension usage (non-constant struct initializers) for Clang compatibility.
   * Fixed ``-Wformat-truncation`` in log backend timestamp formatting.
-
-* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Documentation updates:
-
-  * Updated test documentation with local reproducibility table and benchmark section.
-  * Added compiler selection table explaining GCC vs Clang usage per task.
-  * Updated memory footprint and performance benchmark tables in README to use Zephyr ``native_sim`` data.
+  * Fixed ``-gdwarf-4`` for Valgrind compatibility with GCC 11+.
 
 Version 1.4.2
 -------------

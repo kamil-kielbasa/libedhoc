@@ -20,7 +20,7 @@
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 
-/** \defgroup edhoc-interface-crypto-keys EDHOC interface for cryptographics keys
+/** \defgroup edhoc-interface-crypto-keys EDHOC interface for cryptographic keys
  * @{
  */
 
@@ -50,15 +50,17 @@ enum edhoc_key_type {
 };
 
 /**
- * \brief Cryptographic function for import of key identifier.
+ * \brief Import a cryptographic key and obtain its identifier.
  *
  * \param[in] user_context		User context.
  * \param key_type                      Requested key type.
- * \param[in] raw_key                   Key material in binary format.
+ * \param[in] raw_key                   Raw key material.
  * \param raw_key_length                Size of the \p raw_key buffer in bytes.
  * \param[out] key_id                   Key identifier.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_import_key_t)(void *user_context,
 				  enum edhoc_key_type key_type,
@@ -66,12 +68,14 @@ typedef int (*edhoc_import_key_t)(void *user_context,
 				  void *key_id);
 
 /**
- * \brief Cryptographic function for destroy of key identifier.
+ * \brief Destroy a previously imported cryptographic key.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_destroy_key_t)(void *user_context, void *key_id);
 
@@ -87,7 +91,7 @@ struct edhoc_keys {
 
 /**@}*/
 
-/** \defgroup edhoc-interface-crypto-operations EDHOC interface for cryptographics operations
+/** \defgroup edhoc-interface-crypto-operations EDHOC interface for cryptographic operations
  * @{
  */
 
@@ -95,7 +99,7 @@ struct edhoc_keys {
  * \brief Structure for cipher suite value and related algorithms lengths in bytes.
  */
 struct edhoc_cipher_suite {
-	/** Cipher suite IANA registery value. */
+	/** Cipher suite IANA registry value. */
 	int32_t value;
 
 	/** EDHOC AEAD algorithm key length in bytes. */
@@ -118,7 +122,7 @@ struct edhoc_cipher_suite {
 };
 
 /**
- * \brief Cryptographic function for generating ephemeral ECDH key pair.
+ * \brief Generate an ephemeral ECDH key pair.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
@@ -127,9 +131,11 @@ struct edhoc_cipher_suite {
  * \param[out] private_key_length       On success, the number of bytes that make up the ECDH private key.
  * \param[out] public_key               Public ephemeral ECDH key.
  * \param public_key_size               Size of the \p public_key buffer in bytes.
- * \param[out] public_key_length        On success, the number of bytes that make up the ECDH private key.
+ * \param[out] public_key_length        On success, the number of bytes that make up the ECDH public key.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_make_key_pair_t)(
 	void *user_context, const void *key_id, uint8_t *private_key,
@@ -137,7 +143,7 @@ typedef int (*edhoc_make_key_pair_t)(
 	uint8_t *public_key, size_t public_key_size, size_t *public_key_length);
 
 /**
- * \brief Cryptographic function for computing ECDH key agreement.
+ * \brief Compute ECDH key agreement (shared secret).
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
@@ -147,7 +153,9 @@ typedef int (*edhoc_make_key_pair_t)(
  * \param shared_secret_size            Size of the \p shared_secret buffer in bytes.
  * \param[out] shared_secret_length     On success, the number of bytes that make up the ECDH shared secret.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_key_agreement_t)(void *user_context, const void *key_id,
 				     const uint8_t *peer_public_key,
@@ -157,7 +165,7 @@ typedef int (*edhoc_key_agreement_t)(void *user_context, const void *key_id,
 				     size_t *shared_secret_length);
 
 /**
- * \brief Cryptographic function for generating ECDSA sign.
+ * \brief Generate a digital signature.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
@@ -167,7 +175,9 @@ typedef int (*edhoc_key_agreement_t)(void *user_context, const void *key_id,
  * \param signature_size                Size of the \p signature buffer in bytes.
  * \param[out] signature_length         On success, the number of bytes that make up the signature.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_signature_t)(void *user_context, const void *key_id,
 				 const uint8_t *input, size_t input_length,
@@ -175,16 +185,18 @@ typedef int (*edhoc_signature_t)(void *user_context, const void *key_id,
 				 size_t *signature_length);
 
 /**
- * \brief Cryptographic function for ECDSA signature verification.
+ * \brief Verify a digital signature.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
  * \param[in] input                     Input message to verify.
  * \param input_length                  Size of the \p input buffer in bytes.
- * \param[in] signature                 Buffer where the signature is to be written.
+ * \param[in] signature                 Buffer containing the signature to verify.
  * \param signature_length              Size of the \p signature buffer in bytes.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_verify_t)(void *user_context, const void *key_id,
 			      const uint8_t *input, size_t input_length,
@@ -192,35 +204,39 @@ typedef int (*edhoc_verify_t)(void *user_context, const void *key_id,
 			      size_t signature_length);
 
 /**
- * \brief Cryptographic function for HKDF extracting.
+ * \brief Perform HKDF-Extract.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
  * \param[in] salt                      Salt for extract.
  * \param salt_len                      Size of the \p salt buffer in bytes.
- * \param[out] psuedo_random_key        Buffer where the psuedo random key is to be written.
- * \param psuedo_random_key_size        Size of the \p psuedo_random_key buffer in bytes.
- * \param[out] psuedo_random_key_length On success, the number of bytes that make up the psuedo random key.
+ * \param[out] pseudo_random_key        Buffer where the pseudorandom key is to be written.
+ * \param pseudo_random_key_size        Size of the \p pseudo_random_key buffer in bytes.
+ * \param[out] pseudo_random_key_length On success, the number of bytes that make up the pseudorandom key.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_extract_t)(void *user_context, const void *key_id,
 			       const uint8_t *salt, size_t salt_len,
-			       uint8_t *psuedo_random_key,
-			       size_t psuedo_random_key_size,
-			       size_t *psuedo_random_key_length);
+			       uint8_t *pseudo_random_key,
+			       size_t pseudo_random_key_size,
+			       size_t *pseudo_random_key_length);
 
 /**
- * \brief Cryptographic function for HKDF expanding.
+ * \brief Perform HKDF-Expand.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
- * \param[in] info                      Information context.
+ * \param[in] info                      Context and application-specific information.
  * \param info_length                   Size of the \p info buffer in bytes.
  * \param[out] output_keying_material   Buffer where the output keying material is to be written.
  * \param output_keying_material_length Size of the \p output_keying_material buffer in bytes.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_expand_t)(void *user_context, const void *key_id,
 			      const uint8_t *info, size_t info_length,
@@ -228,7 +244,7 @@ typedef int (*edhoc_expand_t)(void *user_context, const void *key_id,
 			      size_t output_keying_material_length);
 
 /**
- * \brief Cryptographic function for AEAD encryption.
+ * \brief Perform AEAD encryption.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
@@ -242,7 +258,9 @@ typedef int (*edhoc_expand_t)(void *user_context, const void *key_id,
  * \param ciphertext_size               Size of the \p ciphertext buffer in bytes.
  * \param[out] ciphertext_length        On success, the number of bytes that make up the ciphertext.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_encrypt_t)(void *user_context, const void *key_id,
 			       const uint8_t *nonce, size_t nonce_length,
@@ -254,7 +272,7 @@ typedef int (*edhoc_encrypt_t)(void *user_context, const void *key_id,
 			       size_t *ciphertext_length);
 
 /**
- * \brief Cryptographic function for AEAD decryption.
+ * \brief Perform AEAD decryption.
  *
  * \param[in] user_context		User context.
  * \param[in] key_id                    Key identifier.
@@ -262,13 +280,15 @@ typedef int (*edhoc_encrypt_t)(void *user_context, const void *key_id,
  * \param nonce_length                  Size of the \p nonce buffer in bytes.
  * \param[in] additional_data           Additional data that will be authenticated but not encrypted.
  * \param additional_data_length        Size of the \p additional_data buffer in bytes.
- * \param[in] ciphertext                Buffer where the data that has been authenticated and encrypted.
+ * \param[in] ciphertext                Buffer containing the authenticated and encrypted data.
  * \param ciphertext_length             Size of the \p ciphertext buffer in bytes.
  * \param[out] plaintext                Buffer where the decrypted data is to be written.
  * \param plaintext_size                Size of the \p plaintext buffer in bytes.
  * \param[out] plaintext_length         On success, the number of bytes that make up the plaintext.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_decrypt_t)(void *user_context, const void *key_id,
 			       const uint8_t *nonce, size_t nonce_length,
@@ -279,28 +299,30 @@ typedef int (*edhoc_decrypt_t)(void *user_context, const void *key_id,
 			       size_t plaintext_size, size_t *plaintext_length);
 
 /**
- * \brief Cryptographic function for hash computing.
+ * \brief Compute a cryptographic hash.
  *
  * \param[in] user_context		User context.
  * \param[in] input                     Input message to hash.
  * \param input_length                  Size of the \p input buffer in bytes.
- * \param[in] hash                      Buffer where the hash is to be written.
+ * \param[out] hash                     Buffer where the hash is to be written.
  * \param hash_size                     Size of the \p hash buffer in bytes.
  * \param[out] hash_length              On success, the number of bytes that make up the hash.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_hash_t)(void *user_context, const uint8_t *input,
 			    size_t input_length, uint8_t *hash,
 			    size_t hash_size, size_t *hash_length);
 
 /**
- * \brief Bind structure for cryptographics operations.
+ * \brief Bind structure for cryptographic operations.
  */
 struct edhoc_crypto {
 	/** Cryptographic function callback for generate ephemeral Diffie-Hellman key pair. */
 	edhoc_make_key_pair_t make_key_pair;
-	/** Cryptographic function callback for Diffie-Helmann key agreement callback. */
+	/** Cryptographic function callback for Diffie-Hellman key agreement. */
 	edhoc_key_agreement_t key_agreement;
 
 	/** Cryptographic function callback for signing. */

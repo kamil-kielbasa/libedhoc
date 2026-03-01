@@ -1,6 +1,6 @@
 /**
  * \file    main.c
- * \author  libedhoc
+ * \author  Kamil Kielbasa
  * \brief   EDHOC handshake benchmark for Zephyr / native_sim.
  *
  *          Runs a full EDHOC handshake with cipher suite 2 (P-256 / ES256),

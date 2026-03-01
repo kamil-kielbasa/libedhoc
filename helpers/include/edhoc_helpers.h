@@ -91,7 +91,7 @@ bool edhoc_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
 
 /**@}*/
 
-/** \defgroup edhoc-api-buffer-utils EDHOC Buffer Utilities API
+/** \addtogroup edhoc-api-buffer-utils
  * @{
  */
 
@@ -116,7 +116,7 @@ bool edhoc_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
  * Prepends EDHOC_CBOR_TRUE to indicate forward flow.
  * The prepend buffer must be initialized with buffer and buffer_size before calling this function.
  * 
- * \param[in,out] prepend_buf          Prepend buffer structure (must have buffer and buffer_size set).
+ * \param[in,out] prepended_fields     Prepend buffer structure (must have buffer and buffer_size set).
  * 
  * \retval #EDHOC_SUCCESS Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.
@@ -129,7 +129,7 @@ int edhoc_prepend_flow(struct edhoc_prepended_fields *prepended_fields);
  * 
  * Encodes and prepends the connection identifier.
  * 
- * \param[in,out] prepend_buf          Prepend buffer structure.
+ * \param[in,out] prepended_fields     Prepend buffer structure.
  * \param[in] conn_id                  Connection identifier to prepend.
  * 
  * \retval #EDHOC_SUCCESS Success.
@@ -179,9 +179,9 @@ int edhoc_prepend_recalculate_size(
  * 
  * If a flow indicator is found, it is extracted and the extract buffer
  * is updated to point to the EDHOC message after the indicator.
- * Flow information is stored in extract_buf->is_forward_flow and extract_buf->is_reverse_flow.
+ * Flow information is stored in the \p is_forward_flow and \p is_reverse_flow fields.
  * 
- * \param[in,out] extract_buf          Extract buffer structure.
+ * \param[in,out] extracted_fields     Extract buffer structure.
  * 
  * \retval #EDHOC_SUCCESS Success (flow info extracted or buffer is empty).
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.
@@ -192,11 +192,10 @@ int edhoc_extract_flow_info(struct edhoc_extracted_fields *extracted_fields);
  * \brief Extract connection identifier from buffer.
  * 
  * Extracts and decodes a connection identifier from the beginning of the buffer.
- * The connection identifier is stored in extract_buf->extracted_conn_id and
- * The connection identifier is stored in extract_buf->extracted_conn_id on success.
- * The extract buffer is updated to point to the EDHOC message after the connection ID.
+ * The connection identifier is stored in the \p extracted_conn_id field on success.
+ * The buffer is advanced to point past the connection ID.
  * 
- * \param[in,out] extract_buf          Extract buffer structure.
+ * \param[in,out] extracted_fields     Extract buffer structure.
  * 
  * \retval #EDHOC_SUCCESS Success.
  * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.

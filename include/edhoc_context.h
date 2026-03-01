@@ -50,7 +50,7 @@
 #endif
 
 #ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_MAC
-#error "Lack of defined maximum length of hash in bytes."
+#error "Lack of defined maximum length of MAC in bytes."
 #endif
 
 #ifndef CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS
@@ -112,13 +112,16 @@ enum edhoc_state_machine {
 	/* Initiator: */
 
 	/** State machine - received message 4. */
-	EDHOC_SM_RECEVIED_M4,
+	EDHOC_SM_RECEIVED_M4,
 
 	/** State machine - completed. */
 	EDHOC_SM_COMPLETED,
 	/** State machine - persisted. */
 	EDHOC_SM_PERSISTED,
 };
+
+/** \deprecated Use #EDHOC_SM_RECEIVED_M4 instead. */
+#define EDHOC_SM_RECEVIED_M4 EDHOC_SM_RECEIVED_M4
 
 /**
  * \brief RFC 9528: 3.2. Method.
@@ -153,20 +156,20 @@ enum edhoc_th_state {
 };
 
 /**
- * \brief EDHOC psuedorandom keys states.
+ * \brief EDHOC pseudorandom keys states.
  */
 enum edhoc_prk_state {
-	/** Psuedorandom key invalid. */
+	/** Pseudorandom key invalid. */
 	EDHOC_PRK_STATE_INVALID,
-	/** Psuedorandom key RFC 9528: 4.1.1.1. PRK_2e. */
+	/** Pseudorandom key RFC 9528: 4.1.1.1. PRK_2e. */
 	EDHOC_PRK_STATE_2E,
-	/** Psuedorandom key RFC 9528: 4.1.1.2. PRK_3e2m. */
+	/** Pseudorandom key RFC 9528: 4.1.1.2. PRK_3e2m. */
 	EDHOC_PRK_STATE_3E2M,
-	/** Psuedorandom key RFC 9528: 4.1.1.3. PRK_4e3m. */
+	/** Pseudorandom key RFC 9528: 4.1.1.3. PRK_4e3m. */
 	EDHOC_PRK_STATE_4E3M,
-	/** Psuedorandom key RFC 9528: 4.1.3. PRK_out. */
+	/** Pseudorandom key RFC 9528: 4.1.3. PRK_out. */
 	EDHOC_PRK_STATE_OUT,
-	/** Psuedorandom key RFC 9528: 4.2.1. EDHOC_Exporter. */
+	/** Pseudorandom key RFC 9528: 4.2.1. EDHOC_Exporter. */
 	EDHOC_PRK_STATE_EXPORTER,
 };
 
@@ -189,10 +192,10 @@ struct edhoc_connection_id {
          * It must follow representation of byte string identifiers described in RFC 9528: 3.3.2. */
 	enum edhoc_connection_id_type encode_type;
 
-	/** Connection identifier as cbor integer. */
+	/** Connection identifier as CBOR integer. */
 	int8_t int_value;
 
-	/** Connection identifier as cbor byte string buffer. */
+	/** Connection identifier as CBOR byte string buffer. */
 	uint8_t bstr_value[CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID + 1];
 	/** Size of the \p bstr_value buffer in bytes. */
 	size_t bstr_length;
@@ -305,9 +308,9 @@ struct edhoc_context {
 
 	/** EDHOC interface for external authorization data. */
 	struct edhoc_ead EDHOC_PRIVATE(ead);
-	/** EDHOC interface for crypographics key operations. */
+	/** EDHOC interface for cryptographic key operations. */
 	struct edhoc_keys EDHOC_PRIVATE(keys);
-	/** EDHOC interface for crypographics function operations. */
+	/** EDHOC interface for cryptographic function operations. */
 	struct edhoc_crypto EDHOC_PRIVATE(crypto);
 	/** EDHOC interface for authentication credentials. */
 	struct edhoc_credentials EDHOC_PRIVATE(cred);

@@ -31,7 +31,8 @@ Features
 * CBOR encoding/decoding is fully encapsulated and hidden from the user.
 * Predictable memory usage: all operations use stack allocation via the `VLA`_ feature;
   no heap allocations.
-* Code quality verified with static analysis (*cppcheck*) and dynamic analysis (*valgrind*).
+* Code quality verified with static analysis (*cppcheck*, *clang-tidy*) and dynamic analysis
+  (*Valgrind*, *ASan*, *UBSan*, *LibFuzzer*).
 * Native Zephyr RTOS support with west manifest for seamless integration.
 
 .. _CoAP: https://datatracker.ietf.org/doc/html/rfc7252
@@ -121,7 +122,7 @@ The diagram below illustrates a typical EDHOC message flow integrated with CoAP.
   | edhoc_context_init()                         edhoc_context_init() |
   | edhoc_set_methods()                           edhoc_set_methods() |
   | edhoc_set_cipher_suites()               edhoc_set_cipher_suites() |
-  | edhoc_set_conn_id()                           edhoc_set_conn_id() |
+  | edhoc_set_connection_id()               edhoc_set_connection_id() |
   | edhoc_bind_ead()                                 edhoc_bind_ead() |
   | edhoc_bind_keys()                               edhoc_bind_keys() |
   | edhoc_bind_crypto()                           edhoc_bind_crypto() |

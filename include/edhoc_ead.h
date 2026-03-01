@@ -52,15 +52,20 @@ struct edhoc_ead_token {
 };
 
 /** 
- * \brief Callback for external authorization data (EAD) composing.
+ * \brief Compose external authorization data (EAD) tokens.
+ *
+ * Called by the library during message composition to let the application
+ * attach EAD items to the outgoing EDHOC message.
  *
  * \param[in] user_context      User context.
- * \param message               Message number for context information. (EAD_1, EAD_2, EAD_3 or EAD_4)
- * \param[in,out] ead_token     Buffer where the generated EAD tokens is to be written.
- * \param ead_token_size        Number of the \p ead_token.
- * \param[out] ead_token_len    On success, the number of written EAD tokens.
+ * \param message               EDHOC message number (EAD_1, EAD_2, EAD_3, or EAD_4).
+ * \param[in,out] ead_token     Array where the generated EAD tokens are written.
+ * \param ead_token_size        Maximum number of entries in the \p ead_token array.
+ * \param[out] ead_token_len    On success, the number of EAD tokens written.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_ead_compose_t)(void *user_context,
 				   enum edhoc_message message,
@@ -69,14 +74,19 @@ typedef int (*edhoc_ead_compose_t)(void *user_context,
 				   size_t *ead_token_len);
 
 /** 
- * \brief Callback for external authorization data (EAD) processing.
+ * \brief Process received external authorization data (EAD) tokens.
+ *
+ * Called by the library during message processing to deliver received
+ * EAD items to the application for validation.
  *
  * \param[in] user_context      User context.
- * \param message               Message number for context information. (EAD_1, EAD_2, EAD_3 or EAD_4)
- * \param[in] ead_token         Buffer containing the EAD tokens.
- * \param ead_token_size        Number of the received EAD tokens in \p ead_token.
+ * \param message               EDHOC message number (EAD_1, EAD_2, EAD_3, or EAD_4).
+ * \param[in] ead_token         Array containing the received EAD tokens.
+ * \param ead_token_size        Number of entries in the \p ead_token array.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure.
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
  */
 typedef int (*edhoc_ead_process_t)(void *user_context,
 				   enum edhoc_message message,

@@ -1,6 +1,6 @@
 /**
  * \file    user-mbedtls.h
- * \author  libedhoc
+ * \author  Kamil Kielbasa
  * \brief   Extra mbedTLS defines for the cipher-suite-2 benchmark helpers.
  *
  *          Included via MBEDTLS_USER_CONFIG_FILE after Zephyr's

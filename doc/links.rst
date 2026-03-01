@@ -3,9 +3,9 @@ Links
 
 * `RFC 9528`_ - Ephemeral Diffie-Hellman Over COSE (EDHOC).
 * `RFC 9529`_ - Traces of Ephemeral Diffie-Hellman Over COSE (EDHOC).
-* `draft-tiloca-lake-edhoc-implem-cons-01`_ -  Implementation Considerations for Ephemeral Diffie-Hellman Over COSE (EDHOC).
+* `draft-tiloca-lake-edhoc-implem-cons-01`_ - Implementation Considerations for Ephemeral Diffie-Hellman Over COSE (EDHOC).
 * `RFC 8152`_ - CBOR Object Signing and Encryption (COSE).
-* `COSE IANA`_ - COSE IANA.
+* `COSE IANA`_ - CBOR Object Signing and Encryption (COSE) IANA Registry.
 * `RFC 8613`_ - Object Security for Constrained RESTful Environments (OSCORE).
 * `RFC 7252`_ - The Constrained Application Protocol (CoAP).
 * `RFC 5280`_ - Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile.

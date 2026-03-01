@@ -89,7 +89,7 @@ static int comp_dh_secret(struct edhoc_context *ctx);
 static int comp_th_2(struct edhoc_context *ctx);
 
 /** 
- * \brief Compute psuedo random key (PRK_2e).
+ * \brief Compute pseudorandom key (PRK_2e).
  *
  * \param[in,out] ctx		EDHOC context.
  *
@@ -98,7 +98,7 @@ static int comp_th_2(struct edhoc_context *ctx);
 static int comp_prk_2e(struct edhoc_context *ctx);
 
 /** 
- * \brief Compute psuedo random key (PRK_3e2m).
+ * \brief Compute pseudorandom key (PRK_3e2m).
  *
  * \param[in,out] ctx		EDHOC context.
  * \param[in] auth_cred         Authentication credentials.
@@ -765,14 +765,14 @@ static int comp_keystream(const struct edhoc_context *ctx,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	const struct info input_info = {
-		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2,
+		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2,
 		.info_context.value = ctx->th,
 		.info_context.len = ctx->th_len,
 		.info_length = (uint32_t)keystream_len,
 	};
 
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2);
+	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2);
 	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 	len += edhoc_cbor_int_mem_req((int32_t)keystream_len);
 
@@ -1395,7 +1395,7 @@ static int comp_grx(struct edhoc_context *ctx,
  *      4b. Copy of Pseudo Random Key 2 for keystream (step 12).
  *	5.  Fetch authentication credentials.
  *      6.  Compose EAD_2 if present.
- *      7.  Compute psuedo random key (PRK_3e2m).
+ *      7.  Compute pseudorandom key (PRK_3e2m).
  *	8a. Compute required buffer length for context_2.
  *	8b. Cborise items required by context_2.
  *	8c. Compute Message Authentication Code (MAC_2).
@@ -1519,7 +1519,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		}
 	}
 
-	/* 7. Compute psuedo random key (PRK_3e2m). */
+	/* 7. Compute pseudorandom key (PRK_3e2m). */
 	ret = comp_prk_3e2m(ctx, &auth_cred, NULL, 0);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1674,7 +1674,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
  *      8.  Parse plaintext (PLAINTEXT_2).
  *      9.  Process EAD if present.
  *      10. Verify if credentials from peer are trusted.
- *      11. Compute psuedo random key (PRK_3e2m).
+ *      11. Compute pseudorandom key (PRK_3e2m).
  *      12. Compute required buffer length for context_2.
  *      13. Cborise items required by context_2.
  *      14. Compute Message Authentication Code (MAC_2).
@@ -1849,7 +1849,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	/* 11. Compute psuedo random key (PRK_3e2m). */
+	/* 11. Compute pseudorandom key (PRK_3e2m). */
 	ret = comp_prk_3e2m(ctx, &parsed_ptxt.auth_cred, pub_key, pub_key_len);
 
 	if (EDHOC_SUCCESS != ret) {

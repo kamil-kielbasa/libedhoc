@@ -18,7 +18,7 @@ import subprocess
 project = 'libedhoc'
 copyright = '2026, Kamil Kielbasa'
 author = 'Kamil Kielbasa'
-version = 'v1.4.2'
+version = 'v1.6.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
