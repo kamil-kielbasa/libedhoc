@@ -121,6 +121,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 					&dh_priv_key_len, dh_pub_key,
 					VLA_SIZE(dh_pub_key), &dh_pub_key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != dh_priv_key_len ||
 	    csuite.ecc_key_length != dh_pub_key_len) {

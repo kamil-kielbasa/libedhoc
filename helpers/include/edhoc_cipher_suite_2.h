@@ -46,6 +46,15 @@
 /* Module interface function definitions ----------------------------------- */
 
 /** \defgroup edhoc-cipher-suite-2-api EDHOC cipher suite 2 API
+ *
+ * \details For ES256, \ref edhoc_cipher_suite_2_signature and \ref edhoc_cipher_suite_2_verify
+ *          split a \c psa_sign_message-style operation into **hash, then sign**
+ *          (\ref edhoc_cipher_suite_2_hash, then \c psa_sign_hash / \c psa_verify_hash with
+ *          \c PSA_ALG_ECDSA(\c PSA_ALG_SHA_256)), so each step can follow your platform
+ *          configuration. That helps when **moving a large message through the signing path is
+ *          costly** (e.g. some secure elements). The \c input to those callbacks is still the full
+ *          COSE Sign1 payload from the library, not an application-supplied digest.
+ *
  * @{
  */
 
@@ -176,10 +185,12 @@ int edhoc_cipher_suite_2_key_agreement(void *user_context, const void *key_id,
  * \brief Generate ES256 signature.
  *
  * Creates a digital signature over the input data using ES256 (ECDSA with P-256 and SHA-256).
+ * Uses \ref edhoc_cipher_suite_2_hash for SHA-256, then \c psa_sign_hash (same outcome as
+ * \c psa_sign_message with \c PSA_ALG_ECDSA(\c PSA_ALG_SHA_256); see module \details for rationale).
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the signing key.
- * \param[in] input                    Buffer containing data to be signed.
+ * \param[in] input                    Buffer containing the full message to be signed (not a digest).
  * \param input_length                 Length of the \p input buffer in bytes.
  * \param[out] signature               Buffer where the signature will be written.
  * \param signature_size               Size of the \p signature buffer in bytes.
@@ -203,10 +214,11 @@ int edhoc_cipher_suite_2_signature(void *user_context, const void *key_id,
  * \brief Verify ES256 signature.
  *
  * Verifies a digital signature over the input data using ES256 (ECDSA with P-256 and SHA-256).
+ * Uses \ref edhoc_cipher_suite_2_hash for SHA-256, then \c psa_verify_hash (see module \details).
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the verification key.
- * \param[in] input                    Buffer containing signed data.
+ * \param[in] input                    Buffer containing the full signed message (not a digest).
  * \param input_length                 Length of the \p input buffer in bytes.
  * \param[in] signature                Buffer containing the signature to verify.
  * \param signature_length             Length of the \p signature buffer in bytes.

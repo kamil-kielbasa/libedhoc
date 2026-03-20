@@ -306,6 +306,7 @@ static int gen_dh_keys(struct edhoc_context *ctx)
 					ctx->dh_pub_key, ctx->dh_pub_key_len,
 					&pub_key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != priv_key_len ||
 	    csuite.ecc_key_length != pub_key_len) {
@@ -347,6 +348,7 @@ static int comp_dh_secret(struct edhoc_context *ctx)
 					ctx->dh_secret, ctx->dh_secret_len,
 					&secret_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || secret_len != csuite.ecc_key_length) {
 		EDHOC_LOG_ERR(
@@ -492,6 +494,7 @@ static int comp_prk_2e(struct edhoc_context *ctx)
 	ret = ctx->crypto.extract(ctx->user_ctx, key_id, ctx->th, ctx->th_len,
 				  ctx->prk, ctx->prk_len, &out_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
 		EDHOC_LOG_ERR(
@@ -577,6 +580,7 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 					  VLA_SIZE(salt_3e2m), ctx->prk,
 					  ctx->prk_len, &out_len);
 		ctx->keys.destroy_key(ctx->user_ctx, key_id);
+		memset(key_id, 0, sizeof(key_id));
 
 		if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
 			EDHOC_LOG_ERR(
@@ -802,6 +806,7 @@ static int comp_keystream(const struct edhoc_context *ctx,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, VLA_SIZE(info),
 				 keystream, keystream_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR(
@@ -1299,6 +1304,7 @@ static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, VLA_SIZE(info),
 				 salt, salt_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR(
