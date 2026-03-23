@@ -1,3 +1,16 @@
+Version 1.7.1
+-------------
+
+:Date: March 23, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Testing:
+
+  * Cipher suite 2 (``tests/unit/test_crypto_suite2.c``): invalid key material for import; HKDF extract/expand when ``psa_key_derivation_set_capacity`` rejects oversized output; AEAD encrypt/decrypt with zero-length plaintext (null message buffers where PSA allows for AES-CCM).
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Documentation:
+
+  * Updated Sphinx ``conf.py`` version to v1.7.1.
+
 Version 1.7.0
 -------------
 
