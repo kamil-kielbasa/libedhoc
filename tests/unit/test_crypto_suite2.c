@@ -17,6 +17,7 @@
 /* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 /* EDHOC headers: */
@@ -406,6 +407,130 @@ TEST(crypto_suite2, key_import_invalid_type)
 	uint8_t key[32] = { 0 };
 	ret = edhoc_cipher_suite_2_key_import(NULL, 99, key, 32, &kid);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+}
+
+/**
+ * @scenario  psa_import_key rejects malformed material (covers import error path).
+ */
+TEST(crypto_suite2, key_import_rejects_invalid_key_material)
+{
+	psa_key_id_t kid;
+
+	const uint8_t short_priv[16] = { 0 };
+	ret = edhoc_cipher_suite_2_key_import(
+		NULL, EDHOC_KT_SIGNATURE, short_priv, sizeof(short_priv), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	const uint8_t short_aes[8] = { 0 };
+	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_ENCRYPT, short_aes,
+					      sizeof(short_aes), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	uint8_t zero_ecdh[ECC_COMP_KEY_LEN] = { 0 };
+	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
+					      zero_ecdh, sizeof(zero_ecdh),
+					      &kid);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	uint8_t short_pub[40];
+	memset(short_pub, 0x5a, sizeof(short_pub));
+	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_VERIFY, short_pub,
+					      sizeof(short_pub), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+}
+
+/**
+ * @scenario  HKDF-Extract: capacity above PSA limit fails at set_capacity.
+ */
+TEST(crypto_suite2, extract_prk_capacity_too_large)
+{
+	psa_key_id_t kid;
+	uint8_t raw_key[32];
+
+	TEST_ASSERT_EQUAL(PSA_SUCCESS,
+			  psa_generate_random(raw_key, sizeof(raw_key)));
+	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_EXTRACT, raw_key,
+					      sizeof(raw_key), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t salt[8] = { 0x01 };
+	enum { prk_buf_len = 4096 };
+	uint8_t prk[prk_buf_len];
+	size_t prk_len = 0;
+
+	ret = edhoc_cipher_suite_2_extract(NULL, &kid, salt, sizeof(salt), prk,
+					   sizeof(prk), &prk_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	edhoc_cipher_suite_2_key_destroy(NULL, &kid);
+}
+
+/**
+ * @scenario  HKDF-Expand: capacity above PSA limit fails at set_capacity.
+ */
+TEST(crypto_suite2, expand_okm_length_too_large)
+{
+	psa_key_id_t kid;
+	uint8_t raw_key[32];
+
+	TEST_ASSERT_EQUAL(PSA_SUCCESS,
+			  psa_generate_random(raw_key, sizeof(raw_key)));
+	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_EXPAND, raw_key,
+					      sizeof(raw_key), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t info[4] = { 0xab, 0xcd, 0xef, 0x01 };
+	enum { okm_len = 65536 };
+	uint8_t *okm = malloc(okm_len);
+
+	TEST_ASSERT_NOT_NULL(okm);
+	ret = edhoc_cipher_suite_2_expand(NULL, &kid, info, sizeof(info), okm,
+					  okm_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+	free(okm);
+
+	edhoc_cipher_suite_2_key_destroy(NULL, &kid);
+}
+
+/**
+ * @scenario  AEAD encrypt/decrypt with zero-length plaintext (NULL buffers OK for PSA).
+ */
+TEST(crypto_suite2, aead_zero_length_plaintext)
+{
+	psa_key_id_t kid = PSA_KEY_HANDLE_INIT;
+	const uint8_t key[AEAD_KEY_LEN] = {
+		0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3,
+	};
+	const uint8_t nonce[13] = { 0 };
+	const uint8_t ad[4] = { 0x10, 0x11, 0x12, 0x13 };
+
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_ENCRYPT, key,
+				     ARRAY_SIZE(key), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t ctxt[32];
+	size_t ctxt_len = 0;
+	ret = edhoc_crypto->encrypt(NULL, &kid, nonce, ARRAY_SIZE(nonce), ad,
+				    ARRAY_SIZE(ad), NULL, (size_t)0, ctxt,
+				    sizeof(ctxt), &ctxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_keys->destroy_key(NULL, &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_DECRYPT, key,
+				     ARRAY_SIZE(key), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	size_t ptxt_len = 0;
+	ret = edhoc_crypto->decrypt(NULL, &kid, nonce, ARRAY_SIZE(nonce), ad,
+				    ARRAY_SIZE(ad), ctxt, ctxt_len, NULL,
+				    (size_t)0, &ptxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL((size_t)0, ptxt_len);
+
+	ret = edhoc_keys->destroy_key(NULL, &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(crypto_suite2, key_destroy_null)
@@ -1183,6 +1308,10 @@ TEST_GROUP_RUNNER(crypto_suite2)
 	RUN_TEST_CASE(crypto_suite2, aead);
 	RUN_TEST_CASE(crypto_suite2, hash);
 	RUN_TEST_CASE(crypto_suite2, key_import_invalid_type);
+	RUN_TEST_CASE(crypto_suite2, key_import_rejects_invalid_key_material);
+	RUN_TEST_CASE(crypto_suite2, extract_prk_capacity_too_large);
+	RUN_TEST_CASE(crypto_suite2, expand_okm_length_too_large);
+	RUN_TEST_CASE(crypto_suite2, aead_zero_length_plaintext);
 	RUN_TEST_CASE(crypto_suite2, key_destroy_null);
 	RUN_TEST_CASE(crypto_suite2, make_key_pair_null_args);
 	RUN_TEST_CASE(crypto_suite2, key_agreement_null_args);
