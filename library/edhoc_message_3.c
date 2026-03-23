@@ -342,6 +342,7 @@ static int comp_prk_4e3m(struct edhoc_context *ctx,
 					  VLA_SIZE(salt_4e3m), ctx->prk,
 					  ctx->prk_len, &out_len);
 		ctx->keys.destroy_key(ctx->user_ctx, key_id);
+		memset(key_id, 0, sizeof(key_id));
 
 		if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
 			EDHOC_LOG_ERR(
@@ -1078,6 +1079,7 @@ static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, VLA_SIZE(info),
 				 salt, salt_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
+	memset(key_id, 0, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Failed to expand salt_4e3m: %d", ret);

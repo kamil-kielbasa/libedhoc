@@ -1,3 +1,22 @@
+Version 1.7.0
+-------------
+
+:Date: March 20, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Cipher suite 2 reference helper (``helpers/src/edhoc_cipher_suite_2.c``):
+
+  * ES256: ``edhoc_cipher_suite_2_hash`` then ``psa_sign_hash`` / ``psa_verify_hash`` (was ``psa_sign_message`` / ``psa_verify_message``); equivalent to ``PSA_ALG_ECDSA(PSA_ALG_SHA_256)`` on the full message.
+  * Hash-then-sign lowers I/O for large sign payloads (e.g. secure elements). Callback ``input`` is unchanged: full byte string from the library.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Documentation:
+
+  * Cipher suite 2 Doxygen and ``api.rst`` note.
+  * Updated Sphinx ``conf.py`` version to v1.7.0.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Library (volatile key handles):
+
+  * ``memset`` local ``key_id`` after ``destroy_key`` in ``edhoc_message_{1,2,3}.c`` (aligned with the rest of the library).
+
 Version 1.6.0
 -------------
 

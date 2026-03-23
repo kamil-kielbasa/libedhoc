@@ -455,18 +455,34 @@ int edhoc_cipher_suite_2_signature(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ret = psa_sign_message(*psa_kid, psa_get_key_algorithm(&attr), input,
-			       input_len, sign, sign_size, sign_len);
+	uint8_t digest[PSA_HASH_LENGTH(PSA_ALG_SHA_256)] = { 0 };
+	size_t digest_len = 0;
 
-	if (ECC_ECDSA_SIGN_LEN != *sign_len) {
-		EDHOC_LOG_ERR("Invalid signature length: %zu, expected: %d",
-			      *sign_len, ECC_ECDSA_SIGN_LEN);
+	ret = edhoc_cipher_suite_2_hash(user_ctx, input, input_len, digest,
+					sizeof(digest), &digest_len);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to hash input, PSA status: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
+
+	if (PSA_HASH_LENGTH(PSA_ALG_SHA_256) != digest_len) {
+		EDHOC_LOG_ERR("Unexpected digest length: %zu", digest_len);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	ret = psa_sign_hash(*psa_kid, psa_get_key_algorithm(&attr), digest,
+			    digest_len, sign, sign_size, sign_len);
 
 	if (PSA_SUCCESS != ret) {
 		EDHOC_LOG_ERR("ECDSA signature creation failed, PSA status: %d",
 			      ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	if (ECC_ECDSA_SIGN_LEN != *sign_len) {
+		EDHOC_LOG_ERR("Invalid signature length: %zu, expected: %d",
+			      *sign_len, ECC_ECDSA_SIGN_LEN);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -505,11 +521,33 @@ int edhoc_cipher_suite_2_verify(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ret = psa_verify_message(*psa_kid, psa_get_key_algorithm(&attr), input,
-				 input_len, sign, sign_len);
+	uint8_t digest[PSA_HASH_LENGTH(PSA_ALG_SHA_256)] = { 0 };
+	size_t digest_len = 0;
 
-	return (PSA_SUCCESS == ret) ? EDHOC_SUCCESS :
-				      EDHOC_ERROR_CRYPTO_FAILURE;
+	ret = edhoc_cipher_suite_2_hash(user_ctx, input, input_len, digest,
+					sizeof(digest), &digest_len);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Failed to hash input, PSA status: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	if (PSA_HASH_LENGTH(PSA_ALG_SHA_256) != digest_len) {
+		EDHOC_LOG_ERR("Unexpected digest length: %zu", digest_len);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	ret = psa_verify_hash(*psa_kid, psa_get_key_algorithm(&attr), digest,
+			      digest_len, sign, sign_len);
+
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR(
+			"ECDSA signature verification failed, PSA status: %d",
+			ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 int edhoc_cipher_suite_2_extract(void *user_ctx, const void *kid,

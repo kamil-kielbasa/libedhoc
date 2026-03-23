@@ -1041,6 +1041,140 @@ TEST(crypto_suite2, make_key_pair_destroyed_key)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
 }
 
+/**
+ * @scenario  signature with verify-only (public) key — psa_sign_hash must fail.
+ */
+TEST(crypto_suite2, signature_public_key_rejected)
+{
+	const uint8_t pub_key[ECC_UNCOMP_KEY_LEN] = {
+		0x04, 0xac, 0x75, 0xe9, 0xec, 0xe3, 0xe5, 0x0b, 0xfc, 0x8e,
+		0xd6, 0x03, 0x99, 0x88, 0x95, 0x22, 0x40, 0x5c, 0x47, 0xbf,
+		0x16, 0xdf, 0x96, 0x66, 0x0a, 0x41, 0x29, 0x8c, 0xb4, 0x30,
+		0x7f, 0x7e, 0xb6, 0x6e, 0x5d, 0xe6, 0x11, 0x38, 0x8a, 0x4b,
+		0x8a, 0x82, 0x11, 0x33, 0x4a, 0xc7, 0xd3, 0x7e, 0xcb, 0x52,
+		0xa3, 0x87, 0xd2, 0x57, 0xe6, 0xdb, 0x3c, 0x2a, 0x93, 0xdf,
+		0x21, 0xff, 0x3a, 0xff, 0xc8,
+	};
+
+	psa_key_id_t kid = PSA_KEY_HANDLE_INIT;
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_VERIFY, pub_key,
+				     ARRAY_SIZE(pub_key), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t input[16] = { 0x01 };
+	uint8_t sign[ECC_ECDSA_SIGN_LEN];
+	size_t sign_len = 0;
+	ret = edhoc_crypto->signature(NULL, &kid, input, ARRAY_SIZE(input),
+				      sign, ARRAY_SIZE(sign), &sign_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	ret = edhoc_keys->destroy_key(NULL, &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+/**
+ * @scenario  verify with corrupted signature — psa_verify_hash fails after hash.
+ */
+TEST(crypto_suite2, verify_corrupted_signature)
+{
+	psa_key_id_t key_id = PSA_KEY_HANDLE_INIT;
+
+	const uint8_t priv_key[ECC_COMP_KEY_LEN] = {
+		0xfb, 0x13, 0xad, 0xeb, 0x65, 0x18, 0xce, 0xe5,
+		0xf8, 0x84, 0x17, 0x66, 0x08, 0x41, 0x14, 0x2e,
+		0x83, 0x0a, 0x81, 0xfe, 0x33, 0x43, 0x80, 0xa9,
+		0x53, 0x40, 0x6a, 0x13, 0x05, 0xe8, 0x70, 0x6b,
+	};
+	const uint8_t pub_key[ECC_UNCOMP_KEY_LEN] = {
+		0x04, 0xac, 0x75, 0xe9, 0xec, 0xe3, 0xe5, 0x0b, 0xfc, 0x8e,
+		0xd6, 0x03, 0x99, 0x88, 0x95, 0x22, 0x40, 0x5c, 0x47, 0xbf,
+		0x16, 0xdf, 0x96, 0x66, 0x0a, 0x41, 0x29, 0x8c, 0xb4, 0x30,
+		0x7f, 0x7e, 0xb6, 0x6e, 0x5d, 0xe6, 0x11, 0x38, 0x8a, 0x4b,
+		0x8a, 0x82, 0x11, 0x33, 0x4a, 0xc7, 0xd3, 0x7e, 0xcb, 0x52,
+		0xa3, 0x87, 0xd2, 0x57, 0xe6, 0xdb, 0x3c, 0x2a, 0x93, 0xdf,
+		0x21, 0xff, 0x3a, 0xff, 0xc8,
+	};
+
+	uint8_t input[32];
+	TEST_ASSERT_EQUAL(PSA_SUCCESS,
+			  psa_generate_random(input, sizeof(input)));
+
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_SIGNATURE, priv_key,
+				     ARRAY_SIZE(priv_key), &key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t sign[ECC_ECDSA_SIGN_LEN];
+	size_t sign_len = 0;
+	ret = edhoc_crypto->signature(NULL, &key_id, input, ARRAY_SIZE(input),
+				      sign, ARRAY_SIZE(sign), &sign_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL((size_t)ECC_ECDSA_SIGN_LEN, sign_len);
+
+	ret = edhoc_keys->destroy_key(NULL, &key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_VERIFY, pub_key,
+				     ARRAY_SIZE(pub_key), &key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	sign[0] ^= (uint8_t)0xFF;
+	ret = edhoc_crypto->verify(NULL, &key_id, input, ARRAY_SIZE(input),
+				   sign, sign_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	ret = edhoc_keys->destroy_key(NULL, &key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+/**
+ * @scenario  signature and verify with input_len == 0.
+ */
+TEST(crypto_suite2, signature_verify_zero_input_len)
+{
+	const uint8_t priv_key[ECC_COMP_KEY_LEN] = {
+		0xfb, 0x13, 0xad, 0xeb, 0x65, 0x18, 0xce, 0xe5,
+		0xf8, 0x84, 0x17, 0x66, 0x08, 0x41, 0x14, 0x2e,
+		0x83, 0x0a, 0x81, 0xfe, 0x33, 0x43, 0x80, 0xa9,
+		0x53, 0x40, 0x6a, 0x13, 0x05, 0xe8, 0x70, 0x6b,
+	};
+	const uint8_t pub_key[ECC_UNCOMP_KEY_LEN] = {
+		0x04, 0xac, 0x75, 0xe9, 0xec, 0xe3, 0xe5, 0x0b, 0xfc, 0x8e,
+		0xd6, 0x03, 0x99, 0x88, 0x95, 0x22, 0x40, 0x5c, 0x47, 0xbf,
+		0x16, 0xdf, 0x96, 0x66, 0x0a, 0x41, 0x29, 0x8c, 0xb4, 0x30,
+		0x7f, 0x7e, 0xb6, 0x6e, 0x5d, 0xe6, 0x11, 0x38, 0x8a, 0x4b,
+		0x8a, 0x82, 0x11, 0x33, 0x4a, 0xc7, 0xd3, 0x7e, 0xcb, 0x52,
+		0xa3, 0x87, 0xd2, 0x57, 0xe6, 0xdb, 0x3c, 0x2a, 0x93, 0xdf,
+		0x21, 0xff, 0x3a, 0xff, 0xc8,
+	};
+
+	psa_key_id_t kid = PSA_KEY_HANDLE_INIT;
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_SIGNATURE, priv_key,
+				     ARRAY_SIZE(priv_key), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t dummy = 0;
+	uint8_t sign[ECC_ECDSA_SIGN_LEN];
+	size_t sign_len = 0;
+	ret = edhoc_crypto->signature(NULL, &kid, &dummy, 0, sign,
+				      ARRAY_SIZE(sign), &sign_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_keys->destroy_key(NULL, &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_VERIFY, pub_key,
+				     ARRAY_SIZE(pub_key), &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t fake_sign[ECC_ECDSA_SIGN_LEN] = { 0 };
+	ret = edhoc_crypto->verify(NULL, &kid, &dummy, 0, fake_sign,
+				   ARRAY_SIZE(fake_sign));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_keys->destroy_key(NULL, &kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST_GROUP_RUNNER(crypto_suite2)
 {
 	RUN_TEST_CASE(crypto_suite2, ecdsa);
@@ -1081,4 +1215,7 @@ TEST_GROUP_RUNNER(crypto_suite2)
 	RUN_TEST_CASE(crypto_suite2, expand_wrong_key_type);
 	RUN_TEST_CASE(crypto_suite2, key_agreement_wrong_key_type);
 	RUN_TEST_CASE(crypto_suite2, make_key_pair_destroyed_key);
+	RUN_TEST_CASE(crypto_suite2, signature_public_key_rejected);
+	RUN_TEST_CASE(crypto_suite2, verify_corrupted_signature);
+	RUN_TEST_CASE(crypto_suite2, signature_verify_zero_input_len);
 }

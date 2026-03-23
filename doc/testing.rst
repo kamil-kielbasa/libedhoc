@@ -43,7 +43,7 @@ Naming Convention
 
 Unit tests:
   - ``crypto_suite0`` — EDHOC cipher suite 0 (EdDSA, ECDH, HKDF, AEAD, HASH)
-  - ``crypto_suite2`` — EDHOC cipher suite 2 (ECDSA, ECDH, HKDF, AEAD, HASH)
+  - ``crypto_suite2`` — EDHOC cipher suite 2 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
   - ``api`` — EDHOC public API (context init, methods, cipher suites, bindings)
   - ``api_negative`` — Negative API tests (null args, invalid state, error paths)
   - ``error_message`` — EDHOC error message compose/process (success, unspecified, wrong suite, unknown cred)
