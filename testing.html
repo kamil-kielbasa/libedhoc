@@ -1,0 +1,561 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Testing &mdash; libedhoc  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Changelog" href="changelog.html" />
+    <link rel="prev" title="Configuration" href="configuration.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            libedhoc
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Documentation</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">EDHOC API &amp; Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="values.html">EDHOC error codes &amp; values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuration.html">Configuration</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Testing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-architecture">Test Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#naming-convention">Naming Convention</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-documentation">Test Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-tests">Running Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#local-reproducibility">Local Reproducibility</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#compiler-selection">Compiler selection</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#coverage">Coverage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#zephyr-benchmark-native-sim">Zephyr Benchmark (native_sim)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-categories">Test Categories</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#unit-tests">Unit Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integration-tests">Integration Tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fuzz-tests">Fuzz Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#static-analysis">Static Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ci-integration">CI Integration</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">References</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="links.html">Links</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">libedhoc</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Testing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/testing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="testing">
+<h1>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>libedhoc uses a 3-tier testing architecture to ensure correctness, robustness, and
+protocol compliance:</p>
+<ol class="arabic simple">
+<li><p><strong>Unit tests</strong> — Test individual functions and modules in isolation with mocked
+dependencies.</p></li>
+<li><p><strong>Integration tests</strong> — Exercise full EDHOC handshake flows and protocol message
+composition/processing against RFC test vectors.</p></li>
+<li><p><strong>Fuzz tests</strong> — LibFuzzer-based targets that stress message parsing and processing
+with random inputs.</p></li>
+</ol>
+</section>
+<section id="test-architecture">
+<h2>Test Architecture<a class="headerlink" href="#test-architecture" title="Link to this heading"></a></h2>
+<p>Directory layout:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>tests/
+├── unit/           # Unit tests
+├── integration/    # Integration tests
+├── common/         # Shared test helpers
+│   ├── include/
+│   └── src/
+├── fuzz/           # LibFuzzer fuzz targets
+├── test_main.c     # Test runner
+</pre></div>
+</div>
+</section>
+<section id="naming-convention">
+<h2>Naming Convention<a class="headerlink" href="#naming-convention" title="Link to this heading"></a></h2>
+<p><strong>Files:</strong> <code class="docutils literal notranslate"><span class="pre">test_&lt;subject&gt;.c</span></code></p>
+<p><strong>TEST_GROUP:</strong> Matches the file subject (e.g., <code class="docutils literal notranslate"><span class="pre">test_api.c</span></code> → <code class="docutils literal notranslate"><span class="pre">TEST_GROUP(api)</span></code>)</p>
+<p><strong>TEST cases:</strong> Descriptive <code class="docutils literal notranslate"><span class="pre">snake_case</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">TEST(api,</span> <span class="pre">context_init)</span></code>)</p>
+<p><strong>Test groups by tier:</strong></p>
+<dl class="simple">
+<dt>Unit tests:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">crypto_suite0</span></code> — EDHOC cipher suite 0 (EdDSA, ECDH, HKDF, AEAD, HASH)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">crypto_suite2</span></code> — EDHOC cipher suite 2 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">api</span></code> — EDHOC public API (context init, methods, cipher suites, bindings)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">api_negative</span></code> — Negative API tests (null args, invalid state, error paths)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">error_message</span></code> — EDHOC error message compose/process (success, unspecified, wrong suite, unknown cred)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">exporters</span></code> — PRK exporter, OSCORE session export, key update</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">helpers</span></code> — Connection ID, flow prepend/extract, CoAP transport helpers</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">coverage</span></code> — Mock-based failure injection for deep internal error paths</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">internals</span></code> — Internal function testing via test hooks (LIBEDHOC_TEST_HOOKS)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">message_paths</span></code> — Message composition/processing round-trips with real crypto</p></li>
+</ul>
+</dd>
+<dt>Integration tests:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rfc9529_chapter2</span></code> — RFC 9529 Ch.2 vectors (signatures, x5t), message 1–4, handshake, EAD</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rfc9529_chapter3</span></code> — RFC 9529 Ch.3 vectors (static DH, kid), message 1–4, handshake</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">rfc9528_negotiation</span></code> — Cipher suite negotiation (RFC 9528 Ch.6.3.2)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">handshake_x5chain_sig_suite0</span></code> — Full handshake, x5chain, signatures, suite 0</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">handshake_x5chain_sig_suite2</span></code> — Full handshake, x5chain, signatures, suite 2</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">handshake_x5chain_dh_suite2</span></code> — Full handshake, x5chain, static DH, suite 2</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">handshake_x5t_sig_suite2</span></code> — Full handshake, x5t, signatures, suite 2</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">handshake_auth_methods</span></code> — Handshake with auth methods 1 and 2</p></li>
+</ul>
+</dd>
+<dt>Fuzz targets:</dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_1_process</span></code> — EDHOC message 1 processing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_2_process</span></code> — EDHOC message 2 processing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_3_process</span></code> — EDHOC message 3 processing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_4_process</span></code> — EDHOC message 4 processing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_error_process</span></code> — EDHOC error message processing</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="test-documentation">
+<h2>Test Documentation<a class="headerlink" href="#test-documentation" title="Link to this heading"></a></h2>
+<p>Each test uses a structured documentation format in Doxygen-style comments:</p>
+<ul class="simple">
+<li><p><strong>&#64;scenario</strong> — What is being tested</p></li>
+<li><p><strong>&#64;env</strong> — Test environment / preconditions</p></li>
+<li><p><strong>&#64;action</strong> — The action performed (API call, input, etc.)</p></li>
+<li><p><strong>&#64;expected</strong> — Expected outcome or return value</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="cm">/**</span>
+<span class="cm"> * @scenario  EDHOC context initialization and deinitialization.</span>
+<span class="cm"> * @env       None.</span>
+<span class="cm"> * @action    Call edhoc_context_init() on zeroed context, verify is_init,</span>
+<span class="cm"> *            then call edhoc_context_deinit().</span>
+<span class="cm"> * @expected  Both calls return EDHOC_SUCCESS; ctx.is_init is true after init.</span>
+<span class="cm"> */</span>
+<span class="n">TEST</span><span class="p">(</span><span class="n">api</span><span class="p">,</span><span class="w"> </span><span class="n">context_init</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="running-tests">
+<h2>Running Tests<a class="headerlink" href="#running-tests" title="Link to this heading"></a></h2>
+<p>The recommended entry point is the unified <code class="file docutils literal notranslate"><span class="pre">scripts/ci.sh</span></code> script.</p>
+<p><strong>1. Build and run all tests</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>build<span class="w"> </span>--gcc
+./scripts/ci.sh<span class="w"> </span><span class="nb">test</span>
+</pre></div>
+</div>
+<p><strong>2. Run with coverage</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>coverage
+<span class="c1"># Or open report in browser:</span>
+./scripts/ci.sh<span class="w"> </span>coverage<span class="w"> </span>--open
+</pre></div>
+</div>
+<p><strong>3. Run with sanitizers (ASan + UBSan) — GCC</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>sanitizers<span class="w"> </span>asan-ubsan
+</pre></div>
+</div>
+<p><strong>4. Run with Valgrind</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>valgrind
+</pre></div>
+</div>
+<p><strong>5. Run fuzzing — Clang only (LibFuzzer)</strong></p>
+<p>Fuzzing uses Clang’s built-in LibFuzzer; GCC does not ship an equivalent.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>fuzz<span class="w"> </span><span class="m">60</span>
+</pre></div>
+</div>
+<p><strong>6. Run full CI pipeline locally</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>all
+</pre></div>
+</div>
+</section>
+<section id="local-reproducibility">
+<h2>Local Reproducibility<a class="headerlink" href="#local-reproducibility" title="Link to this heading"></a></h2>
+<p>To reproduce CI jobs locally, use the following commands:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>CI Job</p></th>
+<th class="head"><p>Local Command</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>GCC + Coverage</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">coverage</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Clang</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">build</span> <span class="pre">--clang</span> <span class="pre">&amp;&amp;</span> <span class="pre">./scripts/ci.sh</span> <span class="pre">test</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Sanitizers (asan-ubsan)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">sanitizers</span> <span class="pre">asan-ubsan</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Valgrind</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">build</span> <span class="pre">--gcc</span> <span class="pre">&amp;&amp;</span> <span class="pre">./scripts/ci.sh</span> <span class="pre">valgrind</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Static Analysis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">cppcheck</span> <span class="pre">&amp;&amp;</span> <span class="pre">./scripts/ci.sh</span> <span class="pre">clang-tidy</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Fuzz</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">fuzz</span> <span class="pre">60</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Full pipeline</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">all</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<section id="compiler-selection">
+<h3>Compiler selection<a class="headerlink" href="#compiler-selection" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">ci.sh</span></code> script selects the compiler automatically based on the task:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 25.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Task</p></th>
+<th class="head"><p>Compiler</p></th>
+<th class="head"><p>Reason</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Build / tests / coverage</p></td>
+<td><p>GCC</p></td>
+<td><p>Default; <code class="docutils literal notranslate"><span class="pre">gcov</span></code> integration for coverage</p></td>
+</tr>
+<tr class="row-odd"><td><p>Clang build</p></td>
+<td><p>Clang</p></td>
+<td><p>Secondary compiler gate</p></td>
+</tr>
+<tr class="row-even"><td><p>ASan + UBSan</p></td>
+<td><p>GCC</p></td>
+<td><p>Works with both; GCC chosen for consistency</p></td>
+</tr>
+<tr class="row-odd"><td><p>Fuzz</p></td>
+<td><p>Clang</p></td>
+<td><p>LibFuzzer is a Clang-only feature</p></td>
+</tr>
+<tr class="row-even"><td><p>Static analysis</p></td>
+<td><p>Clang</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">clang-tidy</span></code> requires a Clang compile database</p></td>
+</tr>
+<tr class="row-odd"><td><p>Valgrind</p></td>
+<td><p>GCC</p></td>
+<td><p>Runtime tool; compiler independent</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="coverage">
+<h2>Coverage<a class="headerlink" href="#coverage" title="Link to this heading"></a></h2>
+<p>Coverage is measured with <strong>gcov</strong> (instrumentation) and <strong>lcov</strong> (report generation).
+The build uses <code class="docutils literal notranslate"><span class="pre">-DLIBEDHOC_ENABLE_COVERAGE=ON</span></code> to add <code class="docutils literal notranslate"><span class="pre">--coverage</span></code> flags.</p>
+<p>To generate coverage:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>coverage
+<span class="c1"># Report: build/coverage_html/index.html</span>
+</pre></div>
+</div>
+<p>Coverage excludes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">externals/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">backends/cbor/src/</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">/usr/*</span></code></p></li>
+</ul>
+<p><strong>Codecov.io</strong> integration uploads coverage from CI. See <code class="file docutils literal notranslate"><span class="pre">codecov.yml</span></code> and the
+<code class="docutils literal notranslate"><span class="pre">codecov/codecov-action</span></code> step in <code class="file docutils literal notranslate"><span class="pre">.github/workflows/ci-linux.yml</span></code>.</p>
+</section>
+<section id="zephyr-benchmark-native-sim">
+<h2>Zephyr Benchmark (native_sim)<a class="headerlink" href="#zephyr-benchmark-native-sim" title="Link to this heading"></a></h2>
+<p>A Zephyr benchmark app at <code class="docutils literal notranslate"><span class="pre">sample/benchmark/</span></code> runs a full EDHOC handshake
+with cipher suite 2 (P-256/ES256) on <code class="docutils literal notranslate"><span class="pre">native_sim</span></code>. This exercises all library
+code paths, producing accurate flash footprint data and per-phase handshake
+timing. Build and measure locally (requires west + Zephyr SDK):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>west<span class="w"> </span>build<span class="w"> </span>-b<span class="w"> </span>native_sim<span class="w"> </span>sample/benchmark<span class="w"> </span>-p<span class="w"> </span>always
+./build/zephyr/zephyr.exe<span class="w">     </span><span class="c1"># handshake timing (JSON on stdout)</span>
+
+<span class="c1"># Flash footprint by function (from final linked binary):</span>
+nm<span class="w"> </span>--print-size<span class="w"> </span>--size-sort<span class="w"> </span>--defined-only<span class="w"> </span>build/zephyr/zephyr.exe<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>edhoc<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{printf &quot;%6d  %s\n&quot;, strtonum(&quot;0x&quot;$2), $4}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
+
+<span class="c1"># Total flash (single number):</span>
+nm<span class="w"> </span>--print-size<span class="w"> </span>--size-sort<span class="w"> </span>--defined-only<span class="w"> </span>build/zephyr/zephyr.exe<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>edhoc<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{sum += strtonum(&quot;0x&quot;$2)} END {printf &quot;libedhoc flash: %d bytes (%.1f KiB)\n&quot;, sum, sum/1024}&#39;</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Zephyr’s <code class="docutils literal notranslate"><span class="pre">rom_report</span></code> / <code class="docutils literal notranslate"><span class="pre">ram_report</span></code> targets require a fully-linked
+(non-relocatable) ELF. On <code class="docutils literal notranslate"><span class="pre">native_sim</span></code> the intermediate <code class="docutils literal notranslate"><span class="pre">zephyr.elf</span></code> is a
+partial link (<code class="docutils literal notranslate"><span class="pre">-r</span></code>), so those reports show most code as “(hidden)”. The <code class="docutils literal notranslate"><span class="pre">nm</span></code>
+analysis of the final <code class="docutils literal notranslate"><span class="pre">zephyr.exe</span></code> is authoritative instead.</p>
+</div>
+<p>The CI automatically builds this and uploads <code class="docutils literal notranslate"><span class="pre">flash_report.txt</span></code> and
+<code class="docutils literal notranslate"><span class="pre">benchmark_timing.json</span></code> as artifacts.
+Expected library flash footprint is <strong>~20 KiB</strong> (0 bytes static RAM — all
+state lives on the stack).</p>
+</section>
+<section id="test-categories">
+<h2>Test Categories<a class="headerlink" href="#test-categories" title="Link to this heading"></a></h2>
+<section id="unit-tests">
+<h3>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 25.0%" />
+<col style="width: 45.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Group</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_api.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">api</span></code></p></td>
+<td><p>EDHOC public API: context init, methods, cipher suites, connection ID, bindings</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_api_negative.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">api_negative</span></code></p></td>
+<td><p>Negative tests: null pointers, invalid state, error paths for all API functions</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_crypto_suite0.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">crypto_suite0</span></code></p></td>
+<td><p>Cipher suite 0: EdDSA, ECDH, HKDF, AEAD, HASH</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_crypto_suite2.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">crypto_suite2</span></code></p></td>
+<td><p>Cipher suite 2: ECDSA, ECDH, HKDF, AEAD, HASH</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_error_message.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">error_message</span></code></p></td>
+<td><p>Error message compose/process: success, unspecified, wrong cipher suite, unknown cred</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_exporters.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">exporters</span></code></p></td>
+<td><p>PRK exporter, OSCORE session export, key update, error handling</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_helpers.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">helpers</span></code></p></td>
+<td><p>Connection ID equal/prepend/extract, flow prepend/extract, CoAP helpers</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_coverage.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">coverage</span></code></p></td>
+<td><p>Mock-based failure injection for deep internal error paths</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_internals.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">internals</span></code></p></td>
+<td><p>Internal function testing via test hooks (LIBEDHOC_TEST_HOOKS)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/unit/test_message_paths.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">message_paths</span></code></p></td>
+<td><p>Message composition/processing round-trips with real crypto</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="integration-tests">
+<h3>Integration Tests<a class="headerlink" href="#integration-tests" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 25.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Group</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_rfc9529_chapter2.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rfc9529_chapter2</span></code></p></td>
+<td><p>RFC 9529 Ch.2: signatures, x5t; message 1–4, handshake, PRK exporter, EAD</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_rfc9529_chapter3.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rfc9529_chapter3</span></code></p></td>
+<td><p>RFC 9529 Ch.3: static DH, kid; message 1–4, handshake</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_rfc9528_negotiation.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">rfc9528_negotiation</span></code></p></td>
+<td><p>RFC 9528 Ch.6.3.2: cipher suite negotiation (single/list)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_handshake_x5chain_sig_suite0.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">handshake_x5chain_sig_suite0</span></code></p></td>
+<td><p>Full handshake, x5chain, signatures, suite 0; 1–2 certs in chain</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_handshake_x5chain_sig_suite2.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">handshake_x5chain_sig_suite2</span></code></p></td>
+<td><p>Full handshake, x5chain, signatures, suite 2; single/multiple EAD</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_handshake_x5chain_dh_suite2.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">handshake_x5chain_dh_suite2</span></code></p></td>
+<td><p>Full handshake, x5chain, static DH, suite 2; single EAD</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_handshake_x5t_sig_suite2.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">handshake_x5t_sig_suite2</span></code></p></td>
+<td><p>Full handshake, x5t, signatures, suite 2; cert hashes</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="file docutils literal notranslate"><span class="pre">tests/integration/test_handshake_auth_methods.c</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">handshake_auth_methods</span></code></p></td>
+<td><p>Handshake with auth methods 1 and 2</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="fuzz-tests">
+<h3>Fuzz Tests<a class="headerlink" href="#fuzz-tests" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Target</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_1_process</span></code></p></td>
+<td><p>Fuzzes EDHOC message 1 processing</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_2_process</span></code></p></td>
+<td><p>Fuzzes EDHOC message 2 processing</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_3_process</span></code></p></td>
+<td><p>Fuzzes EDHOC message 3 processing</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_4_process</span></code></p></td>
+<td><p>Fuzzes EDHOC message 4 processing</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">fuzz_message_error_process</span></code></p></td>
+<td><p>Fuzzes EDHOC error message processing</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="static-analysis">
+<h2>Static Analysis<a class="headerlink" href="#static-analysis" title="Link to this heading"></a></h2>
+<p><strong>Cppcheck</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>cppcheck
+</pre></div>
+</div>
+<p>Runs cppcheck on <code class="file docutils literal notranslate"><span class="pre">library/</span></code> with <code class="docutils literal notranslate"><span class="pre">--enable=warning,style</span></code> and include paths for
+<code class="file docutils literal notranslate"><span class="pre">include/</span></code>, <code class="file docutils literal notranslate"><span class="pre">helpers/include/</span></code>, <code class="docutils literal notranslate"><span class="pre">backends/cbor/include/</span></code>.</p>
+<p><strong>Clang-tidy</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./scripts/ci.sh<span class="w"> </span>clang-tidy
+</pre></div>
+</div>
+</section>
+<section id="ci-integration">
+<h2>CI Integration<a class="headerlink" href="#ci-integration" title="Link to this heading"></a></h2>
+<p>The GitHub Actions workflow <code class="file docutils literal notranslate"><span class="pre">.github/workflows/ci-linux.yml</span></code> runs:</p>
+<ul class="simple">
+<li><p><strong>GCC + Coverage</strong> — GCC build with coverage, tests, lcov, Codecov upload</p></li>
+<li><p><strong>Clang</strong> — Clang + Ninja build and tests</p></li>
+<li><p><strong>ASan + UBSan</strong> — AddressSanitizer + UndefinedBehaviorSanitizer (GCC)</p></li>
+<li><p><strong>Valgrind</strong> — Memcheck and DRD</p></li>
+<li><p><strong>Static Analysis</strong> — cppcheck and clang-tidy</p></li>
+<li><p><strong>Fuzz</strong> — LibFuzzer smoke test (60s per target, Clang)</p></li>
+<li><p><strong>Benchmark</strong> — Binary size analysis and handshake timing (Release, GCC)</p></li>
+</ul>
+<p>The unified <code class="file docutils literal notranslate"><span class="pre">scripts/ci.sh</span></code> script can replicate most of this locally with
+<code class="docutils literal notranslate"><span class="pre">./scripts/ci.sh</span> <span class="pre">all</span></code>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="configuration.html" class="btn btn-neutral float-left" title="Configuration" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="changelog.html" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Kamil Kielbasa.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
