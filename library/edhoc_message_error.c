@@ -56,8 +56,7 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 				const struct edhoc_error_info *info)
 {
 	if (NULL == msg_err || 0 == msg_err_size || NULL == msg_err_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments in edhoc_message_error_compose");
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -86,9 +85,7 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		}
 
 		if (info->written_entries > info->total_entries) {
-			EDHOC_LOG_ERR(
-				"Invalid arguments: written_entries=%zu > total_entries=%zu",
-				info->written_entries, info->total_entries);
+			EDHOC_LOG_ERR("Invalid arguments");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
 
@@ -115,9 +112,7 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		}
 
 		if (info->written_entries > info->total_entries) {
-			EDHOC_LOG_ERR(
-				"Invalid arguments: written_entries=%zu > total_entries=%zu",
-				info->written_entries, info->total_entries);
+			EDHOC_LOG_ERR("Invalid arguments");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
 
@@ -131,10 +126,8 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		} else {
 			if (ARRAY_SIZE(suites->suites_int_l_int) <
 			    info->written_entries) {
-				EDHOC_LOG_ERR(
-					"Buffer too small: array_size=%zu < written_entries=%zu",
-					ARRAY_SIZE(suites->suites_int_l_int),
-					info->written_entries);
+				EDHOC_LOG_ERR("Buffer too small: %zu",
+					      info->written_entries);
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
 			}
 
@@ -156,7 +149,7 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 	}
 
 	default:
-		EDHOC_LOG_ERR("Not permitted: unknown error code: %d", code);
+		EDHOC_LOG_ERR("Unknown error code: %d", code);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -164,7 +157,7 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 					msg_err_len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Failed to CBOR encode error message: %d", ret);
+		EDHOC_LOG_ERR("CBOR enc error msg: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -176,8 +169,7 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 				struct edhoc_error_info *info)
 {
 	if (NULL == msg_err || 0 == msg_err_len || NULL == code) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments in edhoc_message_error_process");
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -188,7 +180,7 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 	ret = cbor_decode_message_error(msg_err, msg_err_len, &result, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Failed to CBOR decode error message: %d", ret);
+		EDHOC_LOG_ERR("CBOR dec error msg: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -211,9 +203,8 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 					 .message_error_ERR_INFO_tstr;
 
 			if (tstr->len > info->total_entries) {
-				EDHOC_LOG_ERR(
-					"Buffer too small: text_len=%zu > total_entries=%zu",
-					tstr->len, info->total_entries);
+				EDHOC_LOG_ERR("Buffer too small: %zu, %zu",
+					      tstr->len, info->total_entries);
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
 			}
 
@@ -248,7 +239,7 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 				if (suites->suites_int_l_int_count >
 				    info->total_entries) {
 					EDHOC_LOG_ERR(
-						"Buffer too small: suites_count=%zu > total_entries=%zu",
+						"Buffer too small: %zu, %zu",
 						suites->suites_int_l_int_count,
 						info->total_entries);
 					return EDHOC_ERROR_BUFFER_TOO_SMALL;
@@ -264,9 +255,8 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 			}
 
 			default:
-				EDHOC_LOG_ERR(
-					"Not permitted: invalid suites choice: %d",
-					suites->suites_choice);
+				EDHOC_LOG_ERR("Invalid suites choice: %d",
+					      suites->suites_choice);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 		}
@@ -281,9 +271,8 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 	}
 
 	default:
-		EDHOC_LOG_ERR(
-			"Not permitted: unknown error code in message: %d",
-			result.message_error_ERR_CODE);
+		EDHOC_LOG_ERR("Unknown error code in message: %d",
+			      result.message_error_ERR_CODE);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 

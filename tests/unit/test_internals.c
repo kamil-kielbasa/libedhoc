@@ -4131,7 +4131,7 @@ TEST(internals, comp_sign_or_mac_method_max_msg3)
  * @scenario  edhoc_verify_sign_or_mac with MAC mismatch for MSG_3 (method 2/3).
  * @env       Context set to MSG_3, INITIATOR role, METHOD_2.
  * @action    Call edhoc_verify_sign_or_mac with different mac and sign_or_mac bytes.
- * @expected  EDHOC_ERROR_INVALID_SIGN_OR_MAC_2 (MAC mismatch branch for MSG_3).
+ * @expected  EDHOC_ERROR_INVALID_SIGN_OR_MAC_3 (MAC mismatch branch for MSG_3).
  */
 TEST(internals, verify_sign_or_mac_mismatch_msg3)
 {
@@ -4153,7 +4153,7 @@ TEST(internals, verify_sign_or_mac_mismatch_msg3)
 
 	int ret = edhoc_verify_sign_or_mac(&ctx, mc, pub, 32, fake_sign, 8, mac,
 					   8);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_SIGN_OR_MAC_2, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_SIGN_OR_MAC_3, ret);
 
 	edhoc_context_deinit(&ctx);
 }

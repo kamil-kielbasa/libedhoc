@@ -68,7 +68,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 			    size_t msg_1_size, size_t *msg_1_len)
 {
-	EDHOC_LOG_DBG("Composing EDHOC message 1");
+	EDHOC_LOG_INF("Compose msg1 start");
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -107,7 +107,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				   0, key_id);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Failed to import ephemeral DH key: %d", ret);
+		EDHOC_LOG_ERR("Import ephemeral DH key: %d", ret);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
@@ -125,17 +125,16 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != dh_priv_key_len ||
 	    csuite.ecc_key_length != dh_pub_key_len) {
-		EDHOC_LOG_ERR(
-			"Failed to generate key pair: ret=%d, expected_len=%zu, priv_len=%zu, pub_len=%zu",
-			ret, csuite.ecc_key_length, dh_priv_key_len,
-			dh_pub_key_len);
+		EDHOC_LOG_ERR("Generate key pair: %d, %zu, %zu, %zu", ret,
+			      csuite.ecc_key_length, dh_priv_key_len,
+			      dh_pub_key_len);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
 	ctx->dh_priv_key_len = dh_priv_key_len;
 
-	EDHOC_LOG_HEXDUMP_INF(dh_pub_key, dh_pub_key_len, "G_X");
-	EDHOC_LOG_HEXDUMP_INF(ctx->dh_priv_key, ctx->dh_priv_key_len, "X");
+	EDHOC_LOG_HEXDUMP_DBG(dh_pub_key, dh_pub_key_len, "G_X");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->dh_priv_key, ctx->dh_priv_key_len, "X");
 
 	struct message_1 cbor_enc_msg_1 = { 0 };
 
@@ -155,7 +154,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		if (ARRAY_SIZE(cbor_enc_msg_1.message_1_SUITES_I
 				       .suites_int_l_int) < ctx->csuite_len) {
 			EDHOC_LOG_ERR(
-				"Buffer too small for cipher suites: need %zu, have %zu",
+				"Buffer too small for cipher suites: %zu, %zu",
 				ctx->csuite_len,
 				ARRAY_SIZE(cbor_enc_msg_1.message_1_SUITES_I
 						   .suites_int_l_int));
@@ -187,8 +186,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid connection identifier encoding type: %d",
-			      ctx->cid.encode_type);
+		EDHOC_LOG_ERR("Invalid cid enc type: %d", ctx->cid.encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -201,21 +199,20 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 		if (EDHOC_SUCCESS != ret ||
 		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens) {
-			EDHOC_LOG_ERR(
-				"EAD compose failure: ret=%d, tokens=%zu, max=%zu",
-				ret, ctx->nr_of_ead_tokens,
-				ARRAY_SIZE(ctx->ead_token) - 1);
+			EDHOC_LOG_ERR("EAD compose: %d, %zu, %zu", ret,
+				      ctx->nr_of_ead_tokens,
+				      ARRAY_SIZE(ctx->ead_token) - 1);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			EDHOC_LOG_HEXDUMP_INF(
+			EDHOC_LOG_HEXDUMP_DBG(
 				(const uint8_t *)&ctx->ead_token[i].label,
 				sizeof(ctx->ead_token[i].label),
 				"EAD_1 compose token label");
 
 			if (0 != ctx->ead_token[i].value_len) {
-				EDHOC_LOG_HEXDUMP_INF(
+				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead_token[i].value,
 					ctx->ead_token[i].value_len,
 					"EAD_1 compose token value");
@@ -250,11 +247,11 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				    msg_1_len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR encoding failure: %d", ret);
+		EDHOC_LOG_ERR("CBOR enc msg1: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_INF(msg_1, *msg_1_len, "message_1");
+	EDHOC_LOG_HEXDUMP_DBG(msg_1, *msg_1_len, "message_1");
 
 	/* 5. Compute H(cbor(msg_1)) and cache it. */
 	ctx->th_len = csuite.hash_length;
@@ -263,11 +260,12 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 			       ctx->th_len, &hash_len);
 
 	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_len) {
-		EDHOC_LOG_ERR(
-			"Hash computation failure: ret=%d, expected_len=%zu, hash_len=%zu",
-			ret, csuite.hash_length, hash_len);
+		EDHOC_LOG_ERR("Hash: %d, %zu, %zu", ret, csuite.hash_length,
+			      hash_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
+
+	EDHOC_LOG_INF("Compose msg1 end");
 
 	ctx->nr_of_ead_tokens = 0;
 	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
@@ -292,7 +290,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 			    size_t msg_1_len)
 {
-	EDHOC_LOG_DBG("Processing EDHOC message 1");
+	EDHOC_LOG_INF("Process msg1 start");
 
 	if (NULL == ctx || msg_1 == NULL || 0 == msg_1_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -302,9 +300,8 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	if (EDHOC_SM_START != ctx->status ||
 	    EDHOC_TH_STATE_INVALID != ctx->th_state ||
 	    EDHOC_PRK_STATE_INVALID != ctx->prk_state) {
-		EDHOC_LOG_ERR(
-			"Bad state in process: status=%d, th_state=%d, prk_state=%d",
-			ctx->status, ctx->th_state, ctx->prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->status,
+			      ctx->th_state, ctx->prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -321,15 +318,14 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	ret = cbor_decode_message_1(msg_1, msg_1_len, &cbor_dec_msg_1, &len);
 
 	if (ZCBOR_SUCCESS != ret && msg_1_len <= len) {
-		EDHOC_LOG_ERR(
-			"CBOR decoding failure: ret=%d, msg_len=%zu, decoded_len=%zu",
-			ret, msg_1_len, len);
+		EDHOC_LOG_ERR("CBOR dec msg1: %d, %zu, %zu", ret, msg_1_len,
+			      len);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	/* 2. Choose most preferred cipher suite. */
 	if (0 == ctx->csuite_len) {
-		EDHOC_LOG_ERR("No cipher suites configured in process");
+		EDHOC_LOG_ERR("No cipher suites configured");
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -349,7 +345,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	if (false == method_match) {
-		EDHOC_LOG_ERR("Method mismatch: received=%d",
+		EDHOC_LOG_ERR("Method mismatch: %d",
 			      cbor_dec_msg_1.message_1_METHOD);
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
@@ -364,8 +360,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		if (csuite.value !=
 		    cbor_dec_msg_1.message_1_SUITES_I.suites_int) {
 			EDHOC_LOG_ERR(
-				"Wrong cipher suite: expected=%d, received=%d",
-				csuite.value,
+				"Wrong cipher suite: %d, %d", csuite.value,
 				cbor_dec_msg_1.message_1_SUITES_I.suites_int);
 			ctx->error_code =
 				EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
@@ -379,7 +374,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		if (ARRAY_SIZE(ctx->peer_csuite) <
 		    cbor_dec_msg_1.message_1_SUITES_I.suites_int_l_int_count) {
 			EDHOC_LOG_ERR(
-				"Buffer too small for peer cipher suites: need %zu, have %zu",
+				"Buffer too small for peer cipher suites: %zu, %zu",
 				cbor_dec_msg_1.message_1_SUITES_I
 					.suites_int_l_int_count,
 				ARRAY_SIZE(ctx->peer_csuite));
@@ -399,8 +394,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 						      .suites_int_l_int_count -
 					      1]) {
 			EDHOC_LOG_ERR(
-				"Wrong cipher suite: expected=%d, received=%d",
-				csuite.value,
+				"Wrong cipher suite: %d, %d", csuite.value,
 				cbor_dec_msg_1.message_1_SUITES_I.suites_int_l_int
 					[cbor_dec_msg_1.message_1_SUITES_I
 						 .suites_int_l_int_count -
@@ -421,7 +415,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	/* 3c. Verify ephemeral public key. */
 	if (cbor_dec_msg_1.message_1_G_X.len != csuite.ecc_key_length) {
-		EDHOC_LOG_ERR("Invalid G_X length: expected=%zu, received=%zu",
+		EDHOC_LOG_ERR("Invalid G_X length: %zu, %zu",
 			      csuite.ecc_key_length,
 			      cbor_dec_msg_1.message_1_G_X.len);
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
@@ -438,11 +432,8 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 			    cbor_dec_msg_1.message_1_C_I_int ||
 		    ONE_BYTE_CBOR_INT_MAX_VALUE <
 			    cbor_dec_msg_1.message_1_C_I_int) {
-			EDHOC_LOG_ERR(
-				"C_I integer out of range: %d (min=%d, max=%d)",
-				cbor_dec_msg_1.message_1_C_I_int,
-				ONE_BYTE_CBOR_INT_MIN_VALUE,
-				ONE_BYTE_CBOR_INT_MAX_VALUE);
+			EDHOC_LOG_ERR("C_I integer out of range: %d",
+				      cbor_dec_msg_1.message_1_C_I_int);
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 		}
 
@@ -455,10 +446,9 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	case message_1_C_I_bstr_c: {
 		if (ARRAY_SIZE(ctx->peer_cid.bstr_value) <
 		    cbor_dec_msg_1.message_1_C_I_bstr.len) {
-			EDHOC_LOG_ERR(
-				"C_I byte string too large: size=%zu, max=%zu",
-				cbor_dec_msg_1.message_1_C_I_bstr.len,
-				ARRAY_SIZE(ctx->peer_cid.bstr_value));
+			EDHOC_LOG_ERR("C_I byte string too large: %zu, %zu",
+				      cbor_dec_msg_1.message_1_C_I_bstr.len,
+				      ARRAY_SIZE(ctx->peer_cid.bstr_value));
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 		}
 
@@ -479,11 +469,11 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	switch (ctx->peer_cid.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		EDHOC_LOG_HEXDUMP_INF((const uint8_t *)&ctx->peer_cid.int_value,
+		EDHOC_LOG_HEXDUMP_DBG((const uint8_t *)&ctx->peer_cid.int_value,
 				      sizeof(ctx->peer_cid.int_value), "C_I");
 		break;
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		EDHOC_LOG_HEXDUMP_INF(ctx->peer_cid.bstr_value,
+		EDHOC_LOG_HEXDUMP_DBG(ctx->peer_cid.bstr_value,
 				      ctx->peer_cid.bstr_length, "C_I");
 		break;
 
@@ -499,7 +489,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		if (ARRAY_SIZE(ctx->ead_token) - 1 <
 		    cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count) {
 			EDHOC_LOG_ERR(
-				"EAD buffer too small: tokens=%zu, max=%zu",
+				"EAD buffer too small: %zu, %zu",
 				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count,
 				ARRAY_SIZE(ctx->ead_token) - 1);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
@@ -523,13 +513,13 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 				       ctx->ead_token, ctx->nr_of_ead_tokens);
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			EDHOC_LOG_HEXDUMP_INF(
+			EDHOC_LOG_HEXDUMP_DBG(
 				(const uint8_t *)&ctx->ead_token[i].label,
 				sizeof(ctx->ead_token[i].label),
 				"EAD_1 process token label");
 
 			if (0 != ctx->ead_token[i].value_len) {
-				EDHOC_LOG_HEXDUMP_INF(
+				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead_token[i].value,
 					ctx->ead_token[i].value_len,
 					"EAD_1 process token value");
@@ -540,7 +530,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
 
 		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("EAD process failure: %d", ret);
+			EDHOC_LOG_ERR("EAD process: %d", ret);
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 		}
 	}
@@ -552,11 +542,12 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 			       ctx->th_len, &hash_len);
 
 	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_len) {
-		EDHOC_LOG_ERR(
-			"Hash computation failure: ret=%d, expected_len=%zu, hash_len=%zu",
-			ret, csuite.hash_length, hash_len);
+		EDHOC_LOG_ERR("Hash: %d, %zu, %zu", ret, csuite.hash_length,
+			      hash_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
+
+	EDHOC_LOG_INF("Process msg1 end");
 
 	ctx->th_state = EDHOC_TH_STATE_1;
 	ctx->status = EDHOC_SM_RECEIVED_M1;

@@ -83,14 +83,14 @@ bool edhoc_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
 int edhoc_prepend_flow(struct edhoc_prepended_fields *prepended_fields)
 {
 	if (NULL == prepended_fields || NULL == prepended_fields->buffer) {
-		EDHOC_LOG_ERR(
-			"Invalid argument: prepended_fields or buffer is NULL\n");
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	/* Check if we have enough space for CBOR true (1 byte) */
 	if (prepended_fields->buffer_size < 1) {
-		EDHOC_LOG_ERR("Buffer too small for CBOR true\n");
+		EDHOC_LOG_ERR("Buffer too small: %zu",
+			      prepended_fields->buffer_size);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
@@ -110,20 +110,19 @@ int edhoc_prepend_connection_id(struct edhoc_prepended_fields *prepended_fields,
 {
 	if (NULL == prepended_fields || NULL == conn_id ||
 	    NULL == prepended_fields->buffer) {
-		EDHOC_LOG_ERR(
-			"Invalid argument: prepended_fields, conn_id or buffer is NULL\n");
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (0 == prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR("Buffer size is zero\n");
+		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	if (conn_id->encode_type == EDHOC_CID_TYPE_ONE_BYTE_INTEGER) {
 		if (prepended_fields->buffer_size < 1) {
-			EDHOC_LOG_ERR(
-				"Buffer too small for one-byte integer connection ID\n");
+			EDHOC_LOG_ERR("Buffer too small: %zu",
+				      prepended_fields->buffer_size);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -135,9 +134,8 @@ int edhoc_prepend_connection_id(struct edhoc_prepended_fields *prepended_fields,
 	} else if (conn_id->encode_type == EDHOC_CID_TYPE_BYTE_STRING) {
 		if (conn_id->bstr_length == 0 ||
 		    conn_id->bstr_length > CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID) {
-			EDHOC_LOG_ERR(
-				"Invalid byte string connection ID length: %zu\n",
-				conn_id->bstr_length);
+			EDHOC_LOG_ERR("Invalid bstr cid len: %zu",
+				      conn_id->bstr_length);
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
 
@@ -155,14 +153,12 @@ int edhoc_prepend_connection_id(struct edhoc_prepended_fields *prepended_fields,
 			&cid_r, &cid_encoded_len);
 
 		if (ZCBOR_SUCCESS != ret) {
-			EDHOC_LOG_ERR(
-				"CBOR encoding of connection ID failed\n");
+			EDHOC_LOG_ERR("CBOR encoding: %d", ret);
 			return EDHOC_ERROR_CBOR_FAILURE;
 		}
 
 		if (cid_encoded_len == 0) {
-			EDHOC_LOG_ERR(
-				"CBOR encoded connection ID length is zero\n");
+			EDHOC_LOG_ERR("CBOR encoding: %zu", cid_encoded_len);
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
 
@@ -171,7 +167,7 @@ int edhoc_prepend_connection_id(struct edhoc_prepended_fields *prepended_fields,
 		prepended_fields->edhoc_message_size =
 			prepended_fields->buffer_size - cid_encoded_len;
 	} else {
-		EDHOC_LOG_ERR("Invalid connection ID encode type: %d\n",
+		EDHOC_LOG_ERR("Invalid connection ID encode type: %d",
 			      conn_id->encode_type);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -183,28 +179,25 @@ int edhoc_prepend_recalculate_size(
 	struct edhoc_prepended_fields *prepended_fields)
 {
 	if (NULL == prepended_fields) {
-		EDHOC_LOG_ERR("Invalid argument: prepended_fields is NULL\n");
+		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (NULL == prepended_fields->buffer ||
 	    0 == prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR(
-			"Invalid argument: buffer is NULL or buffer_size is zero\n");
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (NULL == prepended_fields->edhoc_message_ptr ||
 	    0 == prepended_fields->edhoc_message_size) {
-		EDHOC_LOG_ERR(
-			"Invalid argument: edhoc_message_ptr is NULL or edhoc_message_size is zero\n");
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	/* Check that edhoc_message_ptr is within buffer bounds */
 	if (prepended_fields->edhoc_message_ptr < prepended_fields->buffer) {
-		EDHOC_LOG_ERR(
-			"Invalid argument: edhoc_message_ptr is before buffer start\n");
+		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -216,8 +209,7 @@ int edhoc_prepend_recalculate_size(
 
 	/* Check that prepended size doesn't exceed buffer size */
 	if (prepended_size > prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR(
-			"Invalid argument: prepended_size exceeds buffer_size\n");
+		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -226,8 +218,8 @@ int edhoc_prepend_recalculate_size(
 
 	/* Sanity check: total size shouldn't exceed buffer size */
 	if (total_size > prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR(
-			"Buffer too small: total_size exceeds buffer_size\n");
+		EDHOC_LOG_ERR("Buffer too small: %zu, %zu", total_size,
+			      prepended_fields->buffer_size);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
@@ -239,7 +231,7 @@ int edhoc_prepend_recalculate_size(
 int edhoc_extract_flow_info(struct edhoc_extracted_fields *extracted_fields)
 {
 	if (NULL == extracted_fields) {
-		EDHOC_LOG_ERR("Invalid argument: extracted_fields is NULL\n");
+		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -273,8 +265,7 @@ int edhoc_extract_connection_id(struct edhoc_extracted_fields *extracted_fields)
 {
 	if ((NULL == extracted_fields) || (NULL == extracted_fields->buffer) ||
 	    (0 == extracted_fields->buffer_size)) {
-		EDHOC_LOG_ERR(
-			"Invalid argument: extracted_fields, buffer is NULL or buffer_size is zero\n");
+		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -289,7 +280,7 @@ int edhoc_extract_connection_id(struct edhoc_extracted_fields *extracted_fields)
 		&decoded_len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR decoding of connection ID failed\n");
+		EDHOC_LOG_ERR("CBOR decoding: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -305,7 +296,7 @@ int edhoc_extract_connection_id(struct edhoc_extracted_fields *extracted_fields)
 		if (cid_r.connection_identifier_bstr.len >
 		    CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID) {
 			EDHOC_LOG_ERR(
-				"Byte string connection ID length exceeds maximum: %zu\n",
+				"Byte string connection ID length exceeds maximum: %zu",
 				cid_r.connection_identifier_bstr.len);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
@@ -318,7 +309,7 @@ int edhoc_extract_connection_id(struct edhoc_extracted_fields *extracted_fields)
 		       cid_r.connection_identifier_bstr.len);
 		break;
 	default:
-		EDHOC_LOG_ERR("Invalid connection identifier choice: %d\n",
+		EDHOC_LOG_ERR("Invalid connection identifier choice: %d",
 			      cid_r.connection_identifier_choice);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
