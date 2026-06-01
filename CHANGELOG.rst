@@ -1,3 +1,12 @@
+Version 1.9.0
+-------------
+
+:Date: June 1, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Library / helpers (log footprint):
+
+  * Shortened ``EDHOC_LOG_*`` message literals across ``library/*.c`` and ``helpers/src/*.c`` to reduce flash footprint when logging is enabled.
+
 Version 1.8.0
 -------------
 

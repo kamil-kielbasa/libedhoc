@@ -124,6 +124,7 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 		break;
 
 	default:
+		EDHOC_LOG_ERR("Unknown key type: %d", key_type);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -136,23 +137,33 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 	const psa_status_t ret =
 		psa_import_key(&attr, raw_key, raw_key_len, psa_kid);
 
-	return (PSA_SUCCESS == ret) ? EDHOC_SUCCESS :
-				      EDHOC_ERROR_CRYPTO_FAILURE;
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Import key: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 int edhoc_cipher_suite_0_key_destroy(void *user_ctx, void *kid)
 {
 	(void)user_ctx;
 
-	if (NULL == kid)
+	if (NULL == kid) {
+		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	psa_key_id_t *psa_kid = kid;
 	const psa_status_t ret = psa_destroy_key(*psa_kid);
 	*psa_kid = PSA_KEY_HANDLE_INIT;
 
-	return (PSA_SUCCESS == ret) ? EDHOC_SUCCESS :
-				      EDHOC_ERROR_CRYPTO_FAILURE;
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Destroy key: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 int edhoc_cipher_suite_0_make_key_pair(void *user_ctx, const void *kid,
@@ -165,21 +176,24 @@ int edhoc_cipher_suite_0_make_key_pair(void *user_ctx, const void *kid,
 	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
 	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
 	    NULL == pub_key_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, priv_key=%p, priv_key_size=%zu, priv_key_len=%p, pub_key=%p, pub_key_size=%zu, pub_key_len=%p",
-			kid, priv_key, priv_key_size, priv_key_len, pub_key,
-			pub_key_size, pub_key_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (X25519_KEY_SIZE != priv_key_size || X25519_KEY_SIZE != pub_key_size)
+	if (X25519_KEY_SIZE != priv_key_size ||
+	    X25519_KEY_SIZE != pub_key_size) {
+		EDHOC_LOG_ERR("Invalid key sizes: %zu, %zu", priv_key_size,
+			      pub_key_size);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	uint8_t seed[X25519_KEY_SIZE] = { 0 };
 	const psa_status_t ret = psa_generate_random(seed, sizeof(seed));
 
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Generate random: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	compact_x25519_keygen(priv_key, pub_key, seed);
 	*priv_key_len = X25519_KEY_SIZE;
@@ -198,16 +212,16 @@ int edhoc_cipher_suite_0_key_agreement(void *user_ctx, const void *kid,
 
 	if (NULL == kid || NULL == peer_pub_key || 0 == peer_pub_key_len ||
 	    NULL == shr_sec || 0 == shr_sec_size || NULL == shr_sec_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, peer_pub_key=%p, peer_pub_key_len=%zu, shr_sec=%p, shr_sec_size=%zu, shr_sec_len=%p",
-			kid, peer_pub_key, peer_pub_key_len, shr_sec,
-			shr_sec_size, shr_sec_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (X25519_KEY_SIZE != peer_pub_key_len ||
-	    X25519_SHARED_SIZE != shr_sec_size)
+	    X25519_SHARED_SIZE != shr_sec_size) {
+		EDHOC_LOG_ERR("Invalid key sizes: %zu, %zu", peer_pub_key_len,
+			      shr_sec_size);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	size_t priv_key_len = 0;
 	uint8_t priv_key[X25519_KEY_SIZE] = { 0 };
@@ -216,8 +230,10 @@ int edhoc_cipher_suite_0_key_agreement(void *user_ctx, const void *kid,
 	const psa_status_t ret = psa_export_key(
 		*psa_kid, priv_key, ARRAY_SIZE(priv_key), &priv_key_len);
 
-	if (PSA_SUCCESS != ret || ARRAY_SIZE(priv_key) != priv_key_len)
+	if (PSA_SUCCESS != ret || ARRAY_SIZE(priv_key) != priv_key_len) {
+		EDHOC_LOG_ERR("Export private key: %d, %zu", ret, priv_key_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	uint8_t e[F25519_SIZE] = { 0 };
 	f25519_copy(e, priv_key);
@@ -238,14 +254,15 @@ int edhoc_cipher_suite_0_signature(void *user_ctx, const void *kid,
 
 	if (NULL == kid || NULL == input || 0 == input_len || NULL == sign ||
 	    0 == sign_size || NULL == sign_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, input=%p, input_len=%zu, sign=%p, sign_size=%zu, sign_len=%p",
-			kid, input, input_len, sign, sign_size, sign_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (ED25519_SIGNATURE_SIZE != sign_size)
+	if (ED25519_SIGNATURE_SIZE != sign_size) {
+		EDHOC_LOG_ERR("Invalid signature size: %zu, %d", sign_size,
+			      ED25519_SIGNATURE_SIZE);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	size_t priv_key_len = 0;
 	uint8_t priv_key[ED25519_PRIVATE_KEY_SIZE] = { 0 };
@@ -254,8 +271,10 @@ int edhoc_cipher_suite_0_signature(void *user_ctx, const void *kid,
 	const psa_status_t ret = psa_export_key(
 		*psa_kid, priv_key, ARRAY_SIZE(priv_key), &priv_key_len);
 
-	if (PSA_SUCCESS != ret || ARRAY_SIZE(priv_key) != priv_key_len)
+	if (PSA_SUCCESS != ret || ARRAY_SIZE(priv_key) != priv_key_len) {
+		EDHOC_LOG_ERR("Export private key: %d, %zu", ret, priv_key_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	compact_ed25519_sign(sign, priv_key, input, input_len);
 	*sign_len = ED25519_SIGNATURE_SIZE;
@@ -271,14 +290,15 @@ int edhoc_cipher_suite_0_verify(void *user_ctx, const void *kid,
 
 	if (NULL == kid || NULL == input || 0 == input_len || NULL == sign ||
 	    0 == sign_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, input=%p, input_len=%zu, sign=%p, sign_len=%zu",
-			kid, input, input_len, sign, sign_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (ED25519_SIGNATURE_SIZE != sign_len)
+	if (ED25519_SIGNATURE_SIZE != sign_len) {
+		EDHOC_LOG_ERR("Invalid signature size: %zu, %d", sign_len,
+			      ED25519_SIGNATURE_SIZE);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	size_t pub_key_len = 0;
 	uint8_t pub_key[ED25519_PUBLIC_KEY_SIZE] = { 0 };
@@ -287,13 +307,20 @@ int edhoc_cipher_suite_0_verify(void *user_ctx, const void *kid,
 	const psa_status_t ret = psa_export_key(
 		*psa_kid, pub_key, ARRAY_SIZE(pub_key), &pub_key_len);
 
-	if (PSA_SUCCESS != ret || ARRAY_SIZE(pub_key) != pub_key_len)
+	if (PSA_SUCCESS != ret || ARRAY_SIZE(pub_key) != pub_key_len) {
+		EDHOC_LOG_ERR("Export public key: %d, %zu", ret, pub_key_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	const bool verified =
 		compact_ed25519_verify(sign, pub_key, input, input_len);
 
-	return (true == verified) ? EDHOC_SUCCESS : EDHOC_ERROR_CRYPTO_FAILURE;
+	if (true != verified) {
+		EDHOC_LOG_ERR("EdDSA verify");
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 int edhoc_cipher_suite_0_extract(void *user_ctx, const void *kid,
@@ -304,9 +331,7 @@ int edhoc_cipher_suite_0_extract(void *user_ctx, const void *kid,
 
 	if (NULL == kid || NULL == salt || 0 == salt_len || NULL == prk ||
 	    0 == prk_size || NULL == prk_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, salt=%p, salt_len=%zu, prk=%p, prk_size=%zu, prk_len=%p",
-			kid, salt, salt_len, prk, prk_size, prk_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -317,30 +342,42 @@ int edhoc_cipher_suite_0_extract(void *user_ctx, const void *kid,
 
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	ret = psa_get_key_attributes(*psa_kid, &attr);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Get key attributes: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_setup(&ctx, psa_get_key_algorithm(&attr));
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Setup key derivation: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_input_bytes(
 		&ctx, PSA_KEY_DERIVATION_INPUT_SALT, salt, salt_len);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Input salt: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_input_key(
 		&ctx, PSA_KEY_DERIVATION_INPUT_SECRET, *psa_kid);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Input secret key: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_set_capacity(&ctx, prk_size);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Set capacity: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_output_bytes(&ctx, prk, prk_size);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Output bytes: %d", ret);
 		goto psa_error;
+	}
 
 	*prk_len = prk_size;
 	psa_key_derivation_abort(&ctx);
@@ -349,6 +386,7 @@ int edhoc_cipher_suite_0_extract(void *user_ctx, const void *kid,
 
 psa_error:
 	psa_key_derivation_abort(&ctx);
+	EDHOC_LOG_ERR("HKDF extract: %d", ret);
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
@@ -360,9 +398,7 @@ int edhoc_cipher_suite_0_expand(void *user_ctx, const void *kid,
 
 	if (NULL == kid || NULL == info || 0 == info_len || NULL == okm ||
 	    0 == okm_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, info=%p, info_len=%zu, okm=%p, okm_len=%zu",
-			kid, info, info_len, okm, okm_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -373,36 +409,49 @@ int edhoc_cipher_suite_0_expand(void *user_ctx, const void *kid,
 
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	ret = psa_get_key_attributes(*psa_kid, &attr);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Get key attributes: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_setup(&ctx, psa_get_key_algorithm(&attr));
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Setup key derivation: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_input_key(
 		&ctx, PSA_KEY_DERIVATION_INPUT_SECRET, *psa_kid);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Input secret key: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_input_bytes(
 		&ctx, PSA_KEY_DERIVATION_INPUT_INFO, info, info_len);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Input info: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_set_capacity(&ctx, okm_len);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Set capacity: %d", ret);
 		goto psa_error;
+	}
 
 	ret = psa_key_derivation_output_bytes(&ctx, okm, okm_len);
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Output bytes: %d", ret);
 		goto psa_error;
+	}
 
 	psa_key_derivation_abort(&ctx);
 	return EDHOC_SUCCESS;
 
 psa_error:
 	psa_key_derivation_abort(&ctx);
+	EDHOC_LOG_ERR("HKDF expand: %d", ret);
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
@@ -418,10 +467,7 @@ int edhoc_cipher_suite_0_encrypt(void *user_ctx, const void *kid,
 	/* Plaintext might be zero length buffer. */
 	if (NULL == kid || NULL == nonce || 0 == nonce_len || NULL == ad ||
 	    0 == ad_len || NULL == ctxt || 0 == ctxt_size || NULL == ctxt_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, nonce=%p, nonce_len=%zu, ad=%p, ad_len=%zu, ctxt=%p, ctxt_size=%zu, ctxt_len=%p",
-			kid, nonce, nonce_len, ad, ad_len, ctxt, ctxt_size,
-			ctxt_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -431,15 +477,21 @@ int edhoc_cipher_suite_0_encrypt(void *user_ctx, const void *kid,
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	ret = psa_get_key_attributes(*psa_kid, &attr);
 
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Get key attributes: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = psa_aead_encrypt(*psa_kid, psa_get_key_algorithm(&attr), nonce,
 			       nonce_len, ad, ad_len, ptxt, ptxt_len, ctxt,
 			       ctxt_size, ctxt_len);
 
-	return (PSA_SUCCESS == ret) ? EDHOC_SUCCESS :
-				      EDHOC_ERROR_CRYPTO_FAILURE;
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("AEAD encryption: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 int edhoc_cipher_suite_0_decrypt(void *user_ctx, const void *kid,
@@ -454,10 +506,7 @@ int edhoc_cipher_suite_0_decrypt(void *user_ctx, const void *kid,
 	/* Plaintext might be zero length buffer. */
 	if (NULL == kid || NULL == nonce || 0 == nonce_len || NULL == ad ||
 	    0 == ad_len || NULL == ctxt || 0 == ctxt_len || NULL == ptxt_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: kid=%p, nonce=%p, nonce_len=%zu, ad=%p, ad_len=%zu, ctxt=%p, ctxt_len=%zu, ptxt_len=%p",
-			kid, nonce, nonce_len, ad, ad_len, ctxt, ctxt_len,
-			ptxt_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -467,15 +516,21 @@ int edhoc_cipher_suite_0_decrypt(void *user_ctx, const void *kid,
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	ret = psa_get_key_attributes(*psa_kid, &attr);
 
-	if (PSA_SUCCESS != ret)
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Get key attributes: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ret = psa_aead_decrypt(*psa_kid, psa_get_key_algorithm(&attr), nonce,
 			       nonce_len, ad, ad_len, ctxt, ctxt_len, ptxt,
 			       ptxt_size, ptxt_len);
 
-	return (PSA_SUCCESS == ret) ? EDHOC_SUCCESS :
-				      EDHOC_ERROR_CRYPTO_FAILURE;
+	if (PSA_SUCCESS != ret) {
+		EDHOC_LOG_ERR("AEAD decryption: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 int edhoc_cipher_suite_0_hash(void *user_ctx, const uint8_t *input,
@@ -486,9 +541,7 @@ int edhoc_cipher_suite_0_hash(void *user_ctx, const uint8_t *input,
 
 	if (NULL == input || 0 == input_len || NULL == hash || 0 == hash_size ||
 	    NULL == hash_len) {
-		EDHOC_LOG_ERR(
-			"Invalid arguments: input=%p, input_len=%zu, hash=%p, hash_size=%zu, hash_len=%p",
-			input, input_len, hash, hash_size, hash_len);
+		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -496,8 +549,7 @@ int edhoc_cipher_suite_0_hash(void *user_ctx, const uint8_t *input,
 		PSA_ALG_SHA_256, input, input_len, hash, hash_size, hash_len);
 
 	if (PSA_SUCCESS != ret) {
-		EDHOC_LOG_ERR("SHA256 hash computation failed, PSA status: %d",
-			      ret);
+		EDHOC_LOG_ERR("SHA256 hash: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
