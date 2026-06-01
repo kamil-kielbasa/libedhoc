@@ -1,3 +1,14 @@
+Version 1.8.0
+-------------
+
+:Date: June 1, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Library (``edhoc_macros.h``):
+
+  * Added ``EDHOC_ASSERT_FREE_STACK_SIZE``: on Zephyr expands to a runtime free-stack check via ``k_thread_stack_space_get`` + ``__ASSERT``, otherwise no-op.
+  * ``VLA_ALLOC`` now calls ``EDHOC_ASSERT_FREE_STACK_SIZE`` on Linux/Zephyr.
+  * Reorganized Doxygen for platform-dependent macros using the ``__DOXYGEN__`` stub pattern.
+
 Version 1.7.1
 -------------
 
