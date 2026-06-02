@@ -1,0 +1,854 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="prev" title="Testing" href="testing.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Changelog - libedhoc v1.10.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=19d25e18" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">libedhoc v1.10.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">libedhoc v1.10.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quick_start.html">Quick Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/concepts.html">Concepts at a Glance</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/protocol_flow.html">Protocol Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/configuration.html">Configuration</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../api/context.html">EDHOC Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/messages.html">EDHOC Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/exporters.html">Exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/credentials.html">Authentication Credentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/crypto.html">Cryptographic Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/ead.html">External Authorization Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/helpers.html">Helpers, Macros and Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../api/internals.html">Internal Building Blocks</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/error_codes.html">EDHOC Error Codes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/values.html">EDHOC Values</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/links.html">Links</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Project</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+<li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Changelog</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/kamil-kielbasa/libedhoc/blob/main/doc/project/changelog.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/kamil-kielbasa/libedhoc/edit/main/doc/project/changelog.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="changelog">
+<h1>Changelog<a class="headerlink" href="#changelog" title="Link to this heading">¶</a></h1>
+<section id="version-1-10-0">
+<h2>Version 1.10.0<a class="headerlink" href="#version-1-10-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>June 2, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Documentation overhaul:</p>
+<ul>
+<li><p>Restructured Sphinx docs into <code class="docutils literal notranslate"><span class="pre">getting_started/</span></code>, <code class="docutils literal notranslate"><span class="pre">guide/</span></code>, <code class="docutils literal notranslate"><span class="pre">api/</span></code>, <code class="docutils literal notranslate"><span class="pre">reference/</span></code> and <code class="docutils literal notranslate"><span class="pre">project/</span></code> sections; switched to the Furo theme.</p></li>
+<li><p>Split the monolithic API page into per-topic pages (context, messages, credentials, crypto, exporters, EAD, helpers, internals).</p></li>
+<li><p>Added a glossary, an error-code reference, a values reference and a links page.</p></li>
+<li><p>Refreshed <code class="docutils literal notranslate"><span class="pre">README.md</span></code> (two-row badge layout) and rewrote <code class="docutils literal notranslate"><span class="pre">CONTRIBUTING.md</span></code> with the unified <code class="docutils literal notranslate"><span class="pre">scripts/ci.sh</span></code> workflow and shallow <code class="docutils literal notranslate"><span class="pre">west</span> <span class="pre">update</span></code>.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-9-0">
+<h2>Version 1.9.0<a class="headerlink" href="#version-1-9-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>June 1, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Library / helpers (log footprint):</p>
+<ul>
+<li><p>Shortened <code class="docutils literal notranslate"><span class="pre">EDHOC_LOG_*</span></code> message literals across <code class="docutils literal notranslate"><span class="pre">library/*.c</span></code> and <code class="docutils literal notranslate"><span class="pre">helpers/src/*.c</span></code> to reduce flash footprint when logging is enabled.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-8-0">
+<h2>Version 1.8.0<a class="headerlink" href="#version-1-8-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>June 1, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Library (<code class="docutils literal notranslate"><span class="pre">edhoc_macros.h</span></code>):</p>
+<ul>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">EDHOC_ASSERT_FREE_STACK_SIZE</span></code>: on Zephyr expands to a runtime free-stack check via <code class="docutils literal notranslate"><span class="pre">k_thread_stack_space_get</span></code> + <code class="docutils literal notranslate"><span class="pre">__ASSERT</span></code>, otherwise no-op.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">VLA_ALLOC</span></code> now calls <code class="docutils literal notranslate"><span class="pre">EDHOC_ASSERT_FREE_STACK_SIZE</span></code> on Linux/Zephyr.</p></li>
+<li><p>Reorganized Doxygen for platform-dependent macros using the <code class="docutils literal notranslate"><span class="pre">__DOXYGEN__</span></code> stub pattern.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-7-1">
+<h2>Version 1.7.1<a class="headerlink" href="#version-1-7-1" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>March 23, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Testing:</p>
+<ul>
+<li><p>Cipher suite 2 (<code class="docutils literal notranslate"><span class="pre">tests/unit/test_crypto_suite2.c</span></code>): invalid key material for import; HKDF extract/expand when <code class="docutils literal notranslate"><span class="pre">psa_key_derivation_set_capacity</span></code> rejects oversized output; AEAD encrypt/decrypt with zero-length plaintext (null message buffers where PSA allows for AES-CCM).</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Documentation:</p>
+<ul>
+<li><p>Updated Sphinx <code class="docutils literal notranslate"><span class="pre">conf.py</span></code> version to v1.7.1.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-7-0">
+<h2>Version 1.7.0<a class="headerlink" href="#version-1-7-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>March 20, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Cipher suite 2 reference helper (<code class="docutils literal notranslate"><span class="pre">helpers/src/edhoc_cipher_suite_2.c</span></code>):</p>
+<ul>
+<li><p>ES256: <code class="docutils literal notranslate"><span class="pre">edhoc_cipher_suite_2_hash</span></code> then <code class="docutils literal notranslate"><span class="pre">psa_sign_hash</span></code> / <code class="docutils literal notranslate"><span class="pre">psa_verify_hash</span></code> (was <code class="docutils literal notranslate"><span class="pre">psa_sign_message</span></code> / <code class="docutils literal notranslate"><span class="pre">psa_verify_message</span></code>); equivalent to <code class="docutils literal notranslate"><span class="pre">PSA_ALG_ECDSA(PSA_ALG_SHA_256)</span></code> on the full message.</p></li>
+<li><p>Hash-then-sign lowers I/O for large sign payloads (e.g. secure elements). Callback <code class="docutils literal notranslate"><span class="pre">input</span></code> is unchanged: full byte string from the library.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Documentation:</p>
+<ul>
+<li><p>Cipher suite 2 Doxygen and <code class="docutils literal notranslate"><span class="pre">api.rst</span></code> note.</p></li>
+<li><p>Updated Sphinx <code class="docutils literal notranslate"><span class="pre">conf.py</span></code> version to v1.7.0.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Library (volatile key handles):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">memset</span></code> local <code class="docutils literal notranslate"><span class="pre">key_id</span></code> after <code class="docutils literal notranslate"><span class="pre">destroy_key</span></code> in <code class="docutils literal notranslate"><span class="pre">edhoc_message_{1,2,3}.c</span></code> (aligned with the rest of the library).</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-6-0">
+<h2>Version 1.6.0<a class="headerlink" href="#version-1-6-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>March 1, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : API symbol corrections (deprecated aliases preserved):</p>
+<ul>
+<li><p>Renamed <code class="docutils literal notranslate"><span class="pre">EDHOC_SM_RECEVIED_M4</span></code> → <code class="docutils literal notranslate"><span class="pre">EDHOC_SM_RECEIVED_M4</span></code>.</p></li>
+<li><p>Renamed <code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2</span></code> → <code class="docutils literal notranslate"><span class="pre">EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2</span></code>.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : API documentation audit:</p>
+<ul>
+<li><p>Standardized all <code class="docutils literal notranslate"><span class="pre">\retval</span></code> descriptions in <code class="docutils literal notranslate"><span class="pre">edhoc.h</span></code> for clarity and consistency.</p></li>
+<li><p>Added missing <code class="docutils literal notranslate"><span class="pre">\retval</span> <span class="pre">#EDHOC_ERROR_BUFFER_TOO_SMALL</span></code> for <code class="docutils literal notranslate"><span class="pre">edhoc_message_1_compose</span></code> and <code class="docutils literal notranslate"><span class="pre">edhoc_export_oscore_session</span></code>.</p></li>
+<li><p>Corrected <code class="docutils literal notranslate"><span class="pre">\param</span></code> directions and descriptions in <code class="docutils literal notranslate"><span class="pre">edhoc_crypto.h</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">public_key_length</span></code>, <code class="docutils literal notranslate"><span class="pre">hash</span></code> output direction).</p></li>
+<li><p>Fixed process function <code class="docutils literal notranslate"><span class="pre">message_N_length</span></code> descriptions (length of message, not buffer size).</p></li>
+<li><p>Fixed grammar and CBOR capitalization in <code class="docutils literal notranslate"><span class="pre">edhoc_credentials.h</span></code> and <code class="docutils literal notranslate"><span class="pre">edhoc_context.h</span></code>.</p></li>
+<li><p>Added comprehensive Doxygen for all macros in <code class="docutils literal notranslate"><span class="pre">edhoc_macros.h</span></code> (<code class="docutils literal notranslate"><span class="pre">\defgroup</span> <span class="pre">edhoc-macros</span></code>).</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">\author</span></code> to <code class="docutils literal notranslate"><span class="pre">edhoc_test_hooks.h</span></code>.</p></li>
+<li><p>Fixed duplicate <code class="docutils literal notranslate"><span class="pre">\defgroup</span></code> in <code class="docutils literal notranslate"><span class="pre">edhoc_helpers.h</span></code>.</p></li>
+<li><p>Unified <code class="docutils literal notranslate"><span class="pre">\return</span></code> / <code class="docutils literal notranslate"><span class="pre">\retval</span></code> style across all callback typedefs and internal functions.</p></li>
+<li><p>Corrected <code class="docutils literal notranslate"><span class="pre">\ref</span></code> → <code class="docutils literal notranslate"><span class="pre">\see</span></code> for external URLs in Doxygen.</p></li>
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">#error</span></code> message for <code class="docutils literal notranslate"><span class="pre">CONFIG_LIBEDHOC_MAX_LEN_OF_MAC</span></code>.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Spelling corrections across all headers:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">psuedorandom</span></code> → <code class="docutils literal notranslate"><span class="pre">pseudorandom</span></code>, <code class="docutils literal notranslate"><span class="pre">crypographics</span></code> → <code class="docutils literal notranslate"><span class="pre">cryptographic</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Diffie-Helmann</span></code> → <code class="docutils literal notranslate"><span class="pre">Diffie-Hellman</span></code>, <code class="docutils literal notranslate"><span class="pre">registery</span></code> → <code class="docutils literal notranslate"><span class="pre">registry</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">conatins</span></code> → <code class="docutils literal notranslate"><span class="pre">contains</span></code>, <code class="docutils literal notranslate"><span class="pre">definitiones</span></code> → <code class="docutils literal notranslate"><span class="pre">definitions</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">identifer</span></code> → <code class="docutils literal notranslate"><span class="pre">identifier</span></code>, <code class="docutils literal notranslate"><span class="pre">buffor</span></code> → <code class="docutils literal notranslate"><span class="pre">buffer</span></code>.</p></li>
+<li><p>Renamed <code class="docutils literal notranslate"><span class="pre">psuedo_random_key</span></code> → <code class="docutils literal notranslate"><span class="pre">pseudo_random_key</span></code> in cipher suite header declarations.</p></li>
+<li><p>Corrected <code class="docutils literal notranslate"><span class="pre">\file</span></code> tag in Zephyr log backend to match actual filename.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added Doxygen for internal modules:</p>
+<ul>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">\defgroup</span> <span class="pre">edhoc-log</span></code> with documentation for all log levels and log macros.</p></li>
+<li><p>Added Doxygen for Linux log backend: <code class="docutils literal notranslate"><span class="pre">edhoc_log_get_timestamp</span></code>, <code class="docutils literal notranslate"><span class="pre">edhoc_log_hexdump_impl</span></code>, ANSI color defines.</p></li>
+<li><p>Added Doxygen for Zephyr log backend macro wrappers.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">\defgroup</span> <span class="pre">edhoc-test-hooks</span></code> with <code class="docutils literal notranslate"><span class="pre">\brief</span></code> for all 40+ test hook functions.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Documentation improvements:</p>
+<ul>
+<li><p>Added “Lifecycle” section to <code class="docutils literal notranslate"><span class="pre">api.rst</span></code> with context initialization call order and code examples.</p></li>
+<li><p>Added “Error handling” section to <code class="docutils literal notranslate"><span class="pre">api.rst</span></code> with error code retrieval guidance.</p></li>
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">edhoc_set_conn_id()</span></code> → <code class="docutils literal notranslate"><span class="pre">edhoc_set_connection_id()</span></code> in API flow diagram.</p></li>
+<li><p>Fixed cipher suite 0 algorithm description: ECDSA → EdDSA in <code class="docutils literal notranslate"><span class="pre">testing.rst</span></code>.</p></li>
+<li><p>Fixed west build path for benchmark sample in <code class="docutils literal notranslate"><span class="pre">configuration.rst</span></code>.</p></li>
+<li><p>Updated Sphinx <code class="docutils literal notranslate"><span class="pre">conf.py</span></code> version to v1.6.0.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-5-0">
+<h2>Version 1.5.0<a class="headerlink" href="#version-1-5-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>February 27, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : CI/CD pipeline overhaul:</p>
+<ul>
+<li><p>Consolidated all CI logic into a single <code class="docutils literal notranslate"><span class="pre">scripts/ci.sh</span></code> entry point for local reproducibility.</p></li>
+<li><p>Added code coverage measurement with gcov/lcov and Codecov integration.</p></li>
+<li><p>Added ASan + UBSan sanitizer CI job (GCC).</p></li>
+<li><p>Added LibFuzzer-based fuzz testing CI job (Clang).</p></li>
+<li><p>Added weekly scheduled CI workflow with extended fuzzing.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Compiler flags hardening:</p>
+<ul>
+<li><p>Unified GCC and Clang warning flags (~25 shared flags).</p></li>
+<li><p>Added GCC-specific warnings: <code class="docutils literal notranslate"><span class="pre">-Wformat-overflow=2</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wformat-truncation=2</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wswitch-enum</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wjump-misses-init</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wduplicated-cond</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wduplicated-branches</span></code>, <code class="docutils literal notranslate"><span class="pre">-Wlogical-op</span></code>.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">-fstack-protector-strong</span></code> for non-sanitizer builds.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Resolved all 538 clang-tidy warnings across the library.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Zephyr benchmark application (<code class="docutils literal notranslate"><span class="pre">sample/benchmark/</span></code>):</p>
+<ul>
+<li><p>Full EDHOC handshake benchmark for <code class="docutils literal notranslate"><span class="pre">native_sim</span></code> (cipher suite 2, P-256/ES256, X.509 chain).</p></li>
+<li><p>Per-phase handshake timing with JSON output.</p></li>
+<li><p>Library flash footprint analysis (~20 KiB).</p></li>
+<li><p>NSI two-stage linking solved by providing mbedTLS archives to <code class="docutils literal notranslate"><span class="pre">RUNNER_LINK_LIBRARIES</span></code>.</p></li>
+<li><p>CI uploads <code class="docutils literal notranslate"><span class="pre">flash_report.txt</span></code> and <code class="docutils literal notranslate"><span class="pre">benchmark_timing.json</span></code> as artifacts.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Test improvements:</p>
+<ul>
+<li><p>Restructured tests into 3-tier architecture: unit, integration, and fuzz.</p></li>
+<li><p>Extracted shared test helpers (<code class="docutils literal notranslate"><span class="pre">test_cipher_suites</span></code>, <code class="docutils literal notranslate"><span class="pre">test_credentials</span></code>, <code class="docutils literal notranslate"><span class="pre">test_ead</span></code>).</p></li>
+<li><p>Added negative test scenarios for <code class="docutils literal notranslate"><span class="pre">edhoc_export_oscore_session</span></code> and <code class="docutils literal notranslate"><span class="pre">edhoc_message_1_compose/process</span></code>.</p></li>
+<li><p>Added mock-based failure injection tests for internal error paths.</p></li>
+<li><p>Consolidated fuzz targets from <code class="docutils literal notranslate"><span class="pre">fuzz/</span></code> into <code class="docutils literal notranslate"><span class="pre">tests/fuzz/</span></code>.</p></li>
+<li><p>Achieved 92.8% line coverage and 100% function coverage (635+ tests).</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Bug fixes:</p>
+<ul>
+<li><p>Fixed out-of-bounds write in <code class="docutils literal notranslate"><span class="pre">test_internals.c</span></code> (<code class="docutils literal notranslate"><span class="pre">alg_bstr</span></code> array).</p></li>
+<li><p>Fixed GCC extension usage (non-constant struct initializers) for Clang compatibility.</p></li>
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">-Wformat-truncation</span></code> in log backend timestamp formatting.</p></li>
+<li><p>Fixed <code class="docutils literal notranslate"><span class="pre">-gdwarf-4</span></code> for Valgrind compatibility with GCC 11+.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-4-2">
+<h2>Version 1.4.2<a class="headerlink" href="#version-1-4-2" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>January 30, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Documentation improvements and updates.</p></li>
+</ul>
+</section>
+<section id="version-1-4-1">
+<h2>Version 1.4.1<a class="headerlink" href="#version-1-4-1" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>January 30, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/tgujda">&#64;tgujda</a> : Added log module declaration for EDHOC helpers.</p></li>
+</ul>
+</section>
+<section id="version-1-4-0">
+<h2>Version 1.4.0<a class="headerlink" href="#version-1-4-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>January 30, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/tgujda">&#64;tgujda</a> : Added cmake install target for library installation.</p></li>
+<li><p><a class="reference external" href="https://github.com/magdalenaszumny">&#64;magdalena-szumny</a> : Added extra logs for EDHOC helpers module</p></li>
+</ul>
+</section>
+<section id="version-1-3-0">
+<h2>Version 1.3.0<a class="headerlink" href="#version-1-3-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>January 27, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/magdalenaszumny">&#64;magdalena-szumny</a> :</p>
+<ul>
+<li><p>Added EDHOC helpers module with connection ID and buffer utilities.</p></li>
+<li><p>Renamed cipher suite files and functions to edhoc_cipher_suite_X for consistency.</p></li>
+<li><p>Refactored cipher suite implementations to expose struct edhoc_crypto and struct edhoc_keys.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fixed Zephyr logging backend.</p></li>
+</ul>
+</section>
+<section id="version-1-2-0">
+<h2>Version 1.2.0<a class="headerlink" href="#version-1-2-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>January 27, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added new logging module:</p>
+<ul>
+<li><p>Logging module has the same signatures to the Zephyr logging module.</p></li>
+<li><p>Added logging backends for Linux and Zephyr platforms.</p></li>
+<li><p>Added EDHOC_LOG_ERR for the entire library.</p></li>
+<li><p>Replaced context.logger with new logging hexdump functionlike-macros.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-1-1-1">
+<h2>Version 1.1.1<a class="headerlink" href="#version-1-1-1" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>January 8, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fixed Zephyr build github workflow.</p></li>
+</ul>
+</section>
+<section id="version-1-1-0">
+<h2>Version 1.1.0<a class="headerlink" href="#version-1-1-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>January 7, 2026</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/magdalenaszumny">&#64;magdalena-szumny</a> : Added Zephyr build system support.</p></li>
+<li><p><a class="reference external" href="https://github.com/magdalenaszumny">&#64;magdalena-szumny</a> : Added Zephyr sample application for build verification (native_sim).</p></li>
+<li><p><a class="reference external" href="https://github.com/magdalenaszumny">&#64;magdalena-szumny</a> : Added west manifest (west.yml) for Zephyr workspace initialization.</p></li>
+</ul>
+</section>
+<section id="version-1-0-0">
+<h2>Version 1.0.0<a class="headerlink" href="#version-1-0-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>April 14, 2025</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/stoprocent">&#64;marek-serafin</a> : Fixed some minor issues with sizes.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added module tests for public API.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added peer cipher suites caching for message 1 process.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Refactored cipher suites negotiation module tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Updated readme.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Refactored Kconfig:</p>
+<ul>
+<li><p>Moved hardcoded values from cmake to build script.</p></li>
+<li><p>Renamed two variables according to style.</p></li>
+<li><p>Zephyr environment variable in cmake.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Cleaned up cppcheck warnings in module tests.</p></li>
+</ul>
+</section>
+<section id="version-0-6-0">
+<h2>Version 0.6.0<a class="headerlink" href="#version-0-6-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>October 31, 2024</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added C unit test framework - Unity.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Migrated all module tests to Unity framework.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added documentation for:</p>
+<ul>
+<li><p>Library configuration.</p></li>
+<li><p>Module tests scenarios.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added missing doxygen for API.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Update zcbor from v0.7.0 to v0.8.1.</p></li>
+</ul>
+</section>
+<section id="version-0-5-0">
+<h2>Version 0.5.0<a class="headerlink" href="#version-0-5-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>August 5, 2024</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Changed build system from Make to CMake.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added building library code with clang compiler.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added new module test for scenario:</p>
+<ul>
+<li><p>X.509 chain, cipher suite 2, static DH keys, single EAD token.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/stoprocent">&#64;marek-serafin</a> : Fixed setting correct cases for static dh methods.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Refactored message_2 and message_3 for common code:</p>
+<ul>
+<li><p>CBOR utilities.</p></li>
+<li><p>MAC 2/3 context generation.</p></li>
+<li><p>MAC 2/3 computation.</p></li>
+<li><p>Signature_or_MAC 2/3 computation and verification.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fixed setting correct cases for methods for message_3.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added any cborised authentication credentials option.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fixed end entity certificate according to COSE X.509 chain.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fixed wrong MAC length for static DH in test suite.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Refactored EDHOC API and EDHOC interfaces.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added library zephyrization.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Refactored function edhoc_set_methods for more flexibility.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added support for MSVC _alloca (lack of VLA).</p></li>
+</ul>
+</section>
+<section id="version-0-4-0">
+<h2>Version 0.4.0<a class="headerlink" href="#version-0-4-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>July 5, 2024</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/stoprocent">&#64;marek-serafin</a> : Fixed typo in setting peer_cid while processing message 1.</p></li>
+<li><p><a class="reference external" href="https://github.com/stoprocent">&#64;marek-serafin</a> : Fixed zcbor. Added a method to avoid generation of duplicated types.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added EDHOC error message compose &amp; process with unit tests.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added EDHOC PRK exporter with unit test.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fixed CDDL models for COSE X.509 chain and COSE X.509 hash.</p>
+<ul>
+<li><p>added unit test with two certificates for X.509 chain for cipher suite 0.</p></li>
+<li><p>added unit test with one certificate for X.509 chain for cipher suite 2 with multiple EAD tokens.</p></li>
+<li><p>added unit test for X.509 hash for cipher suite 2 with single EAD token.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Changed licence from GPL-2.0 to MIT.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Forbidden passing empty byte string for connection identifier.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Added EDHOC error getters for: error code and cipher suites.</p>
+<ul>
+<li><p>added test scenarios according to RFC 9528: 6.3.2. Examples. Covered figures 8 and 9.</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="version-0-3-0">
+<h2>Version 0.3.0<a class="headerlink" href="#version-0-3-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>May 20, 2024</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Full support of RFC 9528 (EDHOC).</p>
+<ul>
+<li><p>add missing static diffie hellman keys authentication method.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Implementation is verified with RFC 9529 (EDHOC traces) for chapter 3.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Create documentation for sphinx including:</p>
+<ul>
+<li><p>move README to sphinx.</p></li>
+<li><p>move ChangeLog to sphinx.</p></li>
+<li><p>create API documentation and fix header files.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Add documentation deployment step for github actions.</p></li>
+</ul>
+</section>
+<section id="version-0-2-0">
+<h2>Version 0.2.0<a class="headerlink" href="#version-0-2-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>April 28, 2024</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Update implementation for RFC 9528 (EDHOC) including:</p>
+<ul>
+<li><p>external authorization data aligned with RFC.</p></li>
+<li><p>add message 4 compose &amp; process.</p></li>
+<li><p>keyUpdate method.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Separate interface for EAD.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Implementation is verified with RFC 9529 (EDHOC traces) for chapter 2.</p>
+<ul>
+<li><p>extended unit tests with EAD single/multiple tokens.</p></li>
+<li><p>used RFC 9529 certificates to verify authentication identified by ‘x5chain’.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Example implementation of cipher suite 2.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : EDHOC context structure with private members.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fix connection identifiers encoding option.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fix authentication credentials encoding option.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Fix CBOR memory requirements for integer, byte string and text string.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Add build, run unit tests and verification by cppcheck and valgrind for github actions.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Update README.</p></li>
+</ul>
+</section>
+<section id="version-0-1-0">
+<h2>Version 0.1.0<a class="headerlink" href="#version-0-1-0" title="Link to this heading">¶</a></h2>
+<dl class="field-list simple">
+<dt class="field-odd">Date<span class="colon">:</span></dt>
+<dd class="field-odd"><p>April 01, 2024</p>
+</dd>
+</dl>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : EDHOC implementation for version 16:</p>
+<ul>
+<li><p>limited support for authentication methods only via signatures.</p></li>
+<li><p>support EAD encoded as byte string.</p></li>
+<li><p>support authentication identified by: ‘kid’, ‘x5chain’, ‘x5t’.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : CoAP friendly EDHOC API.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Separate interfaces for:</p>
+<ul>
+<li><p>cryptographics keys.</p></li>
+<li><p>cryptographics operations.</p></li>
+<li><p>authentication credentials.</p></li>
+</ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Authentication credentials fetch callback accept only private key identifier.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Example implementation of cipher suite 0 with PSA.</p></li>
+<li><p><a class="reference external" href="https://github.com/kamil-kielbasa">&#64;kamil-kielbasa</a> : Unit test with test vectors for authentication with signatures, X.509 identified by ‘kid’, ‘x5chain’ and ‘x5t’.</p></li>
+</ul>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          <a class="prev-page" href="testing.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Testing</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Kamil Kielbasa
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Changelog</a><ul>
+<li><a class="reference internal" href="#version-1-10-0">Version 1.10.0</a></li>
+<li><a class="reference internal" href="#version-1-9-0">Version 1.9.0</a></li>
+<li><a class="reference internal" href="#version-1-8-0">Version 1.8.0</a></li>
+<li><a class="reference internal" href="#version-1-7-1">Version 1.7.1</a></li>
+<li><a class="reference internal" href="#version-1-7-0">Version 1.7.0</a></li>
+<li><a class="reference internal" href="#version-1-6-0">Version 1.6.0</a></li>
+<li><a class="reference internal" href="#version-1-5-0">Version 1.5.0</a></li>
+<li><a class="reference internal" href="#version-1-4-2">Version 1.4.2</a></li>
+<li><a class="reference internal" href="#version-1-4-1">Version 1.4.1</a></li>
+<li><a class="reference internal" href="#version-1-4-0">Version 1.4.0</a></li>
+<li><a class="reference internal" href="#version-1-3-0">Version 1.3.0</a></li>
+<li><a class="reference internal" href="#version-1-2-0">Version 1.2.0</a></li>
+<li><a class="reference internal" href="#version-1-1-1">Version 1.1.1</a></li>
+<li><a class="reference internal" href="#version-1-1-0">Version 1.1.0</a></li>
+<li><a class="reference internal" href="#version-1-0-0">Version 1.0.0</a></li>
+<li><a class="reference internal" href="#version-0-6-0">Version 0.6.0</a></li>
+<li><a class="reference internal" href="#version-0-5-0">Version 0.5.0</a></li>
+<li><a class="reference internal" href="#version-0-4-0">Version 0.4.0</a></li>
+<li><a class="reference internal" href="#version-0-3-0">Version 0.3.0</a></li>
+<li><a class="reference internal" href="#version-0-2-0">Version 0.2.0</a></li>
+<li><a class="reference internal" href="#version-0-1-0">Version 0.1.0</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=78901e06"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
