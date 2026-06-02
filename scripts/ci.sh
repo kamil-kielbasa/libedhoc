@@ -295,26 +295,30 @@ cmd_fuzz() {
 # --------------- format ------------------------------------------------------
 cmd_format() {
     require_cmd clang-format
-    section "Formatting source code"
+    require_cmd git
     cd "${PROJECT_DIR}"
 
-    local files=()
-    files+=(include/*.h)
-    files+=(library/*.c)
-    files+=(helpers/include/*.h)
-    files+=(helpers/src/*.c)
-    files+=(port/log/linux/edhoc_log_backend.h)
-    files+=(port/log/zephyr/edhoc_log_backend.h)
-    files+=(port/log/zephyr/edhoc_log_backend.c)
-    # Tests
-    files+=(tests/unit/*.c)
-    files+=(tests/integration/*.c)
-    files+=(tests/common/src/*.c)
-    files+=(tests/common/include/*.h)
-    files+=(tests/*.c)
+    local check=false
+    for arg in "$@"; do
+        case "$arg" in
+            --check) check=true ;;
+            *) err "Unknown format option: $arg"; exit 1 ;;
+        esac
+    done
 
-    clang-format -i "${files[@]}" 2>/dev/null || true
-    ok "Formatting complete."
+    local files=()
+    mapfile -t files < <(git ls-files '*.c' '*.h' ':!:backends/**')
+    [[ ${#files[@]} -gt 0 ]] || { err "No source files found."; exit 1; }
+
+    if [[ "$check" == true ]]; then
+        section "Checking source code formatting"
+        clang-format --dry-run --Werror --style=file "${files[@]}"
+        ok "Formatting check passed."
+    else
+        section "Formatting source code"
+        clang-format -i --style=file "${files[@]}"
+        ok "Formatting complete."
+    fi
 }
 
 # --------------- benchmark ---------------------------------------------------
@@ -351,7 +355,8 @@ Analysis:
   fuzz [seconds]          Build + run fuzz targets (default: 60s each)
 
 Quality:
-  format                  Run clang-format on all source files
+  format [--check]        Run clang-format on all tracked sources
+                          (--check = dry-run mirroring the CI / Format job)
 
 Pipeline:
   all                     Run full CI: coverage, cppcheck, clang-tidy, valgrind
@@ -377,7 +382,7 @@ main() {
         cppcheck)    cmd_cppcheck ;;
         clang-tidy)  cmd_clang_tidy ;;
         fuzz)        shift; cmd_fuzz "$@" ;;
-        format)      cmd_format ;;
+        format)      shift; cmd_format "$@" ;;
         all)         cmd_all ;;
         --help|-h)   show_help ;;
         *)           err "Unknown command: $1"; show_help; exit 1 ;;

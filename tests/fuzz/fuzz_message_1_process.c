@@ -41,8 +41,7 @@ static int auth_cred_fetch_stub(void *user_ctx,
  */
 static int auth_cred_verify_stub(void *user_ctx,
 				 struct edhoc_auth_creds *auth_cred,
-				 const uint8_t **pub_key,
-				 size_t *pub_key_len);
+				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
  * \brief EAD compose stub.
@@ -75,8 +74,7 @@ static int auth_cred_fetch_stub(void *user_ctx,
 
 static int auth_cred_verify_stub(void *user_ctx,
 				 struct edhoc_auth_creds *auth_cred,
-				 const uint8_t **pub_key,
-				 size_t *pub_key_len)
+				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 	(void)auth_cred;

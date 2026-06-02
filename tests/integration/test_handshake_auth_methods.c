@@ -291,7 +291,8 @@ static int run_handshake(enum edhoc_method method)
 	ret = edhoc_set_methods(&init_ctx, methods, 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
-	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suite_2_get_suite(), 1);
+	ret = edhoc_set_cipher_suites(&init_ctx,
+				      edhoc_cipher_suite_2_get_suite(), 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 	ret = edhoc_set_connection_id(&init_ctx, &cid_i);
@@ -318,7 +319,8 @@ static int run_handshake(enum edhoc_method method)
 	ret = edhoc_set_methods(&resp_ctx, methods, 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
-	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suite_2_get_suite(), 1);
+	ret = edhoc_set_cipher_suites(&resp_ctx,
+				      edhoc_cipher_suite_2_get_suite(), 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 	ret = edhoc_set_connection_id(&resp_ctx, &cid_r);

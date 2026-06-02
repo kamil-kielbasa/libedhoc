@@ -49,7 +49,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	struct edhoc_context ctx = { 0 };
 	int ret = edhoc_context_init(&ctx);
-	
+
 	if (EDHOC_SUCCESS != ret)
 		return 0;
 

@@ -150,8 +150,10 @@ TEST(message_paths, msg1_compose_multiple_cipher_suites)
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(&ctx, methods, 1);
 
-	const struct edhoc_cipher_suite csuites[2] = { *edhoc_cipher_suite_0_get_suite(),
-						       *edhoc_cipher_suite_2_get_suite() };
+	const struct edhoc_cipher_suite csuites[2] = {
+		*edhoc_cipher_suite_0_get_suite(),
+		*edhoc_cipher_suite_2_get_suite()
+	};
 	edhoc_set_cipher_suites(&ctx, csuites, 2);
 
 	struct edhoc_connection_id cid = {
