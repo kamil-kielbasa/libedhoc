@@ -6,8 +6,6 @@
  *          Uses mock crypto/key callbacks with configurable failure injection
  *          and direct context state manipulation (EDHOC_ALLOW_PRIVATE_ACCESS)
  *          to exercise deep internal error paths in the library.
- * \version 1.0
- * \date    2025-04-14
  *
  * \copyright Copyright (c) 2025
  *
@@ -18,7 +16,6 @@
 #include "test_common.h"
 #include "edhoc_common.h"
 #include "edhoc_cipher_suite_2.h"
-#include "test_cipher_suites.h"
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -307,7 +304,7 @@ static void setup_mock_context(struct edhoc_context *ctx,
 
 	const enum edhoc_method m[] = { method };
 	edhoc_set_methods(ctx, m, 1);
-	edhoc_set_cipher_suites(ctx, &test_cipher_suite_2, 1);
+	edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_2_get_suite(), 1);
 
 	const struct edhoc_connection_id cid = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,

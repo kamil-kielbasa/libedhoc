@@ -2,8 +2,6 @@
  * \file    test_crypto_suite0.c
  * \author  Kamil Kielbasa
  * \brief   Module tests for cipher suite 0.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 

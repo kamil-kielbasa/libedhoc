@@ -2,8 +2,6 @@
  * \file    test_rfc9529_chapter3.c
  * \author  Kamil Kielbasa
  * \brief   Module tests according to RFC 9529, chapter 3.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 

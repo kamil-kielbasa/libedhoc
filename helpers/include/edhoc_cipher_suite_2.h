@@ -8,9 +8,6 @@
  *            - key exchange algorithm (ECDH curve) = P-256
  *            - signature algorithm                 = ES256
  *
- * \version 1.0
- * \date    2025-04-14
- * 
  * \copyright Copyright (c) 2025
  * 
  */
@@ -77,6 +74,17 @@ const struct edhoc_crypto *edhoc_cipher_suite_2_get_crypto(void);
  * \return Pointer to cipher suite 2 keys operations structure.
  */
 const struct edhoc_keys *edhoc_cipher_suite_2_get_keys(void);
+
+/**
+ * \brief Get EDHOC cipher suite descriptor for cipher suite 2.
+ *
+ * Returns a pointer to a pre-initialized \c struct \c edhoc_cipher_suite
+ * holding the canonical algorithm parameters of cipher suite 2
+ * (value 2, AES-CCM-16-64-128, SHA-256, P-256, ES256).
+ *
+ * \return Pointer to cipher suite 2 descriptor.
+ */
+const struct edhoc_cipher_suite *edhoc_cipher_suite_2_get_suite(void);
 
 /** 
  * \brief Import cryptographic key into cipher suite 2.

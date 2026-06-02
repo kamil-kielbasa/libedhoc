@@ -4,8 +4,6 @@
  * \brief   Tests for EDHOC authentication methods 1 and 2.
  *          Method 1: Initiator signature / Responder static DH.
  *          Method 2: Initiator static DH / Responder signature.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 
@@ -26,7 +24,6 @@
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc.h>
-#include "test_cipher_suites.h"
 
 /* PSA crypto header: */
 #include <psa/crypto.h>
@@ -294,7 +291,7 @@ static int run_handshake(enum edhoc_method method)
 	ret = edhoc_set_methods(&init_ctx, methods, 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
-	ret = edhoc_set_cipher_suites(&init_ctx, &test_cipher_suite_2, 1);
+	ret = edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suite_2_get_suite(), 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 	ret = edhoc_set_connection_id(&init_ctx, &cid_i);
@@ -321,7 +318,7 @@ static int run_handshake(enum edhoc_method method)
 	ret = edhoc_set_methods(&resp_ctx, methods, 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
-	ret = edhoc_set_cipher_suites(&resp_ctx, &test_cipher_suite_2, 1);
+	ret = edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suite_2_get_suite(), 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 	ret = edhoc_set_connection_id(&resp_ctx, &cid_r);

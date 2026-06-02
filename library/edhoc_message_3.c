@@ -1,9 +1,7 @@
 /**
  * \file    edhoc_message_3.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC message 3.
- * \version 1.0
- * \date    2025-04-14
+ * \brief   EDHOC message 3 compose & process.
  * 
  * \copyright Copyright (c) 2025
  *

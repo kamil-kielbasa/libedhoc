@@ -5,7 +5,6 @@ set(FUZZ_COMMON_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../../helpers/src/edhoc_cipher_suite_2.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../helpers/src/edhoc_helpers.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../common/src/test_ead.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../common/src/test_cipher_suites.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../common/src/test_credentials.c)
 
 set(FUZZ_TARGETS

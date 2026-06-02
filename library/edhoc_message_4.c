@@ -2,8 +2,6 @@
  * \file    edhoc_message_4.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 4 compose & process.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 

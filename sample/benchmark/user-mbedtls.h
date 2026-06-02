@@ -8,9 +8,6 @@
  *          cipher-suite-2 helpers need, without pulling in the full X.509 /
  *          PK_WRITE Kconfig chain.
  *
- * \version 1.0
- * \date    2026-02-27
- *
  * \copyright Copyright (c) 2026
  *
  */

@@ -2,8 +2,6 @@
  * \file    test_vector_x5chain_sign_keys_suite_0.h
  * \author  Kamil Kielbasa
  * \brief   Test vector with keys and certificates for Ed25519 & X25519 curve.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 

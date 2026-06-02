@@ -5,8 +5,6 @@
  *
  *          Exercises: msg1 bstr CID, multiple cipher suites, EAD,
  *          msg4 compose/process.
- * \version 1.0
- * \date    2025-04-14
  *
  * \copyright Copyright (c) 2025
  *
@@ -20,28 +18,6 @@
 #include "test_ead.h"
 
 #include <psa/crypto.h>
-
-static const struct edhoc_cipher_suite test_cipher_suite_0 = {
-	.value = 0,
-	.aead_key_length = 16,
-	.aead_tag_length = 8,
-	.aead_iv_length = 13,
-	.hash_length = 32,
-	.mac_length = 8,
-	.ecc_key_length = 32,
-	.ecc_sign_length = 64,
-};
-
-static const struct edhoc_cipher_suite test_cipher_suite_2 = {
-	.value = 2,
-	.aead_key_length = 16,
-	.aead_tag_length = 8,
-	.aead_iv_length = 13,
-	.hash_length = 32,
-	.mac_length = 8,
-	.ecc_key_length = 32,
-	.ecc_sign_length = 64,
-};
 
 static int ead_compose_msg1(void *user_ctx, enum edhoc_message msg,
 			    struct edhoc_ead_token *ead_token,
@@ -103,7 +79,7 @@ static void setup_initiator_suite0(struct edhoc_context *ctx)
 	edhoc_context_init(ctx);
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(ctx, methods, 1);
-	edhoc_set_cipher_suites(ctx, &test_cipher_suite_0, 1);
+	edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_0_get_suite(), 1);
 	edhoc_bind_keys(ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(ctx, edhoc_cipher_suite_0_get_crypto());
 }
@@ -113,7 +89,7 @@ static void setup_responder_suite0(struct edhoc_context *ctx)
 	edhoc_context_init(ctx);
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(ctx, methods, 1);
-	edhoc_set_cipher_suites(ctx, &test_cipher_suite_0, 1);
+	edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_0_get_suite(), 1);
 	edhoc_bind_keys(ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(ctx, edhoc_cipher_suite_0_get_crypto());
 }
@@ -174,8 +150,8 @@ TEST(message_paths, msg1_compose_multiple_cipher_suites)
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(&ctx, methods, 1);
 
-	const struct edhoc_cipher_suite csuites[2] = { test_cipher_suite_0,
-						       test_cipher_suite_2 };
+	const struct edhoc_cipher_suite csuites[2] = { *edhoc_cipher_suite_0_get_suite(),
+						       *edhoc_cipher_suite_2_get_suite() };
 	edhoc_set_cipher_suites(&ctx, csuites, 2);
 
 	struct edhoc_connection_id cid = {
@@ -346,7 +322,7 @@ TEST(message_paths, msg4_compose_with_ead)
 
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(&ctx, methods, 1);
-	edhoc_set_cipher_suites(&ctx, &test_cipher_suite_0, 1);
+	edhoc_set_cipher_suites(&ctx, edhoc_cipher_suite_0_get_suite(), 1);
 	edhoc_bind_keys(&ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(&ctx, edhoc_cipher_suite_0_get_crypto());
 
@@ -398,8 +374,8 @@ TEST(message_paths, msg4_compose_process_roundtrip)
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(&resp_ctx, methods, 1);
 	edhoc_set_methods(&init_ctx, methods, 1);
-	edhoc_set_cipher_suites(&resp_ctx, &test_cipher_suite_0, 1);
-	edhoc_set_cipher_suites(&init_ctx, &test_cipher_suite_0, 1);
+	edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suite_0_get_suite(), 1);
+	edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suite_0_get_suite(), 1);
 	edhoc_bind_keys(&resp_ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_keys(&init_ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_0_get_crypto());
@@ -461,8 +437,8 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(&resp_ctx, methods, 1);
 	edhoc_set_methods(&init_ctx, methods, 1);
-	edhoc_set_cipher_suites(&resp_ctx, &test_cipher_suite_0, 1);
-	edhoc_set_cipher_suites(&init_ctx, &test_cipher_suite_0, 1);
+	edhoc_set_cipher_suites(&resp_ctx, edhoc_cipher_suite_0_get_suite(), 1);
+	edhoc_set_cipher_suites(&init_ctx, edhoc_cipher_suite_0_get_suite(), 1);
 	edhoc_bind_keys(&resp_ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_keys(&init_ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_0_get_crypto());

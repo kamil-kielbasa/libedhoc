@@ -2,8 +2,6 @@
  * \file    test_exporters.c
  * \author  Kamil Kielbasa
  * \brief   Tests for EDHOC exporter and error getter API functions.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 
@@ -17,7 +15,6 @@
 
 /* Cipher suite 0 header: */
 #include "edhoc_cipher_suite_0.h"
-#include "test_cipher_suites.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -50,7 +47,7 @@ static void setup_basic_context(struct edhoc_context *ctx)
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(ctx, method, 1);
 
-	edhoc_set_cipher_suites(ctx, &test_cipher_suite_0, 1);
+	edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_0_get_suite(), 1);
 
 	const struct edhoc_connection_id cid = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,

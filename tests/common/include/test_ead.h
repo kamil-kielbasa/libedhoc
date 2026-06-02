@@ -2,8 +2,6 @@
  * \file    test_ead.h
  * \author  Kamil Kielbasa
  * \brief   Shared EAD (External Authorization Data) test helpers.
- * \version 1.0
- * \date    2025-04-14
  *
  * \copyright Copyright (c) 2025
  */

@@ -4,9 +4,6 @@
  * \brief   Test vector from EDHOC traces (RFC 9529) for chapter 2.
  *          It contains authentication with signatures, X.509 identified by 'x5t'.
  *          
- * \version 1.0
- * \date    2025-04-14
- * 
  * \copyright Copyright (c) 2025
  * 
  */
