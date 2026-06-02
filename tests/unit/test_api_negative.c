@@ -2,8 +2,6 @@
  * \file    test_api_negative.c
  * \author  Kamil Kielbasa
  * \brief   Negative tests for EDHOC public API error paths.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 

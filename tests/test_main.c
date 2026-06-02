@@ -7,8 +7,6 @@
  *          - Unit tests:        Isolated function-level testing.
  *          - Integration tests: Full EDHOC handshake and protocol flows.
  *          - Fuzz tests:        Built separately (see fuzz/ directory).
- * \version 2.0
- * \date    2025-04-14
  *
  * \copyright Copyright (c) 2025
  */

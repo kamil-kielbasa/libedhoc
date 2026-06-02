@@ -2,8 +2,6 @@
  * \file    edhoc_log_module.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC logging module registration for Zephyr.
- * \version 1.0
- * \date    2026-01-27
  * 
  * \copyright Copyright (c) 2026
  */

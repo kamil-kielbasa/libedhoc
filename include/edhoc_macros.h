@@ -2,8 +2,6 @@
  * \file    edhoc_macros.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC utility macros.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 
@@ -59,19 +57,21 @@
 
 #else /* !__DOXYGEN__ */
 
-#if defined(__ZEPHYR__) && defined(CONFIG_THREAD_STACK_INFO) && defined(CONFIG_ASSERT)
+#if defined(__ZEPHYR__) && defined(CONFIG_THREAD_STACK_INFO) && \
+	defined(CONFIG_ASSERT)
 
 #include <zephyr/kernel.h>
 #include <zephyr/sys/__assert.h>
 
-#define EDHOC_ASSERT_FREE_STACK_SIZE(required_bytes)                            \
-	do {                                                                    \
-		size_t _unused = 0;                                             \
-		int _err = k_thread_stack_space_get(k_current_get(), &_unused); \
-		__ASSERT_NO_MSG(_err == 0);                                     \
-		__ASSERT(_unused >= (size_t)(required_bytes),                   \
-			 "Insufficient stack: %zu bytes free, %zu required",    \
-			 _unused, (size_t)(required_bytes));                    \
+#define EDHOC_ASSERT_FREE_STACK_SIZE(required_bytes)                         \
+	do {                                                                 \
+		size_t _unused = 0;                                          \
+		int _err =                                                   \
+			k_thread_stack_space_get(k_current_get(), &_unused); \
+		__ASSERT_NO_MSG(_err == 0);                                  \
+		__ASSERT(_unused >= (size_t)(required_bytes),                \
+			 "Insufficient stack: %zu bytes free, %zu required", \
+			 _unused, (size_t)(required_bytes));                 \
 	} while (0)
 #else
 #define EDHOC_ASSERT_FREE_STACK_SIZE(required_bytes) \

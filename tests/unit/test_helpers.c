@@ -2,8 +2,6 @@
  * \file    test_helpers.c
  * \author  Kamil Kielbasa
  * \brief   Module tests for EDHOC helpers API.
- * \version 1.0
- * \date    2026-01-28
  * 
  * \copyright Copyright (c) 2026
  * 

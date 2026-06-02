@@ -2,8 +2,6 @@
  * \file    test_common.h
  * \author  Kamil Kielbasa
  * \brief   Common includes, defines, and macros for all tests.
- * \version 1.0
- * \date    2025-04-14
  *
  * \copyright Copyright (c) 2025
  */

@@ -7,7 +7,6 @@ set(TEST_MAIN
 
 set(TEST_COMMON_SOURCES
     common/src/test_ead.c
-    common/src/test_cipher_suites.c
     common/src/test_credentials.c)
 
 set(TEST_UNIT_SOURCES

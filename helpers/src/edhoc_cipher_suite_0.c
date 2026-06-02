@@ -2,8 +2,6 @@
  * \file    edhoc_cipher_suite_0.c
  * \author  Kamil Kielbasa
  * \brief   Example implementation of cipher suite 0.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 
@@ -575,6 +573,17 @@ static const struct edhoc_crypto edhoc_cipher_suite_0_crypto = {
 	.hash = edhoc_cipher_suite_0_hash,
 };
 
+static const struct edhoc_cipher_suite edhoc_cipher_suite_0_suite = {
+	.value = 0,
+	.aead_key_length = 16,
+	.aead_tag_length = 8,
+	.aead_iv_length = 13,
+	.hash_length = 32,
+	.mac_length = 8,
+	.ecc_key_length = 32,
+	.ecc_sign_length = 64,
+};
+
 const struct edhoc_keys *edhoc_cipher_suite_0_get_keys(void)
 {
 	return &edhoc_cipher_suite_0_keys;
@@ -583,4 +592,9 @@ const struct edhoc_keys *edhoc_cipher_suite_0_get_keys(void)
 const struct edhoc_crypto *edhoc_cipher_suite_0_get_crypto(void)
 {
 	return &edhoc_cipher_suite_0_crypto;
+}
+
+const struct edhoc_cipher_suite *edhoc_cipher_suite_0_get_suite(void)
+{
+	return &edhoc_cipher_suite_0_suite;
 }

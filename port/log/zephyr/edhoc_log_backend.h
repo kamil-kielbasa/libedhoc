@@ -2,8 +2,6 @@
  * \file    edhoc_log_backend.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC logging implementation for Zephyr RTOS.
- * \version 1.0
- * \date    2026-01-27
  * 
  * \copyright Copyright (c) 2026
  */

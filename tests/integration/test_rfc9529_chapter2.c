@@ -2,8 +2,6 @@
  * \file    test_rfc9529_chapter2.c
  * \author  Kamil Kielbasa
  * \brief   Module tests according to RFC 9529, chapter 2.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 
@@ -27,7 +25,6 @@
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc.h>
-#include "test_cipher_suites.h"
 #include "test_ead.h"
 
 /* PSA crypto header: */
@@ -470,7 +467,7 @@ TEST_SETUP(rfc9529_chapter2)
 
 	const enum edhoc_method methods[] = { METHOD };
 	const struct edhoc_cipher_suite cipher_suites[] = {
-		test_cipher_suite_0,
+		*edhoc_cipher_suite_0_get_suite(),
 	};
 
 	const struct edhoc_connection_id init_cid = {
@@ -1571,13 +1568,13 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_R, init_ctx->peer_cid.bstr_value,
 				      init_ctx->peer_cid.bstr_length);
 
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.ecc_key_length,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  init_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.ecc_key_length,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, resp_ctx->dh_secret,
-				      test_cipher_suite_0.ecc_key_length);
+				      edhoc_cipher_suite_0_get_suite()->ecc_key_length);
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_3_len = 0;
@@ -1610,15 +1607,15 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.hash_length, init_ctx->th_len);
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.hash_length, resp_ctx->th_len);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, init_ctx->th_len);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, resp_ctx->th_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->th, resp_ctx->th,
-				      test_cipher_suite_0.hash_length);
+				      edhoc_cipher_suite_0_get_suite()->hash_length);
 
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.hash_length, init_ctx->prk_len);
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.hash_length, resp_ctx->prk_len);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, init_ctx->prk_len);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, resp_ctx->prk_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->prk, resp_ctx->prk,
-				      test_cipher_suite_0.hash_length);
+				      edhoc_cipher_suite_0_get_suite()->hash_length);
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_4_len = 0;
@@ -1913,13 +1910,13 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_single)
 				      init_ead_ctx.token[0].value,
 				      init_ead_ctx.token[0].value_len);
 
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.ecc_key_length,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  init_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.ecc_key_length,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, resp_ctx->dh_secret,
-				      test_cipher_suite_0.ecc_key_length);
+				      edhoc_cipher_suite_0_get_suite()->ecc_key_length);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));
@@ -2248,13 +2245,13 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_many)
 			init_ead_ctx.token[i].value_len);
 	}
 
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.ecc_key_length,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  init_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL(test_cipher_suite_0.ecc_key_length,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, resp_ctx->dh_secret,
-				      test_cipher_suite_0.ecc_key_length);
+				      edhoc_cipher_suite_0_get_suite()->ecc_key_length);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));

@@ -2,8 +2,6 @@
  * \file    test_credentials.h
  * \author  Kamil Kielbasa
  * \brief   Shared credential callback stubs for tests.
- * \version 1.0
- * \date    2025-04-14
  *
  * \copyright Copyright (c) 2025
  *

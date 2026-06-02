@@ -2,8 +2,6 @@
  * \file    test_internals.c
  * \author  Kamil Kielbasa
  * \brief   Unit tests for internal static functions exposed via LIBEDHOC_TEST_HOOKS.
- * \version 1.0
- * \date    2025-04-14
  *
  * \copyright Copyright (c) 2025
  *
@@ -14,7 +12,6 @@
 #include "test_common.h"
 #include "edhoc_test_hooks.h"
 #include "edhoc_cipher_suite_0.h"
-#include "test_cipher_suites.h"
 #include "edhoc_common.h"
 #include "edhoc_helpers.h"
 
@@ -31,7 +28,7 @@ static void setup_crypto_context(struct edhoc_context *ctx)
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(ctx, method, 1);
 
-	edhoc_set_cipher_suites(ctx, &test_cipher_suite_0, 1);
+	edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_0_get_suite(), 1);
 
 	const struct edhoc_connection_id cid = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,

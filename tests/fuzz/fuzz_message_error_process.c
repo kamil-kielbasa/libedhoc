@@ -1,13 +1,29 @@
 /**
  * \file    fuzz_message_error_process.c
+ * \author  Kamil Kielbasa
  * \brief   libFuzzer harness for edhoc_message_error_process().
+ *
+ * \copyright Copyright (c) 2026
+ *
  */
 
+/* Include files ----------------------------------------------------------- */
+
+/* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 
+/* EDHOC header: */
 #include <edhoc.h>
+
+/* Module defines ---------------------------------------------------------- */
+/* Module types and type definitiones -------------------------------------- */
+/* Module interface variables and constants -------------------------------- */
+/* Static function declarations -------------------------------------------- */
+/* Static variables and constants ------------------------------------------ */
+/* Static function definitions --------------------------------------------- */
+/* Module interface function definitions ----------------------------------- */
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {

@@ -6,8 +6,6 @@
  *          - static DH keys.
  *          - cipher suite 2.
  *          - single EAD token.
- * \version 1.0
- * \date    2025-04-14
  * 
  * \copyright Copyright (c) 2025
  * 
@@ -31,7 +29,6 @@
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc.h>
-#include "test_cipher_suites.h"
 
 /* PSA crypto header: */
 #include <psa/crypto.h>
@@ -405,7 +402,7 @@ TEST_SETUP(handshake_x5chain_dh_suite2)
 
 	const enum edhoc_method methods[] = { METHOD };
 	const struct edhoc_cipher_suite cipher_suites[] = {
-		test_cipher_suite_2,
+		*edhoc_cipher_suite_2_get_suite(),
 	};
 
 	const struct edhoc_connection_id init_cid = {

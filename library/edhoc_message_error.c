@@ -1,9 +1,7 @@
 /**
  * \file    edhoc_message_error.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC message error.
- * \version 1.0
- * \date    2025-04-14
+ * \brief   EDHOC message error compose & process.
  * 
  * \copyright Copyright (c) 2025
  * 

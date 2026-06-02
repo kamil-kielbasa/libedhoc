@@ -1,3 +1,17 @@
+Version 1.10.1
+--------------
+
+:Date: June 2, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Library:
+
+  * Added ``edhoc_cipher_suite_0_get_suite()`` and ``edhoc_cipher_suite_2_get_suite()`` returning a pointer to a pre-initialized canonical ``struct edhoc_cipher_suite`` (mirrors the existing ``_get_keys`` / ``_get_crypto`` getters).
+  * Migrated all callers to the new getters and removed the now-redundant ``tests/common/{include,src}/test_cipher_suites.{h,c}`` (and their CMake entries).
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Doxygen cleanup:
+
+  * Removed stale ``\version`` and ``\date`` tags from all library, helper, port, sample and test file headers.
+
 Version 1.10.0
 --------------
 
