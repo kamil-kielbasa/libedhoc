@@ -80,7 +80,13 @@ docs locally and confirm there are no warnings:
 sphinx-build -W -b html doc doc/_build/html
 ```
 
-## 7. Pull request
+## 7. Changelog
+
+Every PR must add an entry to `CHANGELOG.rst` under a new (or the current
+unreleased) version section, briefly summarising the user-visible change.
+PRs without a changelog update will be rejected during review.
+
+## 8. Pull request
 
 Open a PR against `main` with a clear description and make sure every CI
 workflow is green.

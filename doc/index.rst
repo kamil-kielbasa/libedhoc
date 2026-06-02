@@ -13,7 +13,7 @@ against the test vectors of
 .. admonition:: Release
    :class: note
 
-   This documentation describes **libedhoc v1.10.1**.
+   This documentation describes **libedhoc v1.10.2**.
 
 Where to start
 --------------

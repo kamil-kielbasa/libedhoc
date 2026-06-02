@@ -1,3 +1,14 @@
+Version 1.10.2
+--------------
+
+:Date: June 2, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI / contributing:
+
+  * Added the ``CI / Format`` GitHub Actions workflow that runs ``clang-format --dry-run --Werror`` over every tracked ``*.c`` / ``*.h`` file (excluding the zcbor-generated ``backends/cbor/`` tree).
+  * Reformatted to satisfy the new check.
+  * Documented in ``CONTRIBUTING.md`` that every PR must update ``CHANGELOG.rst`` with a matching entry.
+
 Version 1.10.1
 --------------
 

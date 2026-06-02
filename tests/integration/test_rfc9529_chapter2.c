@@ -1573,8 +1573,9 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, resp_ctx->dh_secret,
-				      edhoc_cipher_suite_0_get_suite()->ecc_key_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		init_ctx->dh_secret, resp_ctx->dh_secret,
+		edhoc_cipher_suite_0_get_suite()->ecc_key_length);
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_3_len = 0;
@@ -1607,15 +1608,21 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, init_ctx->th_len);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, resp_ctx->th_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->th, resp_ctx->th,
-				      edhoc_cipher_suite_0_get_suite()->hash_length);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length,
+			  init_ctx->th_len);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length,
+			  resp_ctx->th_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		init_ctx->th, resp_ctx->th,
+		edhoc_cipher_suite_0_get_suite()->hash_length);
 
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, init_ctx->prk_len);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length, resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->prk, resp_ctx->prk,
-				      edhoc_cipher_suite_0_get_suite()->hash_length);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length,
+			  init_ctx->prk_len);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->hash_length,
+			  resp_ctx->prk_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		init_ctx->prk, resp_ctx->prk,
+		edhoc_cipher_suite_0_get_suite()->hash_length);
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_4_len = 0;
@@ -1915,8 +1922,9 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_single)
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, resp_ctx->dh_secret,
-				      edhoc_cipher_suite_0_get_suite()->ecc_key_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		init_ctx->dh_secret, resp_ctx->dh_secret,
+		edhoc_cipher_suite_0_get_suite()->ecc_key_length);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));
@@ -2250,8 +2258,9 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_many)
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_0_get_suite()->ecc_key_length,
 			  resp_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, resp_ctx->dh_secret,
-				      edhoc_cipher_suite_0_get_suite()->ecc_key_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		init_ctx->dh_secret, resp_ctx->dh_secret,
+		edhoc_cipher_suite_0_get_suite()->ecc_key_length);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));

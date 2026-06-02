@@ -39,9 +39,9 @@
 
 /* Module defines ---------------------------------------------------------- */
 
-#define MSG_BUF_SIZE      ((size_t)512)
+#define MSG_BUF_SIZE ((size_t)512)
 #define OSCORE_SECRET_LEN ((size_t)16)
-#define OSCORE_SALT_LEN   ((size_t)8)
+#define OSCORE_SALT_LEN ((size_t)8)
 #define OSCORE_ID_BUF_LEN ((size_t)8)
 
 /* Module types and type definitiones -------------------------------------- */
@@ -61,15 +61,11 @@ static double elapsed_us(struct timespec start, struct timespec end);
 static void record_phase(struct bench_result *result, struct timespec start,
 			 struct timespec end, double *total_iter_us);
 
-static int cred_fetch_init(void *user_ctx,
-			   struct edhoc_auth_creds *auth_cred);
-static int cred_fetch_resp(void *user_ctx,
-			   struct edhoc_auth_creds *auth_cred);
-static int cred_verify_init(void *user_ctx,
-			    struct edhoc_auth_creds *auth_cred,
+static int cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred);
+static int cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred);
+static int cred_verify_init(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len);
-static int cred_verify_resp(void *user_ctx,
-			    struct edhoc_auth_creds *auth_cred,
+static int cred_verify_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len);
 
 static int ead_compose_stub(void *user_ctx, enum edhoc_message msg,
@@ -85,10 +81,8 @@ static void setup_context(struct edhoc_context *ctx,
 
 static void print_json_report(size_t iterations,
 			      const struct bench_result *results,
-			      size_t num_phases,
-			      double total_sum_us,
-			      double total_min_us,
-			      double total_max_us);
+			      size_t num_phases, double total_sum_us,
+			      double total_min_us, double total_max_us);
 
 /* Static variables and constants ------------------------------------------ */
 
@@ -115,8 +109,7 @@ static struct timespec clock_now(void)
 	return ts;
 }
 
-static double elapsed_us(const struct timespec start,
-			 const struct timespec end)
+static double elapsed_us(const struct timespec start, const struct timespec end)
 {
 	const double sec = (double)(end.tv_sec - start.tv_sec);
 	const double nsec = (double)(end.tv_nsec - start.tv_nsec);
@@ -125,8 +118,8 @@ static double elapsed_us(const struct timespec start,
 }
 
 static void record_phase(struct bench_result *result,
-			 const struct timespec start,
-			 const struct timespec end, double *total_iter_us)
+			 const struct timespec start, const struct timespec end,
+			 double *total_iter_us)
 {
 	const double us = elapsed_us(start, end);
 
@@ -141,8 +134,7 @@ static void record_phase(struct bench_result *result,
 	*total_iter_us += us;
 }
 
-static int cred_fetch_init(void *user_ctx,
-			   struct edhoc_auth_creds *auth_cred)
+static int cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 {
 	(void)user_ctx;
 
@@ -151,13 +143,12 @@ static int cred_fetch_init(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	return edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_SIGNATURE,
-					       SK_I, ARRAY_SIZE(SK_I),
+	return edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_SIGNATURE, SK_I,
+					       ARRAY_SIZE(SK_I),
 					       auth_cred->priv_key_id);
 }
 
-static int cred_fetch_resp(void *user_ctx,
-			   struct edhoc_auth_creds *auth_cred)
+static int cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 {
 	(void)user_ctx;
 
@@ -166,13 +157,12 @@ static int cred_fetch_resp(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	return edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_SIGNATURE,
-					       SK_R, ARRAY_SIZE(SK_R),
+	return edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_SIGNATURE, SK_R,
+					       ARRAY_SIZE(SK_R),
 					       auth_cred->priv_key_id);
 }
 
-static int cred_verify_init(void *user_ctx,
-			    struct edhoc_auth_creds *auth_cred,
+static int cred_verify_init(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -193,8 +183,7 @@ static int cred_verify_init(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int cred_verify_resp(void *user_ctx,
-			    struct edhoc_auth_creds *auth_cred,
+static int cred_verify_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -298,20 +287,19 @@ static void print_json_report(const size_t iterations,
 	printf("  \"phases\": {\n");
 
 	for (size_t i = 0; i < num_phases; i++) {
-		const double avg = (results[i].count > 0)
-				   ? results[i].sum_us / results[i].count
-				   : 0.0;
+		const double avg =
+			(results[i].count > 0) ?
+				results[i].sum_us / results[i].count :
+				0.0;
 
 		printf("    \"%s\": { \"avg_us\": %.1f, \"min_us\": %.1f, "
 		       "\"max_us\": %.1f }%s\n",
 		       phase_names[i], avg, results[i].min_us,
-		       results[i].max_us,
-		       (i < num_phases - 1) ? "," : "");
+		       results[i].max_us, (i < num_phases - 1) ? "," : "");
 	}
 
-	const double avg_total = (iterations > 0)
-				 ? total_sum_us / iterations
-				 : 0.0;
+	const double avg_total = (iterations > 0) ? total_sum_us / iterations :
+						    0.0;
 
 	printf("  },\n");
 	printf("  \"total_handshake\": { \"avg_us\": %.1f, \"min_us\": %.1f, "
@@ -379,8 +367,8 @@ int main(void)
 		/* Phase 0: msg1 compose (initiator). */
 		t0 = clock_now();
 
-		ret = edhoc_message_1_compose(&init_ctx, msg1,
-					      sizeof(msg1), &msg1_len);
+		ret = edhoc_message_1_compose(&init_ctx, msg1, sizeof(msg1),
+					      &msg1_len);
 		t1 = clock_now();
 
 		if (EDHOC_SUCCESS != ret)
@@ -438,8 +426,8 @@ int main(void)
 		/* Phase 4: msg4 compose (responder). */
 		t0 = clock_now();
 
-		ret = edhoc_message_4_compose(&resp_ctx, msg4,
-					      sizeof(msg4), &msg4_len);
+		ret = edhoc_message_4_compose(&resp_ctx, msg4, sizeof(msg4),
+					      &msg4_len);
 
 		t1 = clock_now();
 
@@ -453,7 +441,7 @@ int main(void)
 		t0 = clock_now();
 
 		ret = edhoc_message_4_process(&init_ctx, msg4, msg4_len);
-		
+
 		t1 = clock_now();
 
 		if (EDHOC_SUCCESS != ret)
@@ -484,19 +472,17 @@ int main(void)
 			t0 = clock_now();
 
 			ret = edhoc_export_oscore_session(
-				&init_ctx,
-				init_secret, OSCORE_SECRET_LEN,
-				init_salt, OSCORE_SALT_LEN,
-				init_sid, sizeof(init_sid), &init_sid_len,
-				init_rid, sizeof(init_rid), &init_rid_len);
+				&init_ctx, init_secret, OSCORE_SECRET_LEN,
+				init_salt, OSCORE_SALT_LEN, init_sid,
+				sizeof(init_sid), &init_sid_len, init_rid,
+				sizeof(init_rid), &init_rid_len);
 
 			if (EDHOC_SUCCESS == ret) {
 				ret = edhoc_export_oscore_session(
-					&resp_ctx,
-					resp_secret, OSCORE_SECRET_LEN,
-					resp_salt, OSCORE_SALT_LEN,
-					resp_sid, sizeof(resp_sid),
-					&resp_sid_len,
+					&resp_ctx, resp_secret,
+					OSCORE_SECRET_LEN, resp_salt,
+					OSCORE_SALT_LEN, resp_sid,
+					sizeof(resp_sid), &resp_sid_len,
 					resp_rid, sizeof(resp_rid),
 					&resp_rid_len);
 			}
@@ -508,8 +494,8 @@ int main(void)
 
 			assert(0 == memcmp(init_secret, resp_secret,
 					   OSCORE_SECRET_LEN));
-			assert(0 == memcmp(init_salt, resp_salt,
-					   OSCORE_SALT_LEN));
+			assert(0 ==
+			       memcmp(init_salt, resp_salt, OSCORE_SALT_LEN));
 			assert(init_sid_len == resp_rid_len);
 			assert(0 == memcmp(init_sid, resp_rid, init_sid_len));
 			assert(init_rid_len == resp_sid_len);
@@ -538,8 +524,7 @@ cleanup:
 	}
 
 	print_json_report(iterations, results, num_phases,
-			  total_handshake_sum_us,
-			  total_handshake_min_us,
+			  total_handshake_sum_us, total_handshake_min_us,
 			  total_handshake_max_us);
 
 	exit(0);
