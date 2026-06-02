@@ -67,3 +67,40 @@ Zephyr target
 
 | All Kconfig options are automatically prefixed with :C:`CONFIG_` by the Zephyr build system.
 | Dependencies (zcbor, mbedtls) are automatically pulled via the west manifest.
+
+Logging
+*******
+
+The logging module provides compile-time configurable log levels via
+``CONFIG_LIBEDHOC_LOG_LEVEL``. Headers:
+
+* :file:`include/edhoc_log.h`
+* Backend: :file:`port/log/linux/edhoc_log_backend.h` (Linux) or
+  :file:`port/log/zephyr/edhoc_log_backend.h` (Zephyr).
+
+.. list-table::
+   :header-rows: 1
+
+   * - Level
+     - Macro
+     - Value
+   * - None
+     - ``EDHOC_LOG_LEVEL_NONE``
+     - 0
+   * - Error
+     - ``EDHOC_LOG_LEVEL_ERR``
+     - 1
+   * - Warning
+     - ``EDHOC_LOG_LEVEL_WRN``
+     - 2
+   * - Info
+     - ``EDHOC_LOG_LEVEL_INF``
+     - 3
+   * - Debug
+     - ``EDHOC_LOG_LEVEL_DBG``
+     - 4
+
+Set ``CONFIG_LIBEDHOC_LOG_LEVEL`` to the desired level during compilation.
+Each level enables all levels below it. The Linux backend outputs
+timestamped, colour-coded messages to ``stdout`` / ``stderr``. The Zephyr
+backend delegates to the Zephyr logging subsystem.
