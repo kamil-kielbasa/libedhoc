@@ -3,59 +3,57 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Version setup -----------------------------------------------------------
-
 import os
-from pathlib import Path
 import subprocess
-
-#project = u'Read the Docs Sphinx Theme'
-#slug = re.sub(r'\W+', '-', project.lower())
+from pathlib import Path
 
 # -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'libedhoc'
-copyright = '2026, Kamil Kielbasa'
-author = 'Kamil Kielbasa'
-version = 'v1.7.1'
+project = "libedhoc"
+copyright = "2026, Kamil Kielbasa"
+author = "Kamil Kielbasa"
+version = "v1.10.0"
+release = version
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-              'sphinx.ext.autodoc',
-              'breathe',
-              'myst_parser',
-              'sphinx.ext.intersphinx',
-              'sphinx.ext.autodoc',
-              'sphinx.ext.autosummary',
-              'sphinx.ext.mathjax',
-              'sphinx.ext.viewcode',
-              'sphinx_rtd_theme',
-             ]
+    "breathe",
+    "myst_parser",
+    "sphinx.ext.intersphinx",
+]
 
-source_suffix = [".rst", ".md"]
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
 master_doc = "index"
 
-templates_path = ['_templates']
-exclude_patterns = ['build', 'Thumbs.db', '.DS_Store']
+templates_path = ["_templates"]
+exclude_patterns = ["build", "_build", "Thumbs.db", ".DS_Store"]
 
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-import sphinx_rtd_theme
-html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_theme = "furo"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
-# Breathe options --------------------------------------------------------------
+html_theme_options = {
+    "source_repository": "https://github.com/kamil-kielbasa/libedhoc/",
+    "source_branch": "main",
+    "source_directory": "doc/",
+    "navigation_with_keys": True,
+    "top_of_page_buttons": ["view", "edit"],
+}
+
+# -- Breathe / Doxygen -------------------------------------------------------
 
 _buildoc_path = Path("../build/doc/doxygen")
 os.makedirs(_buildoc_path, exist_ok=True)
 
-subprocess.call('doxygen', shell=True)
+subprocess.call("doxygen", shell=True)
 
-# Tell Breathe where to find the Doxygen output
-breathe_projects = { "libedhoc": str(_buildoc_path) + "/xml" }
-
+breathe_projects = {"libedhoc": str(_buildoc_path) + "/xml"}
 breathe_default_project = "libedhoc"
+# Only show members for directives that explicitly opt in via :members:.
+breathe_default_members = ()

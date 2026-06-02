@@ -1,49 +1,78 @@
-Welcome to the libedhoc documentation!
-======================================
+libedhoc
+========
+
+**libedhoc** is a C implementation of the Ephemeral Diffie-Hellman Over COSE
+(EDHOC) protocol — a lightweight authenticated key exchange for IoT and
+constrained devices. It provides :term:`mutual authentication`,
+:term:`forward secrecy` and :term:`identity protection`, and is standardised
+by the IETF as
+`RFC 9528 <https://datatracker.ietf.org/doc/html/rfc9528>`_ and verified
+against the test vectors of
+`RFC 9529 <https://datatracker.ietf.org/doc/html/rfc9529>`_.
+
+.. admonition:: Release
+   :class: note
+
+   This documentation describes **libedhoc v1.10.0**.
+
+Where to start
+--------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 60
+
+   * - I want to…
+     - Go to
+   * - Learn what EDHOC and libedhoc are
+     - :doc:`getting_started/introduction`, :doc:`getting_started/concepts`
+   * - Build and run my first handshake
+     - :doc:`getting_started/quick_start`, :doc:`guide/configuration`
+   * - See the protocol message flow
+     - :doc:`guide/protocol_flow`
+   * - Look up a function or type
+     - :doc:`api/index`
+   * - Decode an error or constant
+     - :doc:`reference/error_codes`, :doc:`reference/values`
+   * - Learn a term
+     - :doc:`reference/glossary`
+   * - Contribute or run tests
+     - :doc:`project/contributing`, :doc:`project/testing`
 
 .. toctree::
-   :maxdepth: 10
    :hidden:
-   :caption: Documentation
+   :caption: Getting Started
 
-   introduction
-   api
-   values
-   configuration
-   testing
+   getting_started/introduction
+   getting_started/quick_start
+   getting_started/concepts
 
 .. toctree::
-   :maxdepth: 2
    :hidden:
-   :caption: References
-   
-   changelog
-   links
+   :caption: User Guide
 
-Documentation
--------------
+   guide/protocol_flow
+   guide/configuration
 
-:doc:`introduction`
-  Learn about the library, features, and example usage.
+.. toctree::
+   :hidden:
+   :caption: API Reference
 
-:doc:`api`
-  Complete API reference and interface documentation.
+   api/index
 
-:doc:`values`
-  Error codes and enumeration values reference.
+.. toctree::
+   :hidden:
+   :caption: Reference
 
-:doc:`configuration`
-  Library configuration options and settings.
+   reference/error_codes
+   reference/values
+   reference/glossary
+   reference/links
 
-:doc:`testing`
-  Testing infrastructure, architecture, and guides.
+.. toctree::
+   :hidden:
+   :caption: Project
 
-References
-----------
-
-:doc:`changelog`
-  See what's new in **libedhoc**.
-
-:doc:`links`
-  External references and related documentation.
-
+   project/contributing
+   project/testing
+   project/changelog

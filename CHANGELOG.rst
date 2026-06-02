@@ -1,3 +1,15 @@
+Version 1.10.0
+--------------
+
+:Date: June 2, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Documentation overhaul:
+
+  * Restructured Sphinx docs into ``getting_started/``, ``guide/``, ``api/``, ``reference/`` and ``project/`` sections; switched to the Furo theme.
+  * Split the monolithic API page into per-topic pages (context, messages, credentials, crypto, exporters, EAD, helpers, internals).
+  * Added a glossary, an error-code reference, a values reference and a links page.
+  * Refreshed ``README.md`` (two-row badge layout) and rewrote ``CONTRIBUTING.md`` with the unified ``scripts/ci.sh`` workflow and shallow ``west update``.
+
 Version 1.9.0
 -------------
 
