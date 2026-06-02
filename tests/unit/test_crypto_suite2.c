@@ -1298,6 +1298,60 @@ TEST(crypto_suite2, signature_verify_zero_input_len)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+/**
+ * @scenario  key_agreement with peer key length 33 (one byte over p_len).
+ * @env       PSA initialized, valid ECDH key imported.
+ * @action    Call key_agreement with peer_pub_key_len = 33.
+ * @expected  Returns EDHOC_ERROR_CRYPTO_FAILURE (bounds check rejects oversized key).
+ */
+TEST(crypto_suite2, key_agreement_peer_key_oversized_33)
+{
+	psa_key_id_t kid;
+	uint8_t raw_key[32];
+	psa_generate_random(raw_key, sizeof(raw_key));
+	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
+					      raw_key, 32, &kid);
+	if (EDHOC_SUCCESS != ret)
+		return;
+
+	uint8_t peer[33];
+	memset(peer, 0x41, sizeof(peer));
+	uint8_t secret[32];
+	size_t secret_len;
+	ret = edhoc_cipher_suite_2_key_agreement(NULL, &kid, peer, 33, secret,
+						 32, &secret_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	edhoc_cipher_suite_2_key_destroy(NULL, &kid);
+}
+
+/**
+ * @scenario  key_agreement with adversarially oversized peer key length 128.
+ * @env       PSA initialized, valid ECDH key imported.
+ * @action    Call key_agreement with peer_pub_key_len = 128.
+ * @expected  Returns EDHOC_ERROR_CRYPTO_FAILURE (bounds check rejects oversized key).
+ */
+TEST(crypto_suite2, key_agreement_peer_key_oversized_128)
+{
+	psa_key_id_t kid;
+	uint8_t raw_key[32];
+	psa_generate_random(raw_key, sizeof(raw_key));
+	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
+					      raw_key, 32, &kid);
+	if (EDHOC_SUCCESS != ret)
+		return;
+
+	uint8_t peer[128];
+	memset(peer, 0x41, sizeof(peer));
+	uint8_t secret[32];
+	size_t secret_len;
+	ret = edhoc_cipher_suite_2_key_agreement(NULL, &kid, peer, 128, secret,
+						 32, &secret_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+
+	edhoc_cipher_suite_2_key_destroy(NULL, &kid);
+}
+
 TEST_GROUP_RUNNER(crypto_suite2)
 {
 	RUN_TEST_CASE(crypto_suite2, ecdsa);
@@ -1345,4 +1399,6 @@ TEST_GROUP_RUNNER(crypto_suite2)
 	RUN_TEST_CASE(crypto_suite2, signature_public_key_rejected);
 	RUN_TEST_CASE(crypto_suite2, verify_corrupted_signature);
 	RUN_TEST_CASE(crypto_suite2, signature_verify_zero_input_len);
+	RUN_TEST_CASE(crypto_suite2, key_agreement_peer_key_oversized_33);
+	RUN_TEST_CASE(crypto_suite2, key_agreement_peer_key_oversized_128);
 }
