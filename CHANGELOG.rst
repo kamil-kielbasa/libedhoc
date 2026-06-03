@@ -5,7 +5,9 @@ Version 1.10.3
 
 * `@orbisai0security <https://github.com/orbisai0security>`__ : Security:
 
-  * Helpers (``helpers/src/edhoc_cipher_suite_2.c``): added ``raw_key_len > p_len`` bounds check in ``mbedtls_ecp_decompress`` before the ``memcpy`` that copies the X coordinate into the decompressed key buffer (V-001).
+  * Helpers: fixed buffer overread in P-256 public-key decompression — an
+    oversized compressed peer key could write past the decompressed-key buffer;
+    keys longer than the curve field size are now rejected before copying (V-001).
 
 Version 1.10.2
 --------------
