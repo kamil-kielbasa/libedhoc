@@ -1,3 +1,14 @@
+Version 1.10.3
+--------------
+
+:Date: June 5, 2026
+
+* `@orbisai0security <https://github.com/orbisai0security>`__ : Security:
+
+  * Helpers: fixed buffer overread in P-256 public-key decompression — an
+    oversized compressed peer key could write past the decompressed-key buffer;
+    keys longer than the curve field size are now rejected before copying (V-001).
+
 Version 1.10.2
 --------------
 
