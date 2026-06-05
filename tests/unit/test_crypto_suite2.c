@@ -1315,7 +1315,8 @@ TEST(crypto_suite2, key_agreement_peer_key_oversized_33)
 	TEST_ASSERT_EQUAL(PSA_SUCCESS,
 			  psa_generate_random(raw_key, ARRAY_SIZE(raw_key)));
 	ret = edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_KEY_AGREEMENT,
-					      raw_key, ARRAY_SIZE(raw_key), &kid);
+					      raw_key, ARRAY_SIZE(raw_key),
+					      &kid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t peer[33] = { 0 };
@@ -1325,7 +1326,8 @@ TEST(crypto_suite2, key_agreement_peer_key_oversized_33)
 
 	ret = edhoc_cipher_suite_2_key_agreement(NULL, &kid, peer,
 						 ARRAY_SIZE(peer), secret,
-						 ARRAY_SIZE(secret), &secret_len);
+						 ARRAY_SIZE(secret),
+						 &secret_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
 
 	edhoc_cipher_suite_2_key_destroy(NULL, &kid);
