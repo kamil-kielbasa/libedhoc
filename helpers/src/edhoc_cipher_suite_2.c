@@ -66,8 +66,9 @@ static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 		return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL;
 	}
 
-	if (raw_key_len > p_len) {
-		return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL;
+	/* Defensive bounds check. Unreachable via the public API. */
+	if (raw_key_len > p_len) { /* LCOV_EXCL_LINE */
+		return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL; /* LCOV_EXCL_LINE */
 	}
 
 	/* decomp_key will consist of 0x04|X|Y */

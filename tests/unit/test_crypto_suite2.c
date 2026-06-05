@@ -1299,13 +1299,8 @@ TEST(crypto_suite2, signature_verify_zero_input_len)
 }
 
 /**
- * @scenario  key_agreement rejects a compressed peer key longer than p_len (33 bytes).
- * @env       PSA initialized, valid ECDH key imported.
- * @action    Call key_agreement with peer_pub_key_len = 33 (one byte over P-256 field size).
- * @expected  Returns EDHOC_ERROR_CRYPTO_FAILURE; mbedtls_ecp_decompress bounds
- *            check prevents the overlong key from being copied into the
- *            decompressed-key buffer. Applicable to ECDH only: this is the
- *            sole caller of the static mbedtls_ecp_decompress function.
+ * @scenario  key_agreement rejects a peer key whose length differs from
+ *            ECC_COMP_KEY_LEN (32 bytes), here an oversized 33-byte key.
  */
 TEST(crypto_suite2, key_agreement_peer_key_oversized_33)
 {
