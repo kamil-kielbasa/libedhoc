@@ -9,6 +9,11 @@ Version 1.10.3
     oversized compressed peer key could write past the decompressed-key buffer;
     keys longer than the curve field size are now rejected before copying (V-001).
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Coverage / docs:
+
+  * Helpers: documented the P-256 decompression bounds check as defensive and unreachable through the public API.
+  * Tests: clarified that ``key_agreement_peer_key_oversized_33`` exercises the ``key_agreement`` length guard rather than the ``mbedtls_ecp_decompress`` bounds check.
+
 Version 1.10.2
 --------------
 
