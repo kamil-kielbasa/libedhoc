@@ -1,3 +1,31 @@
+Version 1.11.0
+--------------
+
+:Date: June 10, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Helpers / cipher suites:
+
+  * Added the cipher suite 24 reference helper: A256GCM, SHA-384, P-384 (secp384r1) and ES384.
+  * Added ``tests/unit/test_cipher_suite_24.c`` covering the full crypto surface.
+  * Documented cipher suite 24.
+  * Moved the suite length macros (``EDHOC_CIPHER_SUITE_<n>_*``, suites 0/2/24) out of the public headers into each ``edhoc_cipher_suite_<n>.c``, where they seed the descriptor.
+  * Renamed ``test_crypto_suite{0,2}.c`` to ``test_cipher_suite_{0,2}.c`` (groups ``cipher_suite_{0,2}``) and sized their buffers from the ``_get_suite()`` descriptors.
+  * Extended ``tests/unit/test_cipher_suite_{0,2}.c`` with signature/AEAD tamper-detection and an additional HKDF-SHA-256 KAT.
+  * Removed the per-test descriptive comments across ``tests/unit/test_cipher_suite_{0,2,24}.c`` in favour of self-descriptive test names.
+  * Hardened ``tests/unit/test_cipher_suite_{0,2,24}.c``.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Tests / integration:
+
+  * Added ``tests/integration/test_handshake_x5chain_sig_suite24.c`` — a full EDHOC handshake over an X.509 certificate chain using cipher suite 24 (P-384 / ES384), with the P-384 test vector ``tests/include/test_vector_x5chain_sign_keys_suite_24.h``.
+  * Raised ``CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY`` and ``CONFIG_LIBEDHOC_MAX_LEN_OF_MAC`` to 48 in ``scripts/ci.sh`` so the shared test build accommodates P-384 keys and SHA-384 transcript hashes.
+  * Relaxed the X25519 ``make_key_pair`` buffer-size check in ``edhoc_cipher_suite_0.c`` to accept context buffers larger than the key (only undersized buffers are rejected).
+  * Updated the ``coverage`` mock crypto in ``tests/unit/test_coverage.c`` to report fixed cipher suite 2 key/hash lengths (32) regardless of the buffer size.
+  * Fixed the message 2 ECDH-secret known-answer checks in ``tests/integration/test_rfc9529_chapter{2,3}.c`` to compare ``dh_secret_len`` bytes instead of the whole buffer (``sizeof``).
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fix:
+
+  * Helpers: corrected the cipher suite 2 descriptor MAC length (Static DH) from 32 to 8 bytes to match RFC 9528 (``edhoc_cipher_suite_2_get_suite``).
+
 Version 1.10.3
 --------------
 

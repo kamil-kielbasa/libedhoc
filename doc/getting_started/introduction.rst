@@ -82,6 +82,11 @@ EDHOC cipher suites
        | 1, -7, 10, -16
      - | AES-CCM-16-64-128, SHA-256, 8,
        | P-256, ES256, AES-CCM-16-64-128, SHA-256
+   * - 24
+     - | 3, -43, 16, 2,
+       | -35, 3, -43
+     - | A256GCM, SHA-384, 16,
+       | P-384, ES384, A256GCM, SHA-384
 
 Authentication credentials
 --------------------------

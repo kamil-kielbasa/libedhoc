@@ -59,6 +59,7 @@ Integration tests:
   - ``rfc9528_negotiation`` — Cipher suite negotiation (RFC 9528 Ch.6.3.2)
   - ``handshake_x5chain_sig_suite0`` — Full handshake, x5chain, signatures, suite 0
   - ``handshake_x5chain_sig_suite2`` — Full handshake, x5chain, signatures, suite 2
+  - ``handshake_x5chain_sig_suite24`` — Full handshake, x5chain, signatures, suite 24
   - ``handshake_x5chain_dh_suite2`` — Full handshake, x5chain, static DH, suite 2
   - ``handshake_x5t_sig_suite2`` — Full handshake, x5t, signatures, suite 2
   - ``handshake_auth_methods`` — Handshake with auth methods 1 and 2

@@ -17,8 +17,9 @@
 static void run_all_test_groups(void)
 {
 	/* ---- Unit tests ---- */
-	RUN_TEST_GROUP(crypto_suite0);
-	RUN_TEST_GROUP(crypto_suite2);
+	RUN_TEST_GROUP(cipher_suite_0);
+	RUN_TEST_GROUP(cipher_suite_2);
+	RUN_TEST_GROUP(cipher_suite_24);
 	RUN_TEST_GROUP(api);
 	RUN_TEST_GROUP(api_negative);
 	RUN_TEST_GROUP(error_message);
@@ -34,6 +35,7 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(rfc9528_negotiation);
 	RUN_TEST_GROUP(handshake_x5chain_sig_suite0);
 	RUN_TEST_GROUP(handshake_x5chain_sig_suite2);
+	RUN_TEST_GROUP(handshake_x5chain_sig_suite24);
 	RUN_TEST_GROUP(handshake_x5chain_dh_suite2);
 	RUN_TEST_GROUP(handshake_x5t_sig_suite2);
 	RUN_TEST_GROUP(handshake_auth_methods);

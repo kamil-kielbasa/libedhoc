@@ -12,8 +12,9 @@ set(TEST_COMMON_SOURCES
 set(TEST_UNIT_SOURCES
     unit/test_api.c
     unit/test_api_negative.c
-    unit/test_crypto_suite0.c
-    unit/test_crypto_suite2.c
+    unit/test_cipher_suite_0.c
+    unit/test_cipher_suite_2.c
+    unit/test_cipher_suite_24.c
     unit/test_error_message.c
     unit/test_exporters.c
     unit/test_helpers.c
@@ -24,6 +25,7 @@ set(TEST_UNIT_SOURCES
 set(TEST_INTEGRATION_SOURCES
     integration/test_handshake_x5chain_sig_suite0.c
     integration/test_handshake_x5chain_sig_suite2.c
+    integration/test_handshake_x5chain_sig_suite24.c
     integration/test_handshake_x5chain_dh_suite2.c
     integration/test_handshake_x5t_sig_suite2.c
     integration/test_handshake_auth_methods.c
@@ -34,6 +36,7 @@ set(TEST_INTEGRATION_SOURCES
 set(TEST_HELPER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_0.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_2.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_24.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_helpers.c)
 
 set_source_files_properties(${TEST_HELPER_SOURCES} PROPERTIES

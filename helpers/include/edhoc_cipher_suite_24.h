@@ -1,20 +1,20 @@
 /**
- * \file    edhoc_cipher_suite_2.h
+ * \file    edhoc_cipher_suite_24.h
  * \author  Kamil Kielbasa
- * \brief   Cipher suite 2 contains:
- *            - AEAD algorithm                      = AES-CCM-16-64-128
- *            - hash algorithm                      = SHA-256
- *            - MAC length in bytes (Static DH)     = 8
- *            - key exchange algorithm (ECDH curve) = P-256
- *            - signature algorithm                 = ES256
+ * \brief   Cipher suite 24 contains:
+ *            - AEAD algorithm                      = A256GCM
+ *            - hash algorithm                      = SHA-384
+ *            - MAC length in bytes (Static DH)     = 16
+ *            - key exchange algorithm (ECDH curve) = P-384
+ *            - signature algorithm                 = ES384
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef EDHOC_CIPHER_SUITE_2_H
-#define EDHOC_CIPHER_SUITE_2_H
+#ifndef EDHOC_CIPHER_SUITE_24_H
+#define EDHOC_CIPHER_SUITE_24_H
 
 /* Include files ----------------------------------------------------------- */
 
@@ -33,12 +33,12 @@
 /* Static function definitions --------------------------------------------- */
 /* Module interface function definitions ----------------------------------- */
 
-/** \defgroup edhoc-cipher-suite-2-api EDHOC cipher suite 2 API
+/** \defgroup edhoc-cipher-suite-24-api EDHOC cipher suite 24 API
  *
- * \details For ES256, \ref edhoc_cipher_suite_2_signature and \ref edhoc_cipher_suite_2_verify
+ * \details For ES384, \ref edhoc_cipher_suite_24_signature and \ref edhoc_cipher_suite_24_verify
  *          split a \c psa_sign_message-style operation into **hash, then sign**
- *          (\ref edhoc_cipher_suite_2_hash, then \c psa_sign_hash / \c psa_verify_hash with
- *          \c PSA_ALG_ECDSA(\c PSA_ALG_SHA_256)), so each step can follow your platform
+ *          (\ref edhoc_cipher_suite_24_hash, then \c psa_sign_hash / \c psa_verify_hash with
+ *          \c PSA_ALG_ECDSA(\c PSA_ALG_SHA_384)), so each step can follow your platform
  *          configuration. That helps when **moving a large message through the signing path is
  *          costly** (e.g. some secure elements). The \c input to those callbacks is still the full
  *          COSE Sign1 payload from the library, not an application-supplied digest.
@@ -47,38 +47,38 @@
  */
 
 /** 
- * \brief Get EDHOC crypto structure for cipher suite 2.
+ * \brief Get EDHOC crypto structure for cipher suite 24.
  *
  * Returns a pointer to the cryptographic operations structure implementing
- * cipher suite 2 algorithms (AES-CCM-16-64-128, SHA-256, P-256, ES256).
+ * cipher suite 24 algorithms (A256GCM, SHA-384, P-384, ES384).
  *
- * \return Pointer to cipher suite 2 crypto operations structure.
+ * \return Pointer to cipher suite 24 crypto operations structure.
  */
-const struct edhoc_crypto *edhoc_cipher_suite_2_get_crypto(void);
+const struct edhoc_crypto *edhoc_cipher_suite_24_get_crypto(void);
 
 /** 
- * \brief Get EDHOC keys structure for cipher suite 2.
+ * \brief Get EDHOC keys structure for cipher suite 24.
  *
  * Returns a pointer to the key management operations structure implementing
- * cipher suite 2 key handling.
+ * cipher suite 24 key handling.
  *
- * \return Pointer to cipher suite 2 keys operations structure.
+ * \return Pointer to cipher suite 24 keys operations structure.
  */
-const struct edhoc_keys *edhoc_cipher_suite_2_get_keys(void);
+const struct edhoc_keys *edhoc_cipher_suite_24_get_keys(void);
 
 /**
- * \brief Get EDHOC cipher suite descriptor for cipher suite 2.
+ * \brief Get EDHOC cipher suite descriptor for cipher suite 24.
  *
  * Returns a pointer to a pre-initialized \c struct \c edhoc_cipher_suite
- * holding the canonical algorithm parameters of cipher suite 2
- * (value 2, AES-CCM-16-64-128, SHA-256, P-256, ES256).
+ * holding the canonical algorithm parameters of cipher suite 24
+ * (value 24, A256GCM, SHA-384, P-384, ES384).
  *
- * \return Pointer to cipher suite 2 descriptor.
+ * \return Pointer to cipher suite 24 descriptor.
  */
-const struct edhoc_cipher_suite *edhoc_cipher_suite_2_get_suite(void);
+const struct edhoc_cipher_suite *edhoc_cipher_suite_24_get_suite(void);
 
 /** 
- * \brief Import cryptographic key into cipher suite 2.
+ * \brief Import cryptographic key into cipher suite 24.
  *
  * Imports a raw cryptographic key and associates it with a key identifier.
  * The key type determines the algorithm and usage context.
@@ -96,10 +96,10 @@ const struct edhoc_cipher_suite *edhoc_cipher_suite_2_get_suite(void);
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         Key import operation failed.
  */
-int edhoc_cipher_suite_2_key_import(void *user_context,
-				    enum edhoc_key_type key_type,
-				    const uint8_t *raw_key, size_t raw_key_len,
-				    void *kid);
+int edhoc_cipher_suite_24_key_import(void *user_context,
+				     enum edhoc_key_type key_type,
+				     const uint8_t *raw_key, size_t raw_key_len,
+				     void *kid);
 
 /** 
  * \brief Destroy cryptographic key.
@@ -117,12 +117,12 @@ int edhoc_cipher_suite_2_key_import(void *user_context,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         Key destroy operation failed.
  */
-int edhoc_cipher_suite_2_key_destroy(void *user_context, void *kid);
+int edhoc_cipher_suite_24_key_destroy(void *user_context, void *kid);
 
 /** 
- * \brief Generate ECDH key pair using P-256.
+ * \brief Generate ECDH key pair using P-384.
  *
- * Generates an ephemeral Diffie-Hellman key pair for P-256 (secp256r1) elliptic curve.
+ * Generates an ephemeral Diffie-Hellman key pair for P-384 (secp384r1) elliptic curve.
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier for the generated key pair.
@@ -142,19 +142,19 @@ int edhoc_cipher_suite_2_key_destroy(void *user_context, void *kid);
  * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
  *         Key pair generation failed.
  */
-int edhoc_cipher_suite_2_make_key_pair(void *user_context, const void *key_id,
-				       uint8_t *restrict private_key,
-				       size_t private_key_size,
-				       size_t *restrict private_key_length,
-				       uint8_t *restrict public_key,
-				       size_t public_key_size,
-				       size_t *restrict public_key_length);
+int edhoc_cipher_suite_24_make_key_pair(void *user_context, const void *key_id,
+					uint8_t *restrict private_key,
+					size_t private_key_size,
+					size_t *restrict private_key_length,
+					uint8_t *restrict public_key,
+					size_t public_key_size,
+					size_t *restrict public_key_length);
 
 /** 
- * \brief Perform ECDH key agreement using P-256.
+ * \brief Perform ECDH key agreement using P-384.
  *
  * Computes a shared secret using the local private key and the peer's public key
- * via P-256 (secp256r1) elliptic curve Diffie-Hellman.
+ * via P-384 (secp384r1) elliptic curve Diffie-Hellman.
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the local private key.
@@ -173,19 +173,19 @@ int edhoc_cipher_suite_2_make_key_pair(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
  *         Key agreement computation failed.
  */
-int edhoc_cipher_suite_2_key_agreement(void *user_context, const void *key_id,
-				       const uint8_t *peer_public_key,
-				       size_t peer_public_key_length,
-				       uint8_t *shared_secret,
-				       size_t shared_secret_size,
-				       size_t *shared_secret_length);
+int edhoc_cipher_suite_24_key_agreement(void *user_context, const void *key_id,
+					const uint8_t *peer_public_key,
+					size_t peer_public_key_length,
+					uint8_t *shared_secret,
+					size_t shared_secret_size,
+					size_t *shared_secret_length);
 
 /** 
- * \brief Generate ES256 signature.
+ * \brief Generate ES384 signature.
  *
- * Creates a digital signature over the input data using ES256 (ECDSA with P-256 and SHA-256).
- * Uses \ref edhoc_cipher_suite_2_hash for SHA-256, then \c psa_sign_hash (same outcome as
- * \c psa_sign_message with \c PSA_ALG_ECDSA(\c PSA_ALG_SHA_256); see module \details for rationale).
+ * Creates a digital signature over the input data using ES384 (ECDSA with P-384 and SHA-384).
+ * Uses \ref edhoc_cipher_suite_24_hash for SHA-384, then \c psa_sign_hash (same outcome as
+ * \c psa_sign_message with \c PSA_ALG_ECDSA(\c PSA_ALG_SHA_384); see module \details for rationale).
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the signing key.
@@ -204,16 +204,16 @@ int edhoc_cipher_suite_2_key_agreement(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         Signature generation failed.
  */
-int edhoc_cipher_suite_2_signature(void *user_context, const void *key_id,
-				   const uint8_t *input, size_t input_length,
-				   uint8_t *signature, size_t signature_size,
-				   size_t *signature_length);
+int edhoc_cipher_suite_24_signature(void *user_context, const void *key_id,
+				    const uint8_t *input, size_t input_length,
+				    uint8_t *signature, size_t signature_size,
+				    size_t *signature_length);
 
 /** 
- * \brief Verify ES256 signature.
+ * \brief Verify ES384 signature.
  *
- * Verifies a digital signature over the input data using ES256 (ECDSA with P-256 and SHA-256).
- * Uses \ref edhoc_cipher_suite_2_hash for SHA-256, then \c psa_verify_hash (see module \details).
+ * Verifies a digital signature over the input data using ES384 (ECDSA with P-384 and SHA-384).
+ * Uses \ref edhoc_cipher_suite_24_hash for SHA-384, then \c psa_verify_hash (see module \details).
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the verification key.
@@ -229,16 +229,16 @@ int edhoc_cipher_suite_2_signature(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         Signature verification failed.
  */
-int edhoc_cipher_suite_2_verify(void *user_context, const void *key_id,
-				const uint8_t *input, size_t input_length,
-				const uint8_t *signature,
-				size_t signature_length);
+int edhoc_cipher_suite_24_verify(void *user_context, const void *key_id,
+				 const uint8_t *input, size_t input_length,
+				 const uint8_t *signature,
+				 size_t signature_length);
 
 /** 
- * \brief HKDF extract using SHA-256.
+ * \brief HKDF extract using SHA-384.
  *
  * Performs the HKDF-Extract operation to derive a pseudorandom key from
- * input keying material using SHA-256 as the hash function.
+ * input keying material using SHA-384 as the hash function.
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the input keying material.
@@ -257,17 +257,17 @@ int edhoc_cipher_suite_2_verify(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         HKDF-Extract operation failed.
  */
-int edhoc_cipher_suite_2_extract(void *user_context, const void *key_id,
-				 const uint8_t *salt, size_t salt_len,
-				 uint8_t *pseudo_random_key,
-				 size_t pseudo_random_key_size,
-				 size_t *pseudo_random_key_length);
+int edhoc_cipher_suite_24_extract(void *user_context, const void *key_id,
+				  const uint8_t *salt, size_t salt_len,
+				  uint8_t *pseudo_random_key,
+				  size_t pseudo_random_key_size,
+				  size_t *pseudo_random_key_length);
 
 /** 
- * \brief HKDF expand using SHA-256.
+ * \brief HKDF expand using SHA-384.
  *
  * Performs the HKDF-Expand operation to derive output keying material from
- * a pseudorandom key using SHA-256 as the hash function.
+ * a pseudorandom key using SHA-384 as the hash function.
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the pseudorandom key (PRK).
@@ -283,20 +283,20 @@ int edhoc_cipher_suite_2_extract(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         HKDF-Expand operation failed.
  */
-int edhoc_cipher_suite_2_expand(void *user_context, const void *key_id,
-				const uint8_t *info, size_t info_length,
-				uint8_t *output_keying_material,
-				size_t output_keying_material_length);
+int edhoc_cipher_suite_24_expand(void *user_context, const void *key_id,
+				 const uint8_t *info, size_t info_length,
+				 uint8_t *output_keying_material,
+				 size_t output_keying_material_length);
 
 /** 
- * \brief AEAD encrypt using AES-CCM-16-64-128.
+ * \brief AEAD encrypt using A256GCM.
  *
- * Encrypts plaintext using AES-CCM with 128-bit key, 64-bit tag, and 13-byte nonce.
+ * Encrypts plaintext using AES-GCM with a 256-bit key, 128-bit tag, and 12-byte nonce.
  * Provides authenticated encryption with associated data (AEAD).
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the encryption key.
- * \param[in] nonce                    Nonce (13 bytes for AES-CCM-16-64-128).
+ * \param[in] nonce                    Nonce (12 bytes for A256GCM).
  * \param nonce_length                 Length of the \p nonce buffer in bytes.
  * \param[in] additional_data          Additional authenticated data (can be NULL).
  * \param additional_data_length       Length of the \p additional_data buffer in bytes.
@@ -315,24 +315,24 @@ int edhoc_cipher_suite_2_expand(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         Encryption operation failed.
  */
-int edhoc_cipher_suite_2_encrypt(void *user_context, const void *key_id,
-				 const uint8_t *nonce, size_t nonce_length,
-				 const uint8_t *additional_data,
-				 size_t additional_data_length,
-				 const uint8_t *plaintext,
-				 size_t plaintext_length, uint8_t *ciphertext,
-				 size_t ciphertext_size,
-				 size_t *ciphertext_length);
+int edhoc_cipher_suite_24_encrypt(void *user_context, const void *key_id,
+				  const uint8_t *nonce, size_t nonce_length,
+				  const uint8_t *additional_data,
+				  size_t additional_data_length,
+				  const uint8_t *plaintext,
+				  size_t plaintext_length, uint8_t *ciphertext,
+				  size_t ciphertext_size,
+				  size_t *ciphertext_length);
 
 /** 
- * \brief AEAD decrypt using AES-CCM-16-64-128.
+ * \brief AEAD decrypt using A256GCM.
  *
- * Decrypts ciphertext using AES-CCM with 128-bit key, 64-bit tag, and 13-byte nonce.
+ * Decrypts ciphertext using AES-GCM with a 256-bit key, 128-bit tag, and 12-byte nonce.
  * Provides authenticated decryption with associated data (AEAD).
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] key_id                   Key identifier of the decryption key.
- * \param[in] nonce                    Nonce (13 bytes for AES-CCM-16-64-128).
+ * \param[in] nonce                    Nonce (12 bytes for A256GCM).
  * \param nonce_length                 Length of the \p nonce buffer in bytes.
  * \param[in] additional_data          Additional authenticated data (can be NULL).
  * \param additional_data_length       Length of the \p additional_data buffer in bytes.
@@ -351,26 +351,26 @@ int edhoc_cipher_suite_2_encrypt(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         Decryption or authentication failed.
  */
-int edhoc_cipher_suite_2_decrypt(void *user_context, const void *key_id,
-				 const uint8_t *nonce, size_t nonce_length,
-				 const uint8_t *additional_data,
-				 size_t additional_data_length,
-				 const uint8_t *ciphertext,
-				 size_t ciphertext_length, uint8_t *plaintext,
-				 size_t plaintext_size,
-				 size_t *plaintext_length);
+int edhoc_cipher_suite_24_decrypt(void *user_context, const void *key_id,
+				  const uint8_t *nonce, size_t nonce_length,
+				  const uint8_t *additional_data,
+				  size_t additional_data_length,
+				  const uint8_t *ciphertext,
+				  size_t ciphertext_length, uint8_t *plaintext,
+				  size_t plaintext_size,
+				  size_t *plaintext_length);
 
 /** 
- * \brief Compute SHA-256 hash.
+ * \brief Compute SHA-384 hash.
  *
- * Computes the SHA-256 cryptographic hash of the input data.
+ * Computes the SHA-384 cryptographic hash of the input data.
  *
  * \param[in] user_context             User-provided context pointer.
  * \param[in] input                    Buffer containing data to hash.
  * \param input_length                 Length of the \p input buffer in bytes.
  * \param[out] hash                    Buffer where the hash will be written.
- * \param hash_size                    Size of the \p hash buffer in bytes (must be ≥ 32).
- * \param[out] hash_length             On success, length of the computed hash (32 bytes).
+ * \param hash_size                    Size of the \p hash buffer in bytes (must be ≥ 48).
+ * \param[out] hash_length             On success, length of the computed hash (48 bytes).
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
@@ -381,10 +381,10 @@ int edhoc_cipher_suite_2_decrypt(void *user_context, const void *key_id,
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
  *         Hash computation failed.
  */
-int edhoc_cipher_suite_2_hash(void *user_context, const uint8_t *input,
-			      size_t input_length, uint8_t *hash,
-			      size_t hash_size, size_t *hash_length);
+int edhoc_cipher_suite_24_hash(void *user_context, const uint8_t *input,
+			       size_t input_length, uint8_t *hash,
+			       size_t hash_size, size_t *hash_length);
 
 /**@}*/
 
-#endif /* EDHOC_CIPHER_SUITE_2_H */
+#endif /* EDHOC_CIPHER_SUITE_24_H */
