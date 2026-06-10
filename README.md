@@ -9,6 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/kamil-kielbasa/libedhoc)](https://github.com/kamil-kielbasa/libedhoc/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![RFC](https://img.shields.io/badge/RFC-9528-informational)](https://datatracker.ietf.org/doc/html/rfc9528)
+[![RFC](https://img.shields.io/badge/RFC-9529-informational)](https://datatracker.ietf.org/doc/rfc9529/)
 
 A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol — a lightweight authenticated key exchange designed for constrained devices. EDHOC provides mutual authentication, forward secrecy, and identity protection, and is intended for usage in constrained scenarios; a main use case is to establish an Object Security for Constrained RESTful Environments (OSCORE) security context. Standardised by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/rfc9528), verified against [RFC 9529](https://datatracker.ietf.org/doc/html/rfc9529) test vectors.
 
@@ -30,6 +31,7 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol �
 |-------|--------------------|---------|---------|-----------|
 | 0     | AES-CCM-16-64-128  | SHA-256 | X25519  | EdDSA     |
 | 2     | AES-CCM-16-64-128  | SHA-256 | P-256   | ES256     |
+| 24    | A256GCM            | SHA-384 | P-384   | ES384     |
 
 ### Authentication Methods
 
@@ -41,7 +43,7 @@ All four EDHOC authentication methods (0–3) are supported, combining Signature
 |--------------------------|----------------------------------------------------------------|
 | Line coverage            | 92.8%                                                          |
 | Function coverage        | 100%                                                           |
-| Test count               | 635+ (unit, integration, fuzz)                                 |
+| Test count               | 706+ (unit, integration, fuzz)                                 |
 | Library flash footprint  | ~20 KiB (cipher suite 2, P-256/ES256, native_sim)              |
 | Static RAM (data + bss)  | 0 bytes (all state on stack)                                   |
 

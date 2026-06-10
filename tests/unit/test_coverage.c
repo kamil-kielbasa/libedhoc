@@ -59,6 +59,17 @@ static int mock_key_destroy(void *user_ctx, void *kid)
 	return EDHOC_SUCCESS;
 }
 
+/*
+ * The coverage tests bind the real cipher suite 2 descriptor (P-256 / SHA-256)
+ * together with these mock crypto callbacks. Cipher suite 2 produces 32-byte
+ * ECC keys, shared secrets, hashes and PRKs regardless of the context buffer
+ * capacity (CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY / _MAC, which are sized for the
+ * largest supported cipher suite). The mocks therefore report these fixed
+ * suite-2 lengths so the core's length checks remain consistent.
+ */
+#define MOCK_SUITE2_ECC_KEY_LEN ((size_t)32)
+#define MOCK_SUITE2_HASH_LEN ((size_t)32)
+
 /* Mock crypto callbacks */
 static int mock_make_key_pair(void *user_ctx, const void *kid,
 			      uint8_t *priv_key, size_t priv_key_size,
@@ -70,9 +81,9 @@ static int mock_make_key_pair(void *user_ctx, const void *kid,
 	if (mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	memset(priv_key, 0xAA, priv_key_size);
-	*priv_key_len = priv_key_size;
+	*priv_key_len = MOCK_SUITE2_ECC_KEY_LEN;
 	memset(pub_key, 0xBB, pub_key_size);
-	*pub_key_len = pub_key_size;
+	*pub_key_len = MOCK_SUITE2_ECC_KEY_LEN;
 	return EDHOC_SUCCESS;
 }
 
@@ -88,7 +99,7 @@ static int mock_key_agreement(void *user_ctx, const void *kid,
 	if (mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	memset(secret, 0xCC, secret_size);
-	*secret_len = secret_size;
+	*secret_len = MOCK_SUITE2_ECC_KEY_LEN;
 	return EDHOC_SUCCESS;
 }
 
@@ -132,7 +143,7 @@ static int mock_extract(void *user_ctx, const void *kid, const uint8_t *salt,
 	if (mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	memset(prk, 0xEE, prk_size);
-	*prk_len = prk_size;
+	*prk_len = MOCK_SUITE2_HASH_LEN;
 	return EDHOC_SUCCESS;
 }
 
@@ -201,7 +212,7 @@ static int mock_hash(void *user_ctx, const uint8_t *input, size_t input_len,
 	if (mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	memset(hash, 0x11, hash_size);
-	*hash_len = hash_size;
+	*hash_len = MOCK_SUITE2_HASH_LEN;
 	return EDHOC_SUCCESS;
 }
 

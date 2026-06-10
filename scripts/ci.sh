@@ -17,8 +17,8 @@ KCONFIG_OPTIONS=(
     -DCONFIG_LIBEDHOC_KEY_ID_LEN=4
     -DCONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES=3
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID=7
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY=32
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_MAC=32
+    -DCONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY=48
+    -DCONFIG_LIBEDHOC_MAX_LEN_OF_MAC=48
     -DCONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=3
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=1
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=1
@@ -272,6 +272,7 @@ cmd_clang_tidy() {
         library/edhoc_common.c \
         helpers/src/edhoc_cipher_suite_0.c \
         helpers/src/edhoc_cipher_suite_2.c \
+        helpers/src/edhoc_cipher_suite_24.c \
         helpers/src/edhoc_helpers.c
     ok "Clang-tidy passed."
 }

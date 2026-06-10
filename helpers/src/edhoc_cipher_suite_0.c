@@ -36,8 +36,17 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <compact_ed25519.h>
 
 /* Module defines ---------------------------------------------------------- */
-#define AEAD_TAG_LEN (8)
-#define AEAD_KEY_LEN (16)
+#define EDHOC_CIPHER_SUITE_0_VALUE (0)
+
+#define EDHOC_CIPHER_SUITE_0_ECC_KEY_LEN (32)
+#define EDHOC_CIPHER_SUITE_0_ECC_SIGN_LEN (64)
+
+#define EDHOC_CIPHER_SUITE_0_HASH_LEN (32)
+#define EDHOC_CIPHER_SUITE_0_MAC_LEN (8)
+
+#define EDHOC_CIPHER_SUITE_0_AEAD_KEY_LEN (16)
+#define EDHOC_CIPHER_SUITE_0_AEAD_TAG_LEN (8)
+#define EDHOC_CIPHER_SUITE_0_AEAD_IV_LEN (13)
 
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
@@ -104,21 +113,25 @@ int edhoc_cipher_suite_0_key_import(void *user_ctx,
 	case EDHOC_KT_ENCRYPT:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_ENCRYPT);
 		psa_set_key_algorithm(
-			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM,
-							       AEAD_TAG_LEN));
+			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(
+				       PSA_ALG_CCM,
+				       EDHOC_CIPHER_SUITE_0_AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
 		psa_set_key_bits(&attr,
-				 (size_t)PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
+				 (size_t)PSA_BYTES_TO_BITS(
+					 EDHOC_CIPHER_SUITE_0_AEAD_KEY_LEN));
 		break;
 
 	case EDHOC_KT_DECRYPT:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DECRYPT);
 		psa_set_key_algorithm(
-			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM,
-							       AEAD_TAG_LEN));
+			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(
+				       PSA_ALG_CCM,
+				       EDHOC_CIPHER_SUITE_0_AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
 		psa_set_key_bits(&attr,
-				 (size_t)PSA_BYTES_TO_BITS(AEAD_KEY_LEN));
+				 (size_t)PSA_BYTES_TO_BITS(
+					 EDHOC_CIPHER_SUITE_0_AEAD_KEY_LEN));
 		break;
 
 	default:
@@ -178,8 +191,7 @@ int edhoc_cipher_suite_0_make_key_pair(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (X25519_KEY_SIZE != priv_key_size ||
-	    X25519_KEY_SIZE != pub_key_size) {
+	if (priv_key_size < X25519_KEY_SIZE || pub_key_size < X25519_KEY_SIZE) {
 		EDHOC_LOG_ERR("Invalid key sizes: %zu, %zu", priv_key_size,
 			      pub_key_size);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -574,14 +586,14 @@ static const struct edhoc_crypto edhoc_cipher_suite_0_crypto = {
 };
 
 static const struct edhoc_cipher_suite edhoc_cipher_suite_0_suite = {
-	.value = 0,
-	.aead_key_length = 16,
-	.aead_tag_length = 8,
-	.aead_iv_length = 13,
-	.hash_length = 32,
-	.mac_length = 8,
-	.ecc_key_length = 32,
-	.ecc_sign_length = 64,
+	.value = EDHOC_CIPHER_SUITE_0_VALUE,
+	.aead_key_length = EDHOC_CIPHER_SUITE_0_AEAD_KEY_LEN,
+	.aead_tag_length = EDHOC_CIPHER_SUITE_0_AEAD_TAG_LEN,
+	.aead_iv_length = EDHOC_CIPHER_SUITE_0_AEAD_IV_LEN,
+	.hash_length = EDHOC_CIPHER_SUITE_0_HASH_LEN,
+	.mac_length = EDHOC_CIPHER_SUITE_0_MAC_LEN,
+	.ecc_key_length = EDHOC_CIPHER_SUITE_0_ECC_KEY_LEN,
+	.ecc_sign_length = EDHOC_CIPHER_SUITE_0_ECC_SIGN_LEN,
 };
 
 const struct edhoc_keys *edhoc_cipher_suite_0_get_keys(void)

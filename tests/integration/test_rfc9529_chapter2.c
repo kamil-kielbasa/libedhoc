@@ -762,7 +762,7 @@ TEST(rfc9529_chapter2, message_2_process)
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_XY), init_ctx->dh_secret_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, G_XY,
-				      sizeof(init_ctx->dh_secret));
+				      init_ctx->dh_secret_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
 			  init_ctx->peer_cid.encode_type);

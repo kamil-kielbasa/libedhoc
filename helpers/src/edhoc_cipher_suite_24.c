@@ -1,9 +1,9 @@
 /**
- * \file    edhoc_cipher_suite_2.c
+ * \file    edhoc_cipher_suite_24.c
  * \author  Kamil Kielbasa
- * \brief   Example implementation of cipher suite 2.
+ * \brief   Example implementation of cipher suite 24.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -14,7 +14,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* Internal test header: */
-#include "edhoc_cipher_suite_2.h"
+#include "edhoc_cipher_suite_24.h"
 
 /* Standard library header: */
 #include <stdint.h>
@@ -35,20 +35,20 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <mbedtls/pk.h>
 
 /* Module defines ---------------------------------------------------------- */
-#define EDHOC_CIPHER_SUITE_2_VALUE (2)
+#define EDHOC_CIPHER_SUITE_24_VALUE (24)
 
-#define EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN (32)
-#define EDHOC_CIPHER_SUITE_2_ECC_UNCOMP_KEY_LEN (65)
+#define EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN (48)
+#define EDHOC_CIPHER_SUITE_24_ECC_UNCOMP_KEY_LEN (97)
 
-#define EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN (64)
-#define EDHOC_CIPHER_SUITE_2_ECC_ECDH_KEY_AGREEMENT_LEN (32)
+#define EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN (96)
+#define EDHOC_CIPHER_SUITE_24_ECC_ECDH_KEY_AGREEMENT_LEN (48)
 
-#define EDHOC_CIPHER_SUITE_2_HASH_LEN (32)
-#define EDHOC_CIPHER_SUITE_2_MAC_LEN (8)
+#define EDHOC_CIPHER_SUITE_24_HASH_LEN (48)
+#define EDHOC_CIPHER_SUITE_24_MAC_LEN (16)
 
-#define EDHOC_CIPHER_SUITE_2_AEAD_KEY_LEN (16)
-#define EDHOC_CIPHER_SUITE_2_AEAD_TAG_LEN (8)
-#define EDHOC_CIPHER_SUITE_2_AEAD_IV_LEN (13)
+#define EDHOC_CIPHER_SUITE_24_AEAD_KEY_LEN (32)
+#define EDHOC_CIPHER_SUITE_24_AEAD_TAG_LEN (16)
+#define EDHOC_CIPHER_SUITE_24_AEAD_IV_LEN (12)
 
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
@@ -158,10 +158,10 @@ cleanup:
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_cipher_suite_2_key_import(void *user_ctx,
-				    enum edhoc_key_type key_type,
-				    const uint8_t *raw_key, size_t raw_key_len,
-				    void *kid)
+int edhoc_cipher_suite_24_key_import(void *user_ctx,
+				     enum edhoc_key_type key_type,
+				     const uint8_t *raw_key, size_t raw_key_len,
+				     void *kid)
 {
 	(void)user_ctx;
 
@@ -181,7 +181,7 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 						PSA_ECC_FAMILY_SECP_R1));
 		psa_set_key_bits(
 			&attr, (size_t)PSA_BYTES_TO_BITS(
-				       EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN));
+				       EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_KEY_AGREEMENT:
@@ -191,36 +191,36 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 						PSA_ECC_FAMILY_SECP_R1));
 		psa_set_key_bits(
 			&attr, (size_t)PSA_BYTES_TO_BITS(
-				       EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN));
+				       EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_SIGNATURE:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_MESSAGE |
 						       PSA_KEY_USAGE_SIGN_HASH);
-		psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+		psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_384));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_ECC_KEY_PAIR(
 						PSA_ECC_FAMILY_SECP_R1));
 		psa_set_key_bits(
 			&attr, (size_t)PSA_BYTES_TO_BITS(
-				       EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN));
+				       EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_VERIFY:
 		psa_set_key_usage_flags(&attr,
 					PSA_KEY_USAGE_VERIFY_MESSAGE |
 						PSA_KEY_USAGE_VERIFY_HASH);
-		psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+		psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_384));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_ECC_PUBLIC_KEY(
 						PSA_ECC_FAMILY_SECP_R1));
 		psa_set_key_bits(
 			&attr, (size_t)PSA_BYTES_TO_BITS(
-				       EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN));
+				       EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN));
 		break;
 
 	case EDHOC_KT_EXTRACT:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
 		psa_set_key_algorithm(&attr,
-				      PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
+				      PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_384));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
 		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(raw_key_len));
 		break;
@@ -228,7 +228,7 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 	case EDHOC_KT_EXPAND:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
 		psa_set_key_algorithm(&attr,
-				      PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_256));
+				      PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_384));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
 		psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(raw_key_len));
 		break;
@@ -237,24 +237,24 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_ENCRYPT);
 		psa_set_key_algorithm(
 			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(
-				       PSA_ALG_CCM,
-				       EDHOC_CIPHER_SUITE_2_AEAD_TAG_LEN));
+				       PSA_ALG_GCM,
+				       EDHOC_CIPHER_SUITE_24_AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
 		psa_set_key_bits(&attr,
 				 (size_t)PSA_BYTES_TO_BITS(
-					 EDHOC_CIPHER_SUITE_2_AEAD_KEY_LEN));
+					 EDHOC_CIPHER_SUITE_24_AEAD_KEY_LEN));
 		break;
 
 	case EDHOC_KT_DECRYPT:
 		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DECRYPT);
 		psa_set_key_algorithm(
 			&attr, PSA_ALG_AEAD_WITH_SHORTENED_TAG(
-				       PSA_ALG_CCM,
-				       EDHOC_CIPHER_SUITE_2_AEAD_TAG_LEN));
+				       PSA_ALG_GCM,
+				       EDHOC_CIPHER_SUITE_24_AEAD_TAG_LEN));
 		psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
 		psa_set_key_bits(&attr,
 				 (size_t)PSA_BYTES_TO_BITS(
-					 EDHOC_CIPHER_SUITE_2_AEAD_KEY_LEN));
+					 EDHOC_CIPHER_SUITE_24_AEAD_KEY_LEN));
 		break;
 
 	default:
@@ -282,7 +282,7 @@ int edhoc_cipher_suite_2_key_import(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_key_destroy(void *user_ctx, void *kid)
+int edhoc_cipher_suite_24_key_destroy(void *user_ctx, void *kid)
 {
 	(void)user_ctx;
 
@@ -303,13 +303,13 @@ int edhoc_cipher_suite_2_key_destroy(void *user_ctx, void *kid)
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_make_key_pair(void *user_ctx, const void *kid,
-				       uint8_t *restrict priv_key,
-				       size_t priv_key_size,
-				       size_t *restrict priv_key_len,
-				       uint8_t *restrict pub_key,
-				       size_t pub_key_size,
-				       size_t *restrict pub_key_len)
+int edhoc_cipher_suite_24_make_key_pair(void *user_ctx, const void *kid,
+					uint8_t *restrict priv_key,
+					size_t priv_key_size,
+					size_t *restrict priv_key_len,
+					uint8_t *restrict pub_key,
+					size_t pub_key_size,
+					size_t *restrict pub_key_len)
 {
 	(void)user_ctx;
 
@@ -326,13 +326,13 @@ int edhoc_cipher_suite_2_make_key_pair(void *user_ctx, const void *kid,
 	ret = psa_export_key(*psa_kid, priv_key, priv_key_size, priv_key_len);
 
 	if (PSA_SUCCESS != ret ||
-	    EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN != *priv_key_len) {
+	    EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN != *priv_key_len) {
 		EDHOC_LOG_ERR("Export private key: %d, %zu", ret,
 			      *priv_key_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	uint8_t uncomp_pub_key[EDHOC_CIPHER_SUITE_2_ECC_UNCOMP_KEY_LEN] = { 0 };
+	uint8_t uncomp_pub_key[EDHOC_CIPHER_SUITE_24_ECC_UNCOMP_KEY_LEN] = { 0 };
 	ret = psa_export_public_key(*psa_kid, uncomp_pub_key,
 				    sizeof(uncomp_pub_key), pub_key_len);
 
@@ -348,11 +348,11 @@ int edhoc_cipher_suite_2_make_key_pair(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_key_agreement(void *user_ctx, const void *kid,
-				       const uint8_t *peer_pub_key,
-				       size_t peer_pub_key_len,
-				       uint8_t *shr_sec, size_t shr_sec_size,
-				       size_t *shr_sec_len)
+int edhoc_cipher_suite_24_key_agreement(void *user_ctx, const void *kid,
+					const uint8_t *peer_pub_key,
+					size_t peer_pub_key_len,
+					uint8_t *shr_sec, size_t shr_sec_size,
+					size_t *shr_sec_len)
 {
 	(void)user_ctx;
 
@@ -362,8 +362,8 @@ int edhoc_cipher_suite_2_key_agreement(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN != peer_pub_key_len ||
-	    EDHOC_CIPHER_SUITE_2_ECC_ECDH_KEY_AGREEMENT_LEN != shr_sec_size) {
+	if (EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN != peer_pub_key_len ||
+	    EDHOC_CIPHER_SUITE_24_ECC_ECDH_KEY_AGREEMENT_LEN != shr_sec_size) {
 		EDHOC_LOG_ERR("Invalid key sizes: %zu, %zu", peer_pub_key_len,
 			      shr_sec_size);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
@@ -372,7 +372,7 @@ int edhoc_cipher_suite_2_key_agreement(void *user_ctx, const void *kid,
 	psa_status_t ret = PSA_ERROR_GENERIC_ERROR;
 
 	size_t decom_pub_key_len = 0;
-	uint8_t decom_pub_key[EDHOC_CIPHER_SUITE_2_ECC_UNCOMP_KEY_LEN] = { 0 };
+	uint8_t decom_pub_key[EDHOC_CIPHER_SUITE_24_ECC_UNCOMP_KEY_LEN] = { 0 };
 
 	mbedtls_pk_context pub_key_ctx = { 0 };
 	mbedtls_pk_init(&pub_key_ctx);
@@ -388,7 +388,7 @@ int edhoc_cipher_suite_2_key_agreement(void *user_ctx, const void *kid,
 
 	ret = mbedtls_ecp_group_load(
 		&mbedtls_pk_ec(pub_key_ctx)->MBEDTLS_PRIVATE(grp),
-		MBEDTLS_ECP_DP_SECP256R1);
+		MBEDTLS_ECP_DP_SECP384R1);
 
 	if (PSA_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Load ECP group: %d", ret);
@@ -433,10 +433,10 @@ int edhoc_cipher_suite_2_key_agreement(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_signature(void *user_ctx, const void *kid,
-				   const uint8_t *input, size_t input_len,
-				   uint8_t *sign, size_t sign_size,
-				   size_t *sign_len)
+int edhoc_cipher_suite_24_signature(void *user_ctx, const void *kid,
+				    const uint8_t *input, size_t input_len,
+				    uint8_t *sign, size_t sign_size,
+				    size_t *sign_len)
 {
 	(void)user_ctx;
 
@@ -446,9 +446,9 @@ int edhoc_cipher_suite_2_signature(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN != sign_size) {
+	if (EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN != sign_size) {
 		EDHOC_LOG_ERR("Invalid signature size: %zu, %d", sign_size,
-			      EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN);
+			      EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -463,18 +463,18 @@ int edhoc_cipher_suite_2_signature(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	uint8_t digest[PSA_HASH_LENGTH(PSA_ALG_SHA_256)] = { 0 };
+	uint8_t digest[PSA_HASH_LENGTH(PSA_ALG_SHA_384)] = { 0 };
 	size_t digest_len = 0;
 
-	ret = edhoc_cipher_suite_2_hash(user_ctx, input, input_len, digest,
-					sizeof(digest), &digest_len);
+	ret = edhoc_cipher_suite_24_hash(user_ctx, input, input_len, digest,
+					 sizeof(digest), &digest_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Hash input: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	if (PSA_HASH_LENGTH(PSA_ALG_SHA_256) != digest_len) {
+	if (PSA_HASH_LENGTH(PSA_ALG_SHA_384) != digest_len) {
 		EDHOC_LOG_ERR("Unexpected digest length: %zu", digest_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -487,18 +487,18 @@ int edhoc_cipher_suite_2_signature(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	if (EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN != *sign_len) {
+	if (EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN != *sign_len) {
 		EDHOC_LOG_ERR("Invalid signature length: %zu, %d", *sign_len,
-			      EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN);
+			      EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_verify(void *user_ctx, const void *kid,
-				const uint8_t *input, size_t input_len,
-				const uint8_t *sign, size_t sign_len)
+int edhoc_cipher_suite_24_verify(void *user_ctx, const void *kid,
+				 const uint8_t *input, size_t input_len,
+				 const uint8_t *sign, size_t sign_len)
 {
 	(void)user_ctx;
 
@@ -508,9 +508,9 @@ int edhoc_cipher_suite_2_verify(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN != sign_len) {
+	if (EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN != sign_len) {
 		EDHOC_LOG_ERR("Invalid signature size: %zu, %d", sign_len,
-			      EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN);
+			      EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -525,18 +525,18 @@ int edhoc_cipher_suite_2_verify(void *user_ctx, const void *kid,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	uint8_t digest[PSA_HASH_LENGTH(PSA_ALG_SHA_256)] = { 0 };
+	uint8_t digest[PSA_HASH_LENGTH(PSA_ALG_SHA_384)] = { 0 };
 	size_t digest_len = 0;
 
-	ret = edhoc_cipher_suite_2_hash(user_ctx, input, input_len, digest,
-					sizeof(digest), &digest_len);
+	ret = edhoc_cipher_suite_24_hash(user_ctx, input, input_len, digest,
+					 sizeof(digest), &digest_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Hash input: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	if (PSA_HASH_LENGTH(PSA_ALG_SHA_256) != digest_len) {
+	if (PSA_HASH_LENGTH(PSA_ALG_SHA_384) != digest_len) {
 		EDHOC_LOG_ERR("Invalid digest length: %zu", digest_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -552,9 +552,10 @@ int edhoc_cipher_suite_2_verify(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_extract(void *user_ctx, const void *kid,
-				 const uint8_t *salt, size_t salt_len,
-				 uint8_t *prk, size_t prk_size, size_t *prk_len)
+int edhoc_cipher_suite_24_extract(void *user_ctx, const void *kid,
+				  const uint8_t *salt, size_t salt_len,
+				  uint8_t *prk, size_t prk_size,
+				  size_t *prk_len)
 {
 	(void)user_ctx;
 
@@ -619,9 +620,9 @@ psa_error:
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int edhoc_cipher_suite_2_expand(void *user_ctx, const void *kid,
-				const uint8_t *info, size_t info_len,
-				uint8_t *okm, size_t okm_len)
+int edhoc_cipher_suite_24_expand(void *user_ctx, const void *kid,
+				 const uint8_t *info, size_t info_len,
+				 uint8_t *okm, size_t okm_len)
 {
 	(void)user_ctx;
 
@@ -684,12 +685,12 @@ psa_error:
 	return EDHOC_ERROR_CRYPTO_FAILURE;
 }
 
-int edhoc_cipher_suite_2_encrypt(void *user_ctx, const void *kid,
-				 const uint8_t *nonce, size_t nonce_len,
-				 const uint8_t *ad, size_t ad_len,
-				 const uint8_t *ptxt, size_t ptxt_len,
-				 uint8_t *ctxt, size_t ctxt_size,
-				 size_t *ctxt_len)
+int edhoc_cipher_suite_24_encrypt(void *user_ctx, const void *kid,
+				  const uint8_t *nonce, size_t nonce_len,
+				  const uint8_t *ad, size_t ad_len,
+				  const uint8_t *ptxt, size_t ptxt_len,
+				  uint8_t *ctxt, size_t ctxt_size,
+				  size_t *ctxt_len)
 {
 	(void)user_ctx;
 
@@ -723,12 +724,12 @@ int edhoc_cipher_suite_2_encrypt(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_decrypt(void *user_ctx, const void *kid,
-				 const uint8_t *nonce, size_t nonce_len,
-				 const uint8_t *ad, size_t ad_len,
-				 const uint8_t *ctxt, size_t ctxt_len,
-				 uint8_t *ptxt, size_t ptxt_size,
-				 size_t *ptxt_len)
+int edhoc_cipher_suite_24_decrypt(void *user_ctx, const void *kid,
+				  const uint8_t *nonce, size_t nonce_len,
+				  const uint8_t *ad, size_t ad_len,
+				  const uint8_t *ctxt, size_t ctxt_len,
+				  uint8_t *ptxt, size_t ptxt_size,
+				  size_t *ptxt_len)
 {
 	(void)user_ctx;
 
@@ -762,9 +763,9 @@ int edhoc_cipher_suite_2_decrypt(void *user_ctx, const void *kid,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_suite_2_hash(void *user_ctx, const uint8_t *input,
-			      size_t input_len, uint8_t *hash, size_t hash_size,
-			      size_t *hash_len)
+int edhoc_cipher_suite_24_hash(void *user_ctx, const uint8_t *input,
+			       size_t input_len, uint8_t *hash,
+			       size_t hash_size, size_t *hash_len)
 {
 	(void)user_ctx;
 
@@ -775,10 +776,10 @@ int edhoc_cipher_suite_2_hash(void *user_ctx, const uint8_t *input,
 	}
 
 	const psa_status_t ret = psa_hash_compute(
-		PSA_ALG_SHA_256, input, input_len, hash, hash_size, hash_len);
+		PSA_ALG_SHA_384, input, input_len, hash, hash_size, hash_len);
 
 	if (PSA_SUCCESS != ret) {
-		EDHOC_LOG_ERR("SHA256 hash: %d", ret);
+		EDHOC_LOG_ERR("SHA384 hash: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -787,45 +788,45 @@ int edhoc_cipher_suite_2_hash(void *user_ctx, const uint8_t *input,
 
 /* Module interface variables and constants -------------------------------- */
 
-static const struct edhoc_keys edhoc_cipher_suite_2_keys = {
-	.import_key = edhoc_cipher_suite_2_key_import,
-	.destroy_key = edhoc_cipher_suite_2_key_destroy,
+static const struct edhoc_keys edhoc_cipher_suite_24_keys = {
+	.import_key = edhoc_cipher_suite_24_key_import,
+	.destroy_key = edhoc_cipher_suite_24_key_destroy,
 };
 
-static const struct edhoc_crypto edhoc_cipher_suite_2_crypto = {
-	.make_key_pair = edhoc_cipher_suite_2_make_key_pair,
-	.key_agreement = edhoc_cipher_suite_2_key_agreement,
-	.signature = edhoc_cipher_suite_2_signature,
-	.verify = edhoc_cipher_suite_2_verify,
-	.extract = edhoc_cipher_suite_2_extract,
-	.expand = edhoc_cipher_suite_2_expand,
-	.encrypt = edhoc_cipher_suite_2_encrypt,
-	.decrypt = edhoc_cipher_suite_2_decrypt,
-	.hash = edhoc_cipher_suite_2_hash,
+static const struct edhoc_crypto edhoc_cipher_suite_24_crypto = {
+	.make_key_pair = edhoc_cipher_suite_24_make_key_pair,
+	.key_agreement = edhoc_cipher_suite_24_key_agreement,
+	.signature = edhoc_cipher_suite_24_signature,
+	.verify = edhoc_cipher_suite_24_verify,
+	.extract = edhoc_cipher_suite_24_extract,
+	.expand = edhoc_cipher_suite_24_expand,
+	.encrypt = edhoc_cipher_suite_24_encrypt,
+	.decrypt = edhoc_cipher_suite_24_decrypt,
+	.hash = edhoc_cipher_suite_24_hash,
 };
 
-static const struct edhoc_cipher_suite edhoc_cipher_suite_2_suite = {
-	.value = EDHOC_CIPHER_SUITE_2_VALUE,
-	.aead_key_length = EDHOC_CIPHER_SUITE_2_AEAD_KEY_LEN,
-	.aead_tag_length = EDHOC_CIPHER_SUITE_2_AEAD_TAG_LEN,
-	.aead_iv_length = EDHOC_CIPHER_SUITE_2_AEAD_IV_LEN,
-	.hash_length = EDHOC_CIPHER_SUITE_2_HASH_LEN,
-	.mac_length = EDHOC_CIPHER_SUITE_2_MAC_LEN,
-	.ecc_key_length = EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN,
-	.ecc_sign_length = EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN,
+static const struct edhoc_cipher_suite edhoc_cipher_suite_24_suite = {
+	.value = EDHOC_CIPHER_SUITE_24_VALUE,
+	.aead_key_length = EDHOC_CIPHER_SUITE_24_AEAD_KEY_LEN,
+	.aead_tag_length = EDHOC_CIPHER_SUITE_24_AEAD_TAG_LEN,
+	.aead_iv_length = EDHOC_CIPHER_SUITE_24_AEAD_IV_LEN,
+	.hash_length = EDHOC_CIPHER_SUITE_24_HASH_LEN,
+	.mac_length = EDHOC_CIPHER_SUITE_24_MAC_LEN,
+	.ecc_key_length = EDHOC_CIPHER_SUITE_24_ECC_COMP_KEY_LEN,
+	.ecc_sign_length = EDHOC_CIPHER_SUITE_24_ECC_ECDSA_SIGN_LEN,
 };
 
-const struct edhoc_keys *edhoc_cipher_suite_2_get_keys(void)
+const struct edhoc_keys *edhoc_cipher_suite_24_get_keys(void)
 {
-	return &edhoc_cipher_suite_2_keys;
+	return &edhoc_cipher_suite_24_keys;
 }
 
-const struct edhoc_crypto *edhoc_cipher_suite_2_get_crypto(void)
+const struct edhoc_crypto *edhoc_cipher_suite_24_get_crypto(void)
 {
-	return &edhoc_cipher_suite_2_crypto;
+	return &edhoc_cipher_suite_24_crypto;
 }
 
-const struct edhoc_cipher_suite *edhoc_cipher_suite_2_get_suite(void)
+const struct edhoc_cipher_suite *edhoc_cipher_suite_24_get_suite(void)
 {
-	return &edhoc_cipher_suite_2_suite;
+	return &edhoc_cipher_suite_24_suite;
 }
