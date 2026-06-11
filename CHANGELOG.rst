@@ -1,3 +1,12 @@
+Version 1.11.2
+--------------
+
+:Date: June 11, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Docs:
+
+  * Removed the stale hardcoded "Release" admonition from ``doc/index.rst``; the project version is maintained in ``doc/conf.py``.
+
 Version 1.11.1
 --------------
 

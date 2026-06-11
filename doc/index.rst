@@ -10,11 +10,6 @@ by the IETF as
 against the test vectors of
 `RFC 9529 <https://datatracker.ietf.org/doc/html/rfc9529>`_.
 
-.. admonition:: Release
-   :class: note
-
-   This documentation describes **libedhoc v1.10.3**.
-
 Where to start
 --------------
 
