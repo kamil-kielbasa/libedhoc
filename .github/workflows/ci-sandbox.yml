@@ -8,8 +8,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Fetch submodules (with retry)
+      uses: ./.github/actions/retry
       with:
-        submodules: recursive
+        command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
     - name: Install dependencies
       run: |

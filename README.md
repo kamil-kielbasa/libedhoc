@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/kamil-kielbasa/libedhoc/branch/main/graph/badge.svg)](https://codecov.io/gh/kamil-kielbasa/libedhoc)
 
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://kamil-kielbasa.github.io/libedhoc/)
-[![Release](https://img.shields.io/github/v/release/kamil-kielbasa/libedhoc)](https://github.com/kamil-kielbasa/libedhoc/releases)
+[![Release](https://img.shields.io/endpoint?url=https://kamil-kielbasa.github.io/libedhoc/release.json)](https://github.com/kamil-kielbasa/libedhoc/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![RFC](https://img.shields.io/badge/RFC-9528-informational)](https://datatracker.ietf.org/doc/html/rfc9528)
 [![RFC](https://img.shields.io/badge/RFC-9529-informational)](https://datatracker.ietf.org/doc/rfc9529/)

@@ -8,8 +8,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
         with:
-          submodules: recursive
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y lcov
@@ -31,8 +34,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
         with:
-          submodules: recursive
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y clang ninja-build
@@ -47,8 +53,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
         with:
-          submodules: recursive
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
       - name: Build and test (GCC + ASan + UBSan)
         run: bash scripts/ci.sh sanitizers asan-ubsan
@@ -58,8 +67,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
         with:
-          submodules: recursive
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y valgrind
@@ -74,8 +86,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
         with:
-          submodules: recursive
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang ninja-build
@@ -91,8 +106,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
         with:
-          submodules: recursive
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y clang ninja-build

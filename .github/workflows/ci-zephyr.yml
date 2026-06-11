@@ -15,9 +15,12 @@ jobs:
           path: libedhoc
 
       - name: Initialize West workspace
-        run: |
-          west init -l libedhoc
-          west update --narrow -o=--depth=1
+        run: west init -l libedhoc
+
+      - name: Update West projects (with retry)
+        uses: ./libedhoc/.github/actions/retry
+        with:
+          command: "west update --narrow -o=--depth=1"
 
       - name: Install Python dependencies
         run: |
