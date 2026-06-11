@@ -1,3 +1,16 @@
+Version 1.11.1
+--------------
+
+:Date: June 11, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI:
+
+  * Added a reusable ``.github/actions/retry`` composite action and wrapped the submodule checkout. Transient GitHub network failures are retried instead of failing the job.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fix:
+
+  * Replaced the dynamic shields.io release badge in ``README.md`` with a GitHub Pages-hosted endpoint badge, so it no longer renders "Unable to select next GitHub token from pool" when the shields.io GitHub token pool is exhausted.
+
 Version 1.11.0
 --------------
 

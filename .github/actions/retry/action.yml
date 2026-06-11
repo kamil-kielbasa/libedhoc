@@ -1,0 +1,57 @@
+name: Retry command
+description: >-
+  Run a shell command with retries and exponential backoff. Intended for flaky
+  network operations such as fetching git submodules or running "west update",
+  which can fail on transient GitHub infrastructure errors (for example
+  "RPC failed; HTTP 500" or "fatal: expected 'packfile'").
+
+inputs:
+  command:
+    description: Shell command to execute (run via "bash -c").
+    required: true
+  max-attempts:
+    description: Maximum number of attempts before the step fails.
+    required: false
+    default: "3"
+  initial-delay:
+    description: Initial backoff delay in seconds; doubled after each failed attempt.
+    required: false
+    default: "15"
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      # Inputs are passed through the environment rather than interpolated into
+      # the script body, so a command string can never break out into the
+      # surrounding shell (avoids "${{ }}" script injection).
+      env:
+        RETRY_COMMAND: ${{ inputs.command }}
+        RETRY_MAX_ATTEMPTS: ${{ inputs.max-attempts }}
+        RETRY_INITIAL_DELAY: ${{ inputs.initial-delay }}
+      run: |
+        set -uo pipefail
+
+        attempt=1
+        delay="${RETRY_INITIAL_DELAY}"
+
+        while true; do
+          echo "::group::Attempt ${attempt}/${RETRY_MAX_ATTEMPTS}: ${RETRY_COMMAND}"
+          status=0
+          bash -c "${RETRY_COMMAND}" || status=$?
+          echo "::endgroup::"
+
+          if [ "${status}" -eq 0 ]; then
+            exit 0
+          fi
+
+          if [ "${attempt}" -ge "${RETRY_MAX_ATTEMPTS}" ]; then
+            echo "::error::Command failed after ${attempt} attempt(s) (exit ${status}): ${RETRY_COMMAND}"
+            exit "${status}"
+          fi
+
+          echo "::warning::Attempt ${attempt} failed (exit ${status}); retrying in ${delay}s..."
+          sleep "${delay}"
+          attempt=$((attempt + 1))
+          delay=$((delay * 2))
+        done
