@@ -21,7 +21,7 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol â€
 - Separate interfaces for cryptographic keys, operations, credentials, and EAD
 - Private keys accessible only by identifier; raw key material never exposed
 - All CBOR encoding/decoding encapsulated and hidden from the user
-- Stack-only allocations using VLA; no heap required
+- Pluggable memory backend: stack via VLA (default, no heap), heap (calloc / k_calloc), or a custom allocator
 - Native Zephyr RTOS support with west manifest integration
 - Verified with cppcheck, clang-tidy, ASan, UBSan, Valgrind, and LibFuzzer
 
@@ -45,7 +45,7 @@ All four EDHOC authentication methods (0â€“3) are supported, combining Signature
 | Function coverage        | 100%                                                           |
 | Test count               | 706+ (unit, integration, fuzz)                                 |
 | Library flash footprint  | ~20 KiB (cipher suite 2, P-256/ES256, native_sim)              |
-| Static RAM (data + bss)  | 0 bytes (all state on stack)                                   |
+| Static RAM (data + bss)  | 0 bytes (default stack backend; all state on stack)            |
 
 Coverage details on the [Codecov dashboard](https://codecov.io/gh/kamil-kielbasa/libedhoc). Memory and timing benchmarks are available as [CI artifacts](../../actions/workflows/ci-zephyr.yml).
 

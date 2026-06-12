@@ -49,7 +49,7 @@ if (NOT TARGET zephyr_interface AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     include(GNUInstallDirs)
     set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
-    install(TARGETS ${PROJECT_NAME} libedhoc_api backend_cbor
+    install(TARGETS ${PROJECT_NAME} libedhoc_api backend_cbor backend_memory
         EXPORT ${PROJECT_NAME}-targets
         DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(EXPORT ${PROJECT_NAME}-targets

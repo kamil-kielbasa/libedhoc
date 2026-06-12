@@ -35,8 +35,9 @@ Features
   identifier; direct access to raw key material is prohibited.
 * :term:`CBOR` encoding/decoding is fully encapsulated and hidden from the
   user.
-* Predictable memory usage: all operations use stack allocation via the
-  :term:`VLA` feature; no heap allocations.
+* Predictable memory usage: a build-time memory backend selects stack
+  allocation via the :term:`VLA` feature (default; no heap allocations), a
+  heap backend (``calloc`` / ``k_calloc``), or a custom allocator.
 * Code quality verified with static analysis (*cppcheck*, *clang-tidy*) and
   dynamic analysis (*Valgrind*, *ASan*, *UBSan*, *LibFuzzer*).
 * Native Zephyr RTOS support with a west manifest for seamless integration.

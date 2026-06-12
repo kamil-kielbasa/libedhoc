@@ -22,6 +22,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc.h"
 #include "edhoc_common.h"
 #include "edhoc_log.h"
+#include "edhoc_backend_memory.h"
 
 #ifdef __clang__
 #pragma clang diagnostic push
@@ -466,22 +467,27 @@ static int sign_cose_sign_1(const struct edhoc_context *ctx,
 	len += mac_len;
 	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
 
-	VLA_ALLOC(uint8_t, cose_sign_1_buf, len);
-	memset(cose_sign_1_buf, 0, VLA_SIZEOF(cose_sign_1_buf));
+	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
+	if (NULL == cose_sign_1_buf) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	size_t cose_sign_1_buf_len = 0;
 	ret = cbor_encode_sig_structure(cose_sign_1_buf,
-					VLA_SIZE(cose_sign_1_buf), &cose_sign_1,
-					&cose_sign_1_buf_len);
+					EDHOC_MEM_ALLOC_SIZE(cose_sign_1_buf),
+					&cose_sign_1, &cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc Sign1: %d", ret);
+		EDHOC_MEM_FREE(cose_sign_1_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	ret = ctx->crypto.signature(ctx->user_ctx, cred->priv_key_id,
 				    cose_sign_1_buf, cose_sign_1_buf_len, sign,
 				    sign_size, sign_len);
+	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute signature: %d", ret);
@@ -520,16 +526,20 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 	len += mac_len;
 	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
 
-	VLA_ALLOC(uint8_t, cose_sign_1_buf, len);
-	memset(cose_sign_1_buf, 0, VLA_SIZEOF(cose_sign_1_buf));
+	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
+	if (NULL == cose_sign_1_buf) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	size_t cose_sign_1_buf_len = 0;
 	ret = cbor_encode_sig_structure(cose_sign_1_buf,
-					VLA_SIZE(cose_sign_1_buf), &cose_sign_1,
-					&cose_sign_1_buf_len);
+					EDHOC_MEM_ALLOC_SIZE(cose_sign_1_buf),
+					&cose_sign_1, &cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc Sign1: %d", ret);
+		EDHOC_MEM_FREE(cose_sign_1_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -539,6 +549,7 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key: %d", ret);
+		EDHOC_MEM_FREE(cose_sign_1_buf);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -546,6 +557,7 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 				 cose_sign_1_buf_len, sign, sign_len);
 	ctx->keys.destroy_key(ctx->user_ctx, kid);
 	memset(kid, 0, sizeof(kid));
+	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Verify signature: %d", ret);
@@ -1227,14 +1239,19 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	len += mac_ctx->buf_len + edhoc_cbor_bstr_oh(mac_ctx->buf_len);
 	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
 
-	VLA_ALLOC(uint8_t, info_buf, len);
-	memset(info_buf, 0, VLA_SIZEOF(info_buf));
+	EDHOC_MEM_ALLOC(uint8_t, info_buf, len);
+	if (NULL == info_buf) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	len = 0;
-	ret = cbor_encode_info(info_buf, VLA_SIZE(info_buf), &info, &len);
+	ret = cbor_encode_info(info_buf, EDHOC_MEM_ALLOC_SIZE(info_buf), &info,
+			       &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc MAC info: %d", ret);
+		EDHOC_MEM_FREE(info_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -1251,6 +1268,7 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	default:
 		EDHOC_LOG_ERR("Invalid message for MAC logging: %d",
 			      ctx->message);
+		EDHOC_MEM_FREE(info_buf);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -1260,6 +1278,7 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key: %d", ret);
+		EDHOC_MEM_FREE(info_buf);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -1267,6 +1286,7 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 				 mac_len);
 	ctx->keys.destroy_key(ctx->user_ctx, kid);
 	memset(kid, 0, sizeof(kid));
+	EDHOC_MEM_FREE(info_buf);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand MAC: %d", ret);

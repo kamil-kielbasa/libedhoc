@@ -19,6 +19,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc.h"
 #include "edhoc_common.h"
 #include "edhoc_log.h"
+#include "edhoc_backend_memory.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -291,53 +292,68 @@ static int comp_prk_4e3m(struct edhoc_context *ctx,
 		const size_t hash_len =
 			ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
-		VLA_ALLOC(uint8_t, salt_4e3m, hash_len);
-		memset(salt_4e3m, 0, VLA_SIZEOF(salt_4e3m));
+		EDHOC_MEM_ALLOC(uint8_t, salt_4e3m, hash_len);
+		if (NULL == salt_4e3m) {
+			EDHOC_LOG_ERR("Memory allocation failed");
+			return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+		}
 
-		int ret = comp_salt_4e3m(ctx, salt_4e3m, VLA_SIZE(salt_4e3m));
+		int ret = comp_salt_4e3m(ctx, salt_4e3m,
+					 EDHOC_MEM_ALLOC_SIZE(salt_4e3m));
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute SALT_4e3m: %d", ret);
+			EDHOC_MEM_FREE(salt_4e3m);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 		}
 
-		EDHOC_LOG_HEXDUMP_DBG(salt_4e3m, VLA_SIZE(salt_4e3m),
+		EDHOC_LOG_HEXDUMP_DBG(salt_4e3m,
+				      EDHOC_MEM_ALLOC_SIZE(salt_4e3m),
 				      "SALT_4e3m");
 
 		const size_t ecc_key_len =
 			ctx->csuite[ctx->chosen_csuite_idx].ecc_key_length;
 
-		VLA_ALLOC(uint8_t, giy, ecc_key_len);
-		memset(giy, 0, VLA_SIZEOF(giy));
+		EDHOC_MEM_ALLOC(uint8_t, giy, ecc_key_len);
+		if (NULL == giy) {
+			EDHOC_LOG_ERR("Memory allocation failed");
+			EDHOC_MEM_FREE(salt_4e3m);
+			return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+		}
 
 		ret = comp_giy(ctx, auth_cred, pub_key, pub_key_len, giy,
-			       VLA_SIZE(giy));
+			       EDHOC_MEM_ALLOC_SIZE(giy));
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute G_IY: %d", ret);
+			EDHOC_MEM_FREE(giy);
+			EDHOC_MEM_FREE(salt_4e3m);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 		}
 
-		EDHOC_LOG_HEXDUMP_DBG(giy, VLA_SIZE(giy), "G_IY");
+		EDHOC_LOG_HEXDUMP_DBG(giy, EDHOC_MEM_ALLOC_SIZE(giy), "G_IY");
 
 		ctx->prk_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
 		uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 		ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXTRACT, giy,
-					   VLA_SIZE(giy), key_id);
-		memset(giy, 0, VLA_SIZEOF(giy));
+					   EDHOC_MEM_ALLOC_SIZE(giy), key_id);
+		memset(giy, 0, EDHOC_MEM_ALLOC_SIZEOF(giy));
+		EDHOC_MEM_FREE(giy);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Import key for PRK_4e3m: %d", ret);
+			EDHOC_MEM_FREE(salt_4e3m);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 		}
 
 		size_t out_len = 0;
 		ret = ctx->crypto.extract(ctx->user_ctx, key_id, salt_4e3m,
-					  VLA_SIZE(salt_4e3m), ctx->prk,
-					  ctx->prk_len, &out_len);
+					  EDHOC_MEM_ALLOC_SIZE(salt_4e3m),
+					  ctx->prk, ctx->prk_len, &out_len);
 		ctx->keys.destroy_key(ctx->user_ctx, key_id);
 		memset(key_id, 0, sizeof(key_id));
+		EDHOC_MEM_FREE(salt_4e3m);
 
 		if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
 			EDHOC_LOG_ERR("Extract PRK_4e3m: %d, %zu, %zu", ret,
@@ -518,8 +534,11 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.aead_key_length);
 
-	VLA_ALLOC(uint8_t, info, len);
-	memset(info, 0, VLA_SIZEOF(info));
+	EDHOC_MEM_ALLOC(uint8_t, info, len);
+	if (NULL == info) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	/* Generate K_3. */
 	input_info = (struct info){
@@ -529,12 +548,13 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		.info_length = (uint32_t)csuite.aead_key_length,
 	};
 
-	memset(info, 0, VLA_SIZEOF(info));
 	len = 0;
-	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
+			       &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR encode info for K_3: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -543,6 +563,7 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key for K_3: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -553,6 +574,7 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand K_3: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -564,12 +586,14 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 		.info_length = (uint32_t)csuite.aead_iv_length,
 	};
 
-	memset(info, 0, VLA_SIZEOF(info));
+	memset(info, 0, EDHOC_MEM_ALLOC_SIZEOF(info));
 	len = 0;
-	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
+			       &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc info for IV_3: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -578,12 +602,14 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key for IV_3: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, iv, iv_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
+	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand IV_3: %d", ret);
@@ -672,8 +698,11 @@ static int comp_th_4(struct edhoc_context *ctx,
 	len += ptxt_len;
 	len += mac_ctx->cred_len;
 
-	VLA_ALLOC(uint8_t, th_4, len);
-	memset(th_4, 0, VLA_SIZEOF(th_4));
+	EDHOC_MEM_ALLOC(uint8_t, th_4, len);
+	if (NULL == th_4) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	/* TH_3. */
 	const struct zcbor_string cbor_th_3 = {
@@ -683,10 +712,11 @@ static int comp_th_4(struct edhoc_context *ctx,
 
 	len = 0;
 	ret = cbor_encode_byte_string_type_bstr_type(
-		&th_4[offset], VLA_SIZE(th_4), &cbor_th_3, &len);
+		&th_4[offset], EDHOC_MEM_ALLOC_SIZE(th_4), &cbor_th_3, &len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc TH_4: %d", ret);
+		EDHOC_MEM_FREE(th_4);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -700,9 +730,10 @@ static int comp_th_4(struct edhoc_context *ctx,
 	memcpy(&th_4[offset], mac_ctx->cred, mac_ctx->cred_len);
 	offset += mac_ctx->cred_len;
 
-	if (VLA_SIZE(th_4) < offset) {
-		EDHOC_LOG_ERR("Buffer overflow: %zu, %zu", VLA_SIZE(th_4),
-			      offset);
+	if (EDHOC_MEM_ALLOC_SIZE(th_4) < offset) {
+		EDHOC_LOG_ERR("Buffer overflow: %zu, %zu",
+			      EDHOC_MEM_ALLOC_SIZE(th_4), offset);
+		EDHOC_MEM_FREE(th_4);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
@@ -710,8 +741,9 @@ static int comp_th_4(struct edhoc_context *ctx,
 	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
 	size_t hash_length = 0;
-	ret = ctx->crypto.hash(ctx->user_ctx, th_4, VLA_SIZE(th_4), ctx->th,
-			       ctx->th_len, &hash_length);
+	ret = ctx->crypto.hash(ctx->user_ctx, th_4, EDHOC_MEM_ALLOC_SIZE(th_4),
+			       ctx->th, ctx->th_len, &hash_length);
+	EDHOC_MEM_FREE(th_4);
 
 	if (EDHOC_SUCCESS != ret || ctx->th_len != hash_length) {
 		EDHOC_LOG_ERR("Hash TH_4: %d, %zu, %zu", ret, ctx->th_len,
@@ -1032,15 +1064,20 @@ static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 	len += edhoc_cbor_int_mem_req((int32_t)hash_len);
 
-	VLA_ALLOC(uint8_t, info, len);
-	memset(info, 0, VLA_SIZEOF(info));
+	EDHOC_MEM_ALLOC(uint8_t, info, len);
+	if (NULL == info) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	len = 0;
-	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
+			       &len);
 
-	if (ZCBOR_SUCCESS != ret || VLA_SIZE(info) != len) {
+	if (ZCBOR_SUCCESS != ret || EDHOC_MEM_ALLOC_SIZE(info) != len) {
 		EDHOC_LOG_ERR("CBOR enc info for salt_4e3m: %d, %zu, %zu", ret,
-			      VLA_SIZE(info), len);
+			      EDHOC_MEM_ALLOC_SIZE(info), len);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -1050,13 +1087,15 @@ static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key for salt_4e3m: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, VLA_SIZE(info),
-				 salt, salt_len);
+	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info,
+				 EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
+	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand salt_4e3m: %d", ret);
@@ -1225,40 +1264,61 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	/* 4. Compute K_3, IV_3 and AAD_3. */
-	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
-	memset(key, 0, VLA_SIZEOF(key));
+	EDHOC_MEM_ALLOC(uint8_t, key, csuite.aead_key_length);
+	if (NULL == key) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
-	VLA_ALLOC(uint8_t, iv, csuite.aead_iv_length);
-	memset(iv, 0, VLA_SIZEOF(iv));
+	EDHOC_MEM_ALLOC(uint8_t, iv, csuite.aead_iv_length);
+	if (NULL == iv) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	size_t aad_len = 0;
 	ret = comp_aad_3_len(ctx, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute AAD_3 length: %d", ret);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return ret;
 	}
 
-	VLA_ALLOC(uint8_t, aad, aad_len);
-	memset(aad, 0, VLA_SIZEOF(aad));
+	EDHOC_MEM_ALLOC(uint8_t, aad, aad_len);
+	if (NULL == aad) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
-	ret = comp_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-			      VLA_SIZE(aad));
+	ret = comp_key_iv_aad(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
+			      EDHOC_MEM_ALLOC_SIZE(iv), aad,
+			      EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_3: %d", ret);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(key, VLA_SIZE(key), "K_3");
-	EDHOC_LOG_HEXDUMP_DBG(iv, VLA_SIZE(iv), "IV_3");
-	EDHOC_LOG_HEXDUMP_DBG(aad, VLA_SIZE(aad), "AAD_3");
+	EDHOC_LOG_HEXDUMP_DBG(key, EDHOC_MEM_ALLOC_SIZE(key), "K_3");
+	EDHOC_LOG_HEXDUMP_DBG(iv, EDHOC_MEM_ALLOC_SIZE(iv), "IV_3");
+	EDHOC_LOG_HEXDUMP_DBG(aad, EDHOC_MEM_ALLOC_SIZE(aad), "AAD_3");
 
 	/* 5. Compute PRK_4e3m. */
 	ret = comp_prk_4e3m(ctx, &auth_creds, NULL, 0);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_4e3m: %d", ret);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -1270,13 +1330,22 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return ret;
 	}
 
 	/* 6b. Cborise items required by context_3. */
-	VLA_ALLOC(uint8_t, mac_3_context_buf,
-		  sizeof(struct mac_context) + mac_context_length);
-	memset(mac_3_context_buf, 0, VLA_SIZEOF(mac_3_context_buf));
+	EDHOC_MEM_ALLOC(uint8_t, mac_3_context_buf,
+			sizeof(struct mac_context) + mac_context_length);
+	if (NULL == mac_3_context_buf) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	struct mac_context *mac_context = (void *)mac_3_context_buf;
 	mac_context->buf_len = mac_context_length;
@@ -1284,6 +1353,10 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	ret = edhoc_comp_mac_context(ctx, &auth_creds, mac_context);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context: %d", ret);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return ret;
 	}
 
@@ -1300,14 +1373,30 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	ret = edhoc_comp_mac_length(ctx, &mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3 length: %d", ret);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return EDHOC_ERROR_INVALID_MAC_3;
 	}
 
-	VLA_ALLOC(uint8_t, mac_buf, mac_length);
-	memset(mac_buf, 0, VLA_SIZEOF(mac_buf));
+	EDHOC_MEM_ALLOC(uint8_t, mac_buf, mac_length);
+	if (NULL == mac_buf) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 	ret = edhoc_comp_mac(ctx, mac_context, mac_buf, mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3: %d", ret);
+		EDHOC_MEM_FREE(mac_buf);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return EDHOC_ERROR_INVALID_MAC_3;
 	}
 
@@ -1316,17 +1405,37 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	ret = edhoc_comp_sign_or_mac_length(ctx, &sign_or_mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute Signature_or_MAC_3 length: %d", ret);
+		EDHOC_MEM_FREE(mac_buf);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return ret;
 	}
 
 	size_t signature_length = 0;
-	VLA_ALLOC(uint8_t, signature, sign_or_mac_length);
-	memset(signature, 0, VLA_SIZEOF(signature));
+	EDHOC_MEM_ALLOC(uint8_t, signature, sign_or_mac_length);
+	if (NULL == signature) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(mac_buf);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 	ret = edhoc_comp_sign_or_mac(ctx, &auth_creds, mac_context, mac_buf,
-				     mac_length, signature, VLA_SIZE(signature),
+				     mac_length, signature,
+				     EDHOC_MEM_ALLOC_SIZE(signature),
 				     &signature_length);
+	EDHOC_MEM_FREE(mac_buf);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute Signature_or_MAC_3: %d", ret);
+		EDHOC_MEM_FREE(signature);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return ret;
 	}
 
@@ -1340,19 +1449,38 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PLAINTEXT_3 length: %d", ret);
+		EDHOC_MEM_FREE(signature);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return ret;
 	}
 
-	VLA_ALLOC(uint8_t, plaintext, plaintext_len);
-	memset(plaintext, 0, VLA_SIZEOF(plaintext));
+	EDHOC_MEM_ALLOC(uint8_t, plaintext, plaintext_len);
+	if (NULL == plaintext) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(signature);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	plaintext_len = 0;
 	ret = prepare_plaintext_3(mac_context, signature, signature_length,
-				  plaintext, VLA_SIZE(plaintext),
+				  plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext),
 				  &plaintext_len);
+	EDHOC_MEM_FREE(signature);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Prepare PLAINTEXT_3: %d", ret);
+		EDHOC_MEM_FREE(plaintext);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -1360,16 +1488,33 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	/* 9. Compute ciphertext. */
 	size_t ciphertext_len = 0;
-	VLA_ALLOC(uint8_t, ciphertext, plaintext_len + csuite.aead_tag_length);
-	memset(ciphertext, 0, VLA_SIZEOF(ciphertext));
+	EDHOC_MEM_ALLOC(uint8_t, ciphertext,
+			plaintext_len + csuite.aead_tag_length);
+	if (NULL == ciphertext) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(plaintext);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
-	ret = comp_ciphertext(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-			      VLA_SIZE(aad), plaintext, plaintext_len,
-			      ciphertext, VLA_SIZE(ciphertext),
+	ret = comp_ciphertext(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
+			      EDHOC_MEM_ALLOC_SIZE(iv), aad,
+			      EDHOC_MEM_ALLOC_SIZE(aad), plaintext,
+			      plaintext_len, ciphertext,
+			      EDHOC_MEM_ALLOC_SIZE(ciphertext),
 			      &ciphertext_len);
+	EDHOC_MEM_FREE(aad);
+	EDHOC_MEM_FREE(iv);
+	EDHOC_MEM_FREE(key);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute CIPHERTEXT_3: %d", ret);
+		EDHOC_MEM_FREE(ciphertext);
+		EDHOC_MEM_FREE(plaintext);
+		EDHOC_MEM_FREE(mac_3_context_buf);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -1377,9 +1522,12 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	/* 10. Compute transcript hash 4. */
 	ret = comp_th_4(ctx, mac_context, plaintext, plaintext_len);
+	EDHOC_MEM_FREE(plaintext);
+	EDHOC_MEM_FREE(mac_3_context_buf);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute TH_4: %d", ret);
+		EDHOC_MEM_FREE(ciphertext);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
 
@@ -1388,6 +1536,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	/* 11. Generate edhoc message 3. */
 	ret = gen_msg_3(ciphertext, ciphertext_len, msg_3, msg_3_size,
 			msg_3_len);
+	EDHOC_MEM_FREE(ciphertext);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Generate message_3: %d", ret);
@@ -1465,56 +1614,87 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 3. Compute K_3, IV_3 and AAD_3. */
-	VLA_ALLOC(uint8_t, key, csuite.aead_key_length);
-	memset(key, 0, VLA_SIZEOF(key));
+	EDHOC_MEM_ALLOC(uint8_t, key, csuite.aead_key_length);
+	if (NULL == key) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
-	VLA_ALLOC(uint8_t, iv, csuite.aead_iv_length);
-	memset(iv, 0, VLA_SIZEOF(iv));
+	EDHOC_MEM_ALLOC(uint8_t, iv, csuite.aead_iv_length);
+	if (NULL == iv) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	size_t aad_len = 0;
 	ret = comp_aad_3_len(ctx, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute AAD_3 length: %d", ret);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	VLA_ALLOC(uint8_t, aad, aad_len);
-	memset(aad, 0, VLA_SIZEOF(aad));
+	EDHOC_MEM_ALLOC(uint8_t, aad, aad_len);
+	if (NULL == aad) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
-	ret = comp_key_iv_aad(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-			      VLA_SIZE(aad));
+	ret = comp_key_iv_aad(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
+			      EDHOC_MEM_ALLOC_SIZE(iv), aad,
+			      EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_3: %d", ret);
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(key, VLA_SIZE(key), "K_3");
-	EDHOC_LOG_HEXDUMP_DBG(iv, VLA_SIZE(iv), "IV_3");
-	EDHOC_LOG_HEXDUMP_DBG(aad, VLA_SIZE(aad), "AAD_3");
+	EDHOC_LOG_HEXDUMP_DBG(key, EDHOC_MEM_ALLOC_SIZE(key), "K_3");
+	EDHOC_LOG_HEXDUMP_DBG(iv, EDHOC_MEM_ALLOC_SIZE(iv), "IV_3");
+	EDHOC_LOG_HEXDUMP_DBG(aad, EDHOC_MEM_ALLOC_SIZE(aad), "AAD_3");
 
 	/* 4. Decrypt ciphertext. */
-	VLA_ALLOC(uint8_t, ptxt, ctxt_len - csuite.aead_tag_length);
-	memset(ptxt, 0, VLA_SIZEOF(ptxt));
+	EDHOC_MEM_ALLOC(uint8_t, ptxt, ctxt_len - csuite.aead_tag_length);
+	if (NULL == ptxt) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(key);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
-	ret = decrypt_ciphertext(ctx, key, VLA_SIZE(key), iv, VLA_SIZE(iv), aad,
-				 VLA_SIZE(aad), ctxt, ctxt_len, ptxt,
-				 VLA_SIZE(ptxt));
+	ret = decrypt_ciphertext(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
+				 EDHOC_MEM_ALLOC_SIZE(iv), aad,
+				 EDHOC_MEM_ALLOC_SIZE(aad), ctxt, ctxt_len,
+				 ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
+	EDHOC_MEM_FREE(aad);
+	EDHOC_MEM_FREE(iv);
+	EDHOC_MEM_FREE(key);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decrypt CIPHERTEXT_3: %d", ret);
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ptxt, VLA_SIZE(ptxt), "PLAINTEXT_3");
+	EDHOC_LOG_HEXDUMP_DBG(ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt), "PLAINTEXT_3");
 
 	/* 5. Parse CBOR plaintext (PLAINTEXT_3). */
 	struct plaintext parsed_ptxt = { 0 };
-	ret = parse_plaintext(ctx, ptxt, VLA_SIZE(ptxt), &parsed_ptxt);
+	ret = parse_plaintext(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt),
+			      &parsed_ptxt);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_3: %d", ret);
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -1526,6 +1706,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Process EAD_3: %d", ret);
+			EDHOC_MEM_FREE(ptxt);
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 		}
 
@@ -1554,6 +1735,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		EDHOC_LOG_ERR("Verify peer credentials: %d", ret);
 		ctx->error_code =
 			EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
@@ -1562,6 +1744,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_4e3m: %d", ret);
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -1572,13 +1755,18 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_INVALID_MAC_3;
 	}
 
 	/* 9b. Cborise items required by context_3. */
-	VLA_ALLOC(uint8_t, mac_3_context_buf,
-		  sizeof(struct mac_context) + mac_context_len);
-	memset(mac_3_context_buf, 0, VLA_SIZEOF(mac_3_context_buf));
+	EDHOC_MEM_ALLOC(uint8_t, mac_3_context_buf,
+			sizeof(struct mac_context) + mac_context_len);
+	if (NULL == mac_3_context_buf) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(ptxt);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	struct mac_context *mac_context = (void *)mac_3_context_buf;
 	mac_context->buf_len = mac_context_len;
@@ -1586,6 +1774,8 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	ret = edhoc_comp_mac_context(ctx, &parsed_ptxt.auth_cred, mac_context);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context: %d", ret);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(ptxt);
 		return ret;
 	}
 
@@ -1604,14 +1794,24 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	ret = edhoc_comp_mac_length(ctx, &mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3 length: %d", ret);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_INVALID_MAC_3;
 	}
 
-	VLA_ALLOC(uint8_t, mac_buf, mac_length);
-	memset(mac_buf, 0, VLA_SIZEOF(mac_buf));
+	EDHOC_MEM_ALLOC(uint8_t, mac_buf, mac_length);
+	if (NULL == mac_buf) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(ptxt);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 	ret = edhoc_comp_mac(ctx, mac_context, mac_buf, mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3: %d", ret);
+		EDHOC_MEM_FREE(mac_buf);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_INVALID_MAC_3;
 	}
 
@@ -1620,14 +1820,19 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 				       parsed_ptxt.sign_or_mac,
 				       parsed_ptxt.sign_or_mac_len, mac_buf,
 				       mac_length);
+	EDHOC_MEM_FREE(mac_buf);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Verify Signature_or_MAC_3: %d", ret);
+		EDHOC_MEM_FREE(mac_3_context_buf);
+		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_INVALID_SIGN_OR_MAC_3;
 	}
 
 	/* 11. Compute transcript hash 4. */
-	ret = comp_th_4(ctx, mac_context, ptxt, VLA_SIZE(ptxt));
+	ret = comp_th_4(ctx, mac_context, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
+	EDHOC_MEM_FREE(mac_3_context_buf);
+	EDHOC_MEM_FREE(ptxt);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute TH_4: %d", ret);

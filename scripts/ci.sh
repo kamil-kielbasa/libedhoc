@@ -71,6 +71,7 @@ test_binary() {
 cmd_build() {
     local compiler="gcc"
     local coverage=false sanitizers=false fuzz=false
+    local mem_backend=""
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -79,12 +80,13 @@ cmd_build() {
             --coverage)   coverage=true ;;
             --sanitizers) sanitizers=true ;;
             --fuzz)       fuzz=true ;;
+            --mem-backend) shift; mem_backend="${1:-}" ;;
             *) err "Unknown build option: $1"; exit 1 ;;
         esac
         shift
     done
 
-    section "Build (${compiler})"
+    section "Build (${compiler}${mem_backend:+, mem=${mem_backend}})"
 
     local cmake_args=(-DLIBEDHOC_ENABLE_MODULE_TESTS=ON)
 
@@ -99,6 +101,19 @@ cmd_build() {
 
     [[ "$coverage" == true ]]   && cmake_args+=(-DLIBEDHOC_ENABLE_COVERAGE=ON)
     [[ "$sanitizers" == true ]] && cmake_args+=(-DLIBEDHOC_ENABLE_SANITIZERS=ON)
+
+    if [[ -n "$mem_backend" ]]; then
+        # Translate the friendly name to the integer CONFIG_LIBEDHOC_MEM_BACKEND:
+        # 0 stack, 1 heap, 2 custom.
+        local mem_backend_value
+        case "$mem_backend" in
+            stack)  mem_backend_value=0 ;;
+            heap)   mem_backend_value=1 ;;
+            custom) mem_backend_value=2 ;;
+            *) err "Unknown memory backend: ${mem_backend} (use stack|heap|custom)"; exit 1 ;;
+        esac
+        cmake_args+=(-DCONFIG_LIBEDHOC_MEM_BACKEND="${mem_backend_value}")
+    fi
 
     if [[ "$fuzz" == true ]]; then
         cmake_args=(-DLIBEDHOC_BUILD_COMPILER_CLANG=ON
@@ -124,12 +139,20 @@ cmd_test() {
 # --------------- coverage ----------------------------------------------------
 cmd_coverage() {
     local open_report=false
-    for arg in "$@"; do [[ "$arg" == "--open" ]] && open_report=true; done
+    local mem_args=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --open)        open_report=true ;;
+            --mem-backend) shift; mem_args+=(--mem-backend "${1:-}") ;;
+            *) err "Unknown coverage option: $1 (use [--mem-backend X] [--open])"; exit 1 ;;
+        esac
+        shift
+    done
 
     require_cmd lcov; require_cmd genhtml
 
     section "Coverage: build → test → report"
-    cmd_build --gcc --coverage
+    cmd_build --gcc --coverage "${mem_args[@]}"
     cmd_test
 
     cd "${BUILD_DIR}"
@@ -184,11 +207,22 @@ cmd_coverage() {
 
 # --------------- sanitizers --------------------------------------------------
 cmd_sanitizers() {
-    local variant="${1:-asan-ubsan}"
+    local variant="asan-ubsan"
+    local mem_args=()
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            asan-ubsan|asan) variant="$1" ;;
+            --mem-backend)   shift; mem_args+=(--mem-backend "${1:-}") ;;
+            *) err "Unknown sanitizer option: $1 (use asan-ubsan [--mem-backend X])"; exit 1 ;;
+        esac
+        shift
+    done
+
     case "$variant" in
         asan-ubsan|asan)
             section "Sanitizers: ASan + UBSan (GCC)"
-            cmd_build --gcc --sanitizers
+            cmd_build --gcc --sanitizers "${mem_args[@]}"
             ;;
         *) err "Unknown sanitizer variant: $variant (use asan-ubsan)"; exit 1 ;;
     esac
@@ -344,20 +378,27 @@ show_help() {
 Usage: scripts/ci.sh <command> [options]
 
 Build & Test:
-  build [--gcc|--clang] [--coverage] [--sanitizers] [--fuzz]
+  build [--gcc|--clang] [--coverage] [--sanitizers] [--fuzz] [--mem-backend X]
   test                    Run test binary
-  coverage [--open]       Build with gcov, run tests, generate HTML report
+  coverage [--mem-backend X] [--open]
+                          Build with gcov, run tests, generate HTML report
 
 Analysis:
   cppcheck                Static analysis with cppcheck
   clang-tidy              Static analysis with clang-tidy
   valgrind                Memcheck + DRD
-  sanitizers [asan-ubsan]        Build + test under sanitizers
+  sanitizers [asan-ubsan] [--mem-backend X]  Build + test under sanitizers
   fuzz [seconds]          Build + run fuzz targets (default: 60s each)
 
 Quality:
   format [--check]        Run clang-format on all tracked sources
                           (--check = dry-run mirroring the CI / Format job)
+
+Memory backend (--mem-backend), maps to -DCONFIG_LIBEDHOC_MEM_BACKEND=N:
+  stack                   0: C99 VLA / _alloca (default when omitted)
+  heap                    1: calloc / free
+  custom                  2: link-time edhoc_mem_alloc / edhoc_mem_free hooks
+                          (module tests provide an instrumented allocator)
 
 Pipeline:
   all                     Run full CI: coverage, cppcheck, clang-tidy, valgrind
@@ -365,7 +406,10 @@ Pipeline:
 Examples:
   scripts/ci.sh build --gcc              # GCC debug build
   scripts/ci.sh build --gcc --sanitizers    # GCC + ASan/UBSan
+  scripts/ci.sh build --gcc --mem-backend heap   # GCC, heap allocator
+  scripts/ci.sh sanitizers --mem-backend custom  # ASan/UBSan, custom allocator
   scripts/ci.sh coverage --open          # Coverage with browser
+  scripts/ci.sh coverage --mem-backend custom  # Coverage incl. OOM paths
   scripts/ci.sh all                      # Full local CI
 EOF
 }

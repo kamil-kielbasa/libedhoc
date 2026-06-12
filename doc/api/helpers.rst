@@ -55,3 +55,12 @@ Macros
 .. doxygengroup:: edhoc-macros
    :project: libedhoc
    :members:
+
+Memory backend
+--------------
+
+| Header file: :file:`backends/memory/include/edhoc_backend_memory.h`
+
+.. doxygengroup:: edhoc-backend-memory
+   :project: libedhoc
+   :members:

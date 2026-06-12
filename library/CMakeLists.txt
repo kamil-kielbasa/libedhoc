@@ -36,7 +36,15 @@ if(NOT TARGET zephyr_interface)
     if(NOT DEFINED CONFIG_LIBEDHOC_LOG_LEVEL)
         set(CONFIG_LIBEDHOC_LOG_LEVEL 3)  # EDHOC_LOG_LEVEL_INF
     endif()
-    
+
+    # Select the memory backend for non-Zephyr builds: pass
+    # -DCONFIG_LIBEDHOC_MEM_BACKEND=N where N is 0 (stack, default), 1 (heap) or
+    # 2 (custom). On Zephyr the value is derived from the
+    # LIBEDHOC_MEM_BACKEND_CHOICE Kconfig choice.
+    if(NOT DEFINED CONFIG_LIBEDHOC_MEM_BACKEND)
+        set(CONFIG_LIBEDHOC_MEM_BACKEND 0)  # EDHOC_MEM_BACKEND_STACK
+    endif()
+
     set(LIBEDHOC_DEFINITIONS
         CONFIG_LIBEDHOC_ENABLE=${CONFIG_LIBEDHOC_ENABLE}
         CONFIG_LIBEDHOC_KEY_ID_LEN=${CONFIG_LIBEDHOC_KEY_ID_LEN}
@@ -48,7 +56,8 @@ if(NOT TARGET zephyr_interface)
         CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID}
         CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=${CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG}
         CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=${CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN}
-        CONFIG_LIBEDHOC_LOG_LEVEL=${CONFIG_LIBEDHOC_LOG_LEVEL})
+        CONFIG_LIBEDHOC_LOG_LEVEL=${CONFIG_LIBEDHOC_LOG_LEVEL}
+        CONFIG_LIBEDHOC_MEM_BACKEND=${CONFIG_LIBEDHOC_MEM_BACKEND})
 
     target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBEDHOC_DEFINITIONS})
 endif()
@@ -151,7 +160,8 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       libedhoc_api
-                      backend_cbor)
+                      backend_cbor
+                      backend_memory)
 
 if (NOT TARGET zephyr_interface)
     target_link_libraries(${PROJECT_NAME} PUBLIC

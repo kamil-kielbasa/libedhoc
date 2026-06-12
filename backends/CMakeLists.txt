@@ -44,3 +44,10 @@ endif()
 
 target_include_directories(${BACKEND_CBOR_NAME} PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/cbor/include>)
+
+set(BACKEND_MEMORY_NAME backend_memory)
+
+add_library(${BACKEND_MEMORY_NAME} INTERFACE)
+
+target_include_directories(${BACKEND_MEMORY_NAME} INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/memory/include>)

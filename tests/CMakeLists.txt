@@ -33,6 +33,19 @@ set(TEST_INTEGRATION_SOURCES
     integration/test_rfc9529_chapter2.c
     integration/test_rfc9529_chapter3.c)
 
+# Custom memory backend tests are only meaningful when the library is built with
+# the custom backend (-DCONFIG_LIBEDHOC_MEM_BACKEND=2). They provide the
+# link-time edhoc_mem_alloc()/edhoc_mem_free() hooks and exercise the
+# out-of-memory cleanup paths.
+set(TEST_MEM_CUSTOM_SOURCES "")
+if (DEFINED CONFIG_LIBEDHOC_MEM_BACKEND AND CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
+    set(TEST_MEM_CUSTOM_SOURCES
+        common/src/test_mem_custom.c
+        common/src/test_mem_custom_handshake.c
+        unit/test_mem_custom.c
+        integration/test_mem_custom.c)
+endif()
+
 set(TEST_HELPER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_0.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_2.c
@@ -47,6 +60,7 @@ add_executable(${PROJECT_NAME}
                ${TEST_COMMON_SOURCES}
                ${TEST_UNIT_SOURCES}
                ${TEST_INTEGRATION_SOURCES}
+               ${TEST_MEM_CUSTOM_SOURCES}
                ${TEST_HELPER_SOURCES})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE LIBEDHOC_TEST_HOOKS)

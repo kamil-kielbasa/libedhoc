@@ -18,6 +18,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 #include "edhoc_log.h"
+#include "edhoc_backend_memory.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -109,15 +110,19 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
-	VLA_ALLOC(uint8_t, dh_pub_key, csuite.ecc_key_length);
-	memset(dh_pub_key, 0, VLA_SIZEOF(dh_pub_key));
+	EDHOC_MEM_ALLOC(uint8_t, dh_pub_key, csuite.ecc_key_length);
+	if (NULL == dh_pub_key) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	size_t dh_priv_key_len = 0;
 	size_t dh_pub_key_len = 0;
 	ret = ctx->crypto.make_key_pair(ctx->user_ctx, key_id, ctx->dh_priv_key,
 					ARRAY_SIZE(ctx->dh_priv_key),
 					&dh_priv_key_len, dh_pub_key,
-					VLA_SIZE(dh_pub_key), &dh_pub_key_len);
+					EDHOC_MEM_ALLOC_SIZE(dh_pub_key),
+					&dh_pub_key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
 
@@ -126,6 +131,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		EDHOC_LOG_ERR("Generate key pair: %d, %zu, %zu, %zu", ret,
 			      csuite.ecc_key_length, dh_priv_key_len,
 			      dh_pub_key_len);
+		EDHOC_MEM_FREE(dh_pub_key);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
@@ -156,6 +162,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				ctx->csuite_len,
 				ARRAY_SIZE(cbor_enc_msg_1.message_1_SUITES_I
 						   .suites_int_l_int));
+			EDHOC_MEM_FREE(dh_pub_key);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -167,7 +174,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	/* 3c. Fill CBOR structure for message 1 - ephemeral public key. */
 	cbor_enc_msg_1.message_1_G_X.value = dh_pub_key;
-	cbor_enc_msg_1.message_1_G_X.len = VLA_SIZE(dh_pub_key);
+	cbor_enc_msg_1.message_1_G_X.len = EDHOC_MEM_ALLOC_SIZE(dh_pub_key);
 
 	/* 3d. Fill CBOR structure for message 1 - connection identifier. */
 	switch (ctx->cid.encode_type) {
@@ -185,6 +192,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	default:
 		EDHOC_LOG_ERR("Invalid cid enc type: %d", ctx->cid.encode_type);
+		EDHOC_MEM_FREE(dh_pub_key);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -200,6 +208,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 			EDHOC_LOG_ERR("EAD compose: %d, %zu, %zu", ret,
 				      ctx->nr_of_ead_tokens,
 				      ARRAY_SIZE(ctx->ead_token) - 1);
+			EDHOC_MEM_FREE(dh_pub_key);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
@@ -246,8 +255,12 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc msg1: %d", ret);
+		EDHOC_MEM_FREE(dh_pub_key);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
+
+	/* The ephemeral public key has been serialised into msg_1. */
+	EDHOC_MEM_FREE(dh_pub_key);
 
 	EDHOC_LOG_HEXDUMP_DBG(msg_1, *msg_1_len, "message_1");
 
@@ -369,6 +382,14 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	case suites_int_l_c: {
+		if (0 ==
+		    cbor_dec_msg_1.message_1_SUITES_I.suites_int_l_int_count) {
+			EDHOC_LOG_ERR("Empty peer cipher suite list");
+			ctx->error_code =
+				EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
+			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
+		}
+
 		if (ARRAY_SIZE(ctx->peer_csuite) <
 		    cbor_dec_msg_1.message_1_SUITES_I.suites_int_l_int_count) {
 			EDHOC_LOG_ERR(

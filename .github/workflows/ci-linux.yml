@@ -18,7 +18,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y lcov
 
       - name: Build, test, and generate coverage
-        run: bash scripts/ci.sh coverage
+        # Use the custom allocator backend: its fault-injecting out-of-memory
+        # tests are the only ones that exercise the EDHOC_ERROR_NOT_ENOUGH_MEMORY
+        # branches, and it runs a superset of the stack/heap test suite, so it
+        # yields the most representative coverage of the new code.
+        run: bash scripts/ci.sh coverage --mem-backend custom
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -48,9 +52,15 @@ jobs:
           bash scripts/ci.sh build --clang
           bash scripts/ci.sh test
 
-  asan-ubsan:
-    name: ASan + UBSan
+  mem-backends:
+    name: Memory backend (${{ matrix.backend }})
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        # Exercise every memory backend through the same build + test +
+        # sanitizer pipeline: stack (default), heap and custom allocator.
+        backend: [stack, heap, custom]
     steps:
       - uses: actions/checkout@v4
 
@@ -59,8 +69,13 @@ jobs:
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
+      - name: Build and test
+        run: |
+          bash scripts/ci.sh build --gcc --mem-backend ${{ matrix.backend }}
+          bash scripts/ci.sh test
+
       - name: Build and test (GCC + ASan + UBSan)
-        run: bash scripts/ci.sh sanitizers asan-ubsan
+        run: bash scripts/ci.sh sanitizers asan-ubsan --mem-backend ${{ matrix.backend }}
 
   valgrind:
     name: Valgrind
