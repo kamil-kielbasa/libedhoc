@@ -25,7 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_crypto.h"
 #include "edhoc_values.h"
 #include "edhoc_macros.h"
-#include "edhoc_log.h"
+#include "edhoc_backend_log.h"
 
 /* PSA crypto header: */
 #include <psa/crypto.h>

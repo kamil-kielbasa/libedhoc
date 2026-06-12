@@ -11,13 +11,13 @@
 
 #ifdef __ZEPHYR__
 #include <zephyr/logging/log.h>
-LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
+LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
-#include "edhoc_log.h"
+#include "edhoc_backend_log.h"
 
 /* Standard library headers: */
 #include <stddef.h>

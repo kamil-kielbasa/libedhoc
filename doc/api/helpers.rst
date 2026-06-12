@@ -64,3 +64,12 @@ Memory backend
 .. doxygengroup:: edhoc-backend-memory
    :project: libedhoc
    :members:
+
+Logging backend
+---------------
+
+| Header file: :file:`backends/log/include/edhoc_backend_log.h`
+
+.. doxygengroup:: edhoc-backend-log
+   :project: libedhoc
+   :members:

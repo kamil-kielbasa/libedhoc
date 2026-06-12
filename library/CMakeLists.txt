@@ -19,11 +19,6 @@ set(LIBEDHOC_SOURCES
     edhoc_exporter.c
     edhoc_common.c)
 
-if(TARGET zephyr_interface)
-    list(APPEND LIBEDHOC_SOURCES
-        ../port/log/zephyr/edhoc_log_backend.c)
-endif()
-
 target_sources(${PROJECT_NAME} PRIVATE ${LIBEDHOC_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -161,7 +156,8 @@ endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC
                       libedhoc_api
                       backend_cbor
-                      backend_memory)
+                      backend_memory
+                      backend_log)
 
 if (NOT TARGET zephyr_interface)
     target_link_libraries(${PROJECT_NAME} PUBLIC

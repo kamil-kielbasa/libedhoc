@@ -72,11 +72,9 @@ Logging
 *******
 
 The logging module provides compile-time configurable log levels via
-``CONFIG_LIBEDHOC_LOG_LEVEL``. Headers:
+``CONFIG_LIBEDHOC_LOG_LEVEL``. It is a single, self-contained backend header:
 
-* :file:`include/edhoc_log.h`
-* Backend: :file:`port/log/linux/edhoc_log_backend.h` (Linux) or
-  :file:`port/log/zephyr/edhoc_log_backend.h` (Zephyr).
+* :file:`backends/log/include/edhoc_backend_log.h`
 
 .. list-table::
    :header-rows: 1
@@ -101,6 +99,8 @@ The logging module provides compile-time configurable log levels via
      - 4
 
 Set ``CONFIG_LIBEDHOC_LOG_LEVEL`` to the desired level during compilation.
-Each level enables all levels below it. The Linux backend outputs
-timestamped, colour-coded messages to ``stdout`` / ``stderr``. The Zephyr
-backend delegates to the Zephyr logging subsystem.
+Each level enables all levels below it. The backend selects its
+implementation at compile time with the ``__ZEPHYR__`` preprocessor macro:
+on Zephyr it delegates to the Zephyr logging subsystem, and on every other
+build it outputs timestamped, colour-coded messages to ``stdout`` /
+``stderr``.

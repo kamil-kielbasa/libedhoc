@@ -21,7 +21,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 #include "edhoc_common.h"
-#include "edhoc_log.h"
+#include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
 #ifdef __clang__
