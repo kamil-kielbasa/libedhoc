@@ -1,3 +1,46 @@
+Version 1.12.0
+--------------
+
+:Date: June 12, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Memory backend:
+
+  * The library can now obtain its internal working buffers from one of three
+    interchangeable memory backends, chosen at build time. The default keeps
+    the previous behaviour, so existing integrations are unaffected:
+
+    * **Stack** (default) — buffers live on the call stack, exactly as before.
+    * **Heap** — buffers come from the system heap (``calloc`` on hosted
+      builds, ``k_calloc`` on Zephyr), removing the deep per-handshake stack
+      usage on constrained targets.
+    * **Custom** — the application provides its own ``edhoc_mem_alloc`` /
+      ``edhoc_mem_free`` at link time, e.g. to serve buffers from a dedicated
+      pool.
+
+    The backend is chosen by the integer ``CONFIG_LIBEDHOC_MEM_BACKEND``: on
+    Zephyr it is derived from the ``LIBEDHOC_MEM_BACKEND_CHOICE`` Kconfig choice,
+    and on every other build it is passed directly
+    (``-DCONFIG_LIBEDHOC_MEM_BACKEND=N``, where N is 0 stack, 1 heap or 2 custom;
+    default 0).
+
+  * Out-of-memory conditions are now reported to the caller. The new
+    ``EDHOC_ERROR_NOT_ENOUGH_MEMORY`` (-106) error code is returned by the
+    affected message and exporter APIs when a non-stack backend cannot satisfy
+    an allocation, and the failing call leaves no buffers leaked behind.
+  * Working buffers handed to the library are guaranteed to be zero-initialised
+    on every backend.
+  * The behaviour is verified for all three backends, including a tracking,
+    fault-injecting custom allocator that exercises every out-of-memory path,
+    and the heap backend additionally under ASan/LSan.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fix:
+
+  * Message 1 processing now rejects an empty peer cipher suite list
+    (``SUITES_I``). The responder previously read the list's last entry at
+    ``count - 1``; for an empty list that index underflowed to ``SIZE_MAX``
+    and caused an out-of-bounds read. An empty list is now reported as a
+    wrong selected cipher suite error.
+
 Version 1.11.2
 --------------
 

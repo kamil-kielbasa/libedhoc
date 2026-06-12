@@ -153,8 +153,9 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       messages together cryptographically.
 
    VLA
-      Variable-Length Array — the C99 feature that libedhoc relies on to
-      keep all handshake state on the stack with no heap allocations.
+      Variable-Length Array — the C99 feature used by libedhoc's default
+      stack memory backend to keep handshake state on the stack with no heap
+      allocations. Optional heap and custom memory backends are also available.
 
    x5chain
       COSE header parameter ``33`` (RFC 9360) carrying an ordered chain of

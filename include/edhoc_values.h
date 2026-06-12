@@ -43,6 +43,9 @@
 /** The parameters passed to the function are invalid. */
 #define EDHOC_ERROR_INVALID_ARGUMENT ((int)-105)
 
+/** A memory allocation failed (heap or custom memory backend). */
+#define EDHOC_ERROR_NOT_ENOUGH_MEMORY ((int)-106)
+
 /** CBOR encoding or decoding failed. */
 #define EDHOC_ERROR_CBOR_FAILURE ((int)-110)
 

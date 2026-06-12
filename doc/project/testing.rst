@@ -251,8 +251,8 @@ timing. Build and measure locally (requires west + Zephyr SDK):
 
 The CI automatically builds this and uploads ``flash_report.txt`` and
 ``benchmark_timing.json`` as artifacts.
-Expected library flash footprint is **~20 KiB** (0 bytes static RAM — all
-state lives on the stack).
+Expected library flash footprint is **~20 KiB** (0 bytes static RAM; with the
+default stack backend all state lives on the stack).
 
 Test Categories
 ---------------

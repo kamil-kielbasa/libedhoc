@@ -43,6 +43,32 @@ if LIBEDHOC_ENABLE
         int "Maximum length of authentication credentials hash algorithm in bytes."
         default 1
 
+    choice LIBEDHOC_MEM_BACKEND_CHOICE
+        prompt "Select memory backend for libedhoc working buffers."
+        default LIBEDHOC_MEM_BACKEND_STACK
+
+        config LIBEDHOC_MEM_BACKEND_STACK
+            bool "Stack (C99 variable-length arrays)"
+        config LIBEDHOC_MEM_BACKEND_HEAP
+            bool "Heap"
+            help
+                Allocate working buffers from the heap. The platform must
+                provide a heap large enough for the handshake working set.
+        config LIBEDHOC_MEM_BACKEND_CUSTOM
+            bool "Custom (user-provided edhoc_mem_alloc / edhoc_mem_free)"
+    endchoice
+
+    config LIBEDHOC_MEM_BACKEND
+        int
+        default 0 if LIBEDHOC_MEM_BACKEND_STACK
+        default 1 if LIBEDHOC_MEM_BACKEND_HEAP
+        default 2 if LIBEDHOC_MEM_BACKEND_CUSTOM
+        range 0 2
+        help
+            0 Stack (C99 variable-length arrays)
+            1 Heap
+            2 Custom (user-provided edhoc_mem_alloc / edhoc_mem_free)
+
     choice LIBEDHOC_LOG_LEVEL_CHOICE
         prompt "Select compile-time log level for libedhoc."
         default LIBEDHOC_LOG_LEVEL_NONE

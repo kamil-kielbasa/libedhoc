@@ -18,6 +18,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
 #include "edhoc_log.h"
+#include "edhoc_backend_memory.h"
 
 /* Standard library headers: */
 #include <string.h>
@@ -149,8 +150,11 @@ static int compute_prk_out(struct edhoc_context *ctx)
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	VLA_ALLOC(uint8_t, info, len);
-	memset(info, 0, VLA_SIZEOF(info));
+	EDHOC_MEM_ALLOC(uint8_t, info, len);
+	if (NULL == info) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	/* Generate PRK_out. */
 	struct info input_info = {
@@ -161,10 +165,12 @@ static int compute_prk_out(struct edhoc_context *ctx)
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
+			       &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc PRK_out info: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -174,6 +180,7 @@ static int compute_prk_out(struct edhoc_context *ctx)
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -181,6 +188,7 @@ static int compute_prk_out(struct edhoc_context *ctx)
 				 ctx->prk_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
+	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand: %d", ret);
@@ -217,8 +225,11 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 	len += entropy_len + cbor_bstr_overhead(entropy_len);
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	VLA_ALLOC(uint8_t, info, len);
-	memset(info, 0, VLA_SIZEOF(info));
+	EDHOC_MEM_ALLOC(uint8_t, info, len);
+	if (NULL == info) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	/* Generate PRK_out. */
 	struct info input_info = {
@@ -229,10 +240,12 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
+			       &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc new PRK_out info: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -242,6 +255,7 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -249,6 +263,7 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 				 ctx->prk_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
+	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand: %d", ret);
@@ -282,8 +297,11 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	VLA_ALLOC(uint8_t, info, len);
-	memset(info, 0, VLA_SIZEOF(info));
+	EDHOC_MEM_ALLOC(uint8_t, info, len);
+	if (NULL == info) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	struct info input_info = {
 		.info_label =
@@ -294,10 +312,12 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
+			       &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc PRK_exporter info: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -307,6 +327,7 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key: %d", ret);
+		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -314,6 +335,7 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 				 prk_exp_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
+	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand: %d", ret);
@@ -374,13 +396,18 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	/* 3. Compute pseudo random key exporter (PRK_exporter). */
-	VLA_ALLOC(uint8_t, prk_exporter, csuite.hash_length);
-	memset(prk_exporter, 0, VLA_SIZEOF(prk_exporter));
+	EDHOC_MEM_ALLOC(uint8_t, prk_exporter, csuite.hash_length);
+	if (NULL == prk_exporter) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
-	ret = compute_prk_exporter(ctx, prk_exporter, VLA_SIZE(prk_exporter));
+	ret = compute_prk_exporter(ctx, prk_exporter,
+				   EDHOC_MEM_ALLOC_SIZE(prk_exporter));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_exporter: %d", ret);
+		EDHOC_MEM_FREE(prk_exporter);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
@@ -390,8 +417,12 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
 	len += cbor_int_mem_req((int32_t)csuite.hash_length);
 
-	VLA_ALLOC(uint8_t, info, len);
-	memset(info, 0, VLA_SIZEOF(info));
+	EDHOC_MEM_ALLOC(uint8_t, info, len);
+	if (NULL == info) {
+		EDHOC_LOG_ERR("Memory allocation failed");
+		EDHOC_MEM_FREE(prk_exporter);
+		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+	}
 
 	const struct info input_info = (struct info){
 		.info_label = (int32_t)label,
@@ -401,26 +432,34 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	};
 
 	len = 0;
-	ret = cbor_encode_info(info, VLA_SIZE(info), &input_info, &len);
+	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
+			       &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc exporter secret info: %d", ret);
+		EDHOC_MEM_FREE(info);
+		EDHOC_MEM_FREE(prk_exporter);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_exporter,
-				   VLA_SIZE(prk_exporter), key_id);
+				   EDHOC_MEM_ALLOC_SIZE(prk_exporter), key_id);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Import key: %d", ret);
+		EDHOC_MEM_FREE(info);
+		EDHOC_MEM_FREE(prk_exporter);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
+
+	EDHOC_MEM_FREE(prk_exporter);
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, secret,
 				 secret_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
 	memset(key_id, 0, sizeof(key_id));
+	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand: %d", ret);
