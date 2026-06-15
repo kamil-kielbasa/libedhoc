@@ -16,6 +16,11 @@
 
 /* Include files ----------------------------------------------------------- */
 
+/* Build-time configuration (Kconfig provides these on Zephyr): */
+#ifndef __ZEPHYR__
+#include "edhoc_config.h"
+#endif
+
 /* EDHOC header: */
 #include "edhoc_context.h"
 #include "edhoc_ead.h"

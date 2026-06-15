@@ -91,11 +91,9 @@ cmd_build() {
     local cmake_args=(-DLIBEDHOC_ENABLE_MODULE_TESTS=ON)
 
     if [[ "$compiler" == "gcc" ]]; then
-        cmake_args+=(-DLIBEDHOC_BUILD_COMPILER_GCC=ON
-                      -DCMAKE_C_COMPILER=gcc)
+        cmake_args+=(-DCMAKE_C_COMPILER=gcc)
     else
-        cmake_args+=(-DLIBEDHOC_BUILD_COMPILER_CLANG=ON
-                      -DCMAKE_C_COMPILER=clang
+        cmake_args+=(-DCMAKE_C_COMPILER=clang
                       -G Ninja)
     fi
 
@@ -116,8 +114,7 @@ cmd_build() {
     fi
 
     if [[ "$fuzz" == true ]]; then
-        cmake_args=(-DLIBEDHOC_BUILD_COMPILER_CLANG=ON
-                     -DCMAKE_C_COMPILER=clang
+        cmake_args=(-DCMAKE_C_COMPILER=clang
                      -DLIBEDHOC_ENABLE_FUZZING=ON -G Ninja)
     fi
 
@@ -241,7 +238,6 @@ cmd_valgrind() {
         "${KCONFIG_OPTIONS[@]}" \
         "${MBEDTLS_OPTIONS[@]}" \
         -DLIBEDHOC_ENABLE_MODULE_TESTS=ON \
-        -DLIBEDHOC_BUILD_COMPILER_GCC=ON \
         -DCMAKE_C_COMPILER=gcc \
         -DCMAKE_BUILD_TYPE=Debug \
         "-DCMAKE_C_FLAGS=-gdwarf-4"
@@ -287,7 +283,6 @@ cmd_clang_tidy() {
         echo "Building with Clang compile_commands.json..."
         cmake_configure \
             -DLIBEDHOC_ENABLE_MODULE_TESTS=ON \
-            -DLIBEDHOC_BUILD_COMPILER_CLANG=ON \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -G Ninja

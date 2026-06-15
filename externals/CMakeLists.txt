@@ -1,51 +1,35 @@
+# =============================================================================
+# Vendored third-party dependencies for the standalone build.
+# =============================================================================
+
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/externals_sources.cmake)
+
+# --- mbedtls (upstream CMake) ------------------------------------------------
+
 if (NOT TARGET mbedtls)
     add_subdirectory(mbedtls)
 endif()
 
-if (NOT TARGET zcbor)
-    set(ZCBOR_NAME zcbor)
-    set(ZCBOR_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/zcbor/src/zcbor_common.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/zcbor/src/zcbor_decode.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/zcbor/src/zcbor_encode.c)
+# --- zcbor -------------------------------------------------------------------
 
-    add_library(${ZCBOR_NAME} STATIC ${ZCBOR_SOURCES})
-    target_compile_definitions(${ZCBOR_NAME} PRIVATE CONFIG_ZCBOR)
-    target_compile_definitions(${ZCBOR_NAME} PRIVATE ZCBOR_CANONICAL)
-    target_include_directories(${ZCBOR_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/zcbor/include)
+if (NOT TARGET zcbor)
+    add_library(zcbor STATIC ${LIBEDHOC_ZCBOR_SOURCES})
+    target_compile_definitions(zcbor PRIVATE CONFIG_ZCBOR)
+    target_compile_definitions(zcbor PRIVATE ZCBOR_CANONICAL)
+    target_include_directories(zcbor PUBLIC ${LIBEDHOC_ZCBOR_INCLUDE_DIR})
 endif()
+
+# --- compact25519 ------------------------------------------------------------
 
 if (NOT TARGET compact25519)
-    set(COMPACT25519_NAME compact25519)
-    set(COMPACT25519_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/compact_ed25519.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/compact_wipe.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/compact_x25519.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519/c25519.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519/ed25519.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519/edsign.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519/f25519.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519/fprime.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519/sha512.c)
-
-    add_library(${COMPACT25519_NAME} STATIC ${COMPACT25519_SOURCES})
-    target_include_directories(${COMPACT25519_NAME} PUBLIC
-                                ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src
-                                ${CMAKE_CURRENT_SOURCE_DIR}/compact25519/src/c25519)
+    add_library(compact25519 STATIC ${LIBEDHOC_COMPACT25519_SOURCES})
+    target_include_directories(compact25519 PUBLIC ${LIBEDHOC_COMPACT25519_INCLUDE_DIRS})
 endif()
 
-if (NOT TARGET unity)
-    set(UNITY_NAME unity)
-    set(UNITY_SOURCES
-        ${CMAKE_CURRENT_SOURCE_DIR}/Unity/src/unity.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/fixture/src/unity_fixture.c
-        ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/memory/src/unity_memory.c)
+# --- unity -------------------------------------------------------------------
 
-    add_library(${UNITY_NAME} STATIC ${UNITY_SOURCES})
-    target_compile_definitions(${UNITY_NAME} PUBLIC
-                        UNITY_OUTPUT_COLOR)
-    target_include_directories(${UNITY_NAME} PUBLIC
-                        ${CMAKE_CURRENT_SOURCE_DIR}/Unity/src
-                        ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/fixture/src
-                        ${CMAKE_CURRENT_SOURCE_DIR}/Unity/extras/memory/src)
+if (NOT TARGET unity)
+    add_library(unity STATIC ${LIBEDHOC_UNITY_SOURCES})
+    target_compile_definitions(unity PUBLIC UNITY_OUTPUT_COLOR)
+    target_include_directories(unity PUBLIC ${LIBEDHOC_UNITY_INCLUDE_DIRS})
 endif()

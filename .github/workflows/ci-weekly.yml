@@ -17,11 +17,10 @@ jobs:
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y lcov clang clang-tidy cppcheck \
-                                  ninja-build valgrind
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y lcov clang clang-tidy cppcheck ninja-build valgrind"
 
       - name: GCC + Coverage
         run: bash scripts/ci.sh coverage

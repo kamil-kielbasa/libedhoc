@@ -1,3 +1,7 @@
+# =============================================================================
+# Imported target definition installed by externals/zcbor-cmake/CMakeLists.txt.
+# =============================================================================
+
 cmake_minimum_required(VERSION 3.20)
 
 # Create imported target zcbor

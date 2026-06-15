@@ -1,0 +1,70 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 21, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "LIBEDHOC_ENABLE_MODULE_TESTS": "ON",
+        "CONFIG_LIBEDHOC_ENABLE": "1",
+        "CONFIG_LIBEDHOC_KEY_ID_LEN": "4",
+        "CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES": "3",
+        "CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID": "7",
+        "CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY": "48",
+        "CONFIG_LIBEDHOC_MAX_LEN_OF_MAC": "48",
+        "CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS": "3",
+        "CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID": "1",
+        "CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG": "1",
+        "CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN": "2",
+        "CONFIG_LIBEDHOC_LOG_LEVEL": "4",
+        "ENABLE_PROGRAMS": "OFF",
+        "ENABLE_TESTING": "OFF"
+      }
+    },
+    {
+      "name": "gcc",
+      "displayName": "GCC (Debug)",
+      "inherits": "base",
+      "generator": "Unix Makefiles",
+      "cacheVariables": { "CMAKE_C_COMPILER": "gcc" }
+    },
+    {
+      "name": "clang",
+      "displayName": "Clang (Debug, Ninja)",
+      "inherits": "base",
+      "generator": "Ninja",
+      "cacheVariables": { "CMAKE_C_COMPILER": "clang" }
+    },
+    {
+      "name": "coverage",
+      "displayName": "GCC + gcov",
+      "inherits": "gcc",
+      "cacheVariables": { "LIBEDHOC_ENABLE_COVERAGE": "ON" }
+    },
+    {
+      "name": "sanitizers",
+      "displayName": "GCC + ASan/UBSan",
+      "inherits": "gcc",
+      "cacheVariables": { "LIBEDHOC_ENABLE_SANITIZERS": "ON" }
+    },
+    {
+      "name": "fuzz",
+      "displayName": "Clang + libFuzzer",
+      "inherits": "clang",
+      "cacheVariables": {
+        "LIBEDHOC_ENABLE_FUZZING": "ON",
+        "LIBEDHOC_ENABLE_MODULE_TESTS": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "gcc",        "configurePreset": "gcc" },
+    { "name": "clang",      "configurePreset": "clang" },
+    { "name": "coverage",   "configurePreset": "coverage" },
+    { "name": "sanitizers", "configurePreset": "sanitizers" },
+    { "name": "fuzz",       "configurePreset": "fuzz" }
+  ]
+}

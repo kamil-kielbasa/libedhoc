@@ -1,28 +1,33 @@
+# =============================================================================
+# Standalone zcbor build for the sandbox / find_package install flow.
+# Source lists come from cmake/externals_sources.cmake.
+# =============================================================================
+
 cmake_minimum_required(VERSION 3.20)
 project(zcbor)
 enable_language(C)
 
-if(NOT DEFINED ZCBOR_PATH)
-    message(FATAL_ERROR "ZCBOR_PATH is not defined")
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/externals_sources.cmake)
 
-add_library(${PROJECT_NAME} 
-    STATIC
-        ${ZCBOR_PATH}/src/zcbor_common.c
-        ${ZCBOR_PATH}/src/zcbor_decode.c
-        ${ZCBOR_PATH}/src/zcbor_encode.c)
+# --- Library -----------------------------------------------------------------
+
+add_library(${PROJECT_NAME} STATIC ${LIBEDHOC_ZCBOR_SOURCES})
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC ZCBOR_CANONICAL)
-target_include_directories(${PROJECT_NAME} PUBLIC ${ZCBOR_PATH}/include)
+target_include_directories(${PROJECT_NAME} PUBLIC ${LIBEDHOC_ZCBOR_INCLUDE_DIR})
+
+# --- Install -----------------------------------------------------------------
 
 include(GNUInstallDirs)
+
 install(
-    DIRECTORY ${ZCBOR_PATH}/include/
+    DIRECTORY ${LIBEDHOC_ZCBOR_INCLUDE_DIR}/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
 install(
     TARGETS ${PROJECT_NAME}
     DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
 install(
     FILES zcbor-config.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zcbor
-)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/zcbor)

@@ -14,8 +14,10 @@ jobs:
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y lcov
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y lcov"
 
       - name: Build, test, and generate coverage
         # Use the custom allocator backend: its fault-injecting out-of-memory
@@ -44,8 +46,10 @@ jobs:
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang ninja-build
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y clang ninja-build"
 
       - name: Build and test
         run: |
@@ -88,8 +92,10 @@ jobs:
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y valgrind
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y valgrind"
 
       - name: Build and run valgrind
         run: |
@@ -107,8 +113,10 @@ jobs:
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang ninja-build
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang ninja-build"
 
       - name: Run cppcheck
         run: bash scripts/ci.sh cppcheck
@@ -127,8 +135,10 @@ jobs:
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
 
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y clang ninja-build
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y clang ninja-build"
 
       - name: Build and fuzz (Clang + LibFuzzer, 60s per target)
         run: bash scripts/ci.sh fuzz 60

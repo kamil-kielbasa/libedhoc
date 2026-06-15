@@ -1,167 +1,84 @@
-project(libedhoc)
+# =============================================================================
+# libedhoc::edhoc — the core EDHOC implementation (standalone build).
+# The Zephyr build creates its own library from the same source list
+# (cmake/sources.cmake), so this file is now Zephyr-free.
+# =============================================================================
 
-if(LIBEDHOC_BUILD_EXTERNAL_DEPS)
-    set(CMAKE_C_COMPILER ${LIBEDHOC_COMPILER})
-endif()
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/sources.cmake)
 
-# For Zephyr builds, the library is already created by zephyr_library_named()
-if(NOT TARGET ${PROJECT_NAME})
-    add_library(${PROJECT_NAME} STATIC)
-endif()
+add_library(libedhoc STATIC ${LIBEDHOC_CORE_SOURCES})
+add_library(libedhoc::edhoc ALIAS libedhoc)
 
-set(LIBEDHOC_SOURCES
-    edhoc.c
-    edhoc_message_1.c
-    edhoc_message_2.c
-    edhoc_message_3.c
-    edhoc_message_4.c
-    edhoc_message_error.c
-    edhoc_exporter.c
-    edhoc_common.c)
+# --- Dependency surface ------------------------------------------------------
+# PUBLIC : the public headers are the API contract.
+# PRIVATE: backends are an implementation detail. Nothing in the public headers
+#          refers to them, so consumers must not inherit their header paths.
+#          For a static library, PRIVATE dependencies still propagate as
+#          link-only requirements, so downstream linking keeps working.
+target_link_libraries(libedhoc
+    PUBLIC  libedhoc::api
+    PRIVATE libedhoc::backend_cbor
+            libedhoc::backend_memory
+            libedhoc::backend_log)
 
-target_sources(${PROJECT_NAME} PRIVATE ${LIBEDHOC_SOURCES})
+# Crypto libraries are used by the crypto callbacks in tests, helpers and
+# applications, not by the crypto-agnostic core. Kept BUILD_INTERFACE-only so
+# they are absent from the install export.
+target_link_libraries(libedhoc PUBLIC
+    $<BUILD_INTERFACE:mbedtls>
+    $<BUILD_INTERFACE:compact25519>
+    $<BUILD_INTERFACE:zcbor>)
 
-target_include_directories(${PROJECT_NAME} PUBLIC
-                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-                           $<INSTALL_INTERFACE:include>)
+# --- Strict warnings (PRIVATE: never inflicted on consumers) -----------------
+set(LIBEDHOC_COMMON_WARNINGS
+    -Werror -Wall -Wextra -pedantic
+    -Wconversion -Wsign-conversion -Wcast-align -Wdouble-promotion
+    -Wformat=2 -Wunreachable-code
+    -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
+    -Wold-style-definition -Wnested-externs
+    -Wshadow -Wundef -Wwrite-strings -Wpointer-arith -Wuninitialized
+    -Wmissing-include-dirs -Wnull-dereference)
 
-if(NOT TARGET zephyr_interface)
-    # For Zephyr targets it causes warnings/errors because of the duplicate definitions
-    # Set default log level for Linux builds if not already defined
-    if(NOT DEFINED CONFIG_LIBEDHOC_LOG_LEVEL)
-        set(CONFIG_LIBEDHOC_LOG_LEVEL 3)  # EDHOC_LOG_LEVEL_INF
+# Compiler family is detected from CMAKE_C_COMPILER_ID.
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(libedhoc PRIVATE ${LIBEDHOC_COMMON_WARNINGS}
+        -Wformat-overflow=2 -Wformat-truncation=2 -Wswitch-enum
+        -Wjump-misses-init -Wduplicated-cond -Wduplicated-branches
+        -Wlogical-op -Winit-self)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
+    target_compile_options(libedhoc PRIVATE ${LIBEDHOC_COMMON_WARNINGS}
+        -Wno-vla -Wno-declaration-after-statement -Wno-covered-switch-default
+        -Wno-padded -Wno-switch-default)
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag(-Wunsafe-buffer-usage HAS_WUNSAFE_BUFFER_USAGE)
+    if(HAS_WUNSAFE_BUFFER_USAGE)
+        target_compile_options(libedhoc PRIVATE -Wno-unsafe-buffer-usage)
     endif()
-
-    # Select the memory backend for non-Zephyr builds: pass
-    # -DCONFIG_LIBEDHOC_MEM_BACKEND=N where N is 0 (stack, default), 1 (heap) or
-    # 2 (custom). On Zephyr the value is derived from the
-    # LIBEDHOC_MEM_BACKEND_CHOICE Kconfig choice.
-    if(NOT DEFINED CONFIG_LIBEDHOC_MEM_BACKEND)
-        set(CONFIG_LIBEDHOC_MEM_BACKEND 0)  # EDHOC_MEM_BACKEND_STACK
-    endif()
-
-    set(LIBEDHOC_DEFINITIONS
-        CONFIG_LIBEDHOC_ENABLE=${CONFIG_LIBEDHOC_ENABLE}
-        CONFIG_LIBEDHOC_KEY_ID_LEN=${CONFIG_LIBEDHOC_KEY_ID_LEN}
-        CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES=${CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES}
-        CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID}
-        CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY=${CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY}
-        CONFIG_LIBEDHOC_MAX_LEN_OF_MAC=${CONFIG_LIBEDHOC_MAX_LEN_OF_MAC}
-        CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=${CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS}
-        CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=${CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID}
-        CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=${CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG}
-        CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=${CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN}
-        CONFIG_LIBEDHOC_LOG_LEVEL=${CONFIG_LIBEDHOC_LOG_LEVEL}
-        CONFIG_LIBEDHOC_MEM_BACKEND=${CONFIG_LIBEDHOC_MEM_BACKEND})
-
-    target_compile_definitions(${PROJECT_NAME} PUBLIC ${LIBEDHOC_DEFINITIONS})
 endif()
 
-# Strict warning flags shared by both GCC and Clang (standalone builds only).
-# Zephyr has its own flags and uses -std=c99 which conflicts with -pedantic.
-if (NOT TARGET zephyr_interface)
-
-    set(LIBEDHOC_COMMON_WARNINGS
-        -Werror
-        -Wall
-        -Wextra
-        -pedantic
-
-        # Type safety
-        -Wconversion
-        -Wsign-conversion
-        -Wcast-align
-        -Wdouble-promotion
-
-        # Format strings
-        -Wformat=2
-
-        # Control flow
-        -Wunreachable-code
-
-        # Declarations
-        -Wmissing-declarations
-        -Wmissing-prototypes
-        -Wstrict-prototypes
-        -Wold-style-definition
-        -Wnested-externs
-
-        # General
-        -Wshadow
-        -Wundef
-        -Wwrite-strings
-        -Wpointer-arith
-        -Wuninitialized
-        -Wmissing-include-dirs
-        -Wnull-dereference)
-
-    if (LIBEDHOC_BUILD_COMPILER_GCC)
-        target_compile_options(${PROJECT_NAME} PRIVATE
-                               ${LIBEDHOC_COMMON_WARNINGS}
-
-                               # GCC-specific
-                               -Wformat-overflow=2
-                               -Wformat-truncation=2
-                               -Wswitch-enum
-                               -Wjump-misses-init
-                               -Wduplicated-cond
-                               -Wduplicated-branches
-                               -Wlogical-op
-                               -Winit-self)
-    endif()
-
-    if (LIBEDHOC_BUILD_COMPILER_CLANG)
-        target_compile_options(${PROJECT_NAME} PRIVATE
-                               ${LIBEDHOC_COMMON_WARNINGS}
-
-                               # Clang-specific
-                               -Wno-vla
-                               -Wno-declaration-after-statement
-                               -Wno-covered-switch-default
-                               -Wno-padded
-                               -Wno-switch-default)
-
-        # -Wunsafe-buffer-usage exists in Clang 16+; suppress if available.
-        # Test the positive form because Clang silently ignores unknown -Wno-*.
-        include(CheckCCompilerFlag)
-        check_c_compiler_flag(-Wunsafe-buffer-usage HAS_WUNSAFE_BUFFER_USAGE)
-        if (HAS_WUNSAFE_BUFFER_USAGE)
-            target_compile_options(${PROJECT_NAME} PRIVATE -Wno-unsafe-buffer-usage)
-        endif()
-    endif()
-
-    # Stack hardening (disabled under sanitizers — conflicts with ASan)
-    if (NOT LIBEDHOC_ENABLE_SANITIZERS)
-        target_compile_options(${PROJECT_NAME} PRIVATE -fstack-protector-strong)
-    endif()
-
+# Stack hardening (disabled under sanitizers — conflicts with ASan)
+if(NOT LIBEDHOC_ENABLE_SANITIZERS)
+    target_compile_options(libedhoc PRIVATE -fstack-protector-strong)
 endif()
 
-if (LIBEDHOC_ENABLE_MODULE_TESTS)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE LIBEDHOC_TEST_HOOKS)
+# --- Optional instrumentation ------------------------------------------------
+# LIBEDHOC_TEST_HOOKS compiles the internal test-hook entry points into the
+# library so the module tests can reach otherwise-private functions. It is
+# enabled only when the module tests are built.
+if(LIBEDHOC_ENABLE_MODULE_TESTS)
+    target_compile_definitions(libedhoc PRIVATE LIBEDHOC_TEST_HOOKS)
 endif()
 
-if (LIBEDHOC_ENABLE_COVERAGE)
-    target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
-    target_link_options(${PROJECT_NAME} PUBLIC --coverage)
+if(LIBEDHOC_ENABLE_COVERAGE)
+    target_compile_options(libedhoc PRIVATE --coverage)
+    target_link_options(libedhoc PUBLIC --coverage)
 endif()
 
-if (LIBEDHOC_ENABLE_SANITIZERS)
-    target_compile_options(${PROJECT_NAME} PRIVATE
-                           -fsanitize=address,undefined -fno-omit-frame-pointer)
-    target_link_options(${PROJECT_NAME} PUBLIC
-                        -fsanitize=address,undefined)
+if(LIBEDHOC_ENABLE_SANITIZERS)
+    target_compile_options(libedhoc PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(libedhoc PUBLIC -fsanitize=address,undefined)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
-                      libedhoc_api
-                      backend_cbor
-                      backend_memory
-                      backend_log)
-
-if (NOT TARGET zephyr_interface)
-    target_link_libraries(${PROJECT_NAME} PUBLIC
-                          $<BUILD_INTERFACE:mbedtls>
-                          $<BUILD_INTERFACE:compact25519>
-                          $<BUILD_INTERFACE:zcbor>)
-endif()
+# The exported name matches the in-tree alias suffix, so find_package() and
+# add_subdirectory() consumers both write libedhoc::edhoc.
+set_target_properties(libedhoc PROPERTIES EXPORT_NAME edhoc)
