@@ -31,6 +31,21 @@
 #endif /* ARRAY_SIZE */
 
 /**
+ * \brief Internal linkage control for module-test builds.
+ *
+ * When ``EDHOC_MODULE_TESTS`` is defined at library compile time, internal
+ * functions become externally visible so the test binary can link against them
+ * via ``extern`` declarations.  Production builds keep ``static`` linkage.
+ *
+ * All internal functions in the library use ``STATIC`` instead of ``static``.
+ */
+#if defined(EDHOC_MODULE_TESTS)
+#define STATIC
+#else
+#define STATIC static
+#endif
+
+/**
  * \brief Access control macro for context structure members.
  *
  * When ``EDHOC_ALLOW_PRIVATE_ACCESS`` is **not** defined, each member is

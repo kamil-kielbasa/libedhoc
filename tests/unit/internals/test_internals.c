@@ -1,7 +1,7 @@
 /**
  * \file    test_internals.c
  * \author  Kamil Kielbasa
- * \brief   Unit tests for internal static functions exposed via LIBEDHOC_TEST_HOOKS.
+ * \brief   Unit tests for internal library functions (STATIC in production).
  *
  * \copyright Copyright (c) 2025
  *
@@ -10,15 +10,123 @@
 /* Include files ----------------------------------------------------------- */
 
 #include "test_common.h"
-#include "edhoc_test_hooks.h"
 #include "edhoc_cipher_suite_0.h"
 #include "edhoc_common.h"
 #include "edhoc_helpers.h"
 
 #include <psa/crypto.h>
 
+/* Module defines ---------------------------------------------------------- */
+/* Module types and type definitions --------------------------------------- */
+/* Module interface variables and constants -------------------------------- */
+/* Static variables and constants ------------------------------------------ */
+
 static const struct edhoc_keys *keys;
 static const struct edhoc_crypto *crypto;
+
+/* Static function declarations -------------------------------------------- */
+
+static void setup_crypto_context(struct edhoc_context *ctx);
+
+/* Internal library functions exposed via STATIC in EDHOC_MODULE_TESTS builds */
+
+extern int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
+extern int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+extern int comp_th_len(size_t th_len, size_t *len);
+extern int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+extern int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
+extern int kid_compact_encoding(const struct edhoc_auth_creds *cred,
+				struct mac_context *mac_ctx);
+extern int compute_prk_out(struct edhoc_context *ctx);
+extern int compute_new_prk_out(struct edhoc_context *ctx,
+			       const uint8_t *entropy, size_t entropy_len);
+extern int compute_prk_exporter(const struct edhoc_context *ctx,
+				uint8_t *prk_exp, size_t prk_exp_len);
+extern int comp_th_2(struct edhoc_context *ctx);
+extern int comp_prk_2e(struct edhoc_context *ctx);
+extern int comp_prk_3e2m(struct edhoc_context *ctx,
+			 const struct edhoc_auth_creds *auth_cred,
+			 const uint8_t *pub_key, size_t pub_key_len);
+extern int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
+			  size_t salt_len);
+extern int gen_dh_keys(struct edhoc_context *ctx);
+extern int comp_dh_secret(struct edhoc_context *ctx);
+extern int comp_keystream(const struct edhoc_context *ctx,
+			  const uint8_t *prk_2e, size_t prk_2e_len,
+			  uint8_t *keystream, size_t keystream_len);
+extern int comp_th_3(struct edhoc_context *ctx,
+		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
+		     size_t ptxt_len);
+extern int comp_grx(struct edhoc_context *ctx,
+		    const struct edhoc_auth_creds *auth_cred,
+		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *grx,
+		    size_t grx_len);
+extern int comp_plaintext_2_len(const struct edhoc_context *ctx,
+				const struct mac_context *mac_ctx,
+				size_t sign_len, size_t *plaintext_2_len);
+extern int prepare_plaintext_2(const struct edhoc_context *ctx,
+			       const struct mac_context *mac_ctx,
+			       const uint8_t *sign, size_t sign_len,
+			       uint8_t *ptxt, size_t ptxt_size,
+			       size_t *ptxt_len);
+extern int prepare_message_2(const struct edhoc_context *ctx,
+			     const uint8_t *ciphertext, size_t ciphertext_len,
+			     uint8_t *msg_2, size_t msg_2_size,
+			     size_t *msg_2_len);
+extern int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
+		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len);
+extern int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
+			     size_t ptxt_len, struct plaintext *parsed_ptxt);
+extern int comp_prk_4e3m(struct edhoc_context *ctx,
+			 const struct edhoc_auth_creds *auth_cred,
+			 const uint8_t *pub_key, size_t pub_key_len);
+extern int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
+			  size_t salt_len);
+extern int comp_key_iv_aad_3(const struct edhoc_context *ctx, uint8_t *key,
+			     size_t key_len, uint8_t *iv, size_t iv_len,
+			     uint8_t *aad, size_t aad_len);
+extern int comp_th_4(struct edhoc_context *ctx,
+		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
+		     size_t ptxt_len);
+extern int comp_giy(struct edhoc_context *ctx,
+		    const struct edhoc_auth_creds *auth_cred,
+		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *giy,
+		    size_t giy_len);
+extern int comp_plaintext_3_len(const struct edhoc_context *ctx,
+				const struct mac_context *mac_ctx,
+				size_t sign_len, size_t *plaintext_3_len);
+extern int prepare_plaintext_3(const struct mac_context *mac_ctx,
+			       const uint8_t *sign, size_t sign_len,
+			       uint8_t *ptxt, size_t ptxt_size,
+			       size_t *ptxt_len);
+extern int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len);
+extern int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
+		     size_t msg_3_size, size_t *msg_3_len);
+extern int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
+		       const uint8_t **ctxt_3, size_t *ctxt_3_len);
+extern int decrypt_ciphertext_3(const struct edhoc_context *ctx,
+				const uint8_t *key, size_t key_len,
+				const uint8_t *iv, size_t iv_len,
+				const uint8_t *aad, size_t aad_len,
+				const uint8_t *ctxt, size_t ctxt_len,
+				uint8_t *ptxt, size_t ptxt_len);
+extern int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
+			     size_t ptxt_len, struct plaintext *parsed_ptxt);
+extern int compute_plaintext_4_len(const struct edhoc_context *ctx,
+				   size_t *ptxt_4_len);
+extern int compute_key_iv_aad_4(const struct edhoc_context *ctx, uint8_t *key,
+				size_t key_len, uint8_t *iv, size_t iv_len,
+				uint8_t *aad, size_t aad_len);
+extern int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
+			       size_t ptxt_size, size_t *ptxt_len);
+extern int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
+		     size_t msg_4_size, size_t *msg_4_len);
+extern int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
+		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
+extern int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
+			     size_t ptxt_len);
+
+/* Static function definitions --------------------------------------------- */
 
 static void setup_crypto_context(struct edhoc_context *ctx)
 {
@@ -40,6 +148,8 @@ static void setup_crypto_context(struct edhoc_context *ctx)
 	edhoc_bind_crypto(ctx, crypto);
 }
 
+/* Module interface function definitions ----------------------------------- */
+
 TEST_GROUP(internals);
 
 TEST_SETUP(internals)
@@ -57,7 +167,7 @@ TEST_TEAR_DOWN(internals)
 /**
  * @scenario  comp_cid_len with ONE_BYTE_INTEGER encode type.
  * @env       Valid connection ID with encode_type EDHOC_CID_TYPE_ONE_BYTE_INTEGER.
- * @action    Call edhoc_test_comp_cid_len(&cid, &len).
+ * @action    Call comp_cid_len(&cid, &len).
  * @expected  EDHOC_SUCCESS, len=1.
  */
 TEST(internals, comp_cid_len_one_byte_int)
@@ -68,7 +178,7 @@ TEST(internals, comp_cid_len_one_byte_int)
 	};
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cid_len(&cid, &len);
+	int ret = comp_cid_len(&cid, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(1, len);
 }
@@ -76,7 +186,7 @@ TEST(internals, comp_cid_len_one_byte_int)
 /**
  * @scenario  comp_cid_len with BYTE_STRING encode type.
  * @env       Valid connection ID with bstr_length=3.
- * @action    Call edhoc_test_comp_cid_len(&cid, &len).
+ * @action    Call comp_cid_len(&cid, &len).
  * @expected  EDHOC_SUCCESS, len=6 (3+1+edhoc_cbor_bstr_oh(3)).
  */
 TEST(internals, comp_cid_len_byte_string)
@@ -87,7 +197,7 @@ TEST(internals, comp_cid_len_byte_string)
 	};
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cid_len(&cid, &len);
+	int ret = comp_cid_len(&cid, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(6, len);
 }
@@ -95,7 +205,7 @@ TEST(internals, comp_cid_len_byte_string)
 /**
  * @scenario  comp_cid_len with NULL arguments.
  * @env       NULL cid or NULL len pointer.
- * @action    Call edhoc_test_comp_cid_len with NULL args.
+ * @action    Call comp_cid_len with NULL args.
  * @expected  EDHOC_ERROR_INVALID_ARGUMENT.
  */
 TEST(internals, comp_cid_len_null_args)
@@ -106,15 +216,15 @@ TEST(internals, comp_cid_len_null_args)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_cid_len(NULL, &len));
+			  comp_cid_len(NULL, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_cid_len(&cid, NULL));
+			  comp_cid_len(&cid, NULL));
 }
 
 /**
  * @scenario  comp_cid_len with invalid encode type.
  * @env       Connection ID with encode_type=99.
- * @action    Call edhoc_test_comp_cid_len(&cid, &len).
+ * @action    Call comp_cid_len(&cid, &len).
  * @expected  EDHOC_ERROR_NOT_PERMITTED.
  */
 TEST(internals, comp_cid_len_invalid_type)
@@ -124,14 +234,14 @@ TEST(internals, comp_cid_len_invalid_type)
 	};
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cid_len(&cid, &len);
+	int ret = comp_cid_len(&cid, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
 /**
  * @scenario  comp_id_cred_len with KID integer encoding.
  * @env       Cred with label=KID, encode_type=INTEGER, key_id_int=5.
- * @action    Call edhoc_test_comp_id_cred_len(&cred, &len).
+ * @action    Call comp_id_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS, len includes map_oh(1)+int_mem_req(5).
  */
 TEST(internals, comp_id_cred_len_kid_int)
@@ -142,7 +252,7 @@ TEST(internals, comp_id_cred_len_kid_int)
 	cred.key_id.key_id_int = 5;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(4, len);
 }
@@ -150,7 +260,7 @@ TEST(internals, comp_id_cred_len_kid_int)
 /**
  * @scenario  comp_id_cred_len with KID byte string encoding.
  * @env       Cred with label=KID, encode_type=BYTE_STRING, key_id_bstr_length=1.
- * @action    Call edhoc_test_comp_id_cred_len(&cred, &len).
+ * @action    Call comp_id_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, comp_id_cred_len_kid_bstr)
@@ -161,7 +271,7 @@ TEST(internals, comp_id_cred_len_kid_bstr)
 	cred.key_id.key_id_bstr_length = 1;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
@@ -169,7 +279,7 @@ TEST(internals, comp_id_cred_len_kid_bstr)
 /**
  * @scenario  comp_id_cred_len with X509 chain single cert.
  * @env       Cred with label=X509_CHAIN, nr_of_certs=1, cert_len[0]=100.
- * @action    Call edhoc_test_comp_id_cred_len(&cred, &len).
+ * @action    Call comp_id_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, comp_id_cred_len_x509_chain_single)
@@ -182,7 +292,7 @@ TEST(internals, comp_id_cred_len_x509_chain_single)
 	cred.x509_chain.cert_len[0] = 100;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
@@ -190,7 +300,7 @@ TEST(internals, comp_id_cred_len_x509_chain_single)
 /**
  * @scenario  comp_id_cred_len with X509 chain multiple certs.
  * @env       Cred with label=X509_CHAIN, nr_of_certs=2.
- * @action    Call edhoc_test_comp_id_cred_len(&cred, &len).
+ * @action    Call comp_id_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS, len includes array_oh.
  */
 TEST(internals, comp_id_cred_len_x509_chain_multi)
@@ -206,7 +316,7 @@ TEST(internals, comp_id_cred_len_x509_chain_multi)
 	cred.x509_chain.cert_len[1] = 60;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
@@ -214,7 +324,7 @@ TEST(internals, comp_id_cred_len_x509_chain_multi)
 /**
  * @scenario  comp_id_cred_len with X509 hash integer encoding.
  * @env       Cred with label=X509_HASH, encode_type=INTEGER.
- * @action    Call edhoc_test_comp_id_cred_len(&cred, &len).
+ * @action    Call comp_id_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, comp_id_cred_len_x509_hash_int)
@@ -228,7 +338,7 @@ TEST(internals, comp_id_cred_len_x509_hash_int)
 	cred.x509_hash.cert_fp_len = 32;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
@@ -236,7 +346,7 @@ TEST(internals, comp_id_cred_len_x509_hash_int)
 /**
  * @scenario  comp_id_cred_len with X509 hash byte string encoding.
  * @env       Cred with label=X509_HASH, encode_type=BYTE_STRING.
- * @action    Call edhoc_test_comp_id_cred_len(&cred, &len).
+ * @action    Call comp_id_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, comp_id_cred_len_x509_hash_bstr)
@@ -252,7 +362,7 @@ TEST(internals, comp_id_cred_len_x509_hash_bstr)
 	cred.x509_hash.cert_fp_len = 32;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
@@ -260,7 +370,7 @@ TEST(internals, comp_id_cred_len_x509_hash_bstr)
 /**
  * @scenario  comp_id_cred_len with unsupported label.
  * @env       Cred with label=99.
- * @action    Call edhoc_test_comp_id_cred_len(&cred, &len).
+ * @action    Call comp_id_cred_len(&cred, &len).
  * @expected  EDHOC_ERROR_NOT_SUPPORTED.
  */
 TEST(internals, comp_id_cred_len_unsupported)
@@ -269,14 +379,14 @@ TEST(internals, comp_id_cred_len_unsupported)
 	cred.label = 99;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 }
 
 /**
  * @scenario  comp_id_cred_len with NULL arguments.
  * @env       NULL cred or NULL len.
- * @action    Call edhoc_test_comp_id_cred_len with NULL args.
+ * @action    Call comp_id_cred_len with NULL args.
  * @expected  EDHOC_ERROR_INVALID_ARGUMENT.
  */
 TEST(internals, comp_id_cred_len_null)
@@ -286,22 +396,22 @@ TEST(internals, comp_id_cred_len_null)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_id_cred_len(NULL, &len));
+			  comp_id_cred_len(NULL, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_id_cred_len(&cred, NULL));
+			  comp_id_cred_len(&cred, NULL));
 }
 
 /**
  * @scenario  comp_th_len with valid th_len.
  * @env       th_len=32.
- * @action    Call edhoc_test_comp_th_len(32, &len).
+ * @action    Call comp_th_len(32, &len).
  * @expected  EDHOC_SUCCESS, len=32+bstr_oh(32).
  */
 TEST(internals, comp_th_len_success)
 {
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_th_len(32, &len);
+	int ret = comp_th_len(32, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(34, len);
 }
@@ -309,21 +419,21 @@ TEST(internals, comp_th_len_success)
 /**
  * @scenario  comp_th_len with zero th_len.
  * @env       th_len=0.
- * @action    Call edhoc_test_comp_th_len(0, &len).
+ * @action    Call comp_th_len(0, &len).
  * @expected  EDHOC_ERROR_INVALID_ARGUMENT.
  */
 TEST(internals, comp_th_len_zero)
 {
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_th_len(0, &len);
+	int ret = comp_th_len(0, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 /**
  * @scenario  comp_cred_len with ANY label.
  * @env       Cred with label=ANY, any.cred_len=50.
- * @action    Call edhoc_test_comp_cred_len(&cred, &len).
+ * @action    Call comp_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS, len includes 50.
  */
 TEST(internals, comp_cred_len_any)
@@ -333,7 +443,7 @@ TEST(internals, comp_cred_len_any)
 	cred.any.cred_len = 50;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cred_len(&cred, &len);
+	int ret = comp_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(50, len);
 }
@@ -341,7 +451,7 @@ TEST(internals, comp_cred_len_any)
 /**
  * @scenario  comp_cred_len with KID label.
  * @env       Cred with label=KID, key_id.cred_len=100.
- * @action    Call edhoc_test_comp_cred_len(&cred, &len).
+ * @action    Call comp_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS, len includes 100+bstr_oh(100).
  */
 TEST(internals, comp_cred_len_kid)
@@ -351,7 +461,7 @@ TEST(internals, comp_cred_len_kid)
 	cred.key_id.cred_len = 100;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cred_len(&cred, &len);
+	int ret = comp_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(100, len);
 }
@@ -359,7 +469,7 @@ TEST(internals, comp_cred_len_kid)
 /**
  * @scenario  comp_cred_len with X509 chain label.
  * @env       Cred with label=X509_CHAIN, cert_len[0]=200.
- * @action    Call edhoc_test_comp_cred_len(&cred, &len).
+ * @action    Call comp_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, comp_cred_len_x509_chain)
@@ -372,7 +482,7 @@ TEST(internals, comp_cred_len_x509_chain)
 	cred.x509_chain.cert_len[0] = 200;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cred_len(&cred, &len);
+	int ret = comp_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
@@ -380,7 +490,7 @@ TEST(internals, comp_cred_len_x509_chain)
 /**
  * @scenario  comp_cred_len with X509 hash label.
  * @env       Cred with label=X509_HASH, cert_len=150.
- * @action    Call edhoc_test_comp_cred_len(&cred, &len).
+ * @action    Call comp_cred_len(&cred, &len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, comp_cred_len_x509_hash)
@@ -390,7 +500,7 @@ TEST(internals, comp_cred_len_x509_hash)
 	cred.x509_hash.cert_len = 150;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cred_len(&cred, &len);
+	int ret = comp_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
@@ -398,7 +508,7 @@ TEST(internals, comp_cred_len_x509_hash)
 /**
  * @scenario  comp_cred_len with unsupported label.
  * @env       Cred with label=99.
- * @action    Call edhoc_test_comp_cred_len(&cred, &len).
+ * @action    Call comp_cred_len(&cred, &len).
  * @expected  EDHOC_ERROR_NOT_SUPPORTED.
  */
 TEST(internals, comp_cred_len_unsupported)
@@ -407,14 +517,14 @@ TEST(internals, comp_cred_len_unsupported)
 	cred.label = 99;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_cred_len(&cred, &len);
+	int ret = comp_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 }
 
 /**
  * @scenario  comp_ead_len with no EAD tokens.
  * @env       Context with nr_of_ead_tokens=0.
- * @action    Call edhoc_test_comp_ead_len(&ctx, &len).
+ * @action    Call comp_ead_len(&ctx, &len).
  * @expected  EDHOC_SUCCESS, len=0.
  */
 TEST(internals, comp_ead_len_no_tokens)
@@ -424,7 +534,7 @@ TEST(internals, comp_ead_len_no_tokens)
 	ctx.nr_of_ead_tokens = 0;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_ead_len(&ctx, &len);
+	int ret = comp_ead_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(0, len);
 
@@ -434,7 +544,7 @@ TEST(internals, comp_ead_len_no_tokens)
 /**
  * @scenario  comp_ead_len with EAD tokens.
  * @env       Context with 2 tokens (labels and values).
- * @action    Call edhoc_test_comp_ead_len(&ctx, &len).
+ * @action    Call comp_ead_len(&ctx, &len).
  * @expected  EDHOC_SUCCESS, len>0.
  */
 TEST(internals, comp_ead_len_with_tokens)
@@ -452,7 +562,7 @@ TEST(internals, comp_ead_len_with_tokens)
 	ctx.ead_token[1].value_len = 2;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_ead_len(&ctx, &len);
+	int ret = comp_ead_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, len);
 
@@ -462,7 +572,7 @@ TEST(internals, comp_ead_len_with_tokens)
 /**
  * @scenario  kid_compact_encoding with INTEGER encode type and CBOR cred.
  * @env       Cred with KID, encode_type=INTEGER, cred_is_cbor=true.
- * @action    Call edhoc_test_kid_compact_encoding(&cred, mac_ctx).
+ * @action    Call kid_compact_encoding(&cred, mac_ctx).
  * @expected  EDHOC_SUCCESS, id_cred_enc_type=INTEGER, id_cred_int set.
  */
 TEST(internals, kid_compact_enc_int_cbor)
@@ -478,7 +588,7 @@ TEST(internals, kid_compact_enc_int_cbor)
 	cred.key_id.key_id_int = 7;
 	cred.key_id.cred_is_cbor = true;
 
-	int ret = edhoc_test_kid_compact_encoding(&cred, mac_ctx);
+	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(mac_ctx->id_cred_is_comp_enc);
 	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER, mac_ctx->id_cred_enc_type);
@@ -488,7 +598,7 @@ TEST(internals, kid_compact_enc_int_cbor)
 /**
  * @scenario  kid_compact_encoding with INTEGER encode type and non-CBOR cred.
  * @env       Cred with KID, encode_type=INTEGER, cred_is_cbor=false.
- * @action    Call edhoc_test_kid_compact_encoding(&cred, mac_ctx).
+ * @action    Call kid_compact_encoding(&cred, mac_ctx).
  * @expected  EDHOC_SUCCESS, CBOR encode.
  */
 TEST(internals, kid_compact_enc_int_non_cbor)
@@ -504,7 +614,7 @@ TEST(internals, kid_compact_enc_int_non_cbor)
 	cred.key_id.key_id_int = 5;
 	cred.key_id.cred_is_cbor = false;
 
-	int ret = edhoc_test_kid_compact_encoding(&cred, mac_ctx);
+	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(mac_ctx->id_cred_is_comp_enc);
 }
@@ -512,7 +622,7 @@ TEST(internals, kid_compact_enc_int_non_cbor)
 /**
  * @scenario  kid_compact_encoding with BYTE_STRING, CBOR, one-byte that decodes to one-byte int.
  * @env       Cred with key_id_bstr[0]=0x05 (CBOR int 5).
- * @action    Call edhoc_test_kid_compact_encoding(&cred, mac_ctx).
+ * @action    Call kid_compact_encoding(&cred, mac_ctx).
  * @expected  EDHOC_SUCCESS, id_cred_enc_type=INTEGER.
  */
 TEST(internals, kid_compact_enc_bstr_cbor_one_byte)
@@ -529,7 +639,7 @@ TEST(internals, kid_compact_enc_bstr_cbor_one_byte)
 	cred.key_id.key_id_bstr_length = 1;
 	cred.key_id.key_id_bstr[0] = 0x05;
 
-	int ret = edhoc_test_kid_compact_encoding(&cred, mac_ctx);
+	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(mac_ctx->id_cred_is_comp_enc);
 	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER, mac_ctx->id_cred_enc_type);
@@ -539,7 +649,7 @@ TEST(internals, kid_compact_enc_bstr_cbor_one_byte)
 /**
  * @scenario  kid_compact_encoding with BYTE_STRING, CBOR, multi-byte length.
  * @env       Cred with key_id_bstr_length=2.
- * @action    Call edhoc_test_kid_compact_encoding(&cred, mac_ctx).
+ * @action    Call kid_compact_encoding(&cred, mac_ctx).
  * @expected  EDHOC_SUCCESS, stays bstr.
  */
 TEST(internals, kid_compact_enc_bstr_cbor_multi_byte)
@@ -557,7 +667,7 @@ TEST(internals, kid_compact_enc_bstr_cbor_multi_byte)
 	cred.key_id.key_id_bstr[0] = 0x18;
 	cred.key_id.key_id_bstr[1] = 0x64;
 
-	int ret = edhoc_test_kid_compact_encoding(&cred, mac_ctx);
+	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(mac_ctx->id_cred_is_comp_enc);
 	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_BYTE_STRING,
@@ -568,7 +678,7 @@ TEST(internals, kid_compact_enc_bstr_cbor_multi_byte)
 /**
  * @scenario  kid_compact_encoding with BYTE_STRING and non-CBOR cred.
  * @env       Cred with encode_type=BYTE_STRING, cred_is_cbor=false.
- * @action    Call edhoc_test_kid_compact_encoding(&cred, mac_ctx).
+ * @action    Call kid_compact_encoding(&cred, mac_ctx).
  * @expected  EDHOC_SUCCESS, CBOR encode to bstr.
  */
 TEST(internals, kid_compact_enc_bstr_non_cbor)
@@ -584,7 +694,7 @@ TEST(internals, kid_compact_enc_bstr_non_cbor)
 	cred.key_id.cred_is_cbor = false;
 	cred.key_id.key_id_bstr_length = 0;
 
-	int ret = edhoc_test_kid_compact_encoding(&cred, mac_ctx);
+	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(mac_ctx->id_cred_is_comp_enc);
 	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_BYTE_STRING,
@@ -594,7 +704,7 @@ TEST(internals, kid_compact_enc_bstr_non_cbor)
 /**
  * @scenario  compute_prk_out with bad th_state.
  * @env       Context with th_state != EDHOC_TH_STATE_4.
- * @action    Call edhoc_test_compute_prk_out(&ctx).
+ * @action    Call compute_prk_out(&ctx).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, compute_prk_out_bad_th_state)
@@ -606,7 +716,7 @@ TEST(internals, compute_prk_out_bad_th_state)
 	ctx.th_len = 32;
 	ctx.prk_len = 32;
 
-	int ret = edhoc_test_compute_prk_out(&ctx);
+	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -615,7 +725,7 @@ TEST(internals, compute_prk_out_bad_th_state)
 /**
  * @scenario  compute_prk_out with bad prk_state.
  * @env       Context with prk_state != EDHOC_PRK_STATE_4E3M.
- * @action    Call edhoc_test_compute_prk_out(&ctx).
+ * @action    Call compute_prk_out(&ctx).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, compute_prk_out_bad_prk_state)
@@ -627,7 +737,7 @@ TEST(internals, compute_prk_out_bad_prk_state)
 	ctx.th_len = 32;
 	ctx.prk_len = 32;
 
-	int ret = edhoc_test_compute_prk_out(&ctx);
+	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -636,19 +746,19 @@ TEST(internals, compute_prk_out_bad_prk_state)
 /**
  * @scenario  compute_prk_out with NULL context.
  * @env       NULL ctx.
- * @action    Call edhoc_test_compute_prk_out(NULL).
+ * @action    Call compute_prk_out(NULL).
  * @expected  EDHOC_ERROR_INVALID_ARGUMENT.
  */
 TEST(internals, compute_prk_out_null)
 {
-	int ret = edhoc_test_compute_prk_out(NULL);
+	int ret = compute_prk_out(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 /**
  * @scenario  compute_prk_out success with real crypto.
  * @env       Context with th_state=4, prk_state=4E3M, valid th/prk, cipher suite 0.
- * @action    Call edhoc_test_compute_prk_out(&ctx).
+ * @action    Call compute_prk_out(&ctx).
  * @expected  EDHOC_SUCCESS, prk_state becomes EDHOC_PRK_STATE_OUT.
  */
 TEST(internals, compute_prk_out_success)
@@ -664,7 +774,7 @@ TEST(internals, compute_prk_out_success)
 		ctx.prk[i] = (uint8_t)(i + 0x20);
 	}
 
-	int ret = edhoc_test_compute_prk_out(&ctx);
+	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, ctx.prk_state);
 
@@ -674,7 +784,7 @@ TEST(internals, compute_prk_out_success)
 /**
  * @scenario  compute_new_prk_out with bad prk_state.
  * @env       Context with prk_state != EDHOC_PRK_STATE_OUT.
- * @action    Call edhoc_test_compute_new_prk_out(&ctx, entropy, len).
+ * @action    Call compute_new_prk_out(&ctx, entropy, len).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, compute_new_prk_out_bad_state)
@@ -685,8 +795,7 @@ TEST(internals, compute_new_prk_out_bad_state)
 	ctx.prk_len = 32;
 
 	uint8_t entropy[16] = { 0xAA };
-	int ret =
-		edhoc_test_compute_new_prk_out(&ctx, entropy, sizeof(entropy));
+	int ret = compute_new_prk_out(&ctx, entropy, sizeof(entropy));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -695,7 +804,7 @@ TEST(internals, compute_new_prk_out_bad_state)
 /**
  * @scenario  compute_new_prk_out success after compute_prk_out.
  * @env       Context after compute_prk_out (prk_state=OUT).
- * @action    Call edhoc_test_compute_new_prk_out(&ctx, entropy, len).
+ * @action    Call compute_new_prk_out(&ctx, entropy, len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, compute_new_prk_out_success)
@@ -711,11 +820,11 @@ TEST(internals, compute_new_prk_out_success)
 		ctx.prk[i] = (uint8_t)(i + 0x20);
 	}
 
-	int ret = edhoc_test_compute_prk_out(&ctx);
+	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t entropy[16] = { 0xBB };
-	ret = edhoc_test_compute_new_prk_out(&ctx, entropy, sizeof(entropy));
+	ret = compute_new_prk_out(&ctx, entropy, sizeof(entropy));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -724,7 +833,7 @@ TEST(internals, compute_new_prk_out_success)
 /**
  * @scenario  compute_prk_exporter with bad prk_state.
  * @env       Context with prk_state != EDHOC_PRK_STATE_OUT.
- * @action    Call edhoc_test_compute_prk_exporter(&ctx, buf, len).
+ * @action    Call compute_prk_exporter(&ctx, buf, len).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, compute_prk_exporter_bad_state)
@@ -735,8 +844,7 @@ TEST(internals, compute_prk_exporter_bad_state)
 	ctx.prk_len = 32;
 
 	uint8_t prk_exp[32];
-	int ret =
-		edhoc_test_compute_prk_exporter(&ctx, prk_exp, sizeof(prk_exp));
+	int ret = compute_prk_exporter(&ctx, prk_exp, sizeof(prk_exp));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -745,7 +853,7 @@ TEST(internals, compute_prk_exporter_bad_state)
 /**
  * @scenario  compute_prk_exporter success after compute_prk_out.
  * @env       Context after compute_prk_out.
- * @action    Call edhoc_test_compute_prk_exporter(&ctx, buf, len).
+ * @action    Call compute_prk_exporter(&ctx, buf, len).
  * @expected  EDHOC_SUCCESS.
  */
 TEST(internals, compute_prk_exporter_success)
@@ -761,11 +869,11 @@ TEST(internals, compute_prk_exporter_success)
 		ctx.prk[i] = (uint8_t)(i + 0x20);
 	}
 
-	int ret = edhoc_test_compute_prk_out(&ctx);
+	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t prk_exp[32];
-	ret = edhoc_test_compute_prk_exporter(&ctx, prk_exp, sizeof(prk_exp));
+	ret = compute_prk_exporter(&ctx, prk_exp, sizeof(prk_exp));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -774,7 +882,7 @@ TEST(internals, compute_prk_exporter_success)
 /**
  * @scenario  comp_salt_3e2m with bad th_state.
  * @env       Context with th_state != EDHOC_TH_STATE_2.
- * @action    Call edhoc_test_comp_salt_3e2m(&ctx, salt, len).
+ * @action    Call comp_salt_3e2m(&ctx, salt, len).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, comp_salt_3e2m_bad_th_state)
@@ -787,7 +895,7 @@ TEST(internals, comp_salt_3e2m_bad_th_state)
 	ctx.prk_len = 32;
 
 	uint8_t salt[32];
-	int ret = edhoc_test_comp_salt_3e2m(&ctx, salt, sizeof(salt));
+	int ret = comp_salt_3e2m(&ctx, salt, sizeof(salt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -796,7 +904,7 @@ TEST(internals, comp_salt_3e2m_bad_th_state)
 /**
  * @scenario  comp_salt_3e2m with bad prk_state.
  * @env       Context with prk_state != EDHOC_PRK_STATE_2E.
- * @action    Call edhoc_test_comp_salt_3e2m(&ctx, salt, len).
+ * @action    Call comp_salt_3e2m(&ctx, salt, len).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, comp_salt_3e2m_bad_prk_state)
@@ -809,7 +917,7 @@ TEST(internals, comp_salt_3e2m_bad_prk_state)
 	ctx.prk_len = 32;
 
 	uint8_t salt[32];
-	int ret = edhoc_test_comp_salt_3e2m(&ctx, salt, sizeof(salt));
+	int ret = comp_salt_3e2m(&ctx, salt, sizeof(salt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -818,7 +926,7 @@ TEST(internals, comp_salt_3e2m_bad_prk_state)
 /**
  * @scenario  comp_salt_4e3m with bad th_state.
  * @env       Context with th_state != EDHOC_TH_STATE_3.
- * @action    Call edhoc_test_comp_salt_4e3m(&ctx, salt, len).
+ * @action    Call comp_salt_4e3m(&ctx, salt, len).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, comp_salt_4e3m_bad_th_state)
@@ -831,7 +939,7 @@ TEST(internals, comp_salt_4e3m_bad_th_state)
 	ctx.prk_len = 32;
 
 	uint8_t salt[32];
-	int ret = edhoc_test_comp_salt_4e3m(&ctx, salt, sizeof(salt));
+	int ret = comp_salt_4e3m(&ctx, salt, sizeof(salt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -840,7 +948,7 @@ TEST(internals, comp_salt_4e3m_bad_th_state)
 /**
  * @scenario  comp_salt_4e3m with bad prk_state.
  * @env       Context with prk_state != EDHOC_PRK_STATE_3E2M.
- * @action    Call edhoc_test_comp_salt_4e3m(&ctx, salt, len).
+ * @action    Call comp_salt_4e3m(&ctx, salt, len).
  * @expected  EDHOC_ERROR_BAD_STATE.
  */
 TEST(internals, comp_salt_4e3m_bad_prk_state)
@@ -853,7 +961,7 @@ TEST(internals, comp_salt_4e3m_bad_prk_state)
 	ctx.prk_len = 32;
 
 	uint8_t salt[32];
-	int ret = edhoc_test_comp_salt_4e3m(&ctx, salt, sizeof(salt));
+	int ret = comp_salt_4e3m(&ctx, salt, sizeof(salt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -862,7 +970,7 @@ TEST(internals, comp_salt_4e3m_bad_prk_state)
 /**
  * @scenario  comp_prk_3e2m with method 0 (sig/sig for responder).
  * @env       Context with method 0, prk_state=2E, th_state=2.
- * @action    Call edhoc_test_comp_prk_3e2m(&ctx, auth_cred, NULL, 0).
+ * @action    Call comp_prk_3e2m(&ctx, auth_cred, NULL, 0).
  * @expected  EDHOC_SUCCESS, prk_3e2m = prk_2e (no DH).
  */
 TEST(internals, comp_prk_3e2m_method_0)
@@ -879,7 +987,7 @@ TEST(internals, comp_prk_3e2m_method_0)
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
-	int ret = edhoc_test_comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
+	int ret = comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, ctx.prk_state);
 
@@ -889,7 +997,7 @@ TEST(internals, comp_prk_3e2m_method_0)
 /**
  * @scenario  comp_prk_3e2m with method 1 (sig/DH for responder).
  * @env       Context with method 1, prk_state=2E, th_state=2, DH keys, auth_cred.
- * @action    Call edhoc_test_comp_prk_3e2m(&ctx, auth_cred, pub_key, 32).
+ * @action    Call comp_prk_3e2m(&ctx, auth_cred, pub_key, 32).
  * @expected  EDHOC_SUCCESS, DH computation.
  */
 TEST(internals, comp_prk_3e2m_method_1)
@@ -927,7 +1035,7 @@ TEST(internals, comp_prk_3e2m_method_1)
 	for (size_t i = 0; i < 32; i++)
 		pub_key[i] = (uint8_t)(i + 0x80);
 
-	int ret = edhoc_test_comp_prk_3e2m(&ctx, &auth_cred, pub_key, 32);
+	int ret = comp_prk_3e2m(&ctx, &auth_cred, pub_key, 32);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, ctx.prk_state);
 
@@ -937,7 +1045,7 @@ TEST(internals, comp_prk_3e2m_method_1)
 /**
  * @scenario  comp_prk_3e2m with METHOD_MAX.
  * @env       Context with chosen_method=EDHOC_METHOD_MAX.
- * @action    Call edhoc_test_comp_prk_3e2m(&ctx, auth_cred, NULL, 0).
+ * @action    Call comp_prk_3e2m(&ctx, auth_cred, NULL, 0).
  * @expected  EDHOC_ERROR_NOT_PERMITTED.
  */
 TEST(internals, comp_prk_3e2m_method_max)
@@ -954,7 +1062,7 @@ TEST(internals, comp_prk_3e2m_method_max)
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
-	int ret = edhoc_test_comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
+	int ret = comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -963,7 +1071,7 @@ TEST(internals, comp_prk_3e2m_method_max)
 /**
  * @scenario  comp_prk_4e3m with method 0.
  * @env       Context with method 0, prk_state=3E2M, th_state=3.
- * @action    Call edhoc_test_comp_prk_4e3m(&ctx, auth_cred, NULL, 0).
+ * @action    Call comp_prk_4e3m(&ctx, auth_cred, NULL, 0).
  * @expected  EDHOC_SUCCESS, prk_4e3m = prk_3e2m.
  */
 TEST(internals, comp_prk_4e3m_method_0)
@@ -980,7 +1088,7 @@ TEST(internals, comp_prk_4e3m_method_0)
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
-	int ret = edhoc_test_comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
+	int ret = comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, ctx.prk_state);
 
@@ -990,7 +1098,7 @@ TEST(internals, comp_prk_4e3m_method_0)
 /**
  * @scenario  comp_prk_4e3m with method 2 (DH/sig for initiator).
  * @env       Context with method 2, prk_state=3E2M, th_state=3, DH keys.
- * @action    Call edhoc_test_comp_prk_4e3m(&ctx, auth_cred, pub_key, 32).
+ * @action    Call comp_prk_4e3m(&ctx, auth_cred, pub_key, 32).
  * @expected  EDHOC_SUCCESS, DH computation.
  */
 TEST(internals, comp_prk_4e3m_method_2)
@@ -1028,7 +1136,7 @@ TEST(internals, comp_prk_4e3m_method_2)
 	for (size_t i = 0; i < 32; i++)
 		pub_key[i] = (uint8_t)(i + 0x80);
 
-	int ret = edhoc_test_comp_prk_4e3m(&ctx, &auth_cred, pub_key, 32);
+	int ret = comp_prk_4e3m(&ctx, &auth_cred, pub_key, 32);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, ctx.prk_state);
 
@@ -1038,7 +1146,7 @@ TEST(internals, comp_prk_4e3m_method_2)
 /**
  * @scenario  comp_prk_4e3m with METHOD_MAX.
  * @env       Context with chosen_method=EDHOC_METHOD_MAX.
- * @action    Call edhoc_test_comp_prk_4e3m(&ctx, auth_cred, NULL, 0).
+ * @action    Call comp_prk_4e3m(&ctx, auth_cred, NULL, 0).
  * @expected  EDHOC_ERROR_NOT_PERMITTED.
  */
 TEST(internals, comp_prk_4e3m_method_max)
@@ -1055,7 +1163,7 @@ TEST(internals, comp_prk_4e3m_method_max)
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
-	int ret = edhoc_test_comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
+	int ret = comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -1999,7 +2107,7 @@ TEST(internals, comp_id_cred_len_kid_invalid_encode)
 	cred.key_id.encode_type = 99;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
@@ -2010,7 +2118,7 @@ TEST(internals, comp_id_cred_len_x509_hash_invalid_encode)
 	cred.x509_hash.encode_type = 99;
 	size_t len = 0;
 
-	int ret = edhoc_test_comp_id_cred_len(&cred, &len);
+	int ret = comp_id_cred_len(&cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
@@ -2021,9 +2129,9 @@ TEST(internals, comp_cred_len_null)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_cred_len(NULL, &len));
+			  comp_cred_len(NULL, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_cred_len(&cred, NULL));
+			  comp_cred_len(&cred, NULL));
 }
 
 TEST(internals, comp_ead_len_null)
@@ -2033,9 +2141,9 @@ TEST(internals, comp_ead_len_null)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_ead_len(NULL, &len));
+			  comp_ead_len(NULL, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_ead_len(&ctx, NULL));
+			  comp_ead_len(&ctx, NULL));
 
 	edhoc_context_deinit(&ctx);
 }
@@ -2176,7 +2284,7 @@ TEST(internals, set_connection_id_invalid_type)
 
 TEST(internals, comp_th_2_null)
 {
-	int ret = edhoc_test_comp_th_2(NULL);
+	int ret = comp_th_2(NULL);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2187,7 +2295,7 @@ TEST(internals, comp_th_2_bad_state)
 	ctx.role = EDHOC_RESPONDER;
 	ctx.th_state = EDHOC_TH_STATE_2;
 
-	int ret = edhoc_test_comp_th_2(&ctx);
+	int ret = comp_th_2(&ctx);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2195,7 +2303,7 @@ TEST(internals, comp_th_2_bad_state)
 
 TEST(internals, comp_prk_2e_null)
 {
-	int ret = edhoc_test_comp_prk_2e(NULL);
+	int ret = comp_prk_2e(NULL);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2205,7 +2313,7 @@ TEST(internals, comp_prk_2e_bad_state)
 	setup_crypto_context(&ctx);
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 
-	int ret = edhoc_test_comp_prk_2e(&ctx);
+	int ret = comp_prk_2e(&ctx);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2214,7 +2322,7 @@ TEST(internals, comp_prk_2e_bad_state)
 TEST(internals, comp_prk_3e2m_null)
 {
 	struct edhoc_auth_creds auth_cred = { 0 };
-	int ret = edhoc_test_comp_prk_3e2m(NULL, &auth_cred, NULL, 0);
+	int ret = comp_prk_3e2m(NULL, &auth_cred, NULL, 0);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2228,7 +2336,7 @@ TEST(internals, comp_prk_3e2m_bad_prk_state)
 	ctx.th_state = EDHOC_TH_STATE_2;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
-	int ret = edhoc_test_comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
+	int ret = comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2237,7 +2345,7 @@ TEST(internals, comp_prk_3e2m_bad_prk_state)
 TEST(internals, comp_prk_4e3m_null)
 {
 	struct edhoc_auth_creds auth_cred = { 0 };
-	int ret = edhoc_test_comp_prk_4e3m(NULL, &auth_cred, NULL, 0);
+	int ret = comp_prk_4e3m(NULL, &auth_cred, NULL, 0);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2251,7 +2359,7 @@ TEST(internals, comp_prk_4e3m_bad_prk_state)
 	ctx.th_state = EDHOC_TH_STATE_3;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
-	int ret = edhoc_test_comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
+	int ret = comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2260,30 +2368,28 @@ TEST(internals, comp_prk_4e3m_bad_prk_state)
 TEST(internals, comp_salt_3e2m_null)
 {
 	uint8_t salt[32];
-	int ret = edhoc_test_comp_salt_3e2m(NULL, salt, sizeof(salt));
+	int ret = comp_salt_3e2m(NULL, salt, sizeof(salt));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals, comp_salt_4e3m_null)
 {
 	uint8_t salt[32];
-	int ret = edhoc_test_comp_salt_4e3m(NULL, salt, sizeof(salt));
+	int ret = comp_salt_4e3m(NULL, salt, sizeof(salt));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals, compute_prk_exporter_null)
 {
 	uint8_t prk_exp[32];
-	int ret =
-		edhoc_test_compute_prk_exporter(NULL, prk_exp, sizeof(prk_exp));
+	int ret = compute_prk_exporter(NULL, prk_exp, sizeof(prk_exp));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals, compute_new_prk_out_null)
 {
 	uint8_t entropy[16] = { 0 };
-	int ret =
-		edhoc_test_compute_new_prk_out(NULL, entropy, sizeof(entropy));
+	int ret = compute_new_prk_out(NULL, entropy, sizeof(entropy));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2651,20 +2757,20 @@ TEST(internals, key_update_null)
 
 TEST(internals, gen_dh_keys_null)
 {
-	int ret = edhoc_test_gen_dh_keys(NULL);
+	int ret = gen_dh_keys(NULL);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals, comp_dh_secret_null)
 {
-	int ret = edhoc_test_comp_dh_secret(NULL);
+	int ret = comp_dh_secret(NULL);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals, comp_keystream_null)
 {
 	uint8_t ks[64];
-	int ret = edhoc_test_comp_keystream(NULL, NULL, 0, ks, sizeof(ks));
+	int ret = comp_keystream(NULL, NULL, 0, ks, sizeof(ks));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2678,7 +2784,7 @@ TEST(internals, comp_keystream_bad_th_state)
 
 	uint8_t prk[32] = { 0 };
 	uint8_t ks[64];
-	int ret = edhoc_test_comp_keystream(&ctx, prk, 32, ks, sizeof(ks));
+	int ret = comp_keystream(&ctx, prk, 32, ks, sizeof(ks));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2686,7 +2792,7 @@ TEST(internals, comp_keystream_bad_th_state)
 
 TEST(internals, comp_th_3_null)
 {
-	int ret = edhoc_test_comp_th_3(NULL, NULL, NULL, 0);
+	int ret = comp_th_3(NULL, NULL, NULL, 0);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2702,7 +2808,7 @@ TEST(internals, comp_th_3_bad_state)
 	mc->th_len = 32;
 
 	uint8_t ptxt[32] = { 0 };
-	int ret = edhoc_test_comp_th_3(&ctx, mc, ptxt, sizeof(ptxt));
+	int ret = comp_th_3(&ctx, mc, ptxt, sizeof(ptxt));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2712,7 +2818,7 @@ TEST(internals, comp_grx_null)
 {
 	uint8_t grx[32];
 	struct edhoc_auth_creds ac = { 0 };
-	int ret = edhoc_test_comp_grx(NULL, &ac, NULL, 0, grx, sizeof(grx));
+	int ret = comp_grx(NULL, &ac, NULL, 0, grx, sizeof(grx));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2728,7 +2834,7 @@ TEST(internals, comp_grx_invalid_role)
 
 	struct edhoc_auth_creds ac = { 0 };
 	uint8_t grx[32];
-	int ret = edhoc_test_comp_grx(&ctx, &ac, NULL, 0, grx, sizeof(grx));
+	int ret = comp_grx(&ctx, &ac, NULL, 0, grx, sizeof(grx));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2739,7 +2845,7 @@ TEST(internals, comp_grx_invalid_role)
 TEST(internals, comp_key_iv_aad_3_null)
 {
 	uint8_t key[16], iv[13], aad[256];
-	int ret = edhoc_test_comp_key_iv_aad_3(NULL, key, 16, iv, 13, aad, 256);
+	int ret = comp_key_iv_aad_3(NULL, key, 16, iv, 13, aad, 256);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2751,7 +2857,7 @@ TEST(internals, comp_key_iv_aad_3_bad_state)
 	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	uint8_t key[16], iv[13], aad[256];
-	int ret = edhoc_test_comp_key_iv_aad_3(&ctx, key, 16, iv, 13, aad, 256);
+	int ret = comp_key_iv_aad_3(&ctx, key, 16, iv, 13, aad, 256);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2759,7 +2865,7 @@ TEST(internals, comp_key_iv_aad_3_bad_state)
 
 TEST(internals, comp_th_4_null)
 {
-	int ret = edhoc_test_comp_th_4(NULL, NULL, NULL, 0);
+	int ret = comp_th_4(NULL, NULL, NULL, 0);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2775,7 +2881,7 @@ TEST(internals, comp_th_4_bad_state)
 	mc->th_len = 32;
 
 	uint8_t ptxt[32] = { 0 };
-	int ret = edhoc_test_comp_th_4(&ctx, mc, ptxt, sizeof(ptxt));
+	int ret = comp_th_4(&ctx, mc, ptxt, sizeof(ptxt));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2785,7 +2891,7 @@ TEST(internals, comp_giy_null)
 {
 	uint8_t giy[32];
 	struct edhoc_auth_creds ac = { 0 };
-	int ret = edhoc_test_comp_giy(NULL, &ac, NULL, 0, giy, sizeof(giy));
+	int ret = comp_giy(NULL, &ac, NULL, 0, giy, sizeof(giy));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2801,7 +2907,7 @@ TEST(internals, comp_giy_invalid_role)
 
 	struct edhoc_auth_creds ac = { 0 };
 	uint8_t giy[32];
-	int ret = edhoc_test_comp_giy(&ctx, &ac, NULL, 0, giy, sizeof(giy));
+	int ret = comp_giy(&ctx, &ac, NULL, 0, giy, sizeof(giy));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -2812,15 +2918,14 @@ TEST(internals, comp_giy_invalid_role)
 TEST(internals, compute_plaintext_4_len_null)
 {
 	size_t len;
-	int ret = edhoc_test_compute_plaintext_4_len(NULL, &len);
+	int ret = compute_plaintext_4_len(NULL, &len);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals, compute_key_iv_aad_4_null)
 {
 	uint8_t key[16], iv[13], aad[256];
-	int ret = edhoc_test_compute_key_iv_aad_4(NULL, key, 16, iv, 13, aad,
-						  256);
+	int ret = compute_key_iv_aad_4(NULL, key, 16, iv, 13, aad, 256);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -2832,8 +2937,7 @@ TEST(internals, compute_key_iv_aad_4_bad_state)
 	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	uint8_t key[16], iv[13], aad[256];
-	int ret = edhoc_test_compute_key_iv_aad_4(&ctx, key, 16, iv, 13, aad,
-						  256);
+	int ret = compute_key_iv_aad_4(&ctx, key, 16, iv, 13, aad, 256);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -3936,7 +4040,7 @@ TEST(internals, mac_ctx_kid_bad_cbor_compact)
 /**
  * @scenario  kid_compact_encoding with an unsupported encode_type.
  * @env       KID credential with encode_type = 99 (invalid).
- * @action    Call edhoc_test_kid_compact_encoding.
+ * @action    Call kid_compact_encoding.
  * @expected  EDHOC_ERROR_NOT_PERMITTED (default branch).
  */
 TEST(internals, kid_compact_enc_invalid_type)
@@ -3947,7 +4051,7 @@ TEST(internals, kid_compact_enc_invalid_type)
 	cred.key_id.key_id_int = 5;
 
 	struct mac_context mc = { 0 };
-	int ret = edhoc_test_kid_compact_encoding(&cred, &mc);
+	int ret = kid_compact_encoding(&cred, &mc);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
@@ -4192,13 +4296,11 @@ TEST(internals, prepare_plaintext_4_null)
 	size_t ptxt_len;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_4(NULL, ptxt, 64,
-							 &ptxt_len));
+			  prepare_plaintext_4(NULL, ptxt, 64, &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_4(&ctx, NULL, 64,
-							 &ptxt_len));
+			  prepare_plaintext_4(&ctx, NULL, 64, &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_4(&ctx, ptxt, 64, NULL));
+			  prepare_plaintext_4(&ctx, ptxt, 64, NULL));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4209,15 +4311,15 @@ TEST(internals, gen_msg_4_null)
 	size_t msg_len;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_4(NULL, 1, msg, 64, &msg_len));
+			  gen_msg_4(NULL, 1, msg, 64, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_4(ctxt, 0, msg, 64, &msg_len));
+			  gen_msg_4(ctxt, 0, msg, 64, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_4(ctxt, 1, NULL, 64, &msg_len));
+			  gen_msg_4(ctxt, 1, NULL, 64, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_4(ctxt, 1, msg, 0, &msg_len));
+			  gen_msg_4(ctxt, 1, msg, 0, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_4(ctxt, 1, msg, 64, NULL));
+			  gen_msg_4(ctxt, 1, msg, 64, NULL));
 }
 
 TEST(internals, parse_msg_4_null)
@@ -4227,13 +4329,13 @@ TEST(internals, parse_msg_4_null)
 	size_t ctxt_len;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_4(NULL, 1, &ctxt, &ctxt_len));
+			  parse_msg_4(NULL, 1, &ctxt, &ctxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_4(msg, 0, &ctxt, &ctxt_len));
+			  parse_msg_4(msg, 0, &ctxt, &ctxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_4(msg, 1, NULL, &ctxt_len));
+			  parse_msg_4(msg, 1, NULL, &ctxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_4(msg, 1, &ctxt, NULL));
+			  parse_msg_4(msg, 1, &ctxt, NULL));
 }
 
 TEST(internals, parse_plaintext_4_null)
@@ -4243,9 +4345,9 @@ TEST(internals, parse_plaintext_4_null)
 	uint8_t ptxt[] = { 0x40 };
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_4(NULL, ptxt, 1));
+			  parse_plaintext_4(NULL, ptxt, 1));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_4(&ctx, NULL, 1));
+			  parse_plaintext_4(&ctx, NULL, 1));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4255,7 +4357,7 @@ TEST(internals, parse_plaintext_4_empty)
 	setup_crypto_context(&ctx);
 	uint8_t empty[] = { 0x00 };
 
-	int ret = edhoc_test_parse_plaintext_4(&ctx, empty, 0);
+	int ret = parse_plaintext_4(&ctx, empty, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	edhoc_context_deinit(&ctx);
 }
@@ -4274,7 +4376,7 @@ TEST(internals, compute_plaintext_4_len_large_ead_label)
 	ctx.ead_token[0] = tok;
 
 	size_t len = 0;
-	int ret = edhoc_test_compute_plaintext_4_len(&ctx, &len);
+	int ret = compute_plaintext_4_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(len > 0);
 	edhoc_context_deinit(&ctx);
@@ -4292,7 +4394,7 @@ TEST(internals, compute_plaintext_4_len_large_ead_value)
 	ctx.ead_token[0] = tok;
 
 	size_t len = 0;
-	int ret = edhoc_test_compute_plaintext_4_len(&ctx, &len);
+	int ret = compute_plaintext_4_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(len > 60000);
 	edhoc_context_deinit(&ctx);
@@ -4310,7 +4412,7 @@ TEST(internals, compute_plaintext_4_len_very_large_ead_value)
 	ctx.ead_token[0] = tok;
 
 	size_t len = 0;
-	int ret = edhoc_test_compute_plaintext_4_len(&ctx, &len);
+	int ret = compute_plaintext_4_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(len > 70000);
 	edhoc_context_deinit(&ctx);
@@ -4328,13 +4430,13 @@ TEST(internals, comp_plaintext_3_len_null)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_3_len(NULL, mc, 8, &len));
+			  comp_plaintext_3_len(NULL, mc, 8, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_3_len(&ctx, NULL, 8, &len));
+			  comp_plaintext_3_len(&ctx, NULL, 8, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_3_len(&ctx, mc, 0, &len));
+			  comp_plaintext_3_len(&ctx, mc, 0, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_3_len(&ctx, mc, 8, NULL));
+			  comp_plaintext_3_len(&ctx, mc, 8, NULL));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4348,23 +4450,21 @@ TEST(internals, prepare_plaintext_3_null)
 	size_t ptxt_len;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_3(NULL, sign, 8, ptxt,
-							 256, &ptxt_len));
+			  prepare_plaintext_3(NULL, sign, 8, ptxt, 256,
+					      &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_3(mc, NULL, 8, ptxt, 256,
-							 &ptxt_len));
+			  prepare_plaintext_3(mc, NULL, 8, ptxt, 256,
+					      &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_3(mc, sign, 0, ptxt, 256,
-							 &ptxt_len));
+			  prepare_plaintext_3(mc, sign, 0, ptxt, 256,
+					      &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_3(mc, sign, 8, NULL, 256,
-							 &ptxt_len));
+			  prepare_plaintext_3(mc, sign, 8, NULL, 256,
+					      &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_3(mc, sign, 8, ptxt, 0,
-							 &ptxt_len));
+			  prepare_plaintext_3(mc, sign, 8, ptxt, 0, &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_plaintext_3(mc, sign, 8, ptxt, 256,
-							 NULL));
+			  prepare_plaintext_3(mc, sign, 8, ptxt, 256, NULL));
 }
 
 TEST(internals, comp_aad_3_len_null)
@@ -4374,9 +4474,9 @@ TEST(internals, comp_aad_3_len_null)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_aad_3_len(NULL, &len));
+			  comp_aad_3_len(NULL, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_aad_3_len(&ctx, NULL));
+			  comp_aad_3_len(&ctx, NULL));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4387,15 +4487,15 @@ TEST(internals, gen_msg_3_null)
 	size_t msg_len;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_3(NULL, 1, msg, 64, &msg_len));
+			  gen_msg_3(NULL, 1, msg, 64, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_3(ctxt, 0, msg, 64, &msg_len));
+			  gen_msg_3(ctxt, 0, msg, 64, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_3(ctxt, 1, NULL, 64, &msg_len));
+			  gen_msg_3(ctxt, 1, NULL, 64, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_3(ctxt, 1, msg, 0, &msg_len));
+			  gen_msg_3(ctxt, 1, msg, 0, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_gen_msg_3(ctxt, 1, msg, 64, NULL));
+			  gen_msg_3(ctxt, 1, msg, 64, NULL));
 }
 
 TEST(internals, parse_msg_3_null)
@@ -4405,13 +4505,13 @@ TEST(internals, parse_msg_3_null)
 	size_t ctxt_len;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_3(NULL, 1, &ctxt, &ctxt_len));
+			  parse_msg_3(NULL, 1, &ctxt, &ctxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_3(msg, 0, &ctxt, &ctxt_len));
+			  parse_msg_3(msg, 0, &ctxt, &ctxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_3(msg, 1, NULL, &ctxt_len));
+			  parse_msg_3(msg, 1, NULL, &ctxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_msg_3(msg, 1, &ctxt, NULL));
+			  parse_msg_3(msg, 1, &ctxt, NULL));
 }
 
 TEST(internals, decrypt_ciphertext_3_null)
@@ -4422,45 +4522,35 @@ TEST(internals, decrypt_ciphertext_3_null)
 	uint8_t ctxt[16] = { 0 }, ptxt[16] = { 0 };
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(NULL, key, 16, iv, 13,
-							  aad, 32, ctxt, 16,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(NULL, key, 16, iv, 13, aad, 32,
+					       ctxt, 16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, NULL, 16, iv,
-							  13, aad, 32, ctxt, 16,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, NULL, 16, iv, 13, aad, 32,
+					       ctxt, 16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 0, iv, 13,
-							  aad, 32, ctxt, 16,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, key, 0, iv, 13, aad, 32,
+					       ctxt, 16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 16, NULL,
-							  13, aad, 32, ctxt, 16,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, key, 16, NULL, 13, aad, 32,
+					       ctxt, 16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 16, iv, 0,
-							  aad, 32, ctxt, 16,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, key, 16, iv, 0, aad, 32,
+					       ctxt, 16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 16, iv, 13,
-							  NULL, 32, ctxt, 16,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, NULL, 32,
+					       ctxt, 16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 16, iv, 13,
-							  aad, 0, ctxt, 16,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 0,
+					       ctxt, 16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 16, iv, 13,
-							  aad, 32, ctxt, 0,
-							  ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 32,
+					       ctxt, 0, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 16, iv, 13,
-							  aad, 32, ctxt, 16,
-							  NULL, 16));
+			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 32,
+					       ctxt, 16, NULL, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_decrypt_ciphertext_3(&ctx, key, 16, iv, 13,
-							  aad, 32, ctxt, 16,
-							  ptxt, 0));
+			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 32,
+					       ctxt, 16, ptxt, 0));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4472,13 +4562,13 @@ TEST(internals, parse_plaintext_3_null)
 	struct plaintext parsed = { 0 };
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_3(NULL, ptxt, 1, &parsed));
+			  parse_plaintext_3(NULL, ptxt, 1, &parsed));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_3(&ctx, NULL, 1, &parsed));
+			  parse_plaintext_3(&ctx, NULL, 1, &parsed));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_3(&ctx, ptxt, 0, &parsed));
+			  parse_plaintext_3(&ctx, ptxt, 0, &parsed));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_3(&ctx, ptxt, 1, NULL));
+			  parse_plaintext_3(&ctx, ptxt, 1, NULL));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4489,8 +4579,7 @@ TEST(internals, parse_plaintext_3_garbage)
 	uint8_t garbage[] = { 0xFF, 0xFE, 0xFD };
 	struct plaintext parsed = { 0 };
 
-	int ret = edhoc_test_parse_plaintext_3(&ctx, garbage, sizeof(garbage),
-					       &parsed);
+	int ret = parse_plaintext_3(&ctx, garbage, sizeof(garbage), &parsed);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 	edhoc_context_deinit(&ctx);
 }
@@ -4507,13 +4596,13 @@ TEST(internals, comp_plaintext_2_len_null)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_2_len(NULL, mc, 8, &len));
+			  comp_plaintext_2_len(NULL, mc, 8, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_2_len(&ctx, NULL, 8, &len));
+			  comp_plaintext_2_len(&ctx, NULL, 8, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_2_len(&ctx, mc, 0, &len));
+			  comp_plaintext_2_len(&ctx, mc, 0, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_comp_plaintext_2_len(&ctx, mc, 8, NULL));
+			  comp_plaintext_2_len(&ctx, mc, 8, NULL));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4526,23 +4615,20 @@ TEST(internals, prepare_message_2_null)
 	size_t msg_len;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_message_2(NULL, ctxt, 64, msg, 128,
-						       &msg_len));
+			  prepare_message_2(NULL, ctxt, 64, msg, 128,
+					    &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_message_2(&ctx, NULL, 64, msg, 128,
-						       &msg_len));
+			  prepare_message_2(&ctx, NULL, 64, msg, 128,
+					    &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_message_2(&ctx, ctxt, 0, msg, 128,
-						       &msg_len));
+			  prepare_message_2(&ctx, ctxt, 0, msg, 128, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_message_2(&ctx, ctxt, 64, NULL,
-						       128, &msg_len));
+			  prepare_message_2(&ctx, ctxt, 64, NULL, 128,
+					    &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_message_2(&ctx, ctxt, 64, msg, 0,
-						       &msg_len));
+			  prepare_message_2(&ctx, ctxt, 64, msg, 0, &msg_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_prepare_message_2(&ctx, ctxt, 64, msg, 128,
-						       NULL));
+			  prepare_message_2(&ctx, ctxt, 64, msg, 128, NULL));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4554,13 +4640,13 @@ TEST(internals, parse_plaintext_2_null)
 	struct plaintext parsed = { 0 };
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_2(NULL, ptxt, 1, &parsed));
+			  parse_plaintext_2(NULL, ptxt, 1, &parsed));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_2(&ctx, NULL, 1, &parsed));
+			  parse_plaintext_2(&ctx, NULL, 1, &parsed));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_2(&ctx, ptxt, 0, &parsed));
+			  parse_plaintext_2(&ctx, ptxt, 0, &parsed));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_test_parse_plaintext_2(&ctx, ptxt, 1, NULL));
+			  parse_plaintext_2(&ctx, ptxt, 1, NULL));
 	edhoc_context_deinit(&ctx);
 }
 
@@ -4571,8 +4657,7 @@ TEST(internals, parse_plaintext_2_garbage)
 	uint8_t garbage[] = { 0xFF, 0xFE, 0xFD };
 	struct plaintext parsed = { 0 };
 
-	int ret = edhoc_test_parse_plaintext_2(&ctx, garbage, sizeof(garbage),
-					       &parsed);
+	int ret = parse_plaintext_2(&ctx, garbage, sizeof(garbage), &parsed);
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 	edhoc_context_deinit(&ctx);
 }
@@ -4586,8 +4671,8 @@ TEST(internals, parse_msg_2_garbage)
 	uint8_t garbage[] = { 0x18 };
 	uint8_t ctxt[64];
 
-	int ret = edhoc_test_parse_msg_2(&ctx, garbage, sizeof(garbage), ctxt,
-					 sizeof(ctxt));
+	int ret =
+		parse_msg_2(&ctx, garbage, sizeof(garbage), ctxt, sizeof(ctxt));
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 	edhoc_context_deinit(&ctx);
 }
@@ -4609,8 +4694,8 @@ TEST(internals, prepare_plaintext_2_invalid_cid)
 	uint8_t ptxt[256];
 	size_t ptxt_len;
 
-	int ret = edhoc_test_prepare_plaintext_2(&ctx, mc, sign, 8, ptxt,
-						 sizeof(ptxt), &ptxt_len);
+	int ret = prepare_plaintext_2(&ctx, mc, sign, 8, ptxt, sizeof(ptxt),
+				      &ptxt_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 	edhoc_context_deinit(&ctx);
 }
@@ -4630,8 +4715,8 @@ TEST(internals, prepare_plaintext_2_invalid_id_cred)
 	uint8_t ptxt[256];
 	size_t ptxt_len;
 
-	int ret = edhoc_test_prepare_plaintext_2(&ctx, mc, sign, 8, ptxt,
-						 sizeof(ptxt), &ptxt_len);
+	int ret = prepare_plaintext_2(&ctx, mc, sign, 8, ptxt, sizeof(ptxt),
+				      &ptxt_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 	edhoc_context_deinit(&ctx);
 }

@@ -67,7 +67,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure. 
  */
-static int gen_dh_keys(struct edhoc_context *ctx);
+STATIC int gen_dh_keys(struct edhoc_context *ctx);
 
 /** 
  * \brief Compute ECDH shared secret (G_XY).
@@ -76,7 +76,7 @@ static int gen_dh_keys(struct edhoc_context *ctx);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure. 
  */
-static int comp_dh_secret(struct edhoc_context *ctx);
+STATIC int comp_dh_secret(struct edhoc_context *ctx);
 
 /** 
  * \brief Compute transcript hash 2 (TH_2).
@@ -85,7 +85,7 @@ static int comp_dh_secret(struct edhoc_context *ctx);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure. 
  */
-static int comp_th_2(struct edhoc_context *ctx);
+STATIC int comp_th_2(struct edhoc_context *ctx);
 
 /** 
  * \brief Compute pseudorandom key (PRK_2e).
@@ -94,7 +94,7 @@ static int comp_th_2(struct edhoc_context *ctx);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure. 
  */
-static int comp_prk_2e(struct edhoc_context *ctx);
+STATIC int comp_prk_2e(struct edhoc_context *ctx);
 
 /** 
  * \brief Compute pseudorandom key (PRK_3e2m).
@@ -106,7 +106,7 @@ static int comp_prk_2e(struct edhoc_context *ctx);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_prk_3e2m(struct edhoc_context *ctx,
+STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 			 const struct edhoc_auth_creds *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len);
 
@@ -120,7 +120,7 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_plaintext_2_len(const struct edhoc_context *ctx,
+STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_2_len);
 
@@ -137,7 +137,7 @@ static int comp_plaintext_2_len(const struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int prepare_plaintext_2(const struct edhoc_context *ctx,
+STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 			       const struct mac_context *mac_ctx,
 			       const uint8_t *sign, size_t sign_len,
 			       uint8_t *ptxt, size_t ptxt_size,
@@ -154,7 +154,7 @@ static int prepare_plaintext_2(const struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_keystream(const struct edhoc_context *ctx,
+STATIC int comp_keystream(const struct edhoc_context *ctx,
 			  const uint8_t *prk_2e, size_t prk_2e_len,
 			  uint8_t *keystream, size_t keystream_len);
 
@@ -165,7 +165,7 @@ static int comp_keystream(const struct edhoc_context *ctx,
  * \param[in] src		Memory location to XOR from.
  * \param count			Number of bytes to XOR.
  */
-static void xor_arrays(uint8_t *restrict dst, const uint8_t *restrict src,
+STATIC void xor_arrays(uint8_t *restrict dst, const uint8_t *restrict src,
 		       size_t count);
 
 /** 
@@ -180,7 +180,7 @@ static void xor_arrays(uint8_t *restrict dst, const uint8_t *restrict src,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int prepare_message_2(const struct edhoc_context *ctx,
+STATIC int prepare_message_2(const struct edhoc_context *ctx,
 			     const uint8_t *ciphertext, size_t ciphertext_len,
 			     uint8_t *msg_2, size_t msg_2_size,
 			     size_t *msg_2_len);
@@ -195,7 +195,7 @@ static int prepare_message_2(const struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_ciphertext_2_len(const struct edhoc_context *ctx,
+STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 				 const uint8_t *msg_2, size_t msg_2_len,
 				 size_t *len);
 
@@ -210,7 +210,7 @@ static int comp_ciphertext_2_len(const struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
+STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len);
 
 /** 
@@ -223,8 +223,8 @@ static int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
-			   size_t ptxt_len, struct plaintext *parsed_ptxt);
+STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
+			     size_t ptxt_len, struct plaintext *parsed_ptxt);
 
 /** 
  * \brief Compute transcript hash 3.
@@ -236,7 +236,7 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_th_3(struct edhoc_context *ctx,
+STATIC int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
 
@@ -249,7 +249,7 @@ static int comp_th_3(struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
+STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len);
 
 /**
@@ -264,14 +264,14 @@ static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_grx(struct edhoc_context *ctx,
+STATIC int comp_grx(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *grx,
 		    size_t grx_len);
 
 /* Static function definitions --------------------------------------------- */
 
-static int gen_dh_keys(struct edhoc_context *ctx)
+STATIC int gen_dh_keys(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid argument");
@@ -316,7 +316,7 @@ static int gen_dh_keys(struct edhoc_context *ctx)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_dh_secret(struct edhoc_context *ctx)
+STATIC int comp_dh_secret(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid argument");
@@ -356,7 +356,7 @@ static int comp_dh_secret(struct edhoc_context *ctx)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_th_2(struct edhoc_context *ctx)
+STATIC int comp_th_2(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid argument");
@@ -462,7 +462,7 @@ static int comp_th_2(struct edhoc_context *ctx)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_prk_2e(struct edhoc_context *ctx)
+STATIC int comp_prk_2e(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid argument");
@@ -505,7 +505,7 @@ static int comp_prk_2e(struct edhoc_context *ctx)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_prk_3e2m(struct edhoc_context *ctx,
+STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 			 const struct edhoc_auth_creds *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len)
 {
@@ -613,7 +613,7 @@ static int comp_prk_3e2m(struct edhoc_context *ctx,
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
-static int comp_plaintext_2_len(const struct edhoc_context *ctx,
+STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_2_len)
 {
@@ -657,7 +657,7 @@ static int comp_plaintext_2_len(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int prepare_plaintext_2(const struct edhoc_context *ctx,
+STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 			       const struct mac_context *mac_ctx,
 			       const uint8_t *sign, size_t sign_len,
 			       uint8_t *ptxt, size_t ptxt_size,
@@ -759,7 +759,7 @@ static int prepare_plaintext_2(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_keystream(const struct edhoc_context *ctx,
+STATIC int comp_keystream(const struct edhoc_context *ctx,
 			  const uint8_t *prk_2e, size_t prk_2e_len,
 			  uint8_t *keystream, size_t keystream_len)
 {
@@ -832,13 +832,13 @@ static int comp_keystream(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static void xor_arrays(uint8_t *dst, const uint8_t *src, size_t count)
+STATIC void xor_arrays(uint8_t *dst, const uint8_t *src, size_t count)
 {
 	for (size_t i = 0; i < count; ++i)
 		dst[i] ^= src[i];
 }
 
-static int prepare_message_2(const struct edhoc_context *ctx,
+STATIC int prepare_message_2(const struct edhoc_context *ctx,
 			     const uint8_t *ctxt, size_t ctxt_len,
 			     uint8_t *msg_2, size_t msg_2_size,
 			     size_t *msg_2_len)
@@ -892,7 +892,7 @@ static int prepare_message_2(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_ciphertext_2_len(const struct edhoc_context *ctx,
+STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 				 const uint8_t *msg_2, size_t msg_2_len,
 				 size_t *ctxt_len)
 {
@@ -921,7 +921,7 @@ static int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
+STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -955,8 +955,8 @@ static int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 	return EDHOC_SUCCESS;
 }
 
-static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
-			   size_t ptxt_len, struct plaintext *parsed_ptxt)
+STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
+			     size_t ptxt_len, struct plaintext *parsed_ptxt)
 {
 	if (NULL == ctx || NULL == ptxt || 0 == ptxt_len ||
 	    NULL == parsed_ptxt) {
@@ -1181,7 +1181,7 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_th_3(struct edhoc_context *ctx,
+STATIC int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len)
 {
@@ -1255,7 +1255,7 @@ static int comp_th_3(struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
+STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len)
 {
 	if (NULL == ctx || NULL == salt || 0 == salt_len) {
@@ -1326,7 +1326,7 @@ static int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_grx(struct edhoc_context *ctx,
+STATIC int comp_grx(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *grx,
 		    size_t grx_len)
@@ -1885,7 +1885,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	/* 8. Parse plaintext (PLAINTEXT_2). */
 	struct plaintext parsed_ptxt = { 0 };
-	ret = parse_plaintext(ctx, plaintext, plaintext_len, &parsed_ptxt);
+	ret = parse_plaintext_2(ctx, plaintext, plaintext_len, &parsed_ptxt);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse plaintext: %d", ret);
@@ -2059,103 +2059,3 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
-
-/* Test hooks ------------------------------------------------------------- */
-
-#ifdef LIBEDHOC_TEST_HOOKS
-#include "edhoc_test_hooks.h"
-
-int edhoc_test_comp_th_2(struct edhoc_context *ctx)
-{
-	return comp_th_2(ctx);
-}
-
-int edhoc_test_comp_prk_2e(struct edhoc_context *ctx)
-{
-	return comp_prk_2e(ctx);
-}
-
-int edhoc_test_comp_prk_3e2m(struct edhoc_context *ctx,
-			     const struct edhoc_auth_creds *auth_cred,
-			     const uint8_t *pub_key, size_t pub_key_len)
-{
-	return comp_prk_3e2m(ctx, auth_cred, pub_key, pub_key_len);
-}
-
-int edhoc_test_comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
-			      size_t salt_len)
-{
-	return comp_salt_3e2m(ctx, salt, salt_len);
-}
-
-int edhoc_test_gen_dh_keys(struct edhoc_context *ctx)
-{
-	return gen_dh_keys(ctx);
-}
-
-int edhoc_test_comp_dh_secret(struct edhoc_context *ctx)
-{
-	return comp_dh_secret(ctx);
-}
-
-int edhoc_test_comp_keystream(const struct edhoc_context *ctx,
-			      const uint8_t *prk_2e, size_t prk_2e_len,
-			      uint8_t *keystream, size_t keystream_len)
-{
-	return comp_keystream(ctx, prk_2e, prk_2e_len, keystream,
-			      keystream_len);
-}
-
-int edhoc_test_comp_th_3(struct edhoc_context *ctx,
-			 const struct mac_context *mac_ctx, const uint8_t *ptxt,
-			 size_t ptxt_len)
-{
-	return comp_th_3(ctx, mac_ctx, ptxt, ptxt_len);
-}
-
-int edhoc_test_comp_grx(struct edhoc_context *ctx,
-			const struct edhoc_auth_creds *auth_cred,
-			const uint8_t *pub_key, size_t pub_key_len,
-			uint8_t *grx, size_t grx_len)
-{
-	return comp_grx(ctx, auth_cred, pub_key, pub_key_len, grx, grx_len);
-}
-
-int edhoc_test_comp_plaintext_2_len(const struct edhoc_context *ctx,
-				    const struct mac_context *mac_ctx,
-				    size_t sign_len, size_t *plaintext_2_len)
-{
-	return comp_plaintext_2_len(ctx, mac_ctx, sign_len, plaintext_2_len);
-}
-
-int edhoc_test_prepare_plaintext_2(const struct edhoc_context *ctx,
-				   const struct mac_context *mac_ctx,
-				   const uint8_t *sign, size_t sign_len,
-				   uint8_t *ptxt, size_t ptxt_size,
-				   size_t *ptxt_len)
-{
-	return prepare_plaintext_2(ctx, mac_ctx, sign, sign_len, ptxt,
-				   ptxt_size, ptxt_len);
-}
-
-int edhoc_test_prepare_message_2(const struct edhoc_context *ctx,
-				 const uint8_t *ciphertext,
-				 size_t ciphertext_len, uint8_t *msg_2,
-				 size_t msg_2_size, size_t *msg_2_len)
-{
-	return prepare_message_2(ctx, ciphertext, ciphertext_len, msg_2,
-				 msg_2_size, msg_2_len);
-}
-
-int edhoc_test_parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
-			   size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len)
-{
-	return parse_msg_2(ctx, msg_2, msg_2_len, ctxt_2, ctxt_2_len);
-}
-
-int edhoc_test_parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
-				 size_t ptxt_len, struct plaintext *parsed_ptxt)
-{
-	return parse_plaintext(ctx, ptxt, ptxt_len, parsed_ptxt);
-}
-#endif /* LIBEDHOC_TEST_HOOKS */

@@ -62,11 +62,10 @@ if(NOT LIBEDHOC_ENABLE_SANITIZERS)
 endif()
 
 # --- Optional instrumentation ------------------------------------------------
-# LIBEDHOC_TEST_HOOKS compiles the internal test-hook entry points into the
-# library so the module tests can reach otherwise-private functions. It is
-# enabled only when the module tests are built.
+# EDHOC_MODULE_TESTS makes internal STATIC functions externally visible so
+# module tests can link against them.  Enabled only when module tests are built.
 if(LIBEDHOC_ENABLE_MODULE_TESTS)
-    target_compile_definitions(libedhoc PRIVATE LIBEDHOC_TEST_HOOKS)
+    target_compile_definitions(libedhoc PRIVATE EDHOC_MODULE_TESTS)
 endif()
 
 if(LIBEDHOC_ENABLE_COVERAGE)

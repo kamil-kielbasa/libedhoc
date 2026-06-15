@@ -22,7 +22,16 @@ Directory layout:
 .. code-block:: text
 
    tests/
-   ├── unit/           # Unit tests
+   ├── unit/           # Unit tests (topic subdirectories)
+   │   ├── api/
+   │   ├── cipher_suites/
+   │   ├── coverage/
+   │   ├── internals/
+   │   ├── exporters/
+   │   ├── helpers/
+   │   ├── message/
+   │   ├── error/
+   │   └── mem/
    ├── integration/    # Integration tests
    ├── common/         # Shared test helpers
    │   ├── include/
@@ -42,15 +51,16 @@ Naming Convention
 **Test groups by tier:**
 
 Unit tests:
-  - ``crypto_suite0`` — EDHOC cipher suite 0 (EdDSA, ECDH, HKDF, AEAD, HASH)
-  - ``crypto_suite2`` — EDHOC cipher suite 2 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
+  - ``cipher_suite_0`` — EDHOC cipher suite 0 (EdDSA, ECDH, HKDF, AEAD, HASH)
+  - ``cipher_suite_2`` — EDHOC cipher suite 2 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
+  - ``cipher_suite_24`` — EDHOC cipher suite 24 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
   - ``api`` — EDHOC public API (context init, methods, cipher suites, bindings)
   - ``api_negative`` — Negative API tests (null args, invalid state, error paths)
   - ``error_message`` — EDHOC error message compose/process (success, unspecified, wrong suite, unknown cred)
   - ``exporters`` — PRK exporter, OSCORE session export, key update
   - ``helpers`` — Connection ID, flow prepend/extract, CoAP transport helpers
   - ``coverage`` — Mock-based failure injection for deep internal error paths
-  - ``internals`` — Internal function testing via test hooks (LIBEDHOC_TEST_HOOKS)
+  - ``internals`` — Internal function testing via ``STATIC`` / ``EDHOC_MODULE_TESTS``
   - ``message_paths`` — Message composition/processing round-trips with real crypto
 
 Integration tests:
@@ -293,7 +303,7 @@ Unit Tests
      - Mock-based failure injection for deep internal error paths
    * - :file:`tests/unit/test_internals.c`
      - ``internals``
-     - Internal function testing via test hooks (LIBEDHOC_TEST_HOOKS)
+     - Internal function testing via ``STATIC`` / ``EDHOC_MODULE_TESTS``
    * - :file:`tests/unit/test_message_paths.c`
      - ``message_paths``
      - Message composition/processing round-trips with real crypto

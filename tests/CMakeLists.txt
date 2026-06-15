@@ -16,17 +16,17 @@ set(TEST_COMMON_SOURCES
     common/src/test_credentials.c)
 
 set(TEST_UNIT_SOURCES
-    unit/test_api.c
-    unit/test_api_negative.c
-    unit/test_cipher_suite_0.c
-    unit/test_cipher_suite_2.c
-    unit/test_cipher_suite_24.c
-    unit/test_error_message.c
-    unit/test_exporters.c
-    unit/test_helpers.c
-    unit/test_coverage.c
-    unit/test_internals.c
-    unit/test_message_paths.c)
+    unit/api/test_api.c
+    unit/api/test_api_negative.c
+    unit/cipher_suites/test_cipher_suite_0.c
+    unit/cipher_suites/test_cipher_suite_2.c
+    unit/cipher_suites/test_cipher_suite_24.c
+    unit/error/test_error_message.c
+    unit/exporters/test_exporters.c
+    unit/helpers/test_helpers.c
+    unit/coverage/test_coverage.c
+    unit/internals/test_internals.c
+    unit/message/test_message_paths.c)
 
 set(TEST_INTEGRATION_SOURCES
     integration/test_handshake_x5chain_sig_suite0.c
@@ -50,7 +50,7 @@ if (DEFINED CONFIG_LIBEDHOC_MEM_BACKEND AND CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
     set(TEST_MEM_CUSTOM_SOURCES
         common/src/test_mem_custom.c
         common/src/test_mem_custom_handshake.c
-        unit/test_mem_custom.c
+        unit/mem/test_mem_custom.c
         integration/test_mem_custom.c)
 endif()
 
@@ -70,10 +70,6 @@ add_executable(${PROJECT_NAME}
                ${TEST_HELPER_SOURCES})
 
 # --- Compile definitions -----------------------------------------------------
-
-# Make the internal test-hook declarations visible to the test sources; the
-# matching definitions are compiled into the library under the same macro.
-target_compile_definitions(${PROJECT_NAME} PRIVATE LIBEDHOC_TEST_HOOKS)
 
 if (LIBEDHOC_ENABLE_MODULE_TESTS_TRACES)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_TRACES)
