@@ -49,7 +49,7 @@ if (NOT TARGET zephyr_interface AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     include(GNUInstallDirs)
     set(CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
 
-    install(TARGETS ${PROJECT_NAME} libedhoc_api backend_cbor backend_memory
+    install(TARGETS ${PROJECT_NAME} libedhoc_api backend_cbor backend_memory backend_log
         EXPORT ${PROJECT_NAME}-targets
         DESTINATION ${CMAKE_INSTALL_LIBDIR})
     install(EXPORT ${PROJECT_NAME}-targets
@@ -73,7 +73,7 @@ if (NOT TARGET zephyr_interface AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
         DESTINATION ${CONFIG_INSTALL_DIR}/helpers/include)
     install(FILES helpers/include/edhoc_helpers.h
         DESTINATION ${CONFIG_INSTALL_DIR}/helpers/include)
-    install(FILES port/log/linux/edhoc_log_backend.h
+    install(FILES backends/log/include/edhoc_backend_log.h
         DESTINATION ${CONFIG_INSTALL_DIR}/helpers/include)
     install(FILES helpers/src/edhoc_cipher_suite_2.c
         DESTINATION ${CONFIG_INSTALL_DIR}/helpers/src)

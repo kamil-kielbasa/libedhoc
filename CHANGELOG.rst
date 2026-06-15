@@ -1,3 +1,24 @@
+Version 1.12.1
+--------------
+
+:Date: June 12, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Logging backend:
+
+  * The logging facility moved into a single, pluggable backend header,
+    :file:`backends/log/include/edhoc_backend_log.h`. The previous
+    :file:`include/edhoc_log.h` and the entire :file:`port/log` directory
+    (with its separate Linux and Zephyr backend files) have been removed.
+  * The Linux/Zephyr split is now resolved entirely by the preprocessor
+    (``__ZEPHYR__``) inside that one header, instead of by selecting a
+    different include directory per platform from CMake.
+  * The compile-time level gating that previously lived in
+    :file:`include/edhoc_log.h` was folded into the backend header, and the
+    one-time Zephyr ``LOG_MODULE_REGISTER`` is now hosted directly in
+    :file:`library/edhoc.c`.
+  * This is purely an internal reorganisation: the ``EDHOC_LOG_*`` macros,
+    the log levels and ``CONFIG_LIBEDHOC_LOG_LEVEL`` behave exactly as before.
+
 Version 1.12.0
 --------------
 

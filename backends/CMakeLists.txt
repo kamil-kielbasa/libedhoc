@@ -51,3 +51,10 @@ add_library(${BACKEND_MEMORY_NAME} INTERFACE)
 
 target_include_directories(${BACKEND_MEMORY_NAME} INTERFACE
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/memory/include>)
+
+set(BACKEND_LOG_NAME backend_log)
+
+add_library(${BACKEND_LOG_NAME} INTERFACE)
+
+target_include_directories(${BACKEND_LOG_NAME} INTERFACE
+                           $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/log/include>)

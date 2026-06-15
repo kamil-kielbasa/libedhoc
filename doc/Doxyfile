@@ -866,7 +866,8 @@ WARN_LOGFILE           =
 
 INPUT                  = ../include \
                          ../helpers/include \
-                         ../backends/memory/include
+                         ../backends/memory/include \
+                         ../backends/log/include
 #../samples ../snippets
 
 # This tag can be used to specify the character encoding of the source files

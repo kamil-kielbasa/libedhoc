@@ -18,6 +18,5 @@ ignore:
   - "backends/cbor/src/**"
   - "tests/**"
   - "sample/**"
-  - "port/**"
   - "doc/**"
   - "scripts/**"

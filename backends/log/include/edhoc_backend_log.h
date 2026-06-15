@@ -1,23 +1,158 @@
 /**
- * \file    edhoc_log_backend.h
+ * \file    edhoc_backend_log.h
  * \author  Kamil Kielbasa
- * \brief   EDHOC logging backend for Linux.
- * 
+ * \brief   EDHOC pluggable logging backend facade.
+ *
+ *          Diagnostic messages inside the library are emitted through a small
+ *          set of macros (\ref EDHOC_LOG_ERR, \ref EDHOC_LOG_WRN, ...) whose
+ *          implementation is selected at build time by the preprocessor, so the
+ *          same sources can target a hosted build or Zephyr RTOS without
+ *          touching the call sites.
+ *
+ *          The active verbosity is chosen at build time by the integer
+ *          \c CONFIG_LIBEDHOC_LOG_LEVEL. When a message's severity is below the
+ *          configured level the corresponding macro expands to a no-op:
+ *            - \c EDHOC_LOG_LEVEL_NONE (0, default) -- logging disabled,
+ *            - \c EDHOC_LOG_LEVEL_ERR  (1)          -- errors only,
+ *            - \c EDHOC_LOG_LEVEL_WRN  (2)          -- errors and warnings,
+ *            - \c EDHOC_LOG_LEVEL_INF  (3)          -- + informational messages,
+ *            - \c EDHOC_LOG_LEVEL_DBG  (4)          -- + debug messages.
+ *
+ *          The implementation is selected by the preprocessor:
+ *            - on Zephyr (\c __ZEPHYR__) the macros delegate to the Zephyr
+ *              logging subsystem (\c LOG_ERR, \c LOG_HEXDUMP_INF, ...),
+ *            - on every other platform a self-contained hosted backend prints
+ *              timestamped, colour-coded messages to \c stdout / \c stderr.
+ *
  * \copyright Copyright (c) 2026
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef EDHOC_LOG_BACKEND_H
-#define EDHOC_LOG_BACKEND_H
+#ifndef EDHOC_BACKEND_LOG_H
+#define EDHOC_BACKEND_LOG_H
 
-/* Include files ----------------------------------------------------------- */
+/* Defines ----------------------------------------------------------------- */
+
+/** \defgroup edhoc-backend-log EDHOC logging backend
+ * @{
+ */
+
+/** Log level: logging disabled. */
+#define EDHOC_LOG_LEVEL_NONE 0
+/** Log level: errors only. */
+#define EDHOC_LOG_LEVEL_ERR 1
+/** Log level: errors and warnings. */
+#define EDHOC_LOG_LEVEL_WRN 2
+/** Log level: errors, warnings and informational messages. */
+#define EDHOC_LOG_LEVEL_INF 3
+/** Log level: all messages including debug. */
+#define EDHOC_LOG_LEVEL_DBG 4
+
+/*
+ * The verbosity is selected by the integer CONFIG_LIBEDHOC_LOG_LEVEL. On Zephyr
+ * its value is derived from the LIBEDHOC_LOG_LEVEL_CHOICE Kconfig choice; on
+ * every other build it is passed directly, e.g. -DCONFIG_LIBEDHOC_LOG_LEVEL=4.
+ * When it is not defined logging is disabled by default.
+ */
+#ifndef CONFIG_LIBEDHOC_LOG_LEVEL
+#define CONFIG_LIBEDHOC_LOG_LEVEL EDHOC_LOG_LEVEL_NONE
+#endif /* default log level */
+
+/* Types and type definitions ---------------------------------------------- */
+
+#ifdef __DOXYGEN__
+
+/**
+ * \brief Log an error message (printf-style).
+ *
+ * Active when \c CONFIG_LIBEDHOC_LOG_LEVEL >= \ref EDHOC_LOG_LEVEL_ERR,
+ * otherwise expands to a no-op. On Zephyr it maps to \c LOG_ERR; on a hosted
+ * build it prints a timestamped, colour-coded line to \c stderr.
+ */
+#define EDHOC_LOG_ERR(...)
+
+/**
+ * \brief Log a warning message (printf-style).
+ *
+ * Active when \c CONFIG_LIBEDHOC_LOG_LEVEL >= \ref EDHOC_LOG_LEVEL_WRN,
+ * otherwise expands to a no-op. On Zephyr it maps to \c LOG_WRN; on a hosted
+ * build it prints a timestamped, colour-coded line to \c stdout.
+ */
+#define EDHOC_LOG_WRN(...)
+
+/**
+ * \brief Log an informational message (printf-style).
+ *
+ * Active when \c CONFIG_LIBEDHOC_LOG_LEVEL >= \ref EDHOC_LOG_LEVEL_INF,
+ * otherwise expands to a no-op. On Zephyr it maps to \c LOG_INF; on a hosted
+ * build it prints a timestamped, colour-coded line to \c stdout.
+ */
+#define EDHOC_LOG_INF(...)
+
+/**
+ * \brief Log a debug message (printf-style).
+ *
+ * Active when \c CONFIG_LIBEDHOC_LOG_LEVEL >= \ref EDHOC_LOG_LEVEL_DBG,
+ * otherwise expands to a no-op. On Zephyr it maps to \c LOG_DBG; on a hosted
+ * build it prints a timestamped, colour-coded line (including the calling
+ * function name) to \c stdout.
+ */
+#define EDHOC_LOG_DBG(...)
+
+/**
+ * \brief Hex-dump \p data with an informational header.
+ *
+ * Active when \c CONFIG_LIBEDHOC_LOG_LEVEL >= \ref EDHOC_LOG_LEVEL_INF,
+ * otherwise expands to a no-op.
+ *
+ * \param data     Pointer to the buffer to dump.
+ * \param length   Number of bytes.
+ * \param text     Descriptive text printed before the hex dump.
+ */
+#define EDHOC_LOG_HEXDUMP_INF(data, length, text)
+
+/**
+ * \brief Hex-dump \p data with a debug header.
+ *
+ * Active when \c CONFIG_LIBEDHOC_LOG_LEVEL >= \ref EDHOC_LOG_LEVEL_DBG,
+ * otherwise expands to a no-op.
+ *
+ * \param data     Pointer to the buffer to dump.
+ * \param length   Number of bytes.
+ * \param text     Descriptive text printed before the hex dump.
+ */
+#define EDHOC_LOG_HEXDUMP_DBG(data, length, text)
+
+#else /* !__DOXYGEN__ */
+
+#if defined(__ZEPHYR__)
+
+#include <zephyr/logging/log.h>
+
+/** Map EDHOC error log to Zephyr LOG_ERR. */
+#define EDHOC_LOG_ERR(...) LOG_ERR(__VA_ARGS__)
+/** Map EDHOC warning log to Zephyr LOG_WRN. */
+#define EDHOC_LOG_WRN(...) LOG_WRN(__VA_ARGS__)
+/** Map EDHOC info log to Zephyr LOG_INF. */
+#define EDHOC_LOG_INF(...) LOG_INF(__VA_ARGS__)
+/** Map EDHOC debug log to Zephyr LOG_DBG. */
+#define EDHOC_LOG_DBG(...) LOG_DBG(__VA_ARGS__)
+
+/** Map EDHOC info hex dump to Zephyr LOG_HEXDUMP_INF. */
+#define EDHOC_LOG_HEXDUMP_INF(data, length, text) \
+	LOG_HEXDUMP_INF(data, length, text)
+/** Map EDHOC debug hex dump to Zephyr LOG_HEXDUMP_DBG. */
+#define EDHOC_LOG_HEXDUMP_DBG(data, length, text) \
+	LOG_HEXDUMP_DBG(data, length, text)
+
+#else /* !__ZEPHYR__ -- hosted backend */
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
-
-/* Defines ----------------------------------------------------------------- */
 
 /** ANSI escape: red (used for error level). */
 #define ANSI_COLOR_RED "\x1b[31m"
@@ -191,9 +326,55 @@ static inline void edhoc_log_hexdump_impl(const char *level, const char *color,
 			       (const uint8_t *)(data), (length), (text), \
 			       __func__)
 
-/* Types and type definitions ---------------------------------------------- */
+#endif /* __ZEPHYR__ */
+
+/*
+ * Compile-time level gating. The backend above always defines every macro;
+ * here each one is replaced by a no-op when CONFIG_LIBEDHOC_LOG_LEVEL is below
+ * its severity, so disabled call sites compile out completely.
+ */
+#if CONFIG_LIBEDHOC_LOG_LEVEL < EDHOC_LOG_LEVEL_ERR
+#undef EDHOC_LOG_ERR
+#define EDHOC_LOG_ERR(...) \
+	do {               \
+	} while (0)
+#endif
+
+#if CONFIG_LIBEDHOC_LOG_LEVEL < EDHOC_LOG_LEVEL_WRN
+#undef EDHOC_LOG_WRN
+#define EDHOC_LOG_WRN(...) \
+	do {               \
+	} while (0)
+#endif
+
+#if CONFIG_LIBEDHOC_LOG_LEVEL < EDHOC_LOG_LEVEL_INF
+#undef EDHOC_LOG_INF
+#undef EDHOC_LOG_HEXDUMP_INF
+#define EDHOC_LOG_INF(...) \
+	do {               \
+	} while (0)
+#define EDHOC_LOG_HEXDUMP_INF(data, length, text) \
+	do {                                      \
+	} while (0)
+#endif
+
+#if CONFIG_LIBEDHOC_LOG_LEVEL < EDHOC_LOG_LEVEL_DBG
+#undef EDHOC_LOG_DBG
+#undef EDHOC_LOG_HEXDUMP_DBG
+#define EDHOC_LOG_DBG(...) \
+	do {               \
+	} while (0)
+#define EDHOC_LOG_HEXDUMP_DBG(data, length, text) \
+	do {                                      \
+	} while (0)
+#endif
+
+#endif /* !__DOXYGEN__ */
+
+/**@}*/
+
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
-#endif /* EDHOC_LOG_BACKEND_H */
+#endif /* EDHOC_BACKEND_LOG_H */
