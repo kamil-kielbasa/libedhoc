@@ -1,11 +1,16 @@
+# =============================================================================
+# libedhoc_fuzz — LibFuzzer targets for message parsing.
+# =============================================================================
+
 project(libedhoc_fuzz)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/sources.cmake)
+
+# --- Fuzz sources ------------------------------------------------------------
+
 set(FUZZ_COMMON_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../helpers/src/edhoc_cipher_suite_0.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../helpers/src/edhoc_cipher_suite_2.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../helpers/src/edhoc_helpers.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../common/src/test_ead.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../common/src/test_credentials.c)
+    ${LIBEDHOC_FUZZ_HELPERS_SOURCES}
+    ${LIBEDHOC_TEST_COMMON_SOURCES})
 
 set(FUZZ_TARGETS
     fuzz_message_1_process
@@ -14,19 +19,20 @@ set(FUZZ_TARGETS
     fuzz_message_4_process
     fuzz_message_error_process)
 
+# --- Fuzz executables --------------------------------------------------------
+
 foreach(target ${FUZZ_TARGETS})
     add_executable(${target}
                    ${target}.c
                    ${FUZZ_COMMON_SOURCES})
 
     target_include_directories(${target} PRIVATE
-                               ${CMAKE_CURRENT_SOURCE_DIR}/../../helpers/include
-                               ${CMAKE_CURRENT_SOURCE_DIR}/../../backends/cbor/include
-                               ${CMAKE_CURRENT_SOURCE_DIR}/../common/include)
+                               ${LIBEDHOC_TESTS_DIR}/common/include)
 
     target_link_libraries(${target} PRIVATE
-                          libedhoc
-                          libedhoc_api
+                          libedhoc::edhoc
+                          libedhoc::helpers
+                          libedhoc::backend_memory
                           unity)
 
     target_compile_options(${target} PRIVATE

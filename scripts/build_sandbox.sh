@@ -10,7 +10,6 @@ mkdir -p $BUILD_DIR $INSTALL_DIR
 
 echo \#### Configure zcbor \####
 cmake -S $BASEDIR/externals/zcbor-cmake -B $BUILD_DIR/zcbor \
-    -DZCBOR_PATH=$BASEDIR/externals/zcbor \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR \
     -GNinja
 echo \#### Build and install zcbor \####
@@ -40,6 +39,7 @@ cmake -B $BUILD_DIR/libedhoc \
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=1 \
     -DCONFIG_LIBEDHOC_LOG_LEVEL=4 \
     -DLIBEDHOC_BUILD_EXTERNAL_DEPS=OFF \
+    -DLIBEDHOC_ENABLE_MODULE_TESTS=OFF \
     -DCMAKE_INSTALL_PREFIX=$INSTALL_DIR \
     -GNinja
 echo \#### Build and install libedhoc \####

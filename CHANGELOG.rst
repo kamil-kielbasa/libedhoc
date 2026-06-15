@@ -1,3 +1,37 @@
+Version 1.12.2
+--------------
+
+:Date: June 15, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Build system:
+
+  * The CMake setup was reorganised around namespaced targets
+    (``libedhoc::edhoc``, ``libedhoc::api``, ``libedhoc::helpers``,
+    ``libedhoc::backend_*``). Plain target names are kept for backward
+    compatibility, and ``EXPORT_NAME`` makes ``find_package()`` and
+    ``add_subdirectory()`` consumers use identical names.
+  * Backends are now linked ``PRIVATE`` on the core, so their ~40 headers no
+    longer leak onto a consumer's include path. Consumers that compile the
+    helper sources themselves link ``libedhoc::helpers`` (which carries the
+    helper, CBOR and log include paths).
+  * A single source-of-truth list (:file:`cmake/sources.cmake`) feeds both the
+    standalone and the Zephyr builds, and :file:`zephyr/CMakeLists.txt` is now
+    the only Zephyr-aware file — the rest of the tree has no
+    ``if(TARGET zephyr_interface)`` branches.
+  * A generated :file:`edhoc_config.h` (from :file:`cmake/edhoc_config.h.in`)
+    guarantees every translation unit — and every installed consumer — sees
+    the same build-time configuration, removing a silent cross-TU mismatch of
+    ``CONFIG_LIBEDHOC_MEM_BACKEND``. On Zephyr the values still come from
+    Kconfig (the include is guarded by ``__ZEPHYR__``).
+  * Packaging was hardened: ``find_dependency(zcbor)`` in the package config, a
+    generated package-version file, namespaced exported targets, and the
+    convenience helper *sources* installed under :file:`share/` instead of the
+    CMake-package directory.
+  * Added :file:`CMakePresets.json` (``gcc``/``clang``/``coverage``/
+    ``sanitizers``/``fuzz``). The minimum CMake version is now 3.21.
+  * This is a build-system change only: the public API, headers and runtime
+    behaviour are unchanged.
+
 Version 1.12.1
 --------------
 

@@ -32,6 +32,13 @@
 #ifndef EDHOC_BACKEND_LOG_H
 #define EDHOC_BACKEND_LOG_H
 
+/* Include files ----------------------------------------------------------- */
+
+/* Build-time configuration (Kconfig provides these on Zephyr): */
+#ifndef __ZEPHYR__
+#include "edhoc_config.h"
+#endif
+
 /* Defines ----------------------------------------------------------------- */
 
 /** \defgroup edhoc-backend-log EDHOC logging backend

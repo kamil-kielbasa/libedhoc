@@ -24,6 +24,12 @@
 #define EDHOC_BACKEND_MEMORY_H
 
 /* Include files ----------------------------------------------------------- */
+
+/* Build-time configuration (Kconfig provides these on Zephyr): */
+#ifndef __ZEPHYR__
+#include "edhoc_config.h"
+#endif
+
 #include <stddef.h>
 #include <string.h>
 

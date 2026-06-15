@@ -47,6 +47,14 @@ Linux target
 | All configuration parameters listed above must be passed as compiler defines during the build.
 | Each must be prefixed with :C:`CONFIG_`.
 
+| The build generates a :file:`edhoc_config.h` header (from
+  :file:`cmake/edhoc_config.h.in`) on the public include path, capturing the
+  values the library was built with. Each value is guarded with ``#ifndef``, so
+  a command-line :C:`-DCONFIG_LIBEDHOC_*` still wins. This header is installed
+  next to the public headers, so a consumer compiling against an installed
+  libedhoc (or via :C:`find_package(libedhoc)`) inherits the exact build-time
+  configuration without re-passing any defines.
+
 Zephyr target
 *************
 

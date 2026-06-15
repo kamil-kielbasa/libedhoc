@@ -1,6 +1,12 @@
+# =============================================================================
+# libedhoc_module_tests — standalone module test executable.
+# =============================================================================
+
 project(libedhoc_module_tests)
 
-# --- Test sources organized by tier ---
+include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/sources.cmake)
+
+# --- Test sources (tier lists) -----------------------------------------------
 
 set(TEST_MAIN
     test_main.c)
@@ -33,6 +39,8 @@ set(TEST_INTEGRATION_SOURCES
     integration/test_rfc9529_chapter2.c
     integration/test_rfc9529_chapter3.c)
 
+# --- Custom memory backend sources -------------------------------------------
+
 # Custom memory backend tests are only meaningful when the library is built with
 # the custom backend (-DCONFIG_LIBEDHOC_MEM_BACKEND=2). They provide the
 # link-time edhoc_mem_alloc()/edhoc_mem_free() hooks and exercise the
@@ -46,14 +54,12 @@ if (DEFINED CONFIG_LIBEDHOC_MEM_BACKEND AND CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
         integration/test_mem_custom.c)
 endif()
 
-set(TEST_HELPER_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_0.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_2.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_cipher_suite_24.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/src/edhoc_helpers.c)
+set(TEST_HELPER_SOURCES ${LIBEDHOC_HELPERS_SOURCES})
 
 set_source_files_properties(${TEST_HELPER_SOURCES} PROPERTIES
                             COMPILE_FLAGS "-Wno-format -Wno-format-pedantic -Wno-sign-conversion -Wno-conversion -Wno-switch-enum")
+
+# --- Executable --------------------------------------------------------------
 
 add_executable(${PROJECT_NAME}
                ${TEST_MAIN}
@@ -63,23 +69,31 @@ add_executable(${PROJECT_NAME}
                ${TEST_MEM_CUSTOM_SOURCES}
                ${TEST_HELPER_SOURCES})
 
+# --- Compile definitions -----------------------------------------------------
+
+# Make the internal test-hook declarations visible to the test sources; the
+# matching definitions are compiled into the library under the same macro.
 target_compile_definitions(${PROJECT_NAME} PRIVATE LIBEDHOC_TEST_HOOKS)
 
 if (LIBEDHOC_ENABLE_MODULE_TESTS_TRACES)
-        target_compile_definitions(${PROJECT_NAME} PUBLIC
-                                   TEST_TRACES)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_TRACES)
 endif()
 
-target_include_directories(${PROJECT_NAME} PUBLIC
-                           ${CMAKE_CURRENT_SOURCE_DIR}/include
-                           ${CMAKE_CURRENT_SOURCE_DIR}/common/include
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../helpers/include
-                           ${CMAKE_CURRENT_SOURCE_DIR}/../backends/cbor/include)
+# --- Include directories -----------------------------------------------------
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
-                      libedhoc
-                      libedhoc_api
+target_include_directories(${PROJECT_NAME} PRIVATE
+                           ${CMAKE_CURRENT_SOURCE_DIR}/include
+                           ${CMAKE_CURRENT_SOURCE_DIR}/common/include)
+
+# --- Link dependencies -------------------------------------------------------
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+                      libedhoc::edhoc
+                      libedhoc::helpers
+                      libedhoc::backend_memory
                       unity)
+
+# --- Warning flags -----------------------------------------------------------
 
 set(TEST_COMMON_WARNINGS
     -Werror
@@ -119,7 +133,9 @@ set(TEST_COMMON_WARNINGS
     -Wno-missing-declarations
     -Wno-sign-conversion)
 
-if (LIBEDHOC_BUILD_COMPILER_GCC)
+# Compiler family is detected from CMAKE_C_COMPILER_ID, the same mechanism used
+# by the core library.
+if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE
                            ${TEST_COMMON_WARNINGS}
 
@@ -135,12 +151,12 @@ if (LIBEDHOC_BUILD_COMPILER_GCC)
                            # - jump-misses-init: test_coverage.c uses goto for cleanup
                            -Wno-nested-externs
                            -Wno-jump-misses-init)
-endif()
-
-if (LIBEDHOC_BUILD_COMPILER_CLANG)
+elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE
                            ${TEST_COMMON_WARNINGS})
 endif()
+
+# --- Instrumentation (coverage, sanitizers) ----------------------------------
 
 if (LIBEDHOC_ENABLE_COVERAGE)
     target_compile_options(${PROJECT_NAME} PRIVATE --coverage)
