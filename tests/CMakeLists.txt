@@ -24,8 +24,25 @@ set(TEST_UNIT_SOURCES
     unit/error/test_error_message.c
     unit/exporters/test_exporters.c
     unit/helpers/test_helpers.c
-    unit/coverage/test_coverage.c
-    unit/internals/test_internals.c
+    unit/coverage/coverage_common.c
+    unit/coverage/test_coverage_msg1.c
+    unit/coverage/test_coverage_msg2.c
+    unit/coverage/test_coverage_msg3.c
+    unit/coverage/test_coverage_msg4.c
+    unit/coverage/test_coverage_exporters.c
+    unit/coverage/test_coverage_error.c
+    unit/coverage/test_coverage_cbor.c
+    unit/coverage/test_coverage_handshake.c
+    unit/internals/internals_common.c
+    unit/internals/test_internals_common.c
+    unit/internals/test_internals_mac.c
+    unit/internals/test_internals_message2.c
+    unit/internals/test_internals_message3.c
+    unit/internals/test_internals_message4.c
+    unit/internals/test_internals_error.c
+    unit/internals/test_internals_message1.c
+    unit/internals/test_internals_helpers.c
+    unit/internals/test_internals_api.c
     unit/message/test_message_paths.c)
 
 set(TEST_INTEGRATION_SOURCES

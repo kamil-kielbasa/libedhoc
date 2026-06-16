@@ -26,7 +26,26 @@ Directory layout:
    │   ├── api/
    │   ├── cipher_suites/
    │   ├── coverage/
+   │   │   ├── coverage_common.c
+   │   │   ├── test_coverage_msg1.c
+   │   │   ├── test_coverage_msg2.c
+   │   │   ├── test_coverage_msg3.c
+   │   │   ├── test_coverage_msg4.c
+   │   │   ├── test_coverage_exporters.c
+   │   │   ├── test_coverage_error.c
+   │   │   ├── test_coverage_cbor.c
+   │   │   └── test_coverage_handshake.c
    │   ├── internals/
+   │   │   ├── internals_common.c
+   │   │   ├── test_internals_common.c
+   │   │   ├── test_internals_mac.c
+   │   │   ├── test_internals_message2.c
+   │   │   ├── test_internals_message3.c
+   │   │   ├── test_internals_message4.c
+   │   │   ├── test_internals_error.c
+   │   │   ├── test_internals_message1.c
+   │   │   ├── test_internals_helpers.c
+   │   │   └── test_internals_api.c
    │   ├── exporters/
    │   ├── helpers/
    │   ├── message/
@@ -44,9 +63,9 @@ Naming Convention
 
 **Files:** ``test_<subject>.c``
 
-**TEST_GROUP:** Matches the file subject (e.g., ``test_api.c`` → ``TEST_GROUP(api)``)
+**TEST_GROUP:** Matches the file topic (e.g. ``test_coverage_msg1.c`` → ``TEST_GROUP(coverage_msg1)``)
 
-**TEST cases:** Descriptive ``snake_case`` (e.g., ``TEST(api, context_init)``)
+**TEST cases:** Descriptive ``snake_case`` (e.g. ``TEST(coverage_msg1, compose_key_import_fail)``)
 
 **Test groups by tier:**
 
@@ -59,8 +78,8 @@ Unit tests:
   - ``error_message`` — EDHOC error message compose/process (success, unspecified, wrong suite, unknown cred)
   - ``exporters`` — PRK exporter, OSCORE session export, key update
   - ``helpers`` — Connection ID, flow prepend/extract, CoAP transport helpers
-  - ``coverage`` — Mock-based failure injection for deep internal error paths
-  - ``internals`` — Internal function testing via ``STATIC`` / ``EDHOC_MODULE_TESTS``
+  - ``coverage_msg1`` … ``coverage_handshake`` — Mock-based failure injection split by message/topic
+  - ``internals_common`` … ``internals_api`` — Internal function tests via ``STATIC`` / ``LIBEDHOC_MODULE_TESTS``
   - ``message_paths`` — Message composition/processing round-trips with real crypto
 
 Integration tests:
@@ -84,25 +103,8 @@ Fuzz targets:
 Test Documentation
 ------------------
 
-Each test uses a structured documentation format in Doxygen-style comments:
-
-- **@scenario** — What is being tested
-- **@env** — Test environment / preconditions
-- **@action** — The action performed (API call, input, etc.)
-- **@expected** — Expected outcome or return value
-
-Example:
-
-.. code-block:: c
-
-   /**
-    * @scenario  EDHOC context initialization and deinitialization.
-    * @env       None.
-    * @action    Call edhoc_context_init() on zeroed context, verify is_init,
-    *            then call edhoc_context_deinit().
-    * @expected  Both calls return EDHOC_SUCCESS; ctx.is_init is true after init.
-    */
-   TEST(api, context_init)
+Test case names use descriptive ``snake_case`` identifiers.  The ``TEST(group, name)``
+macro pair should be readable without extra comment blocks.
 
 Running Tests
 -------------
@@ -303,7 +305,7 @@ Unit Tests
      - Mock-based failure injection for deep internal error paths
    * - :file:`tests/unit/test_internals.c`
      - ``internals``
-     - Internal function testing via ``STATIC`` / ``EDHOC_MODULE_TESTS``
+     - Internal function testing via ``STATIC`` / ``LIBEDHOC_MODULE_TESTS``
    * - :file:`tests/unit/test_message_paths.c`
      - ``message_paths``
      - Message composition/processing round-trips with real crypto

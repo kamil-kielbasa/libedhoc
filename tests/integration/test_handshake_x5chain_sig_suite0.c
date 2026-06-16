@@ -541,12 +541,6 @@ TEST_TEAR_DOWN(handshake_x5chain_sig_suite0)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  EDHOC handshake with single X.509 certificate in chain.
- * @env       PSA crypto init, cipher suite 0, method from test vector, X.509 chain credentials (signature keys).
- * @action    Run full M1->M2->M3->M4 protocol flow, export OSCORE session, key update, re-export.
- * @expected  Handshake completes; initiator and responder derive identical OSCORE secrets and PRK.
- */
 TEST(handshake_x5chain_sig_suite0, one_cert_in_chain)
 {
 	uint8_t buffer[1000] = { 0 };
@@ -820,12 +814,6 @@ TEST(handshake_x5chain_sig_suite0, one_cert_in_chain)
 				      resp_sender_id_len);
 }
 
-/**
- * @scenario  EDHOC handshake with two X.509 certificates in chain.
- * @env       PSA crypto init, cipher suite 0, method from test vector, X.509 chain credentials (signature keys).
- * @action    Run full M1->M2->M3->M4 protocol flow, export OSCORE session, key update, re-export.
- * @expected  Handshake completes; initiator and responder derive identical OSCORE secrets and PRK.
- */
 TEST(handshake_x5chain_sig_suite0, two_certs_in_chain)
 {
 	uint8_t buffer[2000] = { 0 };

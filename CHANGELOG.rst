@@ -1,3 +1,22 @@
+Version 1.12.4
+--------------
+
+:Date: June 16, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Tests:
+
+  * Split :file:`test_coverage.c` (142 cases) into eight topic files under
+    :file:`tests/unit/coverage/` with shared :file:`coverage_common.c`.
+  * Split :file:`test_internals.c` (232 cases) into nine topic files under
+    :file:`tests/unit/internals/` with shared :file:`internals_common.c`.
+  * Removed ``@scenario`` / ``@env`` / ``@action`` / ``@expected`` comment
+    blocks; test names are self-describing.
+  * Renamed ``TEST_GROUP`` identifiers to match file topics (e.g.
+    ``coverage_msg1``, ``internals_mac``).
+  * Added ``edhoc_macros.h`` to :file:`test_common.h` for ``ARRAY_SIZE``.
+  * Renamed compile definition ``EDHOC_MODULE_TESTS`` to
+    ``LIBEDHOC_MODULE_TESTS``.
+
 Version 1.12.3
 --------------
 

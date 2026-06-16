@@ -106,12 +106,6 @@ TEST_TEAR_DOWN(message_paths)
 	mbedtls_psa_crypto_free();
 }
 
-/**
- * @scenario  Message 1 compose with byte-string CID.
- * @env       Context with cipher suite 0, byte-string CID, real crypto.
- * @action    Compose message 1.
- * @expected  EDHOC_SUCCESS, msg_1_len > 0.
- */
 TEST(message_paths, msg1_compose_bstr_cid)
 {
 	struct edhoc_context ctx = { 0 };
@@ -136,12 +130,6 @@ TEST(message_paths, msg1_compose_bstr_cid)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  Message 1 compose with multiple cipher suites.
- * @env       Context with 2 cipher suites [0, 2], real crypto for suite 2.
- * @action    Compose message 1.
- * @expected  EDHOC_SUCCESS, msg_1_len > 0.
- */
 TEST(message_paths, msg1_compose_multiple_cipher_suites)
 {
 	struct edhoc_context ctx = { 0 };
@@ -175,12 +163,6 @@ TEST(message_paths, msg1_compose_multiple_cipher_suites)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  Message 1 compose with EAD.
- * @env       Context with EAD compose callback returning 1 token for msg1.
- * @action    Compose message 1.
- * @expected  EDHOC_SUCCESS, msg_1_len > 0.
- */
 TEST(message_paths, msg1_compose_with_ead)
 {
 	struct edhoc_context ctx = { 0 };
@@ -208,12 +190,6 @@ TEST(message_paths, msg1_compose_with_ead)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  Message 1 process with byte-string CID.
- * @env       Initiator composes msg1 with bstr CID; responder processes.
- * @action    Process message 1.
- * @expected  EDHOC_SUCCESS, peer_cid.encode_type == EDHOC_CID_TYPE_BYTE_STRING.
- */
 TEST(message_paths, msg1_process_bstr_cid)
 {
 	struct edhoc_context init_ctx = { 0 };
@@ -254,12 +230,6 @@ TEST(message_paths, msg1_process_bstr_cid)
 	edhoc_context_deinit(&resp_ctx);
 }
 
-/**
- * @scenario  Message 1 process with EAD.
- * @env       Initiator composes msg1 with EAD; responder has EAD process callback.
- * @action    Process message 1.
- * @expected  EDHOC_SUCCESS, EAD process callback invoked with correct token.
- */
 TEST(message_paths, msg1_process_with_ead)
 {
 	struct edhoc_context init_ctx = { 0 };
@@ -311,12 +281,6 @@ TEST(message_paths, msg1_process_with_ead)
 	edhoc_context_deinit(&resp_ctx);
 }
 
-/**
- * @scenario  Message 4 compose with EAD.
- * @env       Responder context in COMPLETED, TH_4, PRK_4e3m; EAD compose for msg4.
- * @action    Compose message 4.
- * @expected  EDHOC_SUCCESS, msg_4_len > 0.
- */
 TEST(message_paths, msg4_compose_with_ead)
 {
 	struct edhoc_context ctx = { 0 };
@@ -355,12 +319,6 @@ TEST(message_paths, msg4_compose_with_ead)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  Message 4 compose and process round-trip.
- * @env       Responder composes msg4; initiator processes. Same th/prk on both.
- * @action    Compose msg4, process msg4.
- * @expected  EDHOC_SUCCESS on both.
- */
 TEST(message_paths, msg4_compose_process_roundtrip)
 {
 	uint8_t th[32], prk[32];
@@ -417,12 +375,6 @@ TEST(message_paths, msg4_compose_process_roundtrip)
 	edhoc_context_deinit(&init_ctx);
 }
 
-/**
- * @scenario  Message 4 compose/process round-trip with EAD.
- * @env       Responder composes msg4 with EAD; initiator processes with EAD callback.
- * @action    Compose msg4 with EAD, process msg4.
- * @expected  EDHOC_SUCCESS on both; EAD process receives token.
- */
 TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 {
 	uint8_t th[32], prk[32];
@@ -497,12 +449,6 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 	edhoc_context_deinit(&init_ctx);
 }
 
-/**
- * @scenario  Message 1 compose + process round-trip with bstr CID and EAD.
- * @env       Initiator composes with bstr CID + EAD; responder processes.
- * @action    Full msg1 round-trip.
- * @expected  EDHOC_SUCCESS; peer_cid and EAD verified.
- */
 TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
 {
 	struct edhoc_context init_ctx = { 0 };
@@ -561,12 +507,6 @@ TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
 	edhoc_context_deinit(&resp_ctx);
 }
 
-/**
- * @scenario  msg1_process with bad state (context not in START).
- * @env       Responder context with status forced to EDHOC_SM_COMPLETED.
- * @action    Call edhoc_message_1_process with a valid message 1.
- * @expected  Returns EDHOC_ERROR_BAD_STATE.
- */
 TEST(message_paths, msg1_process_bad_state)
 {
 	struct edhoc_context init_ctx;
@@ -594,12 +534,6 @@ TEST(message_paths, msg1_process_bad_state)
 	edhoc_context_deinit(&resp_ctx);
 }
 
-/**
- * @scenario  msg1_process with garbage CBOR input.
- * @env       Responder context in valid START state.
- * @action    Call edhoc_message_1_process with invalid CBOR bytes.
- * @expected  Returns error (CBOR failure or process failure).
- */
 TEST(message_paths, msg1_process_invalid_cbor)
 {
 	struct edhoc_context resp_ctx;
@@ -617,12 +551,6 @@ TEST(message_paths, msg1_process_invalid_cbor)
 	edhoc_context_deinit(&resp_ctx);
 }
 
-/**
- * @scenario  msg1_process with no cipher suites configured.
- * @env       Responder context initialized but csuite_len forced to 0.
- * @action    Compose valid msg1 from initiator, then process with empty responder.
- * @expected  Returns EDHOC_ERROR_BAD_STATE (no cipher suites).
- */
 TEST(message_paths, msg1_process_no_cipher_suites)
 {
 	struct edhoc_context init_ctx;

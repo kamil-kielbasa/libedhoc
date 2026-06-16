@@ -490,12 +490,6 @@ TEST_TEAR_DOWN(rfc9529_chapter3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  Compose EDHOC message 1 per RFC 9529 chapter 3 test vector.
- * @env       PSA crypto init, cipher suite 2 (init offers [6,2], resp [2]), method from test vector, KID credentials.
- * @action    Call edhoc_message_1_compose and verify output.
- * @expected  Message 1 matches RFC 9529 test vector; th_state=1, prk_state=INVALID.
- */
 TEST(rfc9529_chapter3, message_1_compose)
 {
 	size_t msg_1_len = 0;
@@ -528,12 +522,6 @@ TEST(rfc9529_chapter3, message_1_compose)
 				      init_ctx->dh_priv_key_len);
 }
 
-/**
- * @scenario  Process EDHOC message 1 per RFC 9529 chapter 3 test vector.
- * @env       PSA crypto init, cipher suite 2, method from test vector, mocked key pair, KID credentials.
- * @action    Call edhoc_message_1_process with RFC 9529 message_1.
- * @expected  Responder state updated; th_state=1, peer_cid and G_X stored correctly.
- */
 TEST(rfc9529_chapter3, message_1_process)
 {
 	ret = edhoc_message_1_process(resp_ctx, message_1,
@@ -564,12 +552,6 @@ TEST(rfc9529_chapter3, message_1_process)
 				      resp_ctx->dh_peer_pub_key_len);
 }
 
-/**
- * @scenario  Compose EDHOC message 2 per RFC 9529 chapter 3 test vector.
- * @env       Responder context injected with RECEIVED_M1, TH_1, G_X, peer_cid.
- * @action    Call edhoc_message_2_compose and verify output.
- * @expected  Message 2 matches RFC 9529 test vector; th_state=3, prk_state=3E2M, dh_secret=G_XY.
- */
 TEST(rfc9529_chapter3, message_2_compose)
 {
 	/* Required injections. */
@@ -617,12 +599,6 @@ TEST(rfc9529_chapter3, message_2_compose)
 				      resp_ctx->dh_secret_len);
 }
 
-/**
- * @scenario  Compose message 2 with COSE_ANY credential format (pre-cborised credentials).
- * @env       Responder context with edhoc_auth_cred_mocked_resp_any; injected RECEIVED_M1, TH_1, G_X.
- * @action    Call edhoc_message_2_compose and verify output.
- * @expected  Message 2 matches RFC 9529 test vector; th_state=3, prk_state=3E2M.
- */
 TEST(rfc9529_chapter3, message_2_compose_any)
 {
 	/* Required injections. */
@@ -674,12 +650,6 @@ TEST(rfc9529_chapter3, message_2_compose_any)
 				      resp_ctx->dh_secret_len);
 }
 
-/**
- * @scenario  Process EDHOC message 2 per RFC 9529 chapter 3 test vector.
- * @env       Initiator context injected with WAIT_M2, TH_1, X; message_2 from test vector.
- * @action    Call edhoc_message_2_process and verify state.
- * @expected  Initiator state VERIFIED_M2; th_state=3, prk_state=3E2M, dh_secret=G_XY, peer_cid=C_R.
- */
 TEST(rfc9529_chapter3, message_2_process)
 {
 	/* Required injections. */
@@ -722,12 +692,6 @@ TEST(rfc9529_chapter3, message_2_process)
 	TEST_ASSERT_EQUAL((int8_t)C_R[0], init_ctx->peer_cid.int_value);
 }
 
-/**
- * @scenario  Compose EDHOC message 3 per RFC 9529 chapter 3 test vector.
- * @env       Initiator context injected with VERIFIED_M2, TH_3, PRK_3e2m, G_Y, G_XY.
- * @action    Call edhoc_message_3_compose and verify output.
- * @expected  Message 3 matches RFC 9529 test vector; th_state=4, prk_state=4E3M.
- */
 TEST(rfc9529_chapter3, message_3_compose)
 {
 	/* Required injections. */
@@ -775,12 +739,6 @@ TEST(rfc9529_chapter3, message_3_compose)
 				      init_ctx->prk_len);
 }
 
-/**
- * @scenario  Compose message 3 with COSE_ANY credential format (pre-cborised credentials).
- * @env       Initiator context with edhoc_auth_cred_mocked_init_any; injected VERIFIED_M2, TH_3, PRK_3e2m, G_Y, G_XY.
- * @action    Call edhoc_message_3_compose and verify output.
- * @expected  Message 3 matches RFC 9529 test vector; th_state=4, prk_state=4E3M.
- */
 TEST(rfc9529_chapter3, message_3_compose_any)
 {
 	ret = edhoc_bind_credentials(init_ctx,
@@ -832,12 +790,6 @@ TEST(rfc9529_chapter3, message_3_compose_any)
 				      init_ctx->prk_len);
 }
 
-/**
- * @scenario  Process EDHOC message 3 per RFC 9529 chapter 3 test vector.
- * @env       Responder context injected with WAIT_M3, TH_3, PRK_3e2m, Y, G_XY; message_3 from test vector.
- * @action    Call edhoc_message_3_process and verify state.
- * @expected  Responder state COMPLETED; th_state=4, prk_state=4E3M.
- */
 TEST(rfc9529_chapter3, message_3_process)
 {
 	/* Required injections. */
@@ -879,12 +831,6 @@ TEST(rfc9529_chapter3, message_3_process)
 				      resp_ctx->prk_len);
 }
 
-/**
- * @scenario  Compose EDHOC message 4 per RFC 9529 chapter 3 test vector.
- * @env       Responder context injected with COMPLETED, TH_4, PRK_4e3m.
- * @action    Call edhoc_message_4_compose and verify output.
- * @expected  Message 4 matches RFC 9529 test vector; status PERSISTED.
- */
 TEST(rfc9529_chapter3, message_4_compose)
 {
 	/* Required injections. */
@@ -926,12 +872,6 @@ TEST(rfc9529_chapter3, message_4_compose)
 				      resp_ctx->prk_len);
 }
 
-/**
- * @scenario  Process EDHOC message 4 per RFC 9529 chapter 3 test vector.
- * @env       Initiator context injected with COMPLETED, TH_4, PRK_4e3m; message_4 from test vector.
- * @action    Call edhoc_message_4_process and verify state.
- * @expected  Initiator state PERSISTED; th_state=4, prk_state=4E3M.
- */
 TEST(rfc9529_chapter3, message_4_process)
 {
 	/* Required injections. */
@@ -967,12 +907,6 @@ TEST(rfc9529_chapter3, message_4_process)
 				      init_ctx->prk_len);
 }
 
-/**
- * @scenario  Full EDHOC handshake with RFC 9529 chapter 3 test vectors (mocked crypto, KID credentials).
- * @env       PSA crypto init, cipher suite 2, method from test vector, mocked key pairs, KID credentials.
- * @action    Run full M1->M2->M3->M4 flow; verify each message matches test vector; export OSCORE; key update.
- * @expected  All messages match RFC 9529; OSCORE secrets match; key update succeeds.
- */
 TEST(rfc9529_chapter3, handshake)
 {
 	uint8_t buffer[200] = { 0 };
@@ -1378,12 +1312,6 @@ TEST(rfc9529_chapter3, handshake)
 				      resp_sender_id_len);
 }
 
-/**
- * @scenario  Full EDHOC handshake with real PSA crypto (no mocked key pairs), RFC 9529 chapter 3.
- * @env       PSA crypto init, cipher suite 2, real edhoc_crypto, KID credentials.
- * @action    Run full M1->M2->M3->M4 flow; export OSCORE; key update; re-export.
- * @expected  Handshake completes; initiator and responder derive identical OSCORE secrets and PRK.
- */
 TEST(rfc9529_chapter3, handshake_real_crypto)
 {
 	uint8_t buffer[200] = { 0 };

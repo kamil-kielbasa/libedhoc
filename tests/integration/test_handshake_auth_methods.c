@@ -431,12 +431,6 @@ TEST_TEAR_DOWN(handshake_auth_methods)
 	mbedtls_psa_crypto_free();
 }
 
-/**
- * @scenario  EDHOC method 1 handshake: Initiator signature, Responder static DH.
- * @env       PSA crypto init, cipher suite 2, X.509 chain credentials; init sig key, resp DH key.
- * @action    Run full M1->M2->M3 protocol flow and export OSCORE session from both sides.
- * @expected  Handshake succeeds; initiator and responder derive identical OSCORE master secret and salt.
- */
 TEST(handshake_auth_methods, method_1_handshake)
 {
 	current_test_ctx = (struct test_context){
@@ -453,12 +447,6 @@ TEST(handshake_auth_methods, method_1_handshake)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  EDHOC method 2 handshake: Initiator static DH, Responder signature.
- * @env       PSA crypto init, cipher suite 2, X.509 chain credentials; init DH key, resp sig key.
- * @action    Run full M1->M2->M3 protocol flow and export OSCORE session from both sides.
- * @expected  Handshake succeeds; initiator and responder derive identical OSCORE master secret and salt.
- */
 TEST(handshake_auth_methods, method_2_handshake)
 {
 	current_test_ctx = (struct test_context){

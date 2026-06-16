@@ -178,12 +178,6 @@ TEST(exporters, key_update_zero_entropy_length)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  edhoc_export_key_update when EDHOC not completed.
- * @env       Basic context with status EDHOC_SM_START, prk_state 4E3M.
- * @action    Call edhoc_export_key_update(&ctx, entropy, 32).
- * @expected  Returns EDHOC_ERROR_BAD_STATE.
- */
 TEST(exporters, key_update_bad_state_not_completed)
 {
 	struct edhoc_context ctx = { 0 };
@@ -200,12 +194,6 @@ TEST(exporters, key_update_bad_state_not_completed)
 
 /* -- edhoc_export_oscore_session error paths -- */
 
-/**
- * @scenario  edhoc_export_oscore_session when OSCORE export not allowed.
- * @env       Context completed but is_oscore_export_allowed = false.
- * @action    Call edhoc_export_oscore_session(&ctx, ...).
- * @expected  Returns EDHOC_ERROR_BAD_STATE.
- */
 TEST(exporters, oscore_session_not_allowed)
 {
 	struct edhoc_context ctx = { 0 };
@@ -226,12 +214,6 @@ TEST(exporters, oscore_session_not_allowed)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  edhoc_export_oscore_session when EDHOC not completed.
- * @env       Context with status EDHOC_SM_WAIT_M2, is_oscore_export_allowed = true.
- * @action    Call edhoc_export_oscore_session(&ctx, ...).
- * @expected  Returns EDHOC_ERROR_BAD_STATE.
- */
 TEST(exporters, oscore_session_bad_state_not_completed)
 {
 	struct edhoc_context ctx = { 0 };
@@ -254,12 +236,6 @@ TEST(exporters, oscore_session_bad_state_not_completed)
 
 /* -- edhoc_export_prk_exporter error paths -- */
 
-/**
- * @scenario  edhoc_export_prk_exporter with NULL secret buffer.
- * @env       Initialized EDHOC context.
- * @action    Call edhoc_export_prk_exporter(&ctx, label, NULL, 32).
- * @expected  Returns EDHOC_ERROR_INVALID_ARGUMENT.
- */
 TEST(exporters, prk_exporter_null_secret)
 {
 	struct edhoc_context ctx = { 0 };
@@ -270,12 +246,6 @@ TEST(exporters, prk_exporter_null_secret)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  edhoc_export_prk_exporter with zero secret length.
- * @env       Initialized EDHOC context.
- * @action    Call edhoc_export_prk_exporter(&ctx, label, secret, 0).
- * @expected  Returns EDHOC_ERROR_INVALID_ARGUMENT.
- */
 TEST(exporters, prk_exporter_zero_length)
 {
 	struct edhoc_context ctx = { 0 };
@@ -287,12 +257,6 @@ TEST(exporters, prk_exporter_zero_length)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  edhoc_export_prk_exporter with invalid label.
- * @env       Completed context with valid prk_state.
- * @action    Call edhoc_export_prk_exporter(&ctx, 100, secret, sizeof(secret)).
- * @expected  Returns EDHOC_ERROR_BAD_STATE.
- */
 TEST(exporters, prk_exporter_invalid_label)
 {
 	struct edhoc_context ctx = { 0 };
@@ -307,12 +271,6 @@ TEST(exporters, prk_exporter_invalid_label)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  edhoc_export_prk_exporter when PRK not in valid state.
- * @env       Context with status EDHOC_SM_START, prk_state INVALID.
- * @action    Call edhoc_export_prk_exporter(&ctx, label, secret, sizeof(secret)).
- * @expected  Returns EDHOC_ERROR_BAD_STATE.
- */
 TEST(exporters, prk_exporter_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
@@ -329,13 +287,6 @@ TEST(exporters, prk_exporter_bad_state)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  OSCORE export fails with CBOR encode error for sender ID.
- * @env       Valid completed context with ONE_BYTE_INTEGER peer CID set to 24
- *            (needs 2 CBOR bytes: 0x18 0x18) but sid buffer is only 1 byte.
- * @action    Call edhoc_export_oscore_session with sid_size = 1.
- * @expected  EDHOC_ERROR_CBOR_FAILURE from sender ID CBOR encode.
- */
 TEST(exporters, oscore_session_sender_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };
@@ -372,13 +323,6 @@ TEST(exporters, oscore_session_sender_id_encode_fail)
 	edhoc_context_deinit(&ctx);
 }
 
-/**
- * @scenario  OSCORE export fails with CBOR encode error for recipient ID.
- * @env       Valid completed context with small int peer CID (sender succeeds)
- *            but own CID set to 24 (needs 2 CBOR bytes) and rid buffer is 1 byte.
- * @action    Call edhoc_export_oscore_session with rid_size = 1.
- * @expected  EDHOC_ERROR_CBOR_FAILURE from recipient ID CBOR encode.
- */
 TEST(exporters, oscore_session_recipient_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };

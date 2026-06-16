@@ -540,12 +540,6 @@ TEST_TEAR_DOWN(handshake_x5t_sig_suite2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  EDHOC handshake with X.509 thumbprint (x5t) and signature keys.
- * @env       PSA crypto init, cipher suite 2, method from test vector, X.509 hash credentials, single EAD token.
- * @action    Run full M1->M2->M3->M4 flow; EAD compose/process invoked for each message.
- * @expected  Handshake completes; EAD tokens exchanged; OSCORE secrets match; key update succeeds.
- */
 TEST(handshake_x5t_sig_suite2, handshake)
 {
 	uint8_t buffer[1000] = { 0 };

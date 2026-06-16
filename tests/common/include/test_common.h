@@ -19,6 +19,7 @@
 /* EDHOC headers */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc.h>
+#include "edhoc_macros.h"
 
 /* PSA crypto header */
 #include <psa/crypto.h>
