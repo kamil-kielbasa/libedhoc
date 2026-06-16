@@ -486,12 +486,6 @@ TEST_TEAR_DOWN(handshake_x5chain_dh_suite2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  EDHOC handshake with X.509 chain, static DH keys, single EAD token per message.
- * @env       PSA crypto init, cipher suite 2, method from test vector, X.509 chain credentials (DH keys), EAD handler.
- * @action    Run full M1->M2->M3->M4 protocol flow, export OSCORE session, key update, re-export.
- * @expected  Handshake completes; initiator and responder derive identical OSCORE secrets and PRK.
- */
 TEST(handshake_x5chain_dh_suite2, one_cert_in_chain_with_single_ead_token)
 {
 	uint8_t buffer[1000] = { 0 };

@@ -133,12 +133,6 @@ TEST_TEAR_DOWN(rfc9528_negotiation)
  * +--------------------------------------------------------->|
  * |                                                          |
  */
-/**
- * @scenario  RFC 9528 cipher suite negotiation example 1: no overlap, then retry with merged suites.
- * @env       PSA crypto init, method 1; initiator SUITES_I=[5], responder SUITES_R=[6].
- * @action    Initiator sends M1; responder rejects with ERR_CODE=2; initiator retries with [5,6]; responder accepts.
- * @expected  First M1 process fails; error message exchanged; second M1 process succeeds.
- */
 TEST(rfc9528_negotiation, example_1)
 {
 	const enum edhoc_method methods[] = { EDHOC_METHOD_1 };
@@ -336,12 +330,6 @@ TEST(rfc9528_negotiation, example_1)
  * |    METHOD, SUITES_I = [5, 6, 7, 8], G_X, C_I, EAD_1      |
  * +--------------------------------------------------------->|
  * |                                                          |
- */
-/**
- * @scenario  RFC 9528 cipher suite negotiation example 2: partial overlap, retry with extended suites.
- * @env       PSA crypto init, method 1; initiator SUITES_I=[5,6], responder SUITES_R=[9,8].
- * @action    Initiator sends M1; responder rejects with ERR_CODE=2; initiator retries with [6,7,8]; responder accepts.
- * @expected  First M1 process fails; error message exchanged; second M1 process succeeds.
  */
 TEST(rfc9528_negotiation, example_2)
 {

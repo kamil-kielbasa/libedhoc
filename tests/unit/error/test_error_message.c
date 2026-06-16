@@ -44,13 +44,6 @@ TEST_TEAR_DOWN(error_message)
 {
 }
 
-/**
- * @scenario  EDHOC error message compose and process with SUCCESS code.
- * @env       None.
- * @action    Compose error message with EDHOC_ERROR_CODE_SUCCESS and NULL
- *            info; process with edhoc_message_error_process.
- * @expected  Both compose and process succeed; received error code matches.
- */
 TEST(error_message, success)
 {
 	size_t buffer_len = 0;
@@ -67,13 +60,6 @@ TEST(error_message, success)
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 }
 
-/**
- * @scenario  EDHOC error message compose and process with UNSPECIFIED_ERROR and text.
- * @env       None.
- * @action    Compose error message with text string; process and verify
- *            error code and text string.
- * @expected  Both succeed; error code and text string match.
- */
 TEST(error_message, unspecified_error)
 {
 	size_t buffer_len = 0;
@@ -110,13 +96,6 @@ TEST(error_message, unspecified_error)
 				      error_info.written_entries);
 }
 
-/**
- * @scenario  EDHOC error message with WRONG_SELECTED_CIPHER_SUITE (one suite).
- * @env       None.
- * @action    Compose error message with single cipher suite; process and
- *            verify cipher suite array.
- * @expected  Both succeed; cipher suite array matches.
- */
 TEST(error_message, wrong_selected_cipher_suite_one)
 {
 	size_t buffer_len = 0;
@@ -153,13 +132,6 @@ TEST(error_message, wrong_selected_cipher_suite_one)
 		error_info.written_entries * sizeof(*error_info.cipher_suites));
 }
 
-/**
- * @scenario  EDHOC error message with WRONG_SELECTED_CIPHER_SUITE (many suites).
- * @env       None.
- * @action    Compose error message with multiple cipher suites; process and
- *            verify cipher suite array.
- * @expected  Both succeed; cipher suite array matches.
- */
 TEST(error_message, wrong_selected_cipher_suite_many)
 {
 	size_t buffer_len = 0;
@@ -214,12 +186,6 @@ TEST(error_message, unknown_credential_referenced)
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 }
 
-/**
- * @scenario  Compose error message with unknown error code.
- * @env       None.
- * @action    Call edhoc_message_error_compose with error code 99.
- * @expected  Returns EDHOC_ERROR_NOT_PERMITTED.
- */
 TEST(error_message, compose_unknown_code)
 {
 	uint8_t buffer[100] = { 0 };
@@ -229,12 +195,6 @@ TEST(error_message, compose_unknown_code)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 }
 
-/**
- * @scenario  Compose WRONG_SELECTED_CIPHER_SUITE with written > total entries.
- * @env       None.
- * @action    Call compose with written_entries = 5, total_entries = 2.
- * @expected  Returns EDHOC_ERROR_INVALID_ARGUMENT.
- */
 TEST(error_message, compose_cipher_suite_written_gt_total)
 {
 	uint8_t buffer[100] = { 0 };
@@ -251,13 +211,6 @@ TEST(error_message, compose_cipher_suite_written_gt_total)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-/**
- * @scenario  Compose error message into a tiny buffer (1 byte).
- * @env       None.
- * @action    Call compose with buffer size 1 for UNKNOWN_CREDENTIAL_REFERENCED
- *            which needs ERR_CODE + ERR_INFO (2+ bytes of CBOR).
- * @expected  Returns EDHOC_ERROR_CBOR_FAILURE.
- */
 TEST(error_message, compose_tiny_buffer)
 {
 	uint8_t buffer[1] = { 0 };
@@ -268,12 +221,6 @@ TEST(error_message, compose_tiny_buffer)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
 
-/**
- * @scenario  Compose with NULL buffer pointer.
- * @env       None.
- * @action    Call compose with NULL msg_err.
- * @expected  Returns EDHOC_ERROR_INVALID_ARGUMENT.
- */
 TEST(error_message, compose_null_buffer)
 {
 	size_t buffer_len = 0;
@@ -282,12 +229,6 @@ TEST(error_message, compose_null_buffer)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-/**
- * @scenario  Process with NULL msg_err pointer.
- * @env       None.
- * @action    Call process with NULL msg_err.
- * @expected  Returns EDHOC_ERROR_INVALID_ARGUMENT.
- */
 TEST(error_message, process_null_buffer)
 {
 	enum edhoc_error_code code;
@@ -295,12 +236,6 @@ TEST(error_message, process_null_buffer)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-/**
- * @scenario  Process with invalid CBOR data.
- * @env       None.
- * @action    Call process with garbage CBOR bytes.
- * @expected  Returns EDHOC_ERROR_CBOR_FAILURE.
- */
 TEST(error_message, process_invalid_cbor)
 {
 	uint8_t garbage[] = { 0xFF, 0xFF, 0xFF };
@@ -310,13 +245,6 @@ TEST(error_message, process_invalid_cbor)
 	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  Process error message with out-of-range error code.
- * @env       Compose a valid error message (code 0), then patch the CBOR byte
- *            to code 99 which the decoder accepts but the process switch rejects.
- * @action    Call process on the patched message.
- * @expected  Returns EDHOC_ERROR_NOT_PERMITTED (default case in process).
- */
 TEST(error_message, process_unknown_code)
 {
 	uint8_t msg[32];

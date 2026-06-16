@@ -50,13 +50,6 @@ TEST_TEAR_DOWN(api)
 {
 }
 
-/**
- * @scenario  EDHOC context initialization and deinitialization.
- * @env       None.
- * @action    Call edhoc_context_init() on zeroed context, verify is_init,
- *            then call edhoc_context_deinit().
- * @expected  Both calls return EDHOC_SUCCESS; ctx.is_init is true after init.
- */
 TEST(api, context_init)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -70,12 +63,6 @@ TEST(api, context_init)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  Setting EDHOC authentication methods on context.
- * @env       Fresh EDHOC context after edhoc_context_init().
- * @action    Call edhoc_set_methods() with single method and with all methods.
- * @expected  Methods are stored correctly; method_len and method array match.
- */
 TEST(api, set_methods)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -122,12 +109,6 @@ TEST(api, set_methods)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  Setting cipher suites on EDHOC context.
- * @env       Fresh EDHOC context after edhoc_context_init().
- * @action    Call edhoc_set_cipher_suites() with single suite and many suites.
- * @expected  Cipher suite parameters are stored correctly in context.
- */
 TEST(api, set_cipher_suites)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -229,13 +210,6 @@ TEST(api, set_cipher_suites)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  Setting connection ID as one-byte integer or byte string.
- * @env       Fresh EDHOC context after edhoc_context_init().
- * @action    Call edhoc_set_connection_id() with valid/invalid one-byte int
- *            and byte string values; verify boundary rejections.
- * @expected  Valid values succeed; out-of-range values return EDHOC_ERROR_BAD_STATE.
- */
 TEST(api, set_connection_id)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -303,13 +277,6 @@ TEST(api, set_connection_id)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-/**
- * @scenario  Binding user context, EAD, keys, crypto, and credentials to context.
- * @env       Fresh EDHOC context after edhoc_context_init(); cipher suite 2.
- * @action    Call edhoc_set_user_context, edhoc_bind_ead, edhoc_bind_keys,
- *            edhoc_bind_crypto, edhoc_bind_credentials.
- * @expected  All bindings succeed; context stores callback pointers correctly.
- */
 TEST(api, bindings)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;

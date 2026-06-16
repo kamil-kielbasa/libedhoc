@@ -27,8 +27,23 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(error_message);
 	RUN_TEST_GROUP(exporters);
 	RUN_TEST_GROUP(helpers);
-	RUN_TEST_GROUP(coverage);
-	RUN_TEST_GROUP(internals);
+	RUN_TEST_GROUP(coverage_msg1);
+	RUN_TEST_GROUP(coverage_msg2);
+	RUN_TEST_GROUP(coverage_msg3);
+	RUN_TEST_GROUP(coverage_msg4);
+	RUN_TEST_GROUP(coverage_exporters);
+	RUN_TEST_GROUP(coverage_error);
+	RUN_TEST_GROUP(coverage_cbor);
+	RUN_TEST_GROUP(coverage_handshake);
+	RUN_TEST_GROUP(internals_common);
+	RUN_TEST_GROUP(internals_mac);
+	RUN_TEST_GROUP(internals_message2);
+	RUN_TEST_GROUP(internals_message3);
+	RUN_TEST_GROUP(internals_message4);
+	RUN_TEST_GROUP(internals_error);
+	RUN_TEST_GROUP(internals_message1);
+	RUN_TEST_GROUP(internals_helpers);
+	RUN_TEST_GROUP(internals_api);
 	RUN_TEST_GROUP(message_paths);
 #if CONFIG_LIBEDHOC_MEM_BACKEND == EDHOC_MEM_BACKEND_CUSTOM
 	RUN_TEST_GROUP(mem_custom);
