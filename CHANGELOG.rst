@@ -1,3 +1,17 @@
+Version 1.12.3
+--------------
+
+:Date: June 15, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Tests:
+
+  * Replaced ``LIBEDHOC_TEST_HOOKS`` / ``edhoc_test_*`` wrappers with a
+    ``STATIC`` linkage macro in :file:`include/edhoc_macros.h`, enabled by
+    ``EDHOC_MODULE_TESTS`` when module tests are built.
+  * Reorganised unit tests into topic subdirectories under
+    :file:`tests/unit/` (``api/``, ``cipher_suites/``, ``coverage/``,
+    ``internals/``, etc.).
+
 Version 1.12.2
 --------------
 

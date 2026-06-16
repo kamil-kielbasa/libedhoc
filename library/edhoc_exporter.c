@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include "edhoc.h"
+#include "edhoc_common.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -48,22 +49,13 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /** 
- * \brief CBOR integer memory requirements.
- *
- * \param val                   Raw integer value.
- *
- * \return Number of bytes.
- */
-static inline size_t cbor_int_mem_req(int32_t val);
-
-/**
  * \brief CBOR byte stream overhead.
  *
  * \param len                   Length of buffer to CBOR as bstr.
  *
  * \return Number of bytes.
  */
-static inline size_t cbor_bstr_overhead(size_t len);
+static size_t cbor_bstr_overhead(size_t len);
 
 /**
  * \brief Compute output pseudo random key (PRK_out).
@@ -72,7 +64,7 @@ static inline size_t cbor_bstr_overhead(size_t len);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int compute_prk_out(struct edhoc_context *ctx);
+STATIC int compute_prk_out(struct edhoc_context *ctx);
 
 /**
  * \brief Compute output pseudo random key (PRK_out).
@@ -81,7 +73,7 @@ static int compute_prk_out(struct edhoc_context *ctx);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int compute_new_prk_out(struct edhoc_context *ctx,
+STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len);
 
 /**
@@ -91,26 +83,12 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int compute_prk_exporter(const struct edhoc_context *ctx,
+STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 				uint8_t *prk_exp, size_t prk_exp_len);
 
 /* Static function definitions --------------------------------------------- */
 
-static inline size_t cbor_int_mem_req(int32_t val)
-{
-	if (val >= ONE_BYTE_CBOR_INT_MIN_VALUE &&
-	    val <= ONE_BYTE_CBOR_INT_MAX_VALUE) {
-		return 1;
-	} else if (val >= -(UINT8_MAX + 1) && val <= UINT8_MAX) {
-		return 2;
-	} else if (val >= -(UINT16_MAX + 1) && val <= UINT16_MAX) {
-		return 3;
-	} else {
-		return 4;
-	}
-}
-
-static inline size_t cbor_bstr_overhead(size_t len)
+static size_t cbor_bstr_overhead(size_t len)
 {
 	if (len <= 23) {
 		return 1;
@@ -125,7 +103,7 @@ static inline size_t cbor_bstr_overhead(size_t len)
 	}
 }
 
-static int compute_prk_out(struct edhoc_context *ctx)
+STATIC int compute_prk_out(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -146,9 +124,9 @@ static int compute_prk_out(struct edhoc_context *ctx)
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
+	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
 	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
-	len += cbor_int_mem_req((int32_t)csuite.hash_length);
+	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -201,7 +179,7 @@ static int compute_prk_out(struct edhoc_context *ctx)
 	return EDHOC_SUCCESS;
 }
 
-static int compute_new_prk_out(struct edhoc_context *ctx,
+STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len)
 {
 	if (NULL == ctx) {
@@ -221,9 +199,9 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
+	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
 	len += entropy_len + cbor_bstr_overhead(entropy_len);
-	len += cbor_int_mem_req((int32_t)csuite.hash_length);
+	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -274,7 +252,7 @@ static int compute_new_prk_out(struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int compute_prk_exporter(const struct edhoc_context *ctx,
+STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 				uint8_t *prk_exp, size_t prk_exp_len)
 {
 	if (NULL == ctx) {
@@ -293,9 +271,10 @@ static int compute_prk_exporter(const struct edhoc_context *ctx,
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	size_t len = 0;
-	len += cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
+	len += edhoc_cbor_int_mem_req(
+		EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
-	len += cbor_int_mem_req((int32_t)csuite.hash_length);
+	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -413,9 +392,9 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 
 	/* 4. Derive secret. */
 	size_t len = 0;
-	len += cbor_int_mem_req((int32_t)label);
+	len += edhoc_cbor_int_mem_req((int32_t)label);
 	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
-	len += cbor_int_mem_req((int32_t)csuite.hash_length);
+	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -670,26 +649,3 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 	ctx->status = status;
 	return EDHOC_SUCCESS;
 }
-
-/* Test hooks ------------------------------------------------------------- */
-
-#ifdef LIBEDHOC_TEST_HOOKS
-#include "edhoc_test_hooks.h"
-
-int edhoc_test_compute_prk_out(struct edhoc_context *ctx)
-{
-	return compute_prk_out(ctx);
-}
-
-int edhoc_test_compute_new_prk_out(struct edhoc_context *ctx,
-				   const uint8_t *entropy, size_t entropy_len)
-{
-	return compute_new_prk_out(ctx, entropy, entropy_len);
-}
-
-int edhoc_test_compute_prk_exporter(const struct edhoc_context *ctx,
-				    uint8_t *prk_exp, size_t prk_exp_len)
-{
-	return compute_prk_exporter(ctx, prk_exp, prk_exp_len);
-}
-#endif /* LIBEDHOC_TEST_HOOKS */

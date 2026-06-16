@@ -61,7 +61,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
  * \return True if might be encoded as one byte cbor integer,
  *         otherwise false.
  */
-static inline bool edhoc_cbor_is_one_byte_int(int32_t value);
+STATIC bool edhoc_cbor_is_one_byte_int(int32_t value);
 
 /**
  * \brief Compute required buffer length for C_R (message_2).
@@ -72,7 +72,7 @@ static inline bool edhoc_cbor_is_one_byte_int(int32_t value);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
+STATIC int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
 
 /**
  * \brief Compute required buffer length for ID_CRED (I/R).
@@ -83,7 +83,7 @@ static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+STATIC int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
 
 /**
  * \brief Compute required buffer length for TH (2/3).
@@ -94,7 +94,7 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_th_len(size_t th_len, size_t *len);
+STATIC int comp_th_len(size_t th_len, size_t *len);
 
 /**
  * \brief Compute required buffer length for CRED (I/R).
@@ -105,7 +105,7 @@ static int comp_th_len(size_t th_len, size_t *len);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+STATIC int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
 
 /**
  * \brief Compute required buffer length for EAD (2/3).
@@ -116,7 +116,7 @@ static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
+STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
 
 /**
  * \brief Perform compact encoding described in:
@@ -127,7 +127,7 @@ static int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
+STATIC int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 				struct mac_context *mac_ctx);
 
 /**
@@ -144,7 +144,7 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
  * 
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int sign_cose_sign_1(const struct edhoc_context *ctx,
+STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 			    const struct edhoc_auth_creds *cred,
 			    const struct mac_context *mac_ctx,
 			    const uint8_t *mac, size_t mac_len, uint8_t *sign,
@@ -164,7 +164,7 @@ static int sign_cose_sign_1(const struct edhoc_context *ctx,
  * 
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int verify_cose_sign_1(const struct edhoc_context *ctx,
+STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 			      const struct mac_context *mac_ctx,
 			      const uint8_t *pub_key, size_t pub_key_len,
 			      const uint8_t *mac, size_t mac_len,
@@ -172,12 +172,12 @@ static int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 /* Static function definitions --------------------------------------------- */
 
-static inline bool edhoc_cbor_is_one_byte_int(int32_t value)
+STATIC bool edhoc_cbor_is_one_byte_int(int32_t value)
 {
 	return 1 == edhoc_cbor_int_mem_req(value);
 }
 
-static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
+STATIC int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
 {
 	if (NULL == cid || NULL == len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -202,7 +202,7 @@ static int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
+STATIC int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 {
 	if (NULL == cred || NULL == len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -281,7 +281,7 @@ static int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_th_len(size_t th_len, size_t *len)
+STATIC int comp_th_len(size_t th_len, size_t *len)
 {
 	if (0 == th_len || NULL == len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -295,7 +295,7 @@ static int comp_th_len(size_t th_len, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
+STATIC int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 {
 	if (NULL == cred || NULL == len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -333,7 +333,7 @@ static int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
+STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 {
 	if (NULL == ctx || NULL == len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -349,7 +349,7 @@ static int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 	return EDHOC_SUCCESS;
 }
 
-static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
+STATIC int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 				struct mac_context *mac_ctx)
 {
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -438,7 +438,7 @@ static int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 	return EDHOC_SUCCESS;
 }
 
-static int sign_cose_sign_1(const struct edhoc_context *ctx,
+STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 			    const struct edhoc_auth_creds *cred,
 			    const struct mac_context *mac_ctx,
 			    const uint8_t *mac, size_t mac_len, uint8_t *sign,
@@ -497,7 +497,7 @@ static int sign_cose_sign_1(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int verify_cose_sign_1(const struct edhoc_context *ctx,
+STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 			      const struct mac_context *mac_ctx,
 			      const uint8_t *pub_key, size_t pub_key_len,
 			      const uint8_t *mac, size_t mac_len,
@@ -1481,41 +1481,3 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 	EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
 	return EDHOC_ERROR_BAD_STATE;
 }
-
-/* Test hooks ------------------------------------------------------------- */
-
-#ifdef LIBEDHOC_TEST_HOOKS
-#include "edhoc_test_hooks.h"
-
-int edhoc_test_comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
-{
-	return comp_cid_len(cid, len);
-}
-
-int edhoc_test_comp_id_cred_len(const struct edhoc_auth_creds *cred,
-				size_t *len)
-{
-	return comp_id_cred_len(cred, len);
-}
-
-int edhoc_test_comp_th_len(size_t th_len, size_t *len)
-{
-	return comp_th_len(th_len, len);
-}
-
-int edhoc_test_comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len)
-{
-	return comp_cred_len(cred, len);
-}
-
-int edhoc_test_comp_ead_len(const struct edhoc_context *ctx, size_t *len)
-{
-	return comp_ead_len(ctx, len);
-}
-
-int edhoc_test_kid_compact_encoding(const struct edhoc_auth_creds *cred,
-				    struct mac_context *mac_ctx)
-{
-	return kid_compact_encoding(cred, mac_ctx);
-}
-#endif /* LIBEDHOC_TEST_HOOKS */

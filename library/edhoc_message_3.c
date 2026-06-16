@@ -72,7 +72,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_prk_4e3m(struct edhoc_context *ctx,
+STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 			 const struct edhoc_auth_creds *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len);
 
@@ -86,7 +86,7 @@ static int comp_prk_4e3m(struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_plaintext_3_len(const struct edhoc_context *ctx,
+STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_3_len);
 
@@ -102,7 +102,7 @@ static int comp_plaintext_3_len(const struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int prepare_plaintext_3(const struct mac_context *mac_ctx,
+STATIC int prepare_plaintext_3(const struct mac_context *mac_ctx,
 			       const uint8_t *sign, size_t sign_len,
 			       uint8_t *ptxt, size_t ptxt_size,
 			       size_t *ptxt_len);
@@ -115,7 +115,7 @@ static int prepare_plaintext_3(const struct mac_context *mac_ctx,
  *
  * \retval EDHOC_SUCCESS on success, otherwise failure.s
  */
-static int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len);
+STATIC int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len);
 
 /**
  * \brief Compute K_3, IV_3 and AAD_3.
@@ -130,9 +130,9 @@ static int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
-			   size_t key_len, uint8_t *iv, size_t iv_len,
-			   uint8_t *aad, size_t aad_len);
+STATIC int comp_key_iv_aad_3(const struct edhoc_context *ctx, uint8_t *key,
+			     size_t key_len, uint8_t *iv, size_t iv_len,
+			     uint8_t *aad, size_t aad_len);
 
 /**
  * \brief Compute CIPHERTEXT_3.
@@ -152,7 +152,7 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *key,
+STATIC int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *key,
 			   size_t key_len, const uint8_t *iv, size_t iv_len,
 			   const uint8_t *aad, size_t aad_len,
 			   const uint8_t *ptxt, size_t ptxt_len, uint8_t *ctxt,
@@ -168,7 +168,7 @@ static int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *key,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_th_4(struct edhoc_context *ctx,
+STATIC int comp_th_4(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
 
@@ -183,7 +183,7 @@ static int comp_th_4(struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
+STATIC int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
 		     size_t msg_3_size, size_t *msg_3_len);
 
 /**
@@ -196,7 +196,7 @@ static int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
+STATIC int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
 		       const uint8_t **ctxt_3, size_t *ctxt_3_len);
 
 /**
@@ -216,12 +216,12 @@ static int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int decrypt_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *key, size_t key_len,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ctxt, size_t ctxt_len,
-			      uint8_t *ptxt, size_t ptxt_len);
+STATIC int decrypt_ciphertext_3(const struct edhoc_context *ctx,
+				const uint8_t *key, size_t key_len,
+				const uint8_t *iv, size_t iv_len,
+				const uint8_t *aad, size_t aad_len,
+				const uint8_t *ctxt, size_t ctxt_len,
+				uint8_t *ptxt, size_t ptxt_len);
 
 /**
  * \brief Parsed cborised PLAINTEXT_3 for separate buffers.
@@ -233,8 +233,8 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
-			   size_t ptxt_len, struct plaintext *parsed_ptxt);
+STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
+			     size_t ptxt_len, struct plaintext *parsed_ptxt);
 
 /**
  * \brief Compute SALT_4e3m.
@@ -245,7 +245,7 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
+STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len);
 
 /**
@@ -260,14 +260,14 @@ static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-static int comp_giy(struct edhoc_context *ctx,
+STATIC int comp_giy(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *giy,
 		    size_t giy_len);
 
 /* Static function definitions --------------------------------------------- */
 
-static int comp_prk_4e3m(struct edhoc_context *ctx,
+STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 			 const struct edhoc_auth_creds *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len)
 {
@@ -373,7 +373,7 @@ static int comp_prk_4e3m(struct edhoc_context *ctx,
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
-static int comp_plaintext_3_len(const struct edhoc_context *ctx,
+STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_3_len)
 {
@@ -417,7 +417,7 @@ static int comp_plaintext_3_len(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int prepare_plaintext_3(const struct mac_context *mac_ctx,
+STATIC int prepare_plaintext_3(const struct mac_context *mac_ctx,
 			       const uint8_t *sign, size_t sign_len,
 			       uint8_t *ptxt, size_t ptxt_size,
 			       size_t *ptxt_len)
@@ -487,7 +487,7 @@ static int prepare_plaintext_3(const struct mac_context *mac_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len)
+STATIC int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len)
 {
 	if (NULL == ctx || NULL == aad_3_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -504,9 +504,9 @@ static int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len)
 	return EDHOC_SUCCESS;
 }
 
-static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
-			   size_t key_len, uint8_t *iv, size_t iv_len,
-			   uint8_t *aad, size_t aad_len)
+STATIC int comp_key_iv_aad_3(const struct edhoc_context *ctx, uint8_t *key,
+			     size_t key_len, uint8_t *iv, size_t iv_len,
+			     uint8_t *aad, size_t aad_len)
 {
 	if (NULL == ctx || NULL == key || 0 == key_len || NULL == iv ||
 	    0 == iv_len || NULL == aad || 0 == aad_len) {
@@ -635,7 +635,7 @@ static int comp_key_iv_aad(const struct edhoc_context *ctx, uint8_t *key,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *key,
+STATIC int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *key,
 			   size_t key_len, const uint8_t *iv, size_t iv_len,
 			   const uint8_t *aad, size_t aad_len,
 			   const uint8_t *ptxt, size_t ptxt_len, uint8_t *ctxt,
@@ -674,7 +674,7 @@ static int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *key,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_th_4(struct edhoc_context *ctx,
+STATIC int comp_th_4(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len)
 {
@@ -755,7 +755,7 @@ static int comp_th_4(struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
+STATIC int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
 		     size_t msg_3_size, size_t *msg_3_len)
 {
 	if (NULL == ctxt || 0 == ctxt_len || NULL == msg_3 || 0 == msg_3_size ||
@@ -782,7 +782,7 @@ static int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
 	return EDHOC_SUCCESS;
 }
 
-static int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
+STATIC int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
 		       const uint8_t **ctxt_3, size_t *ctxt_3_len)
 {
 	if (NULL == msg_3 || 0 == msg_3_len || NULL == ctxt_3 ||
@@ -809,12 +809,12 @@ static int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
 	return EDHOC_SUCCESS;
 }
 
-static int decrypt_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *key, size_t key_len,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ctxt, size_t ctxt_len,
-			      uint8_t *ptxt, size_t ptxt_len)
+STATIC int decrypt_ciphertext_3(const struct edhoc_context *ctx,
+				const uint8_t *key, size_t key_len,
+				const uint8_t *iv, size_t iv_len,
+				const uint8_t *aad, size_t aad_len,
+				const uint8_t *ctxt, size_t ctxt_len,
+				uint8_t *ptxt, size_t ptxt_len)
 {
 	if (NULL == ctx || NULL == key || 0 == key_len || NULL == iv ||
 	    0 == iv_len || NULL == aad || 0 == aad_len || 0 == ctxt_len ||
@@ -850,8 +850,8 @@ static int decrypt_ciphertext(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
-			   size_t ptxt_len, struct plaintext *parsed_ptxt)
+STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
+			     size_t ptxt_len, struct plaintext *parsed_ptxt)
 {
 	if (NULL == ctx || NULL == ptxt || 0 == ptxt_len ||
 	    NULL == parsed_ptxt) {
@@ -1034,7 +1034,7 @@ static int parse_plaintext(struct edhoc_context *ctx, const uint8_t *ptxt,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
+STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len)
 {
 	if (NULL == ctx || NULL == salt || 0 == salt_len) {
@@ -1105,7 +1105,7 @@ static int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 	return EDHOC_SUCCESS;
 }
 
-static int comp_giy(struct edhoc_context *ctx,
+STATIC int comp_giy(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *giy,
 		    size_t giy_len)
@@ -1295,9 +1295,9 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = comp_key_iv_aad(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
-			      EDHOC_MEM_ALLOC_SIZE(iv), aad,
-			      EDHOC_MEM_ALLOC_SIZE(aad));
+	ret = comp_key_iv_aad_3(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
+				EDHOC_MEM_ALLOC_SIZE(iv), aad,
+				EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_3: %d", ret);
@@ -1645,9 +1645,9 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = comp_key_iv_aad(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
-			      EDHOC_MEM_ALLOC_SIZE(iv), aad,
-			      EDHOC_MEM_ALLOC_SIZE(aad));
+	ret = comp_key_iv_aad_3(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
+				EDHOC_MEM_ALLOC_SIZE(iv), aad,
+				EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_3: %d", ret);
@@ -1671,10 +1671,10 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = decrypt_ciphertext(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
-				 EDHOC_MEM_ALLOC_SIZE(iv), aad,
-				 EDHOC_MEM_ALLOC_SIZE(aad), ctxt, ctxt_len,
-				 ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
+	ret = decrypt_ciphertext_3(ctx, key, EDHOC_MEM_ALLOC_SIZE(key), iv,
+				   EDHOC_MEM_ALLOC_SIZE(iv), aad,
+				   EDHOC_MEM_ALLOC_SIZE(aad), ctxt, ctxt_len,
+				   ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
 	EDHOC_MEM_FREE(aad);
 	EDHOC_MEM_FREE(iv);
 	EDHOC_MEM_FREE(key);
@@ -1689,8 +1689,8 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	/* 5. Parse CBOR plaintext (PLAINTEXT_3). */
 	struct plaintext parsed_ptxt = { 0 };
-	ret = parse_plaintext(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt),
-			      &parsed_ptxt);
+	ret = parse_plaintext_3(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt),
+				&parsed_ptxt);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_3: %d", ret);
@@ -1850,95 +1850,3 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
-
-/* Test hooks ------------------------------------------------------------- */
-
-#ifdef LIBEDHOC_TEST_HOOKS
-#include "edhoc_test_hooks.h"
-
-int edhoc_test_comp_prk_4e3m(struct edhoc_context *ctx,
-			     const struct edhoc_auth_creds *auth_cred,
-			     const uint8_t *pub_key, size_t pub_key_len)
-{
-	return comp_prk_4e3m(ctx, auth_cred, pub_key, pub_key_len);
-}
-
-int edhoc_test_comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
-			      size_t salt_len)
-{
-	return comp_salt_4e3m(ctx, salt, salt_len);
-}
-
-int edhoc_test_comp_key_iv_aad_3(const struct edhoc_context *ctx, uint8_t *key,
-				 size_t key_len, uint8_t *iv, size_t iv_len,
-				 uint8_t *aad, size_t aad_len)
-{
-	return comp_key_iv_aad(ctx, key, key_len, iv, iv_len, aad, aad_len);
-}
-
-int edhoc_test_comp_th_4(struct edhoc_context *ctx,
-			 const struct mac_context *mac_ctx, const uint8_t *ptxt,
-			 size_t ptxt_len)
-{
-	return comp_th_4(ctx, mac_ctx, ptxt, ptxt_len);
-}
-
-int edhoc_test_comp_giy(struct edhoc_context *ctx,
-			const struct edhoc_auth_creds *auth_cred,
-			const uint8_t *pub_key, size_t pub_key_len,
-			uint8_t *giy, size_t giy_len)
-{
-	return comp_giy(ctx, auth_cred, pub_key, pub_key_len, giy, giy_len);
-}
-
-int edhoc_test_comp_plaintext_3_len(const struct edhoc_context *ctx,
-				    const struct mac_context *mac_ctx,
-				    size_t sign_len, size_t *plaintext_3_len)
-{
-	return comp_plaintext_3_len(ctx, mac_ctx, sign_len, plaintext_3_len);
-}
-
-int edhoc_test_prepare_plaintext_3(const struct mac_context *mac_ctx,
-				   const uint8_t *sign, size_t sign_len,
-				   uint8_t *ptxt, size_t ptxt_size,
-				   size_t *ptxt_len)
-{
-	return prepare_plaintext_3(mac_ctx, sign, sign_len, ptxt, ptxt_size,
-				   ptxt_len);
-}
-
-int edhoc_test_comp_aad_3_len(const struct edhoc_context *ctx,
-			      size_t *aad_3_len)
-{
-	return comp_aad_3_len(ctx, aad_3_len);
-}
-
-int edhoc_test_gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
-			 size_t msg_3_size, size_t *msg_3_len)
-{
-	return gen_msg_3(ctxt, ctxt_len, msg_3, msg_3_size, msg_3_len);
-}
-
-int edhoc_test_parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
-			   const uint8_t **ctxt_3, size_t *ctxt_3_len)
-{
-	return parse_msg_3(msg_3, msg_3_len, ctxt_3, ctxt_3_len);
-}
-
-int edhoc_test_decrypt_ciphertext_3(const struct edhoc_context *ctx,
-				    const uint8_t *key, size_t key_len,
-				    const uint8_t *iv, size_t iv_len,
-				    const uint8_t *aad, size_t aad_len,
-				    const uint8_t *ctxt, size_t ctxt_len,
-				    uint8_t *ptxt, size_t ptxt_len)
-{
-	return decrypt_ciphertext(ctx, key, key_len, iv, iv_len, aad, aad_len,
-				  ctxt, ctxt_len, ptxt, ptxt_len);
-}
-
-int edhoc_test_parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
-				 size_t ptxt_len, struct plaintext *parsed_ptxt)
-{
-	return parse_plaintext(ctx, ptxt, ptxt_len, parsed_ptxt);
-}
-#endif /* LIBEDHOC_TEST_HOOKS */
