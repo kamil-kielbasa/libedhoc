@@ -10,6 +10,7 @@
 /* Include files ----------------------------------------------------------- */
 
 #include "coverage_common.h"
+#include "coverage_sweep.h"
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -20,7 +21,7 @@ TEST_GROUP(coverage_exporters);
 
 TEST_SETUP(coverage_exporters)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 }
 
 TEST_TEAR_DOWN(coverage_exporters)
@@ -31,7 +32,8 @@ TEST_TEAR_DOWN(coverage_exporters)
 TEST(coverage_exporters, prk_exporter_bad_label)
 {
 	struct edhoc_context ctx = { 0 };
-	coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  coverage_setup_mock_context(&ctx, EDHOC_METHOD_0));
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 
@@ -40,13 +42,14 @@ TEST(coverage_exporters, prk_exporter_bad_label)
 	int ret = edhoc_export_prk_exporter(&ctx, 100, secret, sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(coverage_exporters, prk_exporter_expand_fail)
 {
 	struct edhoc_context ctx = { 0 };
-	coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  coverage_setup_mock_context(&ctx, EDHOC_METHOD_0));
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.th_len = 32;
@@ -56,15 +59,16 @@ TEST(coverage_exporters, prk_exporter_expand_fail)
 	coverage_mock_reset(4);
 	int ret =
 		edhoc_export_prk_exporter(&ctx, 32769, secret, sizeof(secret));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(coverage_exporters, oscore_export_wrong_status)
 {
 	struct edhoc_context ctx = { 0 };
-	coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  coverage_setup_mock_context(&ctx, EDHOC_METHOD_0));
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.is_oscore_export_allowed = true;
@@ -83,13 +87,14 @@ TEST(coverage_exporters, oscore_export_wrong_status)
 					      &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(coverage_exporters, key_update_success)
 {
 	struct edhoc_context ctx = { 0 };
-	coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  coverage_setup_mock_context(&ctx, EDHOC_METHOD_0));
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.th_len = 32;
@@ -101,13 +106,14 @@ TEST(coverage_exporters, key_update_success)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(ctx.is_oscore_export_allowed);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(coverage_exporters, key_update_extract_fail)
 {
 	struct edhoc_context ctx = { 0 };
-	coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  coverage_setup_mock_context(&ctx, EDHOC_METHOD_0));
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.th_len = 32;
@@ -116,15 +122,16 @@ TEST(coverage_exporters, key_update_extract_fail)
 	uint8_t entropy[16] = { 1, 2, 3 };
 	coverage_mock_reset(2);
 	int ret = edhoc_export_key_update(&ctx, entropy, sizeof(entropy));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(coverage_exporters, oscore_export_bstr_cid)
 {
 	struct edhoc_context ctx = { 0 };
-	coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  coverage_setup_mock_context(&ctx, EDHOC_METHOD_0));
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.is_oscore_export_allowed = true;
@@ -145,14 +152,19 @@ TEST(coverage_exporters, oscore_export_bstr_cid)
 					      &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(coverage_exporters, prk_exporter_failure_sweep)
 {
-	for (int fail_pt = 1; fail_pt <= 4; fail_pt++) {
+	const int mock_fail_pt_first = 1;
+	const int mock_fail_pt_last = 4;
+
+	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
+	     fail_pt++) {
 		struct edhoc_context ctx = { 0 };
-		coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+							 &ctx, EDHOC_METHOD_0));
 		ctx.status = EDHOC_SM_COMPLETED;
 		ctx.prk_state = EDHOC_PRK_STATE_OUT;
 		ctx.th_len = 32;
@@ -162,17 +174,27 @@ TEST(coverage_exporters, prk_exporter_failure_sweep)
 		coverage_mock_reset(fail_pt);
 		int ret = edhoc_export_prk_exporter(&ctx, 32769, secret,
 						    sizeof(secret));
-		TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+		if (fail_pt <= 2) {
+			TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE,
+					  ret);
+		} else {
+			TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+		}
 
-		edhoc_context_deinit(&ctx);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 	}
 }
 
 TEST(coverage_exporters, oscore_export_failure_sweep)
 {
-	for (int fail_pt = 1; fail_pt <= 6; fail_pt++) {
+	const int mock_fail_pt_first = 1;
+	const int mock_fail_pt_last = 6;
+
+	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
+	     fail_pt++) {
 		struct edhoc_context ctx = { 0 };
-		coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+							 &ctx, EDHOC_METHOD_0));
 		ctx.status = EDHOC_SM_COMPLETED;
 		ctx.prk_state = EDHOC_PRK_STATE_OUT;
 		ctx.is_oscore_export_allowed = true;
@@ -188,37 +210,55 @@ TEST(coverage_exporters, oscore_export_failure_sweep)
 		int ret = edhoc_export_oscore_session(
 			&ctx, ms, sizeof(ms), salt, sizeof(salt), sid,
 			sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
-		TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+		TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
 
-		edhoc_context_deinit(&ctx);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 	}
 }
 
 TEST(coverage_exporters, exporter_failure_sweep_extended)
 {
-	for (int fail_pt = 1; fail_pt <= 15; fail_pt++) {
+	const int mock_fail_pt_first = 1;
+	const int mock_fail_pt_last = 15;
+
+	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
+	     fail_pt++) {
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
-		coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-		coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context(&init_ctx,
+							      EDHOC_METHOD_0));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context(&resp_ctx,
+							      EDHOC_METHOD_0));
 
 		int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 		if (EDHOC_SUCCESS != ret) {
-			edhoc_context_deinit(&init_ctx);
-			edhoc_context_deinit(&resp_ctx);
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&init_ctx));
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&resp_ctx));
 			continue;
 		}
 
 		coverage_mock_reset(fail_pt);
-		uint8_t secret[32], salt[32], sid[16], rid[16];
-		size_t sid_len, rid_len;
+		uint8_t master_secret[32] = { 0 };
+		uint8_t master_salt[32] = { 0 };
+		uint8_t sender_id[16] = { 0 };
+		uint8_t recipient_id[16] = { 0 };
+		size_t sender_id_len, recipient_id_len;
 		ret = edhoc_export_oscore_session(
-			&init_ctx, secret, sizeof(secret), salt, sizeof(salt),
-			sid, sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
-		(void)ret;
+			&init_ctx, master_secret, sizeof(master_secret),
+			master_salt, sizeof(master_salt), sender_id,
+			sizeof(sender_id), &sender_id_len, recipient_id,
+			sizeof(recipient_id), &recipient_id_len);
+		coverage_assert_sweep_result(
+			ret, coverage_oscore_export_must_fail(fail_pt));
 
-		edhoc_context_deinit(&init_ctx);
-		edhoc_context_deinit(&resp_ctx);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&init_ctx));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&resp_ctx));
 	}
 }
 
@@ -226,30 +266,40 @@ TEST(coverage_exporters, oscore_export_after_bstr_cid_handshake)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context_bstr_cid(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context_bstr_cid(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	coverage_mock_reset(0);
-	uint8_t secret[32], salt[32], sid[16], rid[16];
-	size_t sid_len, rid_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, secret, sizeof(secret),
-					  salt, sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), &rid_len);
+	uint8_t master_secret[32] = { 0 };
+	uint8_t master_salt[32] = { 0 };
+	uint8_t sender_id[16] = { 0 };
+	uint8_t recipient_id[16] = { 0 };
+	size_t sender_id_len, recipient_id_len;
+	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
+					  sizeof(master_secret), master_salt,
+					  sizeof(master_salt), sender_id,
+					  sizeof(sender_id), &sender_id_len,
+					  recipient_id, sizeof(recipient_id),
+					  &recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, oscore_export_invalid_cid_type)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -257,23 +307,31 @@ TEST(coverage_exporters, oscore_export_invalid_cid_type)
 	resp_ctx.peer_cid.encode_type = (enum edhoc_connection_id_type)99;
 
 	coverage_mock_reset(0);
-	uint8_t secret[32], salt[32], sid[16], rid[16];
-	size_t sid_len, rid_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, secret, sizeof(secret),
-					  salt, sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), &rid_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	uint8_t master_secret[32] = { 0 };
+	uint8_t master_salt[32] = { 0 };
+	uint8_t sender_id[16] = { 0 };
+	uint8_t recipient_id[16] = { 0 };
+	size_t sender_id_len, recipient_id_len;
+	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
+					  sizeof(master_secret), master_salt,
+					  sizeof(master_salt), sender_id,
+					  sizeof(sender_id), &sender_id_len,
+					  recipient_id, sizeof(recipient_id),
+					  &recipient_id_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, oscore_export_invalid_own_cid_type)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -281,67 +339,91 @@ TEST(coverage_exporters, oscore_export_invalid_own_cid_type)
 	resp_ctx.cid.encode_type = (enum edhoc_connection_id_type)99;
 
 	coverage_mock_reset(0);
-	uint8_t secret[32], salt[32], sid[16], rid[16];
-	size_t sid_len, rid_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, secret, sizeof(secret),
-					  salt, sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), &rid_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	uint8_t master_secret[32] = { 0 };
+	uint8_t master_salt[32] = { 0 };
+	uint8_t sender_id[16] = { 0 };
+	uint8_t recipient_id[16] = { 0 };
+	size_t sender_id_len, recipient_id_len;
+	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
+					  sizeof(master_secret), master_salt,
+					  sizeof(master_salt), sender_id,
+					  sizeof(sender_id), &sender_id_len,
+					  recipient_id, sizeof(recipient_id),
+					  &recipient_id_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, oscore_export_bstr_cid_sid_too_small)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context_bstr_cid(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context_bstr_cid(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	coverage_mock_reset(0);
-	uint8_t secret[32], salt[32], sid[1], rid[16];
-	size_t sid_len, rid_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, secret, sizeof(secret),
-					  salt, sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), &rid_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	uint8_t master_secret[32] = { 0 };
+	uint8_t master_salt[32] = { 0 };
+	uint8_t sender_id[1] = { 0 };
+	uint8_t recipient_id[16] = { 0 };
+	size_t sender_id_len, recipient_id_len;
+	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
+					  sizeof(master_secret), master_salt,
+					  sizeof(master_salt), sender_id,
+					  sizeof(sender_id), &sender_id_len,
+					  recipient_id, sizeof(recipient_id),
+					  &recipient_id_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, oscore_export_bstr_cid_rid_too_small)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context_bstr_cid(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context_bstr_cid(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	coverage_mock_reset(0);
-	uint8_t secret[32], salt[32], sid[16], rid[1];
-	size_t sid_len, rid_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, secret, sizeof(secret),
-					  salt, sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), &rid_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	uint8_t master_secret[32] = { 0 };
+	uint8_t master_salt[32] = { 0 };
+	uint8_t sender_id[16] = { 0 };
+	uint8_t recipient_id[1] = { 0 };
+	size_t sender_id_len, recipient_id_len;
+	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
+					  sizeof(master_secret), master_salt,
+					  sizeof(master_salt), sender_id,
+					  sizeof(sender_id), &sender_id_len,
+					  recipient_id, sizeof(recipient_id),
+					  &recipient_id_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, key_update_prk_state_4e3m)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	uint8_t msg3[512] = { 0 };
 	size_t msg3_len = 0;
@@ -358,16 +440,18 @@ TEST(coverage_exporters, key_update_prk_state_4e3m)
 	ret = edhoc_export_key_update(&init_ctx, entropy, sizeof(entropy));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, key_update_prk_state_4e3m_fail)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	uint8_t msg3[512] = { 0 };
 	size_t msg3_len = 0;
@@ -382,18 +466,20 @@ TEST(coverage_exporters, key_update_prk_state_4e3m_fail)
 	coverage_mock_reset(1);
 	uint8_t entropy[32] = { 0x42 };
 	ret = edhoc_export_key_update(&init_ctx, entropy, sizeof(entropy));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, oscore_export_prk_state_4e3m)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
-	coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &init_ctx, EDHOC_METHOD_0));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, coverage_setup_mock_context(
+						 &resp_ctx, EDHOC_METHOD_0));
 
 	int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -402,29 +488,45 @@ TEST(coverage_exporters, oscore_export_prk_state_4e3m)
 	resp_ctx.th_state = EDHOC_TH_STATE_4;
 
 	coverage_mock_reset(0);
-	uint8_t secret[32], salt[32], sid[16], rid[16];
-	size_t sid_len, rid_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, secret, sizeof(secret),
-					  salt, sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), &rid_len);
+	uint8_t master_secret[32] = { 0 };
+	uint8_t master_salt[32] = { 0 };
+	uint8_t sender_id[16] = { 0 };
+	uint8_t recipient_id[16] = { 0 };
+	size_t sender_id_len, recipient_id_len;
+	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
+					  sizeof(master_secret), master_salt,
+					  sizeof(master_salt), sender_id,
+					  sizeof(sender_id), &sender_id_len,
+					  recipient_id, sizeof(recipient_id),
+					  &recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(coverage_exporters, oscore_export_failure_sweep_4e3m)
 {
-	for (int fail_pt = 1; fail_pt <= 15; fail_pt++) {
+	const int mock_fail_pt_first = 1;
+	const int mock_fail_pt_last = 15;
+
+	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
+	     fail_pt++) {
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
-		coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-		coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context(&init_ctx,
+							      EDHOC_METHOD_0));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context(&resp_ctx,
+							      EDHOC_METHOD_0));
 
 		int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 		if (EDHOC_SUCCESS != ret) {
-			edhoc_context_deinit(&init_ctx);
-			edhoc_context_deinit(&resp_ctx);
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&init_ctx));
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&resp_ctx));
 			continue;
 		}
 
@@ -432,58 +534,96 @@ TEST(coverage_exporters, oscore_export_failure_sweep_4e3m)
 		resp_ctx.th_state = EDHOC_TH_STATE_4;
 
 		coverage_mock_reset(fail_pt);
-		uint8_t secret[32], salt[32], sid[16], rid[16];
-		size_t sid_len, rid_len;
+		uint8_t master_secret[32] = { 0 };
+		uint8_t master_salt[32] = { 0 };
+		uint8_t sender_id[16] = { 0 };
+		uint8_t recipient_id[16] = { 0 };
+		size_t sender_id_len, recipient_id_len;
 		ret = edhoc_export_oscore_session(
-			&resp_ctx, secret, sizeof(secret), salt, sizeof(salt),
-			sid, sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
-		(void)ret;
+			&resp_ctx, master_secret, sizeof(master_secret),
+			master_salt, sizeof(master_salt), sender_id,
+			sizeof(sender_id), &sender_id_len, recipient_id,
+			sizeof(recipient_id), &recipient_id_len);
+		coverage_assert_sweep_result(
+			ret,
+			coverage_oscore_export_extended_must_fail(fail_pt));
 
-		edhoc_context_deinit(&init_ctx);
-		edhoc_context_deinit(&resp_ctx);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&init_ctx));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&resp_ctx));
 	}
 }
 
 TEST(coverage_exporters, oscore_export_bstr_cid_failure_sweep)
 {
-	for (int fail_pt = 1; fail_pt <= 15; fail_pt++) {
+	const int mock_fail_pt_first = 1;
+	const int mock_fail_pt_last = 15;
+
+	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
+	     fail_pt++) {
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
-		coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
-		coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context_bstr_cid(
+					  &init_ctx, EDHOC_METHOD_0));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context_bstr_cid(
+					  &resp_ctx, EDHOC_METHOD_0));
 
 		int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 		if (EDHOC_SUCCESS != ret) {
-			edhoc_context_deinit(&init_ctx);
-			edhoc_context_deinit(&resp_ctx);
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&init_ctx));
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&resp_ctx));
 			continue;
 		}
 
 		coverage_mock_reset(fail_pt);
-		uint8_t secret[32], salt[32], sid[16], rid[16];
-		size_t sid_len, rid_len;
+		uint8_t master_secret[32] = { 0 };
+		uint8_t master_salt[32] = { 0 };
+		uint8_t sender_id[16] = { 0 };
+		uint8_t recipient_id[16] = { 0 };
+		size_t sender_id_len, recipient_id_len;
 		ret = edhoc_export_oscore_session(
-			&resp_ctx, secret, sizeof(secret), salt, sizeof(salt),
-			sid, sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
-		(void)ret;
+			&resp_ctx, master_secret, sizeof(master_secret),
+			master_salt, sizeof(master_salt), sender_id,
+			sizeof(sender_id), &sender_id_len, recipient_id,
+			sizeof(recipient_id), &recipient_id_len);
+		coverage_assert_sweep_result(
+			ret,
+			coverage_oscore_export_extended_must_fail(fail_pt));
 
-		edhoc_context_deinit(&init_ctx);
-		edhoc_context_deinit(&resp_ctx);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&init_ctx));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&resp_ctx));
 	}
 }
 
 TEST(coverage_exporters, key_update_failure_sweep)
 {
-	for (int fail_pt = 1; fail_pt <= 10; fail_pt++) {
+	const int mock_fail_pt_first = 1;
+	const int mock_fail_pt_last = 10;
+
+	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
+	     fail_pt++) {
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
-		coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-		coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context(&init_ctx,
+							      EDHOC_METHOD_0));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  coverage_setup_mock_context(&resp_ctx,
+							      EDHOC_METHOD_0));
 
 		int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 		if (EDHOC_SUCCESS != ret) {
-			edhoc_context_deinit(&init_ctx);
-			edhoc_context_deinit(&resp_ctx);
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&init_ctx));
+			TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+					  edhoc_context_deinit(&resp_ctx));
 			continue;
 		}
 
@@ -491,10 +631,13 @@ TEST(coverage_exporters, key_update_failure_sweep)
 		uint8_t entropy[32] = { 0x42 };
 		ret = edhoc_export_key_update(&resp_ctx, entropy,
 					      sizeof(entropy));
-		(void)ret;
+		coverage_assert_sweep_result(
+			ret, coverage_key_update_must_fail(fail_pt));
 
-		edhoc_context_deinit(&init_ctx);
-		edhoc_context_deinit(&resp_ctx);
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&init_ctx));
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_context_deinit(&resp_ctx));
 	}
 }
 

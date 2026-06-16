@@ -37,12 +37,12 @@ extern const struct edhoc_ead coverage_mock_ead_with_value;
 
 void coverage_mock_reset(int fail_at);
 bool coverage_mock_should_fail(void);
-void coverage_setup_mock_context(struct edhoc_context *ctx,
-				 enum edhoc_method method);
-void coverage_setup_mock_context_kid(struct edhoc_context *ctx,
-				     enum edhoc_method method);
-void coverage_setup_mock_context_bstr_cid(struct edhoc_context *ctx,
-					  enum edhoc_method method);
+int coverage_setup_mock_context(struct edhoc_context *ctx,
+				enum edhoc_method method);
+int coverage_setup_mock_context_kid(struct edhoc_context *ctx,
+				    enum edhoc_method method);
+int coverage_setup_mock_context_bstr_cid(struct edhoc_context *ctx,
+					 enum edhoc_method method);
 int coverage_do_msg1_flow(struct edhoc_context *init_ctx,
 			  struct edhoc_context *resp_ctx, uint8_t *msg1,
 			  size_t msg1_size, size_t *msg1_len);
@@ -55,6 +55,8 @@ int coverage_do_mock_msg3_compose(struct edhoc_context *init_ctx,
 				  struct edhoc_context *resp_ctx, uint8_t *msg3,
 				  size_t msg3_size, size_t *msg3_len);
 int coverage_do_mock_msg3_process(struct edhoc_context *init_ctx,
+				  struct edhoc_context *resp_ctx);
+int coverage_do_mock_msg4_process(struct edhoc_context *init_ctx,
 				  struct edhoc_context *resp_ctx);
 int coverage_mock_ead_compose(void *user_ctx, enum edhoc_message msg,
 			      struct edhoc_ead_token *ead_token,

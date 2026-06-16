@@ -20,7 +20,7 @@ TEST_GROUP(internals_message1);
 
 TEST_SETUP(internals_message1)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
@@ -40,9 +40,9 @@ TEST(internals_message1, msg1_compose_invalid_cid_type)
 	uint8_t msg1[256];
 	size_t msg1_len;
 	int ret = edhoc_message_1_compose(&ctx, msg1, sizeof(msg1), &msg1_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message1, msg1_compose_zero_csuites)
@@ -66,9 +66,9 @@ TEST(internals_message1, msg1_compose_zero_csuites)
 	uint8_t msg1[256];
 	size_t msg1_len;
 	int ret = edhoc_message_1_compose(&ctx, msg1, sizeof(msg1), &msg1_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message1, msg1_compose_tiny_buffer)
@@ -81,9 +81,9 @@ TEST(internals_message1, msg1_compose_tiny_buffer)
 	uint8_t msg1[2];
 	size_t msg1_len;
 	int ret = edhoc_message_1_compose(&ctx, msg1, sizeof(msg1), &msg1_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message1, msg1_process_malformed)
@@ -95,9 +95,9 @@ TEST(internals_message1, msg1_process_malformed)
 
 	uint8_t garbage[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	int ret = edhoc_message_1_process(&ctx, garbage, sizeof(garbage));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_1_PROCESS_FAILURE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message1, msg1_process_truncated)
@@ -109,9 +109,9 @@ TEST(internals_message1, msg1_process_truncated)
 
 	uint8_t tiny[1] = { 0x00 };
 	int ret = edhoc_message_1_process(&ctx, tiny, sizeof(tiny));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_1_PROCESS_FAILURE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST_GROUP_RUNNER(internals_message1)

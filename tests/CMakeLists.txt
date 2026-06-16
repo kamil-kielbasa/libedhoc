@@ -33,6 +33,7 @@ set(TEST_UNIT_SOURCES
     unit/coverage/test_coverage_error.c
     unit/coverage/test_coverage_cbor.c
     unit/coverage/test_coverage_handshake.c
+    unit/coverage/test_coverage_sweep_validate.c
     unit/internals/internals_common.c
     unit/internals/test_internals_common.c
     unit/internals/test_internals_mac.c
@@ -161,9 +162,7 @@ if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
                            -Winit-self
 
                            # Suppressed (GCC-specific):
-                           # - jump-misses-init: test_coverage.c uses goto for cleanup
-                           -Wno-nested-externs
-                           -Wno-jump-misses-init)
+                           -Wno-nested-externs)
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE
                            ${TEST_COMMON_WARNINGS})

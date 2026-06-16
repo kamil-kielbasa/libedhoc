@@ -640,7 +640,7 @@ TEST(helpers, extract_connection_id_invalid_cbor)
 		.buffer_size = sizeof(garbage),
 	};
 	int ret = edhoc_extract_connection_id(&ef);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
 
 TEST(helpers, extract_connection_id_bstr_too_long)
@@ -657,7 +657,7 @@ TEST(helpers, extract_connection_id_bstr_too_long)
 		.buffer_size = sizeof(cbor_bstr),
 	};
 	int ret = edhoc_extract_connection_id(&ef);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
 TEST_GROUP_RUNNER(helpers)

@@ -20,7 +20,7 @@ TEST_GROUP(internals_mac);
 
 TEST_SETUP(internals_mac)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
@@ -54,7 +54,7 @@ TEST(internals_mac, mac_ctx_x509_chain_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_x509_chain_multi_cert)
@@ -84,7 +84,7 @@ TEST(internals_mac, mac_ctx_x509_chain_multi_cert)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_x509_hash_msg2)
@@ -115,7 +115,7 @@ TEST(internals_mac, mac_ctx_x509_hash_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_x509_hash_bstr_alg)
@@ -148,7 +148,7 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr_alg)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_kid_int_msg3)
@@ -175,7 +175,7 @@ TEST(internals_mac, mac_ctx_kid_int_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_kid_bstr_msg2)
@@ -205,7 +205,7 @@ TEST(internals_mac, mac_ctx_kid_bstr_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_bstr_cid_msg2)
@@ -234,7 +234,7 @@ TEST(internals_mac, mac_ctx_bstr_cid_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_with_ead)
@@ -266,7 +266,7 @@ TEST(internals_mac, mac_ctx_with_ead)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_any_cred)
@@ -295,7 +295,7 @@ TEST(internals_mac, mac_ctx_any_cred)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method_1_msg2)
@@ -311,7 +311,7 @@ TEST(internals_mac, mac_length_method_1_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method_2_msg3)
@@ -327,7 +327,7 @@ TEST(internals_mac, mac_length_method_2_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method_1_msg2)
@@ -343,7 +343,7 @@ TEST(internals_mac, sign_or_mac_length_method_1_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, sign_or_mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method_3_msg3)
@@ -359,7 +359,7 @@ TEST(internals_mac, sign_or_mac_length_method_3_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, sign_or_mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method_max_msg2)
@@ -374,7 +374,7 @@ TEST(internals_mac, mac_length_method_max_msg2)
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_x509_chain)
@@ -409,7 +409,7 @@ TEST(internals_mac, full_mac_ctx_x509_chain)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_x509_hash_int)
@@ -448,7 +448,7 @@ TEST(internals_mac, full_mac_ctx_x509_hash_int)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_kid_int_cbor)
@@ -483,7 +483,7 @@ TEST(internals_mac, full_mac_ctx_kid_int_cbor)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_kid_bstr)
@@ -522,7 +522,7 @@ TEST(internals_mac, full_mac_ctx_kid_bstr)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_bstr_cid)
@@ -559,7 +559,7 @@ TEST(internals_mac, full_mac_ctx_bstr_cid)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_with_ead)
@@ -599,7 +599,7 @@ TEST(internals_mac, full_mac_ctx_with_ead)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_any)
@@ -636,7 +636,7 @@ TEST(internals_mac, full_mac_ctx_any)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_sign_or_mac_method1_msg2)
@@ -681,7 +681,7 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 	TEST_ASSERT_EQUAL(8, sign_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(mac, sign, 8);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_method1_msg2)
@@ -703,7 +703,7 @@ TEST(internals_mac, verify_sign_or_mac_method1_msg2)
 					   mac, 8);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_method1_msg2_mismatch)
@@ -726,7 +726,7 @@ TEST(internals_mac, verify_sign_or_mac_method1_msg2_mismatch)
 					   wrong_mac, 8, mac, 8);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_SIGN_OR_MAC_2, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_sign_or_mac_method2_msg3)
@@ -770,7 +770,7 @@ TEST(internals_mac, comp_sign_or_mac_method2_msg3)
 	TEST_ASSERT_EQUAL(8, sign_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(mac, sign, 8);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_method3_msg3)
@@ -792,7 +792,7 @@ TEST(internals_mac, verify_sign_or_mac_method3_msg3)
 					   mac, 8);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_len_null_args)
@@ -809,7 +809,7 @@ TEST(internals_mac, mac_ctx_len_null_args)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  edhoc_comp_mac_context_length(&ctx, &cred, NULL));
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_len_invalid_role)
@@ -825,7 +825,7 @@ TEST(internals_mac, mac_ctx_len_invalid_role)
 	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_len_invalid_message)
@@ -841,7 +841,7 @@ TEST(internals_mac, mac_ctx_len_invalid_message)
 	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_small_buffer)
@@ -867,9 +867,9 @@ TEST(internals_mac, mac_ctx_small_buffer)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = 4;
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_len_unsupported_cred)
@@ -888,9 +888,9 @@ TEST(internals_mac, mac_ctx_len_unsupported_cred)
 	size_t len = 0;
 
 	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_x509_hash_bstr_msg3)
@@ -926,7 +926,7 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT(mac_ctx->id_cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, full_mac_ctx_x509_hash_bstr)
@@ -966,7 +966,7 @@ TEST(internals_mac, full_mac_ctx_x509_hash_bstr)
 	TEST_ASSERT(mac_ctx->th_len > 0);
 	TEST_ASSERT(mac_ctx->cred_len > 0);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_invalid_cid_type)
@@ -989,9 +989,9 @@ TEST(internals_mac, mac_ctx_invalid_cid_type)
 
 	size_t mac_ctx_len = 0;
 	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &mac_ctx_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_null_args)
@@ -1010,7 +1010,7 @@ TEST(internals_mac, mac_ctx_null_args)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  edhoc_comp_mac_context(&ctx, &cred, NULL));
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_invalid_role)
@@ -1028,7 +1028,7 @@ TEST(internals_mac, mac_ctx_invalid_role)
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mac);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_invalid_message)
@@ -1046,7 +1046,7 @@ TEST(internals_mac, mac_ctx_invalid_message)
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mac);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_bad_th_state_msg2)
@@ -1070,7 +1070,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg2)
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mac);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_bad_th_state_msg3)
@@ -1092,7 +1092,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg3)
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mac);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_unsupported_cred_label)
@@ -1114,9 +1114,9 @@ TEST(internals_mac, mac_ctx_unsupported_cred_label)
 	mac->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mac);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_invalid_cid_type_compose)
@@ -1142,9 +1142,9 @@ TEST(internals_mac, mac_ctx_invalid_cid_type_compose)
 	mac->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mac);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_invalid_kid_encode_in_length)
@@ -1165,9 +1165,9 @@ TEST(internals_mac, mac_ctx_invalid_kid_encode_in_length)
 	size_t len = 0;
 
 	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_null_args)
@@ -1176,11 +1176,12 @@ TEST(internals_mac, mac_length_null_args)
 	internals_setup_crypto_context(&ctx);
 	size_t mac_len = 0;
 
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS,
-			      edhoc_comp_mac_length(NULL, &mac_len));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, edhoc_comp_mac_length(&ctx, NULL));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_comp_mac_length(NULL, &mac_len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_comp_mac_length(&ctx, NULL));
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_invalid_role)
@@ -1193,9 +1194,9 @@ TEST(internals_mac, mac_length_invalid_role)
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_invalid_message)
@@ -1208,9 +1209,9 @@ TEST(internals_mac, mac_length_invalid_message)
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method_max_msg3)
@@ -1223,9 +1224,9 @@ TEST(internals_mac, mac_length_method_max_msg3)
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_mac_invalid_message)
@@ -1245,9 +1246,9 @@ TEST(internals_mac, comp_mac_invalid_message)
 
 	uint8_t mac[32];
 	int ret = edhoc_comp_mac(&ctx, mc, mac, sizeof(mac));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_mac_bad_prk_state_msg2)
@@ -1267,9 +1268,9 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg2)
 
 	uint8_t mac[32];
 	int ret = edhoc_comp_mac(&ctx, mc, mac, sizeof(mac));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_mac_bad_prk_state_msg3)
@@ -1289,9 +1290,9 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg3)
 
 	uint8_t mac[32];
 	int ret = edhoc_comp_mac(&ctx, mc, mac, sizeof(mac));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_invalid_role)
@@ -1304,9 +1305,9 @@ TEST(internals_mac, sign_or_mac_length_invalid_role)
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method_max)
@@ -1319,9 +1320,9 @@ TEST(internals_mac, sign_or_mac_length_method_max)
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_invalid_msg)
@@ -1334,9 +1335,9 @@ TEST(internals_mac, sign_or_mac_length_invalid_msg)
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_sign_or_mac_invalid_msg)
@@ -1357,9 +1358,9 @@ TEST(internals_mac, comp_sign_or_mac_invalid_msg)
 	size_t sign_len;
 	int ret = edhoc_comp_sign_or_mac(&ctx, &cred, mc, mac, 8, sign,
 					 sizeof(sign), &sign_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_sign_or_mac_method_max)
@@ -1380,9 +1381,9 @@ TEST(internals_mac, comp_sign_or_mac_method_max)
 	size_t sign_len;
 	int ret = edhoc_comp_sign_or_mac(&ctx, &cred, mc, mac, 8, sign,
 					 sizeof(sign), &sign_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_null_mac)
@@ -1400,9 +1401,9 @@ TEST(internals_mac, verify_sign_or_mac_null_mac)
 	uint8_t pub[32] = { 0 };
 	uint8_t sign[8] = { 0 };
 	int ret = edhoc_verify_sign_or_mac(&ctx, mc, pub, 32, sign, 8, NULL, 0);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_invalid_msg)
@@ -1420,9 +1421,9 @@ TEST(internals_mac, verify_sign_or_mac_invalid_msg)
 	uint8_t pub[32] = { 0 };
 	uint8_t mac[8] = { 0 };
 	int ret = edhoc_verify_sign_or_mac(&ctx, mc, pub, 32, mac, 8, mac, 8);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_method_max)
@@ -1440,9 +1441,9 @@ TEST(internals_mac, verify_sign_or_mac_method_max)
 	uint8_t pub[32] = { 0 };
 	uint8_t mac[8] = { 0 };
 	int ret = edhoc_verify_sign_or_mac(&ctx, mc, pub, 32, mac, 8, mac, 8);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method0_msg2)
@@ -1458,7 +1459,7 @@ TEST(internals_mac, sign_or_mac_length_method0_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(64, len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method0_msg3)
@@ -1474,7 +1475,7 @@ TEST(internals_mac, sign_or_mac_length_method0_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(64, len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method0_msg2)
@@ -1490,7 +1491,7 @@ TEST(internals_mac, mac_length_method0_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(32, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method0_msg3)
@@ -1506,7 +1507,7 @@ TEST(internals_mac, mac_length_method0_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(32, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method3_msg2)
@@ -1522,7 +1523,7 @@ TEST(internals_mac, mac_length_method3_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method3_msg3)
@@ -1538,7 +1539,7 @@ TEST(internals_mac, mac_length_method3_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method2_msg2)
@@ -1554,7 +1555,7 @@ TEST(internals_mac, sign_or_mac_length_method2_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(64, len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method1_msg3)
@@ -1570,7 +1571,7 @@ TEST(internals_mac, mac_length_method1_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(32, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_length_method2_msg2)
@@ -1586,7 +1587,7 @@ TEST(internals_mac, mac_length_method2_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(32, mac_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method3_msg2)
@@ -1602,7 +1603,7 @@ TEST(internals_mac, sign_or_mac_length_method3_msg2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method1_msg3)
@@ -1618,7 +1619,7 @@ TEST(internals_mac, sign_or_mac_length_method1_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(64, len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method2_msg3)
@@ -1634,7 +1635,7 @@ TEST(internals_mac, sign_or_mac_length_method2_msg3)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(8, len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_x509chain_zero_certs)
@@ -1659,7 +1660,7 @@ TEST(internals_mac, mac_ctx_x509chain_zero_certs)
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mc);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_length_th_zero)
@@ -1680,9 +1681,9 @@ TEST(internals_mac, mac_ctx_length_th_zero)
 
 	size_t len = 0;
 	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, mac_ctx_kid_bad_cbor_compact)
@@ -1711,9 +1712,9 @@ TEST(internals_mac, mac_ctx_kid_bad_cbor_compact)
 	mc->buf_len = 256;
 
 	int ret = edhoc_comp_mac_context(&ctx, &cred, mc);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_mac_null_args)
@@ -1739,7 +1740,7 @@ TEST(internals_mac, comp_mac_null_args)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  edhoc_comp_mac(&ctx, mc, mac, 0));
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_mac_msg1)
@@ -1765,7 +1766,7 @@ TEST(internals_mac, comp_mac_msg1)
 	int ret = edhoc_comp_mac(&ctx, mc, mac, sizeof(mac));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_sign_or_mac_len_null_args)
@@ -1779,7 +1780,7 @@ TEST(internals_mac, comp_sign_or_mac_len_null_args)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  edhoc_comp_sign_or_mac_length(&ctx, NULL));
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, sign_or_mac_length_method_max_msg3)
@@ -1794,7 +1795,7 @@ TEST(internals_mac, sign_or_mac_length_method_max_msg3)
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_sign_or_mac_null_args)
@@ -1827,7 +1828,7 @@ TEST(internals_mac, comp_sign_or_mac_null_args)
 			  edhoc_comp_sign_or_mac(&ctx, &cred, mc, mac, 0, sign,
 						 64, &sign_len));
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, comp_sign_or_mac_method_max_msg3)
@@ -1850,7 +1851,7 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg3)
 					 sizeof(sign), &sign_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_mismatch_msg3)
@@ -1875,7 +1876,7 @@ TEST(internals_mac, verify_sign_or_mac_mismatch_msg3)
 					   8);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_SIGN_OR_MAC_3, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_mac, verify_sign_or_mac_method_max_msg3)
@@ -1896,7 +1897,7 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg3)
 	int ret = edhoc_verify_sign_or_mac(&ctx, mc, pub, 32, mac, 8, mac, 8);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST_GROUP_RUNNER(internals_mac)

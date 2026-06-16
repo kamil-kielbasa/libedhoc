@@ -20,7 +20,7 @@ TEST_GROUP(internals_api);
 
 TEST_SETUP(internals_api)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
@@ -66,17 +66,17 @@ TEST(internals_api, export_oscore_null)
 					      sizeof(salt), sid, sizeof(sid),
 					      &sid_len, rid, sizeof(rid),
 					      &rid_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	ret = edhoc_export_oscore_session(&ctx, NULL, sizeof(ms), salt,
 					  sizeof(salt), sid, sizeof(sid),
 					  &sid_len, rid, sizeof(rid), &rid_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	ret = edhoc_export_oscore_session(&ctx, ms, sizeof(ms), salt,
 					  sizeof(salt), sid, sizeof(sid),
 					  &sid_len, rid, sizeof(rid), NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_api, export_oscore_bad_state)
@@ -94,9 +94,9 @@ TEST(internals_api, export_oscore_bad_state)
 					      sizeof(salt), sid, sizeof(sid),
 					      &sid_len, rid, sizeof(rid),
 					      &rid_len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_api, key_update_null)
@@ -105,9 +105,9 @@ TEST(internals_api, key_update_null)
 	uint8_t entropy[16] = { 0 };
 
 	int ret = edhoc_export_key_update(NULL, entropy, sizeof(entropy));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	ret = edhoc_export_key_update(&ctx, NULL, 0);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST_GROUP_RUNNER(internals_api)

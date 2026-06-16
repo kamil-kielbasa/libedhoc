@@ -20,7 +20,7 @@ TEST_GROUP(coverage_cbor);
 
 TEST_SETUP(coverage_cbor)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 }
 
 TEST_TEAR_DOWN(coverage_cbor)

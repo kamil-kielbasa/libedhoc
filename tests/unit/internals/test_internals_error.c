@@ -20,7 +20,7 @@ TEST_GROUP(internals_error);
 
 TEST_SETUP(internals_error)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
@@ -36,13 +36,13 @@ TEST(internals_error, error_message_compose_null)
 	size_t len;
 	int ret = edhoc_message_error_compose(NULL, sizeof(buf), &len,
 					      EDHOC_ERROR_CODE_SUCCESS, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	ret = edhoc_message_error_compose(buf, 0, &len,
 					  EDHOC_ERROR_CODE_SUCCESS, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	ret = edhoc_message_error_compose(buf, sizeof(buf), NULL,
 					  EDHOC_ERROR_CODE_SUCCESS, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_error, error_message_process_null)
@@ -50,11 +50,11 @@ TEST(internals_error, error_message_process_null)
 	uint8_t buf[64] = { 0 };
 	enum edhoc_error_code code;
 	int ret = edhoc_message_error_process(NULL, sizeof(buf), &code, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	ret = edhoc_message_error_process(buf, 0, &code, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	ret = edhoc_message_error_process(buf, sizeof(buf), NULL, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_error, error_compose_tiny_buffer)
@@ -64,7 +64,7 @@ TEST(internals_error, error_compose_tiny_buffer)
 	int ret = edhoc_message_error_compose(
 		buf, sizeof(buf), &len, EDHOC_ERROR_CODE_UNSPECIFIED_ERROR,
 		NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_error, error_compose_unspecified_null_info)
@@ -101,7 +101,7 @@ TEST(internals_error, error_compose_invalid_code)
 	uint8_t buf[64];
 	size_t len;
 	int ret = edhoc_message_error_compose(buf, sizeof(buf), &len, 99, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 }
 
 TEST(internals_error, error_compose_unspecified_with_info)
@@ -217,7 +217,7 @@ TEST(internals_error, error_process_malformed)
 	enum edhoc_error_code code;
 	int ret = edhoc_message_error_process(garbage, sizeof(garbage), &code,
 					      NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
 
 TEST(internals_error, error_compose_out_of_range_code)

@@ -1,3 +1,26 @@
+Version 1.12.5
+--------------
+
+:Date: June 16, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Tests:
+
+  * Assert specific ``EDHOC_ERROR_*`` return codes instead of generic
+    success/failure checks across integration and unit tests.
+  * Removed ``goto``-based cleanup from integration test helpers; use
+    structured early returns instead.
+  * Strengthened integration tests: ``psa_crypto_init()`` checks in setup,
+    ``edhoc_context_deinit()`` asserts in teardown, and direct
+    ``edhoc_cipher_suite_N_get_suite()`` / ``_get_keys()`` getter calls
+    where a cached pointer added no value.
+  * Added ``get_cipher_suite_descriptors`` test in
+    :file:`tests/unit/api/test_api.c` for cipher suite 0, 2, and 24 getters.
+  * Documented test quality standards in :file:`doc/project/testing.rst`.
+  * Added :file:`coverage_sweep.h` and :file:`test_coverage_sweep_validate.c`:
+    per-``fail_pt`` expected outcomes for mock sweeps via ``coverage_assert_sweep_result()``.
+  * Extended mock full-handshake coverage tests to message 4; hardened
+    :file:`coverage_common.c` setup.
+
 Version 1.12.4
 --------------
 

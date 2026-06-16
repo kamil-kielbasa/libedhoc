@@ -20,7 +20,7 @@ TEST_GROUP(internals_message3);
 
 TEST_SETUP(internals_message3)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
@@ -33,7 +33,7 @@ TEST_TEAR_DOWN(internals_message3)
 TEST(internals_message3, comp_th_3_null)
 {
 	int ret = comp_th_3(NULL, NULL, NULL, 0);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message3, comp_th_3_bad_state)
@@ -49,16 +49,16 @@ TEST(internals_message3, comp_th_3_bad_state)
 
 	uint8_t ptxt[32] = { 0 };
 	int ret = comp_th_3(&ctx, mc, ptxt, sizeof(ptxt));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message3, comp_key_iv_aad_3_null)
 {
 	uint8_t key[16], iv[13], aad[256];
 	int ret = comp_key_iv_aad_3(NULL, key, 16, iv, 13, aad, 256);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message3, comp_key_iv_aad_3_bad_state)
@@ -70,9 +70,9 @@ TEST(internals_message3, comp_key_iv_aad_3_bad_state)
 
 	uint8_t key[16], iv[13], aad[256];
 	int ret = comp_key_iv_aad_3(&ctx, key, 16, iv, 13, aad, 256);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message3, comp_plaintext_3_len_null)
@@ -92,7 +92,7 @@ TEST(internals_message3, comp_plaintext_3_len_null)
 			  comp_plaintext_3_len(&ctx, mc, 0, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  comp_plaintext_3_len(&ctx, mc, 8, NULL));
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message3, prepare_plaintext_3_null)
@@ -132,7 +132,7 @@ TEST(internals_message3, comp_aad_3_len_null)
 			  comp_aad_3_len(NULL, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  comp_aad_3_len(&ctx, NULL));
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message3, gen_msg_3_null)
@@ -206,7 +206,7 @@ TEST(internals_message3, decrypt_ciphertext_3_null)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 32,
 					       ctxt, 16, ptxt, 0));
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message3, parse_plaintext_3_null)
@@ -224,7 +224,7 @@ TEST(internals_message3, parse_plaintext_3_null)
 			  parse_plaintext_3(&ctx, ptxt, 0, &parsed));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  parse_plaintext_3(&ctx, ptxt, 1, NULL));
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message3, parse_plaintext_3_garbage)
@@ -235,8 +235,8 @@ TEST(internals_message3, parse_plaintext_3_garbage)
 	struct plaintext parsed = { 0 };
 
 	int ret = parse_plaintext_3(&ctx, garbage, sizeof(garbage), &parsed);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST_GROUP_RUNNER(internals_message3)

@@ -20,7 +20,7 @@ TEST_GROUP(internals_message4);
 
 TEST_SETUP(internals_message4)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
@@ -33,7 +33,7 @@ TEST_TEAR_DOWN(internals_message4)
 TEST(internals_message4, comp_th_4_null)
 {
 	int ret = comp_th_4(NULL, NULL, NULL, 0);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message4, comp_th_4_bad_state)
@@ -49,9 +49,9 @@ TEST(internals_message4, comp_th_4_bad_state)
 
 	uint8_t ptxt[32] = { 0 };
 	int ret = comp_th_4(&ctx, mc, ptxt, sizeof(ptxt));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, comp_giy_null)
@@ -59,7 +59,7 @@ TEST(internals_message4, comp_giy_null)
 	uint8_t giy[32];
 	struct edhoc_auth_creds ac = { 0 };
 	int ret = comp_giy(NULL, &ac, NULL, 0, giy, sizeof(giy));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message4, comp_giy_invalid_role)
@@ -75,23 +75,23 @@ TEST(internals_message4, comp_giy_invalid_role)
 	struct edhoc_auth_creds ac = { 0 };
 	uint8_t giy[32];
 	int ret = comp_giy(&ctx, &ac, NULL, 0, giy, sizeof(giy));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, compute_plaintext_4_len_null)
 {
 	size_t len;
 	int ret = compute_plaintext_4_len(NULL, &len);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message4, compute_key_iv_aad_4_null)
 {
 	uint8_t key[16], iv[13], aad[256];
 	int ret = compute_key_iv_aad_4(NULL, key, 16, iv, 13, aad, 256);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message4, compute_key_iv_aad_4_bad_state)
@@ -103,9 +103,9 @@ TEST(internals_message4, compute_key_iv_aad_4_bad_state)
 
 	uint8_t key[16], iv[13], aad[256];
 	int ret = compute_key_iv_aad_4(&ctx, key, 16, iv, 13, aad, 256);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, prepare_plaintext_4_null)
@@ -121,7 +121,7 @@ TEST(internals_message4, prepare_plaintext_4_null)
 			  prepare_plaintext_4(&ctx, NULL, 64, &ptxt_len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  prepare_plaintext_4(&ctx, ptxt, 64, NULL));
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, gen_msg_4_null)
@@ -168,7 +168,7 @@ TEST(internals_message4, parse_plaintext_4_null)
 			  parse_plaintext_4(NULL, ptxt, 1));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
 			  parse_plaintext_4(&ctx, NULL, 1));
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, parse_plaintext_4_empty)
@@ -179,7 +179,7 @@ TEST(internals_message4, parse_plaintext_4_empty)
 
 	int ret = parse_plaintext_4(&ctx, empty, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, compute_plaintext_4_len_large_ead_label)
@@ -197,7 +197,7 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_label)
 	int ret = compute_plaintext_4_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(len > 0);
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, compute_plaintext_4_len_large_ead_value)
@@ -215,7 +215,7 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_value)
 	int ret = compute_plaintext_4_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(len > 60000);
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_message4, compute_plaintext_4_len_very_large_ead_value)
@@ -233,7 +233,7 @@ TEST(internals_message4, compute_plaintext_4_len_very_large_ead_value)
 	int ret = compute_plaintext_4_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(len > 70000);
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST_GROUP_RUNNER(internals_message4)
