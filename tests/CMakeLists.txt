@@ -108,65 +108,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                       unity)
 
 # --- Warning flags -----------------------------------------------------------
-
-set(TEST_COMMON_WARNINGS
-    -Werror
-    -Wall
-    -Wextra
-    -pedantic
-
-    # Type safety
-    -Wconversion
-    -Wcast-align
-    -Wdouble-promotion
-
-    # Format strings
-    -Wformat=2
-
-    # Control flow
-    -Wunreachable-code
-
-    # Declarations
-    -Wmissing-prototypes
-    -Wstrict-prototypes
-    -Wold-style-definition
-
-    # General
-    -Wshadow
-    -Wundef
-    -Wwrite-strings
-    -Wpointer-arith
-    -Wuninitialized
-    -Wmissing-include-dirs
-    -Wnull-dereference
-
-    # Suppressed for test code:
-    # - nested-externs: Unity macros use nested extern declarations
-    # - missing-declarations: test functions declared via Unity macros
-    # - sign-conversion: test vectors store negative CBOR ints in uint8_t
-    -Wno-missing-declarations
-    -Wno-sign-conversion)
-
-# Compiler family is detected from CMAKE_C_COMPILER_ID, the same mechanism used
-# by the core library.
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${PROJECT_NAME} PRIVATE
-                           ${TEST_COMMON_WARNINGS}
-
-                           # GCC-specific
-                           -Wformat-overflow=2
-                           -Wformat-truncation=2
-                           -Wduplicated-cond
-                           -Wduplicated-branches
-                           -Wlogical-op
-                           -Winit-self
-
-                           # Suppressed (GCC-specific):
-                           -Wno-nested-externs)
-elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${PROJECT_NAME} PRIVATE
-                           ${TEST_COMMON_WARNINGS})
-endif()
+libedhoc_target_warnings(${PROJECT_NAME} TEST)
 
 # --- Instrumentation (coverage, sanitizers) ----------------------------------
 

@@ -30,31 +30,7 @@ target_link_libraries(libedhoc PUBLIC
     $<BUILD_INTERFACE:zcbor>)
 
 # --- Strict warnings (PRIVATE: never inflicted on consumers) -----------------
-set(LIBEDHOC_COMMON_WARNINGS
-    -Werror -Wall -Wextra -pedantic
-    -Wconversion -Wsign-conversion -Wcast-align -Wdouble-promotion
-    -Wformat=2 -Wunreachable-code
-    -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes
-    -Wold-style-definition -Wnested-externs
-    -Wshadow -Wundef -Wwrite-strings -Wpointer-arith -Wuninitialized
-    -Wmissing-include-dirs -Wnull-dereference)
-
-# Compiler family is detected from CMAKE_C_COMPILER_ID.
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(libedhoc PRIVATE ${LIBEDHOC_COMMON_WARNINGS}
-        -Wformat-overflow=2 -Wformat-truncation=2 -Wswitch-enum
-        -Wjump-misses-init -Wduplicated-cond -Wduplicated-branches
-        -Wlogical-op -Winit-self)
-elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
-    target_compile_options(libedhoc PRIVATE ${LIBEDHOC_COMMON_WARNINGS}
-        -Wno-vla -Wno-declaration-after-statement -Wno-covered-switch-default
-        -Wno-padded -Wno-switch-default)
-    include(CheckCCompilerFlag)
-    check_c_compiler_flag(-Wunsafe-buffer-usage HAS_WUNSAFE_BUFFER_USAGE)
-    if(HAS_WUNSAFE_BUFFER_USAGE)
-        target_compile_options(libedhoc PRIVATE -Wno-unsafe-buffer-usage)
-    endif()
-endif()
+libedhoc_target_warnings(libedhoc STRICT)
 
 # Stack hardening (disabled under sanitizers — conflicts with ASan)
 if(NOT LIBEDHOC_ENABLE_SANITIZERS)
