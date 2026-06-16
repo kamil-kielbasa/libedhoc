@@ -191,7 +191,7 @@ STATIC int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
 		*len = 1;
 		break;
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		*len += cid->bstr_length + 1;
+		*len += cid->bstr_length;
 		*len += edhoc_cbor_bstr_oh(cid->bstr_length);
 		break;
 	default:
@@ -601,7 +601,7 @@ size_t edhoc_cbor_tstr_oh(size_t length)
 size_t edhoc_cbor_bstr_oh(size_t length)
 {
 	if (length <= 23) {
-		return 1 + 1; // zcbor issue
+		return 1; // canonical CBOR
 	} else if (length <= UINT8_MAX) {
 		return 2;
 	} else if (length <= UINT16_MAX) {

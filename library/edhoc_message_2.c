@@ -733,7 +733,7 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset], sign_len + edhoc_cbor_bstr_oh(sign_len) + 1,
+		&ptxt[offset], sign_len + edhoc_cbor_bstr_oh(sign_len),
 		&cbor_sign_or_mac_2, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
