@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(libedhoc VERSION 1.12.5 LANGUAGES C)
+project(libedhoc VERSION 1.12.6 LANGUAGES C)
 
 # The public headers use C11 anonymous unions, so the library is C11. (The old
 # `set_property(GLOBAL PROPERTY C_STANDARD 99)` was a no-op — C_STANDARD is a
@@ -18,6 +18,11 @@ option(LIBEDHOC_BUILD_EXTERNAL_DEPS "Use vendored submodule dependencies"  ON)
 option(LIBEDHOC_ENABLE_COVERAGE     "Code coverage instrumentation (gcov)" OFF)
 option(LIBEDHOC_ENABLE_SANITIZERS   "AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(LIBEDHOC_ENABLE_FUZZING      "libFuzzer fuzz targets (Clang)"       OFF)
+
+# --- Shared CMake helpers ----------------------------------------------------
+# Defined at top scope so libedhoc_target_warnings() is visible in every
+# add_subdirectory() (library, tests, fuzz).
+include(cmake/warnings.cmake)
 
 # --- Dependencies (submodules OR find_package) -------------------------------
 include(cmake/dependencies.cmake)
@@ -62,7 +67,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     # Public headers + generated config, flat in <prefix>/include. Backend +
     # helper headers go here too, so the helper sources can be recompiled by a
     # downstream consumer (they #include "edhoc_backend_log.h" unqualified).
-    install(DIRECTORY include/ ${CMAKE_CURRENT_BINARY_DIR}/include/generated/
+    install(DIRECTORY include/ ${LIBEDHOC_GENERATED_DIR}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
     install(DIRECTORY backends/cbor/include/ backends/memory/include/
                       backends/log/include/ helpers/include/

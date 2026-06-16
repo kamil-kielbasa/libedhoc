@@ -13,7 +13,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/externals_sources.cmake)
 
 add_library(${PROJECT_NAME} STATIC ${LIBEDHOC_ZCBOR_SOURCES})
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC ZCBOR_CANONICAL)
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${LIBEDHOC_ZCBOR_COMPILE_DEFINITIONS})
 target_include_directories(${PROJECT_NAME} PUBLIC ${LIBEDHOC_ZCBOR_INCLUDE_DIR})
 
 # --- Install -----------------------------------------------------------------

@@ -23,7 +23,8 @@ set(CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN 2 CACHE STRING "")
 set(CONFIG_LIBEDHOC_LOG_LEVEL                  3  CACHE STRING "")  # INF
 set(CONFIG_LIBEDHOC_MEM_BACKEND                0  CACHE STRING "")  # STACK
 
-set(LIBEDHOC_GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated)
+set(LIBEDHOC_GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated
+    CACHE INTERNAL "Directory holding libedhoc generated headers (edhoc_config.h)")
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/edhoc_config.h.in
     ${LIBEDHOC_GENERATED_DIR}/edhoc_config.h

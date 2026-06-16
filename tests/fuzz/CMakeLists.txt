@@ -5,6 +5,7 @@
 project(libedhoc_fuzz)
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/sources.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/warnings.cmake)
 
 # --- Fuzz sources ------------------------------------------------------------
 
@@ -34,6 +35,14 @@ foreach(target ${FUZZ_TARGETS})
                           libedhoc::helpers
                           libedhoc::backend_memory
                           unity)
+
+    # Same shared warning policy as the library and module tests (TEST profile:
+    # tolerates Unity macros and CBOR test-vector casts).
+    libedhoc_target_warnings(${target} TEST)
+
+    # Fuzz-specific: LLVMFuzzerTestOneInput is the libFuzzer entry point, called
+    # by the fuzzer runtime — it has no prototype in any header by design.
+    target_compile_options(${target} PRIVATE -Wno-missing-prototypes)
 
     target_compile_options(${target} PRIVATE
                            -fsanitize=fuzzer,address,undefined

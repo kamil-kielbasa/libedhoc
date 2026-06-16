@@ -1,3 +1,17 @@
+Version 1.12.6
+--------------
+
+:Date: June 16, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Build:
+
+  * Centralized warning flags in :file:`cmake/warnings.cmake`
+    (``libedhoc_target_warnings(STRICT|TEST)``) for library, tests, and fuzz.
+  * Unified zcbor compile definitions via ``LIBEDHOC_ZCBOR_COMPILE_DEFINITIONS``;
+    removed unused ``CONFIG_ZCBOR``; ``ZCBOR_CANONICAL`` consistently ``PRIVATE``.
+  * Fixed ``CMakePresets.json`` schema version (6 → 3) to match ``cmake_minimum_required`` 3.21.
+  * Install of generated ``edhoc_config.h`` uses ``LIBEDHOC_GENERATED_DIR`` instead of a hardcoded path.
+
 Version 1.12.5
 --------------
 
