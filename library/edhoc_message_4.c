@@ -54,15 +54,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 
-/** 
- * \brief CBOR byte stream overhead.
- *
- * \param len		        Length of buffer to CBOR as bstr.
- *
- * \return Number of bytes.
- */
-static size_t cbor_bstr_overhead(size_t len);
-
 /**
  * \brief Compute PLAINTEXT_4 length.
  *
@@ -204,21 +195,6 @@ STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 /* Static function definitions --------------------------------------------- */
 
-static size_t cbor_bstr_overhead(size_t len)
-{
-	if (len <= 23) {
-		return 1;
-	} else if (len <= UINT8_MAX) {
-		return 2;
-	} else if (len <= UINT16_MAX) {
-		return 3;
-	} else if (len <= UINT32_MAX) {
-		return 4;
-	} else {
-		return 5;
-	}
-}
-
 STATIC int compute_plaintext_4_len(const struct edhoc_context *ctx,
 				   size_t *ptxt_4_len)
 {
@@ -231,8 +207,8 @@ STATIC int compute_plaintext_4_len(const struct edhoc_context *ctx,
 
 	for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
 		len += edhoc_cbor_int_mem_req(ctx->ead_token[i].label);
-		len += ctx->ead_token[i].value_len + 1;
-		len += cbor_bstr_overhead(ctx->ead_token[i].value_len);
+		len += ctx->ead_token[i].value_len;
+		len += edhoc_cbor_bstr_oh(ctx->ead_token[i].value_len);
 	}
 
 	*ptxt_4_len = len;
@@ -290,8 +266,8 @@ STATIC size_t compute_aad_4_len(const struct edhoc_context *ctx)
 	size_t len = 0;
 
 	len += sizeof("Encrypt0") + edhoc_cbor_tstr_oh(sizeof("Encrypt0"));
-	len += 0 + cbor_bstr_overhead(0);
-	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
+	len += edhoc_cbor_bstr_oh(0);
+	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 
 	return len;
 }
@@ -324,7 +300,7 @@ STATIC int compute_key_iv_aad_4(const struct edhoc_context *ctx, uint8_t *key,
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
-	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
+	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.aead_key_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);

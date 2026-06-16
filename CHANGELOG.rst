@@ -1,3 +1,18 @@
+Version 1.12.7
+--------------
+
+:Date: June 16, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CBOR:
+
+  * Removed duplicate ``cbor_bstr_overhead`` helpers from message 4 and the
+    exporter; all byte-string buffer sizing now uses ``edhoc_cbor_bstr_oh``.
+  * ``edhoc_cbor_bstr_oh`` returns the canonical 1-byte header for lengths
+    ≤ 23 (removed legacy zcbor padding).
+  * Dropped redundant literal ``+1`` header counts in ``comp_cid_len``,
+    ``compute_plaintext_4_len``, exporter empty-bstr sizing, and message 2
+    signature encode buffers.
+
 Version 1.12.6
 --------------
 

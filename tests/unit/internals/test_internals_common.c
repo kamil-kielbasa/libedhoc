@@ -53,7 +53,7 @@ TEST(internals_common, comp_cid_len_byte_string)
 
 	int ret = comp_cid_len(&cid, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(6, len);
+	TEST_ASSERT_EQUAL(4, len);
 }
 
 TEST(internals_common, comp_cid_len_null_args)

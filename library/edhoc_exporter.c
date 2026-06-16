@@ -48,15 +48,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 
-/** 
- * \brief CBOR byte stream overhead.
- *
- * \param len                   Length of buffer to CBOR as bstr.
- *
- * \return Number of bytes.
- */
-static size_t cbor_bstr_overhead(size_t len);
-
 /**
  * \brief Compute output pseudo random key (PRK_out).
  *
@@ -88,21 +79,6 @@ STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 
 /* Static function definitions --------------------------------------------- */
 
-static size_t cbor_bstr_overhead(size_t len)
-{
-	if (len <= 23) {
-		return 1;
-	} else if (len <= UINT8_MAX) {
-		return 2;
-	} else if (len <= UINT16_MAX) {
-		return 3;
-	} else if (len <= UINT32_MAX) {
-		return 4;
-	} else {
-		return 5;
-	}
-}
-
 STATIC int compute_prk_out(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
@@ -125,7 +101,7 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
-	len += ctx->th_len + cbor_bstr_overhead(ctx->th_len);
+	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
@@ -200,7 +176,7 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
-	len += entropy_len + cbor_bstr_overhead(entropy_len);
+	len += entropy_len + edhoc_cbor_bstr_oh(entropy_len);
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
@@ -273,7 +249,7 @@ STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(
 		EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
-	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
+	len += edhoc_cbor_bstr_oh(0); /* cbor empty byte string. */
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
@@ -393,7 +369,7 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	/* 4. Derive secret. */
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req((int32_t)label);
-	len += 1 + cbor_bstr_overhead(0); /* cbor empty byte string. */
+	len += edhoc_cbor_bstr_oh(0); /* cbor empty byte string. */
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);

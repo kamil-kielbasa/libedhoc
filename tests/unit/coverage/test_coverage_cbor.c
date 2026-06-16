@@ -44,8 +44,8 @@ TEST(coverage_cbor, cbor_int_mem_req_ranges)
 
 TEST(coverage_cbor, cbor_bstr_oh_ranges)
 {
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_oh(0));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_oh(23));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_oh(0));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_oh(23));
 	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_oh(24));
 	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_oh(255));
 	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_oh(256));
