@@ -27,6 +27,8 @@ Directory layout:
    │   ├── cipher_suites/
    │   ├── coverage/
    │   │   ├── coverage_common.c
+   │   │   ├── coverage_sweep.h
+   │   │   ├── test_coverage_sweep_validate.c
    │   │   ├── test_coverage_msg1.c
    │   │   ├── test_coverage_msg2.c
    │   │   ├── test_coverage_msg3.c
@@ -57,6 +59,8 @@ Directory layout:
    │   └── src/
    ├── fuzz/           # LibFuzzer fuzz targets
    ├── test_main.c     # Test runner
+
+.. _naming-convention:
 
 Naming Convention
 -----------------

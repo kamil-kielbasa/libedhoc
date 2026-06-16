@@ -20,7 +20,7 @@ TEST_GROUP(internals_helpers);
 
 TEST_SETUP(internals_helpers)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
@@ -39,7 +39,7 @@ TEST(internals_helpers, set_connection_id_invalid_type)
 	int ret = edhoc_set_connection_id(&ctx, &cid);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(internals_helpers, conn_id_equal_invalid_type)
@@ -88,7 +88,7 @@ TEST(internals_helpers, conn_id_equal_bstr_success)
 TEST(internals_helpers, prepend_conn_id_null)
 {
 	int ret = edhoc_prepend_connection_id(NULL, NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, prepend_conn_id_zero_buf)
@@ -103,7 +103,7 @@ TEST(internals_helpers, prepend_conn_id_zero_buf)
 		.int_value = 5,
 	};
 	int ret = edhoc_prepend_connection_id(&pf, &cid);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
 TEST(internals_helpers, prepend_conn_id_invalid_type)
@@ -115,7 +115,7 @@ TEST(internals_helpers, prepend_conn_id_invalid_type)
 	};
 	struct edhoc_connection_id cid = { .encode_type = 99 };
 	int ret = edhoc_prepend_connection_id(&pf, &cid);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, prepend_conn_id_bstr_zero_len)
@@ -130,7 +130,7 @@ TEST(internals_helpers, prepend_conn_id_bstr_zero_len)
 		.bstr_length = 0,
 	};
 	int ret = edhoc_prepend_connection_id(&pf, &cid);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, prepend_conn_id_bstr_success)
@@ -154,7 +154,7 @@ TEST(internals_helpers, prepend_conn_id_bstr_success)
 TEST(internals_helpers, prepend_flow_null)
 {
 	int ret = edhoc_prepend_flow(NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, prepend_flow_success)
@@ -176,13 +176,13 @@ TEST(internals_helpers, prepend_flow_tiny_buf)
 		.buffer_size = 0,
 	};
 	int ret = edhoc_prepend_flow(&pf);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, prepend_recalculate_null)
 {
 	int ret = edhoc_prepend_recalculate_size(NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, prepend_recalculate_null_buf)
@@ -192,7 +192,7 @@ TEST(internals_helpers, prepend_recalculate_null_buf)
 		.buffer_size = 0,
 	};
 	int ret = edhoc_prepend_recalculate_size(&pf);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, prepend_recalculate_null_msg_ptr)
@@ -205,13 +205,13 @@ TEST(internals_helpers, prepend_recalculate_null_msg_ptr)
 		.edhoc_message_size = 0,
 	};
 	int ret = edhoc_prepend_recalculate_size(&pf);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, extract_flow_info_null)
 {
 	int ret = edhoc_extract_flow_info(NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, extract_flow_info_null_buf)
@@ -241,7 +241,7 @@ TEST(internals_helpers, extract_flow_info_forward)
 TEST(internals_helpers, extract_conn_id_null)
 {
 	int ret = edhoc_extract_connection_id(NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_helpers, extract_conn_id_int)
@@ -285,7 +285,7 @@ TEST(internals_helpers, prepend_conn_id_bstr_tiny_buf)
 	cid.bstr_value[0] = 0xAA;
 	cid.bstr_value[1] = 0xBB;
 	int ret = edhoc_prepend_connection_id(&pf, &cid);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
 
 TEST(internals_helpers, extract_conn_id_invalid_cbor)
@@ -296,7 +296,7 @@ TEST(internals_helpers, extract_conn_id_invalid_cbor)
 		.buffer_size = sizeof(garbage),
 	};
 	int ret = edhoc_extract_connection_id(&ef);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
 
 TEST(internals_helpers, extract_conn_id_null_buf)
@@ -306,7 +306,7 @@ TEST(internals_helpers, extract_conn_id_null_buf)
 		.buffer_size = 0,
 	};
 	int ret = edhoc_extract_connection_id(&ef);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST_GROUP_RUNNER(internals_helpers)

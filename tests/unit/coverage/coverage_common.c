@@ -308,25 +308,43 @@ int coverage_mock_cred_fetch_x509_zero_certs(
 	void *user_ctx, struct edhoc_auth_creds *auth_cred);
 
 /* Helper to set up a fully bound context with mocks */
-void coverage_setup_mock_context(struct edhoc_context *ctx,
-				 enum edhoc_method method)
+int coverage_setup_mock_context(struct edhoc_context *ctx,
+				enum edhoc_method method)
 {
-	edhoc_context_init(ctx);
+	int ret = edhoc_context_init(ctx);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
 
 	const enum edhoc_method m[] = { method };
-	edhoc_set_methods(ctx, m, 1);
-	edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_2_get_suite(), 1);
+	ret = edhoc_set_methods(ctx, m, 1);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	ret = edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_2_get_suite(), 1);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
 
 	const struct edhoc_connection_id cid = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = -24,
 	};
-	edhoc_set_connection_id(ctx, &cid);
+	ret = edhoc_set_connection_id(ctx, &cid);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
 
-	edhoc_bind_keys(ctx, &coverage_mock_keys);
-	edhoc_bind_crypto(ctx, &coverage_mock_crypto);
-	edhoc_bind_credentials(ctx, &coverage_mock_creds);
-	edhoc_bind_ead(ctx, &coverage_mock_ead);
+	ret = edhoc_bind_keys(ctx, &coverage_mock_keys);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	ret = edhoc_bind_crypto(ctx, &coverage_mock_crypto);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	ret = edhoc_bind_credentials(ctx, &coverage_mock_creds);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	return edhoc_bind_ead(ctx, &coverage_mock_ead);
 }
 
 int coverage_do_msg1_flow(struct edhoc_context *init_ctx,
@@ -397,6 +415,24 @@ int coverage_do_mock_msg3_process(struct edhoc_context *init_ctx,
 	return edhoc_message_3_process(resp_ctx, msg3, msg3_len);
 }
 
+int coverage_do_mock_msg4_process(struct edhoc_context *init_ctx,
+				  struct edhoc_context *resp_ctx)
+{
+	uint8_t msg4[512] = { 0 };
+	size_t msg4_len = 0;
+	int ret = coverage_do_mock_msg3_process(init_ctx, resp_ctx);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	coverage_mock_reset(0);
+	ret = edhoc_message_4_compose(resp_ctx, msg4, sizeof(msg4), &msg4_len);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	coverage_mock_reset(0);
+	return edhoc_message_4_process(init_ctx, msg4, msg4_len);
+}
+
 static int mock_cred_fetch_kid(void *user_ctx,
 			       struct edhoc_auth_creds *auth_cred)
 {
@@ -416,11 +452,14 @@ const struct edhoc_credentials coverage_mock_creds_kid = {
 	.verify = coverage_mock_cred_verify,
 };
 
-void coverage_setup_mock_context_kid(struct edhoc_context *ctx,
-				     enum edhoc_method method)
+int coverage_setup_mock_context_kid(struct edhoc_context *ctx,
+				    enum edhoc_method method)
 {
-	coverage_setup_mock_context(ctx, method);
-	edhoc_bind_credentials(ctx, &coverage_mock_creds_kid);
+	int ret = coverage_setup_mock_context(ctx, method);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	return edhoc_bind_credentials(ctx, &coverage_mock_creds_kid);
 }
 
 /* KID byte-string variant */
@@ -433,7 +472,9 @@ static int mock_cred_fetch_kid_bstr(void *user_ctx,
 
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	static const uint8_t kid[] = { 0xAB };
+	auth_cred->key_id.cred_is_cbor = true;
+	/* CBOR one-byte integer 5 — compact-encodable as ID_CRED. */
+	static const uint8_t kid[] = { 0x05 };
 	memcpy(auth_cred->key_id.key_id_bstr, kid, sizeof(kid));
 	auth_cred->key_id.key_id_bstr_length = sizeof(kid);
 	static const uint8_t fake_cred[] = { 0xA1, 0x01, 0x01 };
@@ -467,7 +508,8 @@ static int mock_cred_fetch_x5t_bstr(void *user_ctx,
 	auth_cred->x509_hash.cert_fp_len = sizeof(fake_fp);
 
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	static const uint8_t alg[] = { 0x53, 0x48, 0x41 }; /* "SHA" */
+	/* CBOR one-byte int for COSE_ALG_SHA_256_64 (-15). */
+	static const uint8_t alg[] = { 0x2e };
 	memcpy(auth_cred->x509_hash.alg_bstr, alg, sizeof(alg));
 	auth_cred->x509_hash.alg_bstr_length = sizeof(alg);
 
@@ -571,17 +613,19 @@ const struct edhoc_credentials coverage_mock_creds_cose_any = {
 };
 
 /* Byte-string CID variant */
-void coverage_setup_mock_context_bstr_cid(struct edhoc_context *ctx,
-					  enum edhoc_method method)
+int coverage_setup_mock_context_bstr_cid(struct edhoc_context *ctx,
+					 enum edhoc_method method)
 {
-	coverage_setup_mock_context(ctx, method);
+	int ret = coverage_setup_mock_context(ctx, method);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
 
 	const struct edhoc_connection_id cid = {
 		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
 		.bstr_length = 3,
 		.bstr_value = { 0x01, 0x02, 0x03 },
 	};
-	edhoc_set_connection_id(ctx, &cid);
+	return edhoc_set_connection_id(ctx, &cid);
 }
 
 int coverage_mock_ead_compose_with_token(void *user_ctx, enum edhoc_message msg,

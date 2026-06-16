@@ -242,7 +242,7 @@ TEST(error_message, process_invalid_cbor)
 	enum edhoc_error_code code;
 	ret = edhoc_message_error_process(garbage, sizeof(garbage), &code,
 					  NULL);
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
 
 TEST(error_message, process_unknown_code)
@@ -263,7 +263,7 @@ TEST(error_message, process_unknown_code)
 	ret = edhoc_message_error_process(patched, sizeof(patched), &code,
 					  NULL);
 	/* The decoder may accept code 99 (hitting default) or reject it */
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
 TEST_GROUP_RUNNER(error_message)

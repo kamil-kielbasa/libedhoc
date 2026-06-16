@@ -20,7 +20,7 @@ TEST_GROUP(coverage_error);
 
 TEST_SETUP(coverage_error)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 }
 
 TEST_TEAR_DOWN(coverage_error)

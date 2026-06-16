@@ -98,7 +98,7 @@ TEST_GROUP(message_paths);
 
 TEST_SETUP(message_paths)
 {
-	psa_crypto_init();
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 }
 
 TEST_TEAR_DOWN(message_paths)
@@ -127,7 +127,7 @@ TEST(message_paths, msg1_compose_bstr_cid)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, msg_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(message_paths, msg1_compose_multiple_cipher_suites)
@@ -142,7 +142,7 @@ TEST(message_paths, msg1_compose_multiple_cipher_suites)
 		*edhoc_cipher_suite_0_get_suite(),
 		*edhoc_cipher_suite_2_get_suite()
 	};
-	edhoc_set_cipher_suites(&ctx, csuites, 2);
+	edhoc_set_cipher_suites(&ctx, csuites, ARRAY_SIZE(csuites));
 
 	struct edhoc_connection_id cid = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
@@ -160,7 +160,7 @@ TEST(message_paths, msg1_compose_multiple_cipher_suites)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, msg_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(message_paths, msg1_compose_with_ead)
@@ -187,7 +187,7 @@ TEST(message_paths, msg1_compose_with_ead)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, msg_len);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(message_paths, msg1_process_bstr_cid)
@@ -226,8 +226,8 @@ TEST(message_paths, msg1_process_bstr_cid)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(bstr_cid.bstr_value,
 				      resp_ctx.peer_cid.bstr_value, 3);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(message_paths, msg1_process_with_ead)
@@ -277,8 +277,8 @@ TEST(message_paths, msg1_process_with_ead)
 					      3);
 	}
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(message_paths, msg4_compose_with_ead)
@@ -316,7 +316,7 @@ TEST(message_paths, msg4_compose_with_ead)
 	TEST_ASSERT_GREATER_THAN(0, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, ctx.status);
 
-	edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(message_paths, msg4_compose_process_roundtrip)
@@ -371,8 +371,8 @@ TEST(message_paths, msg4_compose_process_roundtrip)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx.status);
 
-	edhoc_context_deinit(&resp_ctx);
-	edhoc_context_deinit(&init_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 }
 
 TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
@@ -445,8 +445,8 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 	TEST_ASSERT_EQUAL(200, ead_ctx.token[0].label);
 	TEST_ASSERT_EQUAL(3, ead_ctx.token[0].value_len);
 
-	edhoc_context_deinit(&resp_ctx);
-	edhoc_context_deinit(&init_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 }
 
 TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
@@ -503,8 +503,8 @@ TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
 	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(100, ead_ctx.token[0].label);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(message_paths, msg1_process_bad_state)
@@ -530,8 +530,8 @@ TEST(message_paths, msg1_process_bad_state)
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(message_paths, msg1_process_invalid_cbor)
@@ -546,9 +546,9 @@ TEST(message_paths, msg1_process_invalid_cbor)
 
 	uint8_t garbage[] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	int ret = edhoc_message_1_process(&resp_ctx, garbage, sizeof(garbage));
-	TEST_ASSERT_NOT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_1_PROCESS_FAILURE, ret);
 
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST(message_paths, msg1_process_no_cipher_suites)
@@ -574,8 +574,8 @@ TEST(message_paths, msg1_process_no_cipher_suites)
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	edhoc_context_deinit(&init_ctx);
-	edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
 TEST_GROUP_RUNNER(message_paths)

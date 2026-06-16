@@ -13,8 +13,10 @@
 #define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc.h>
 
-/* Cipher suite 2 header: */
+/* Cipher suite headers: */
+#include "edhoc_cipher_suite_0.h"
 #include "edhoc_cipher_suite_2.h"
+#include "edhoc_cipher_suite_24.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -31,19 +33,12 @@
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
-/* Module interface variables and constants -------------------------------- */
-
-static const struct edhoc_keys *edhoc_keys;
-static const struct edhoc_crypto *edhoc_crypto;
-
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(api);
 
 TEST_SETUP(api)
 {
-	edhoc_keys = edhoc_cipher_suite_2_get_keys();
-	edhoc_crypto = edhoc_cipher_suite_2_get_crypto();
 }
 
 TEST_TEAR_DOWN(api)
@@ -299,24 +294,33 @@ TEST(api, bindings)
 	TEST_ASSERT_EQUAL(test_ead_stubs.compose, ctx.ead.compose);
 	TEST_ASSERT_EQUAL(test_ead_stubs.process, ctx.ead.process);
 
-	ret = edhoc_bind_keys(&ctx, edhoc_keys);
+	ret = edhoc_bind_keys(&ctx, edhoc_cipher_suite_2_get_keys());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_keys->import_key, ctx.keys.import_key);
-	TEST_ASSERT_EQUAL(edhoc_keys->destroy_key, ctx.keys.destroy_key);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_keys()->import_key,
+			  ctx.keys.import_key);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_keys()->destroy_key,
+			  ctx.keys.destroy_key);
 
-	ret = edhoc_bind_crypto(&ctx, edhoc_crypto);
+	ret = edhoc_bind_crypto(&ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_crypto->make_key_pair,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->make_key_pair,
 			  ctx.crypto.make_key_pair);
-	TEST_ASSERT_EQUAL(edhoc_crypto->key_agreement,
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->key_agreement,
 			  ctx.crypto.key_agreement);
-	TEST_ASSERT_EQUAL(edhoc_crypto->signature, ctx.crypto.signature);
-	TEST_ASSERT_EQUAL(edhoc_crypto->verify, ctx.crypto.verify);
-	TEST_ASSERT_EQUAL(edhoc_crypto->extract, ctx.crypto.extract);
-	TEST_ASSERT_EQUAL(edhoc_crypto->expand, ctx.crypto.expand);
-	TEST_ASSERT_EQUAL(edhoc_crypto->encrypt, ctx.crypto.encrypt);
-	TEST_ASSERT_EQUAL(edhoc_crypto->decrypt, ctx.crypto.decrypt);
-	TEST_ASSERT_EQUAL(edhoc_crypto->hash, ctx.crypto.hash);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->signature,
+			  ctx.crypto.signature);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->verify,
+			  ctx.crypto.verify);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->extract,
+			  ctx.crypto.extract);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->expand,
+			  ctx.crypto.expand);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->encrypt,
+			  ctx.crypto.encrypt);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->decrypt,
+			  ctx.crypto.decrypt);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash,
+			  ctx.crypto.hash);
 
 	ret = edhoc_bind_credentials(&ctx, &test_cred_stubs);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -327,6 +331,47 @@ TEST(api, bindings)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(api, get_cipher_suite_descriptors)
+{
+	const struct edhoc_cipher_suite *suite;
+
+	suite = edhoc_cipher_suite_0_get_suite();
+	TEST_ASSERT_NOT_NULL(suite);
+	TEST_ASSERT_EQUAL(0, suite->value);
+	TEST_ASSERT_EQUAL(16, suite->aead_key_length);
+	TEST_ASSERT_EQUAL(8, suite->aead_tag_length);
+	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
+	TEST_ASSERT_EQUAL(32, suite->hash_length);
+	TEST_ASSERT_EQUAL(8, suite->mac_length);
+	TEST_ASSERT_EQUAL(32, suite->ecc_key_length);
+	TEST_ASSERT_EQUAL(64, suite->ecc_sign_length);
+	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_0_get_suite());
+
+	suite = edhoc_cipher_suite_2_get_suite();
+	TEST_ASSERT_NOT_NULL(suite);
+	TEST_ASSERT_EQUAL(2, suite->value);
+	TEST_ASSERT_EQUAL(16, suite->aead_key_length);
+	TEST_ASSERT_EQUAL(8, suite->aead_tag_length);
+	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
+	TEST_ASSERT_EQUAL(32, suite->hash_length);
+	TEST_ASSERT_EQUAL(8, suite->mac_length);
+	TEST_ASSERT_EQUAL(32, suite->ecc_key_length);
+	TEST_ASSERT_EQUAL(64, suite->ecc_sign_length);
+	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_2_get_suite());
+
+	suite = edhoc_cipher_suite_24_get_suite();
+	TEST_ASSERT_NOT_NULL(suite);
+	TEST_ASSERT_EQUAL(24, suite->value);
+	TEST_ASSERT_EQUAL(32, suite->aead_key_length);
+	TEST_ASSERT_EQUAL(16, suite->aead_tag_length);
+	TEST_ASSERT_EQUAL(12, suite->aead_iv_length);
+	TEST_ASSERT_EQUAL(48, suite->hash_length);
+	TEST_ASSERT_EQUAL(16, suite->mac_length);
+	TEST_ASSERT_EQUAL(48, suite->ecc_key_length);
+	TEST_ASSERT_EQUAL(96, suite->ecc_sign_length);
+	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_24_get_suite());
+}
+
 TEST_GROUP_RUNNER(api)
 {
 	RUN_TEST_CASE(api, context_init);
@@ -334,4 +379,5 @@ TEST_GROUP_RUNNER(api)
 	RUN_TEST_CASE(api, set_cipher_suites);
 	RUN_TEST_CASE(api, set_connection_id);
 	RUN_TEST_CASE(api, bindings);
+	RUN_TEST_CASE(api, get_cipher_suite_descriptors);
 }

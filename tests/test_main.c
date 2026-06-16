@@ -35,6 +35,7 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(coverage_error);
 	RUN_TEST_GROUP(coverage_cbor);
 	RUN_TEST_GROUP(coverage_handshake);
+	RUN_TEST_GROUP(coverage_sweep_validate);
 	RUN_TEST_GROUP(internals_common);
 	RUN_TEST_GROUP(internals_mac);
 	RUN_TEST_GROUP(internals_message2);
