@@ -1,3 +1,19 @@
+Version 1.13.0
+--------------
+
+:Date: June 17, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : API:
+
+  * Removed callback ``typedef``\ s from the public headers and inlined the
+    function pointers directly into their binding structs
+    (``struct edhoc_credentials``, ``struct edhoc_keys``, ``struct edhoc_crypto``,
+    ``struct edhoc_ead``), Zephyr-style. The associated Doxygen was moved onto
+    each struct member. No function signatures, struct names, struct layouts or
+    behavior change; ABI is unchanged. Existing code that supplies callbacks via
+    designated initializers requires no changes. Only code that referenced the
+    removed ``edhoc_*_t`` type names directly is affected.
+
 Version 1.12.7
 --------------
 
