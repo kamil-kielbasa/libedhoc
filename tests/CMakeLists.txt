@@ -46,6 +46,11 @@ set(TEST_UNIT_SOURCES
     unit/internals/test_internals_api.c
     unit/message/test_message_paths.c)
 
+if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
+    list(APPEND TEST_UNIT_SOURCES
+         unit/cipher_suites/test_cipher_suite_exp_pqc_1.c)
+endif()
+
 set(TEST_INTEGRATION_SOURCES
     integration/test_handshake_x5chain_sig_suite0.c
     integration/test_handshake_x5chain_sig_suite2.c
@@ -89,8 +94,12 @@ add_executable(${PROJECT_NAME}
 
 # --- Compile definitions -----------------------------------------------------
 
-if (LIBEDHOC_ENABLE_MODULE_TESTS_TRACES)
+if (LIBEDHOC_ENABLE_TESTS_TRACES)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_TRACES)
+endif()
+
+if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=1)
 endif()
 
 # --- Include directories -----------------------------------------------------
@@ -106,6 +115,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                       libedhoc::helpers
                       libedhoc::backend_memory
                       unity)
+
+if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
+    target_link_libraries(${PROJECT_NAME} PRIVATE oqs)
+    target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_BINARY_DIR}/externals/liboqs/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../externals/liboqs/src)
+endif()
 
 # --- Warning flags -----------------------------------------------------------
 libedhoc_target_warnings(${PROJECT_NAME} TEST)

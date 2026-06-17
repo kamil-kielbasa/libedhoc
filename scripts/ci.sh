@@ -88,7 +88,11 @@ cmd_build() {
 
     section "Build (${compiler}${mem_backend:+, mem=${mem_backend}})"
 
-    local cmake_args=(-DLIBEDHOC_ENABLE_MODULE_TESTS=ON)
+    local experimental_pqc=ON
+    [[ "$coverage" == true ]] && experimental_pqc=OFF
+
+    local cmake_args=(-DLIBEDHOC_ENABLE_TESTS=ON
+                      -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC="${experimental_pqc}")
 
     if [[ "$compiler" == "gcc" ]]; then
         cmake_args+=(-DCMAKE_C_COMPILER=gcc)
@@ -237,7 +241,8 @@ cmd_valgrind() {
     cmake -B "${BUILD_DIR}" -S "${PROJECT_DIR}" \
         "${KCONFIG_OPTIONS[@]}" \
         "${MBEDTLS_OPTIONS[@]}" \
-        -DLIBEDHOC_ENABLE_MODULE_TESTS=ON \
+        -DLIBEDHOC_ENABLE_TESTS=ON \
+        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON \
         -DCMAKE_C_COMPILER=gcc \
         -DCMAKE_BUILD_TYPE=Debug \
         "-DCMAKE_C_FLAGS=-gdwarf-4"
@@ -282,7 +287,8 @@ cmd_clang_tidy() {
        || ! grep -q '"clang"' "${BUILD_DIR}/compile_commands.json" 2>/dev/null; then
         echo "Building with Clang compile_commands.json..."
         cmake_configure \
-            -DLIBEDHOC_ENABLE_MODULE_TESTS=ON \
+            -DLIBEDHOC_ENABLE_TESTS=ON \
+        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -G Ninja

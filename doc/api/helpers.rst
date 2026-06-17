@@ -31,6 +31,19 @@ Cipher suite 24
    :project: libedhoc
    :members:
 
+Experimental PQC cipher suite 1
+-------------------------------
+
+| Header file: :file:`helpers/include/edhoc_exp_pqc_cipher_suite_1.h`
+
+.. doxygengroup:: edhoc-exp-pqc-cipher-suite-1-api
+   :project: libedhoc
+   :members:
+
+.. doxygengroup:: edhoc-exp-pqc-cipher-suite-1-sizes
+   :project: libedhoc
+   :members:
+
 Connection identifier helpers
 -----------------------------
 

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(libedhoc VERSION 1.13.0 LANGUAGES C)
+project(libedhoc VERSION 1.14.0 LANGUAGES C)
 
 # The public headers use C11 anonymous unions, so the library is C11. (The old
 # `set_property(GLOBAL PROPERTY C_STANDARD 99)` was a no-op — C_STANDARD is a
@@ -13,11 +13,12 @@ include(GNUInstallDirs)
 # --- Options -----------------------------------------------------------------
 # Tests default ON only when libedhoc is the top-level project: a parent doing
 # add_subdirectory()/FetchContent gets the library, not the tests.
-option(LIBEDHOC_ENABLE_MODULE_TESTS "Build module tests" ${PROJECT_IS_TOP_LEVEL})
+option(LIBEDHOC_ENABLE_TESTS "Build module tests" ${PROJECT_IS_TOP_LEVEL})
 option(LIBEDHOC_BUILD_EXTERNAL_DEPS "Use vendored submodule dependencies"  ON)
 option(LIBEDHOC_ENABLE_COVERAGE     "Code coverage instrumentation (gcov)" OFF)
 option(LIBEDHOC_ENABLE_SANITIZERS   "AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(LIBEDHOC_ENABLE_FUZZING      "libFuzzer fuzz targets (Clang)"       OFF)
+option(LIBEDHOC_ENABLE_EXPERIMENTAL_PQC "Build experimental PQC cipher suite 1 helper (liboqs)" OFF)
 
 # --- Shared CMake helpers ----------------------------------------------------
 # Defined at top scope so libedhoc_target_warnings() is visible in every
@@ -34,7 +35,7 @@ add_subdirectory(include)
 add_subdirectory(helpers)
 add_subdirectory(library)
 
-if(LIBEDHOC_ENABLE_MODULE_TESTS)
+if(LIBEDHOC_ENABLE_TESTS)
     add_subdirectory(tests)
 endif()
 if(LIBEDHOC_ENABLE_FUZZING)

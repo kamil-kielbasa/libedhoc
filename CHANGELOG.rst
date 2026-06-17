@@ -1,3 +1,40 @@
+Version 1.14.0
+--------------
+
+:Date: June 17, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : PQC:
+
+  * Added experimental **PQC cipher suite 1** helper (draft TBD1) for
+    `draft-spm-lake-pqsuites-02
+    <https://datatracker.ietf.org/doc/html/draft-spm-lake-pqsuites-02>`_:
+    ML-KEM-512 key exchange, ML-DSA-44 signatures, AES-CCM-16-128-128 AEAD,
+    SHAKE256 hash, and KMAC256 extract/expand (RFC 9528 Section 4.1).
+  * Introduced ``struct edhoc_crypto_pqc`` and ``struct edhoc_cipher_suite_pqc``
+    in :file:`helpers/include/edhoc_exp_pqc_cipher_suite_1.h` (KEM-shaped crypto
+    vtable; ``encapsulate`` / ``decapsulate`` replace ``key_agreement``).
+  * Key import uses ``PSA_KEY_TYPE_RAW_DATA`` for ML-KEM / ML-DSA material;
+    ephemeral ML-KEM keys use static slots simulating PSA key identifiers.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Build:
+
+  * Added ``externals/liboqs`` git submodule pinned to tag **0.15.0** and west
+    project ``modules/lib/liboqs``.
+  * New CMake option ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC`` (default **OFF**)
+    builds liboqs with ``KEM_ml_kem_512`` and ``SIG_ml_dsa_44`` only.
+  * Renamed ``LIBEDHOC_ENABLE_MODULE_TESTS`` to ``LIBEDHOC_ENABLE_TESTS``.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Tests:
+
+  * Added Unity group ``cipher_suite_exp_pqc_1`` (ML-KEM, ML-DSA, hash, KMAC,
+    AES-CCM round-trips on Linux).
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Coverage / docs:
+
+  * New guide ``guide/pqc`` (experimental PQC cipher suite 1), README
+    experimental cipher-suite section, and helpers.rst section for experimental
+    PQC cipher suite 1.
+
 Version 1.13.0
 --------------
 

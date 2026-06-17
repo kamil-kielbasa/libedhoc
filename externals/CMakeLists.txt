@@ -32,3 +32,13 @@ if (NOT TARGET unity)
     target_compile_definitions(unity PUBLIC UNITY_OUTPUT_COLOR)
     target_include_directories(unity PUBLIC ${LIBEDHOC_UNITY_INCLUDE_DIRS})
 endif()
+
+# --- liboqs (post-quantum primitives for experimental cipher suite 1) --------
+
+if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC AND NOT TARGET oqs)
+    set(OQS_USE_OPENSSL OFF CACHE BOOL "" FORCE)
+    set(OQS_BUILD_ONLY_LIB ON CACHE BOOL "" FORCE)
+    set(OQS_MINIMAL_BUILD "KEM_ml_kem_512;SIG_ml_dsa_44" CACHE STRING "" FORCE)
+    set(OQS_DIST_BUILD OFF CACHE BOOL "" FORCE)
+    add_subdirectory(liboqs)
+endif()
