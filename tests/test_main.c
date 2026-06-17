@@ -22,6 +22,9 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(cipher_suite_0);
 	RUN_TEST_GROUP(cipher_suite_2);
 	RUN_TEST_GROUP(cipher_suite_24);
+#ifdef LIBEDHOC_ENABLE_EXPERIMENTAL_PQC
+	RUN_TEST_GROUP(cipher_suite_exp_pqc_1);
+#endif
 	RUN_TEST_GROUP(api);
 	RUN_TEST_GROUP(api_negative);
 	RUN_TEST_GROUP(error_message);

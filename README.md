@@ -33,6 +33,16 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol �
 | 2     | AES-CCM-16-64-128  | SHA-256 | P-256   | ES256     |
 | 24    | A256GCM            | SHA-384 | P-384   | ES384     |
 
+### Experimental Cipher Suites
+
+These helpers live under `helpers/` only. **libedhoc does not support them in the core EDHOC library** — the underlying specifications are still drafts and there is no full handshake integration.
+
+| Suite | AEAD               | Hash     | Key exchange | Signature |
+|-------|--------------------|----------|--------------|-----------|
+| Exp-PQC-1 (draft TBD1) | AES-CCM-16-128-128 | SHAKE256 | ML-KEM-512 | ML-DSA-44 |
+
+See [doc/guide/pqc.rst](doc/guide/pqc.rst) for details on experimental PQC cipher suite 1 ([draft-spm-lake-pqsuites-02](https://datatracker.ietf.org/doc/html/draft-spm-lake-pqsuites-02)).
+
 ### Authentication Methods
 
 All four EDHOC authentication methods (0–3) are supported, combining Signature Keys and Static DH Keys for initiator and responder.

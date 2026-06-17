@@ -20,6 +20,12 @@ manifest:
       revision: v1.1.0
       path: modules/lib/compact25519
 
+    - name: liboqs
+      remote: github
+      repo-path: open-quantum-safe/liboqs
+      revision: 0.15.0
+      path: modules/lib/liboqs
+
   self:
     path: libedhoc
 

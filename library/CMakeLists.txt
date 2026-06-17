@@ -39,8 +39,8 @@ endif()
 
 # --- Optional instrumentation ------------------------------------------------
 # LIBEDHOC_MODULE_TESTS makes internal STATIC functions externally visible so
-# module tests can link against them.  Enabled only when module tests are built.
-if(LIBEDHOC_ENABLE_MODULE_TESTS)
+# module tests can link against them.  Enabled only when tests are built.
+if(LIBEDHOC_ENABLE_TESTS)
     target_compile_definitions(libedhoc PRIVATE LIBEDHOC_MODULE_TESTS)
 endif()
 

@@ -10,3 +10,6 @@
 [submodule "externals/Unity"]
 	path = externals/Unity
 	url = https://github.com/ThrowTheSwitch/Unity.git
+[submodule "externals/liboqs"]
+	path = externals/liboqs
+	url = https://github.com/open-quantum-safe/liboqs.git

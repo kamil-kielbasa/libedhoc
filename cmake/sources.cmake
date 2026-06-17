@@ -62,6 +62,11 @@ set(LIBEDHOC_HELPERS_SOURCES
     ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_cipher_suite_2.c
     ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_cipher_suite_24.c)
 
+if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
+    list(APPEND LIBEDHOC_HELPERS_SOURCES
+         ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_exp_pqc_cipher_suite_1.c)
+endif()
+
 set(LIBEDHOC_PUBLIC_INCLUDE_DIR       ${LIBEDHOC_ROOT_DIR}/include)
 set(LIBEDHOC_HELPERS_INCLUDE_DIR      ${LIBEDHOC_ROOT_DIR}/helpers/include)
 set(LIBEDHOC_BACKEND_CBOR_INCLUDE_DIR ${LIBEDHOC_ROOT_DIR}/backends/cbor/include)

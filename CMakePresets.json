@@ -8,7 +8,8 @@
       "binaryDir": "${sourceDir}/build",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "LIBEDHOC_ENABLE_MODULE_TESTS": "ON",
+        "LIBEDHOC_ENABLE_TESTS": "ON",
+        "LIBEDHOC_ENABLE_EXPERIMENTAL_PQC": "ON",
         "CONFIG_LIBEDHOC_ENABLE": "1",
         "CONFIG_LIBEDHOC_KEY_ID_LEN": "4",
         "CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES": "3",
@@ -42,7 +43,10 @@
       "name": "coverage",
       "displayName": "GCC + gcov",
       "inherits": "gcc",
-      "cacheVariables": { "LIBEDHOC_ENABLE_COVERAGE": "ON" }
+      "cacheVariables": {
+        "LIBEDHOC_ENABLE_COVERAGE": "ON",
+        "LIBEDHOC_ENABLE_EXPERIMENTAL_PQC": "OFF"
+      }
     },
     {
       "name": "sanitizers",
@@ -56,7 +60,7 @@
       "inherits": "clang",
       "cacheVariables": {
         "LIBEDHOC_ENABLE_FUZZING": "ON",
-        "LIBEDHOC_ENABLE_MODULE_TESTS": "OFF"
+        "LIBEDHOC_ENABLE_TESTS": "OFF"
       }
     }
   ],
