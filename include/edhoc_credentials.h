@@ -224,50 +224,42 @@ struct edhoc_auth_creds {
 };
 
 /**
- * \brief Fetch local authentication credentials.
- *
- * Called by the library to obtain the local party's authentication
- * credentials (keys, certificates) for composing EDHOC messages.
- *
- * \param[in] user_context              User context.
- * \param[out] credentials              Authentication credentials to populate.
- *
- * \retval #EDHOC_SUCCESS
- *         Success.
- * \return Negative error code on failure.
- */
-typedef int (*edhoc_credentials_fetch_t)(void *user_context,
-					 struct edhoc_auth_creds *credentials);
-
-/**
- * \brief Verify peer authentication credentials.
- *
- * Called by the library to let the application verify the peer's
- * authentication credentials (e.g., certificate chain validation,
- * revocation checks) and provide the peer's public key.
- *
- * \param[in] user_context              User context.
- * \param[in,out] credentials           Peer authentication credentials to verify.
- * \param[out] public_key_reference     On success, set to point to the peer's public key.
- * \param[out] public_key_length        On success, the number of bytes that make up the public key.
- *
- * \retval #EDHOC_SUCCESS
- *         Success.
- * \return Negative error code on failure.
- */
-typedef int (*edhoc_credentials_verify_t)(void *user_context,
-					  struct edhoc_auth_creds *credentials,
-					  const uint8_t **public_key_reference,
-					  size_t *public_key_length);
-
-/**
  * \brief Bind structure for authentication credentials.
  */
 struct edhoc_credentials {
-	/** Authentication credentials fetch callback. */
-	edhoc_credentials_fetch_t fetch;
-	/** Authentication credentials verify callback. */
-	edhoc_credentials_verify_t verify;
+	/**
+	 * \brief Fetch local authentication credentials.
+	 *
+	 * Called by the library to obtain the local party's authentication
+	 * credentials (keys, certificates) for composing EDHOC messages.
+	 *
+	 * \param[in] user_context              User context.
+	 * \param[out] credentials              Authentication credentials to populate.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*fetch)(void *user_context, struct edhoc_auth_creds *credentials);
+	/**
+	 * \brief Verify peer authentication credentials.
+	 *
+	 * Called by the library to let the application verify the peer's
+	 * authentication credentials (e.g., certificate chain validation,
+	 * revocation checks) and provide the peer's public key.
+	 *
+	 * \param[in] user_context              User context.
+	 * \param[in,out] credentials           Peer authentication credentials to verify.
+	 * \param[out] public_key_reference     On success, set to point to the peer's public key.
+	 * \param[out] public_key_length        On success, the number of bytes that make up the public key.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*verify)(void *user_context, struct edhoc_auth_creds *credentials,
+		      const uint8_t **public_key_reference,
+		      size_t *public_key_length);
 };
 
 /* Module interface variables and constants -------------------------------- */
