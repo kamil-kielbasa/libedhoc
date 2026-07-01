@@ -19,8 +19,11 @@
  *          https://datatracker.ietf.org/doc/html/draft-spm-lake-pqsuites-02
  *
  * \note    ML-KEM-512 and ML-DSA-44 use liboqs; AES-CCM uses PSA.
- *          SHAKE256 hash and EDHOC_Extract/EDHOC_Expand (KMAC256) use liboqs
- *          SHA3 (RFC 9528 Section 4.1).
+ *          SHAKE256 hash uses the liboqs public SHA-3 API. EDHOC_Extract and
+ *          EDHOC_Expand are KMAC256 (RFC 9528 Section 4.1), computed by the
+ *          backend-agnostic edhoc_kdf_kmac256() helper (XKCP SP800-185 by
+ *          default, or a self-contained equivalent); no liboqs-internal Keccak
+ *          symbol is used.
  *
  * \note    Key identifiers: ML-KEM and ML-DSA material is stored as
  *          #PSA_KEY_TYPE_RAW_DATA; symmetric keys use the usual PSA types.

@@ -121,6 +121,14 @@ if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_BINARY_DIR}/externals/liboqs/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../externals/liboqs/src)
+
+    # XKCP provides SP800-185 KMAC256 for the EDHOC_Extract/Expand KDF.
+    target_link_libraries(${PROJECT_NAME} PRIVATE xkcp)
+    target_include_directories(${PROJECT_NAME} PRIVATE ${XKCP_INCLUDE_DIR})
+    # libXKCP.a and its generated SP800-185.h are produced by the xkcp_build
+    # ExternalProject; make the test target wait for it so the helper source can
+    # find the header at compile time (not just at link time).
+    add_dependencies(${PROJECT_NAME} xkcp_build)
 endif()
 
 # --- Warning flags -----------------------------------------------------------

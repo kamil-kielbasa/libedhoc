@@ -3,6 +3,11 @@
  * \author  Kamil Kielbasa
  * \brief   Module tests for experimental PQC cipher suite 1.
  *
+ *          Covers ML-KEM-512, ML-DSA-44, SHAKE256, the KMAC256 KDF
+ *          (EDHOC_Extract / EDHOC_Expand) and AES-CCM. The KMAC256 KDF is
+ *          verified against the published NIST SP 800-185 "KMAC256 Sample #5"
+ *          vector through both extract and expand.
+ *
  * \copyright Copyright (c) 2026
  *
  */
@@ -195,62 +200,85 @@ TEST(cipher_suite_exp_pqc_1, shake256_hash)
 	TEST_ASSERT_EQUAL(64, hash_len);
 }
 
-TEST(cipher_suite_exp_pqc_1, kmac_extract_expand)
+/*
+ * KMAC256 KDF known-answer test anchored on a PUBLISHED vector: NIST SP 800-185
+ * "KMAC256 Sample #5", the only one-shot NIST KMAC256 sample whose
+ * customization string S is empty -- exactly the shape RFC 9528 Section 4.1
+ * uses.
+ *
+ *   K (key)  = 0x40 0x41 ... 0x5f   (32 bytes)
+ *   X (data) = 0x00 0x01 ... 0xc7   (200 bytes)
+ *   S        = "" (empty customization string)
+ *   L        = 512 bits (non-XOF)
+ *   O        = KMAC256(K, X, 512, "")   (64 bytes, EXPECTED_KMAC256_NIST below)
+ *
+ * Source: NIST SP 800-185 KMAC_samples.pdf, "KMAC256 Sample #5":
+ *   https://csrc.nist.gov/CSRC/media/Projects/Cryptographic-Standards-and-Guidelines/documents/examples/KMAC_samples.pdf
+ * The identical vector is embedded upstream as "NIST KMAC256 test vector 5" in
+ * XKCP tests/UnitTests/testSP800-185.c (performTestKMAC_NIST).
+ *
+ * EDHOC_Extract(salt, IKM) and EDHOC_Expand(PRK, info, L) are both
+ * KMAC256(key, msg, 8*output_length, ""), so this single vector anchors BOTH
+ * KDF directions:
+ *   - Extract: salt = K, IKM = X           -> PRK = O (64 bytes)
+ *   - Expand:  PRK  = K (32 bytes), info = X, L = 64 -> OKM = O (64 bytes)
+ */
+TEST(cipher_suite_exp_pqc_1, kmac256_nist_kat)
 {
 	psa_key_id_t key_id = PSA_KEY_HANDLE_INIT;
 
-	/* Test vectors taken from RFC 5869 Appendix A.1 (same IKM/salt/info as
-	 * cipher suite 0 HKDF test). KMAC256 output differs from HMAC-SHA256
-	 * PRK/OKM; this test verifies extract/expand round-trip and expand
-	 * determinism.
-	 */
-	const uint8_t ikm[] = {
-		0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
-		0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
-		0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
+	uint8_t key[32]; /* K = 0x40 .. 0x5f (salt for Extract, PRK for Expand) */
+	uint8_t data[200]; /* X = 0x00 .. 0xc7 (IKM for Extract, info for Expand) */
+
+	/* O = KMAC256(K, X, 512, "") -- NIST SP 800-185 KMAC256 Sample #5. */
+	const uint8_t EXPECTED_KMAC256_NIST[64] = {
+		0x75, 0x35, 0x8c, 0xf3, 0x9e, 0x41, 0x49, 0x4e, 0x94, 0x97,
+		0x07, 0x92, 0x7c, 0xee, 0x0a, 0xf2, 0x0a, 0x3f, 0xf5, 0x53,
+		0x90, 0x4c, 0x86, 0xb0, 0x8f, 0x21, 0xcc, 0x41, 0x4b, 0xcf,
+		0xd6, 0x91, 0x58, 0x9d, 0x27, 0xcf, 0x5e, 0x15, 0x36, 0x9c,
+		0xbb, 0xff, 0x8b, 0x9a, 0x4c, 0x2e, 0xb1, 0x78, 0x00, 0x85,
+		0x5d, 0x02, 0x35, 0xff, 0x63, 0x5d, 0xa8, 0x25, 0x33, 0xec,
+		0x6b, 0x75, 0x9b, 0x69,
 	};
-	const uint8_t salt[] = {
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-		0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c,
-	};
-	const uint8_t info[] = {
-		0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8, 0xf9,
-	};
-	const size_t okm_len = 42;
 
 	uint8_t prk[EDHOC_EXP_PQC_CS1_HASH_LEN] = { 0 };
-	uint8_t okm[42] = { 0 };
-	uint8_t okm2[42] = { 0 };
+	uint8_t okm[EDHOC_EXP_PQC_CS1_HASH_LEN] = { 0 };
 	size_t prk_len = 0;
+	size_t i;
 
-	ret = edhoc_keys->import_key(NULL, EDHOC_KT_EXTRACT, ikm,
-				     ARRAY_SIZE(ikm), &key_id);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	for (i = 0; i < sizeof(key); ++i)
+		key[i] = (uint8_t)(0x40 + i); /* 0x40 .. 0x5f */
+	for (i = 0; i < sizeof(data); ++i)
+		data[i] = (uint8_t)i; /* 0x00 .. 0xc7 */
 
-	ret = edhoc_crypto->extract(NULL, &key_id, salt, ARRAY_SIZE(salt), prk,
-				    sizeof(prk), &prk_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_suite->hash_length, prk_len);
-
-	ret = edhoc_keys->destroy_key(NULL, &key_id);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_keys->import_key(NULL, EDHOC_KT_EXPAND, prk, prk_len,
+	/* Extract direction: salt = K, IKM = X -> PRK = O. */
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_EXTRACT, data, sizeof(data),
 				     &key_id);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_crypto->expand(NULL, &key_id, info, ARRAY_SIZE(info), okm,
-				   okm_len);
+	ret = edhoc_crypto->extract(NULL, &key_id, key, sizeof(key), prk,
+				    sizeof(prk), &prk_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_crypto->expand(NULL, &key_id, info, ARRAY_SIZE(info), okm2,
-				   okm_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(64, prk_len);
+	TEST_ASSERT_EQUAL(edhoc_suite->hash_length, prk_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(EXPECTED_KMAC256_NIST, prk, sizeof(prk));
 
 	ret = edhoc_keys->destroy_key(NULL, &key_id);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(okm, okm2, okm_len);
+	/* Expand direction: PRK = K, info = X, L = 64 -> OKM = O. */
+	ret = edhoc_keys->import_key(NULL, EDHOC_KT_EXPAND, key, sizeof(key),
+				     &key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_crypto->expand(NULL, &key_id, data, sizeof(data), okm,
+				   sizeof(okm));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(64, sizeof(okm));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(EXPECTED_KMAC256_NIST, okm, sizeof(okm));
+
+	ret = edhoc_keys->destroy_key(NULL, &key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(cipher_suite_exp_pqc_1, aead_encrypt_decrypt)
@@ -305,6 +333,6 @@ TEST_GROUP_RUNNER(cipher_suite_exp_pqc_1)
 	RUN_TEST_CASE(cipher_suite_exp_pqc_1, mlkem512_roundtrip);
 	RUN_TEST_CASE(cipher_suite_exp_pqc_1, mldsa44_roundtrip);
 	RUN_TEST_CASE(cipher_suite_exp_pqc_1, shake256_hash);
-	RUN_TEST_CASE(cipher_suite_exp_pqc_1, kmac_extract_expand);
+	RUN_TEST_CASE(cipher_suite_exp_pqc_1, kmac256_nist_kat);
 	RUN_TEST_CASE(cipher_suite_exp_pqc_1, aead_encrypt_decrypt);
 }

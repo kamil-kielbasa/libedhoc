@@ -64,7 +64,8 @@ set(LIBEDHOC_HELPERS_SOURCES
 
 if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
     list(APPEND LIBEDHOC_HELPERS_SOURCES
-         ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_exp_pqc_cipher_suite_1.c)
+         ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_exp_pqc_cipher_suite_1.c
+         ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_kdf_kmac256_xkcp.c)
 endif()
 
 set(LIBEDHOC_PUBLIC_INCLUDE_DIR       ${LIBEDHOC_ROOT_DIR}/include)
