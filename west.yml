@@ -26,6 +26,13 @@ manifest:
       revision: 0.15.0
       path: modules/lib/liboqs
 
+    - name: XKCP
+      remote: github
+      repo-path: XKCP/XKCP
+      revision: 78477d2e0b980737deaa07b928b29302257055ca
+      path: modules/lib/XKCP
+      submodules: true
+
   self:
     path: libedhoc
 

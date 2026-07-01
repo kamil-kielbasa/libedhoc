@@ -89,7 +89,7 @@ Backend split
 | ML-KEM-512, ML-DSA-44     | liboqs                                   |
 | AES-CCM-16-128-128        | PSA (mbed TLS)                           |
 | SHAKE256 hash             | liboqs SHA3                              |
-| EDHOC_Extract / Expand    | KMAC256 via liboqs SHA3 (RFC 9528 §4.1)  |
+| EDHOC_Extract / Expand    | KMAC256 (XKCP SP800-185, RFC 9528 §4.1)  |
 +---------------------------+------------------------------------------+
 
 Tests
@@ -97,7 +97,10 @@ Tests
 
 Unity group ``cipher_suite_exp_pqc_1`` covers ML-KEM round-trip, ML-DSA
 sign/verify, SHAKE256 hash, KMAC extract/expand, and AES-CCM encrypt/decrypt on
-Linux. Requires ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON``. See
+Linux. The KMAC256 KDF is checked against the published NIST SP 800-185
+"KMAC256 Sample #5" vector (empty customization string) through both
+``EDHOC_Extract`` and ``EDHOC_Expand``. Requires
+``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON``. See
 :doc:`../project/testing`.
 
 Limitations

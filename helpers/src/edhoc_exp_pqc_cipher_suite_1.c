@@ -8,11 +8,10 @@
  *          https://datatracker.ietf.org/doc/html/draft-spm-lake-pqsuites-02
  *
  *          PQ primitives: liboqs. Symmetric AEAD: PSA (mbed TLS).
- *          SHAKE256 hash and KMAC256 extract/expand: liboqs SHA3 (RFC 9528 §4.1).
- *
- *          KMAC256 uses liboqs incremental SHA-3 with manual NIST SP 800-185
- *          encoding. liboqs has no public cSHAKE256/KMAC256 API; the cSHAKE
- *          domain-separation suffix (0x04) is applied via internal Keccak symbols.
+ *          SHAKE256 hash: liboqs public SHA-3 API (OQS_SHA3_shake256).
+ *          EDHOC_Extract / EDHOC_Expand (KMAC256, RFC 9528 Section 4.1): the
+ *          backend-agnostic edhoc_kdf_kmac256() helper, implemented on top of
+ *          the XKCP SP800-185 KMAC256 (edhoc_kdf_kmac256_xkcp.c).
  *
  * \copyright Copyright (c) 2026
  *
@@ -34,11 +33,12 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_macros.h"
 #include "edhoc_backend_log.h"
 
+/* EDHOC KDF (KMAC256 extract/expand) -- XKCP or self-contained backend. */
+#include "edhoc_kdf_kmac256.h"
+
 #include <psa/crypto.h>
 #include <oqs/oqs.h>
-#include <oqs/sha3_ops.h>
-#include "common/sha3/sha3.h"
-#include "common/sha3/xkcp_low/KeccakP-1600/plain-64bits/KeccakP-1600-SnP.h"
+#include <oqs/sha3.h> /* public SHAKE256 one-shot API (OQS_SHA3_shake256) */
 
 /* Module defines ---------------------------------------------------------- */
 
@@ -54,32 +54,11 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 	PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM, \
 					EDHOC_EXP_PQC_CS1_AEAD_TAG_LEN)
 
-#define EDHOC_EXP_PQC_CS1_CSHAKE256_RATE ((uint32_t)136)
-#define EDHOC_EXP_PQC_CS1_CSHAKE256_SUFFIX ((uint8_t)0x04)
-
-#define EDHOC_EXP_PQC_CS1_KECCAK_INC_BYTEPOS_WORD ((size_t)25)
-#define EDHOC_EXP_PQC_CS1_KECCAK_PAD_LAST_BYTE ((uint8_t)0x80)
-
-#define EDHOC_EXP_PQC_CS1_KMAC_MAX_ENCODED_KEY_BITS ((size_t)256)
-#define EDHOC_EXP_PQC_CS1_KMAC_LONG_KEY_DIGEST_LEN ((size_t)32)
-#define EDHOC_EXP_PQC_CS1_KMAC_LEFT_ENCODE_MAX_LEN ((size_t)9)
-#define EDHOC_EXP_PQC_CS1_KMAC_STRING_ENC_BUF_LEN ((size_t)16)
-#define EDHOC_EXP_PQC_CS1_KMAC_KEY_BUF_LEN ((size_t)256)
-#define EDHOC_EXP_PQC_CS1_KMAC_KEY_ENC_BUF_LEN \
-	(EDHOC_EXP_PQC_CS1_KMAC_KEY_BUF_LEN +  \
-	 EDHOC_EXP_PQC_CS1_KMAC_LEFT_ENCODE_MAX_LEN)
-#define EDHOC_EXP_PQC_CS1_KMAC_PADDED_KEY_BUF_LEN     \
-	(EDHOC_EXP_PQC_CS1_CSHAKE256_RATE +           \
-	 EDHOC_EXP_PQC_CS1_KMAC_LEFT_ENCODE_MAX_LEN + \
-	 EDHOC_EXP_PQC_CS1_KMAC_KEY_ENC_BUF_LEN)
-#define EDHOC_EXP_PQC_CS1_KMAC_PREFIX_BUF_LEN         \
-	(EDHOC_EXP_PQC_CS1_CSHAKE256_RATE +           \
-	 EDHOC_EXP_PQC_CS1_KMAC_LEFT_ENCODE_MAX_LEN + \
-	 (2U * EDHOC_EXP_PQC_CS1_KMAC_STRING_ENC_BUF_LEN))
-#define EDHOC_EXP_PQC_CS1_KMAC_MSG_BUF_LEN           \
-	(EDHOC_EXP_PQC_CS1_KMAC_PADDED_KEY_BUF_LEN + \
-	 EDHOC_EXP_PQC_CS1_HASH_LEN +                \
-	 EDHOC_EXP_PQC_CS1_KMAC_LEFT_ENCODE_MAX_LEN)
+/*
+ * Scratch buffer for the exported input keying material (IKM). The IKM is the
+ * ML-KEM-512 shared secret (32 bytes); 256 bytes covers any raw key material.
+ */
+#define EDHOC_EXP_PQC_CS1_KDF_IKM_BUF_LEN ((size_t)256)
 
 #define EDHOC_EXP_PQC_CS1_MAX_SLOTS ((size_t)2)
 #define EDHOC_EXP_PQC_CS1_SLOT_HANDLE_BASE    \
@@ -119,34 +98,6 @@ static void exp_pqc_cs1_slot_free(psa_key_id_t handle);
 /** \brief Export raw key material from a static slot or PSA key store. */
 static int exp_pqc_cs1_export_raw_key(const void *kid, uint8_t *raw,
 				      size_t raw_size, size_t *raw_len);
-
-/** \brief Finalize incremental Keccak state for cSHAKE256 (suffix 0x04). */
-static void exp_pqc_cs1_keccak_inc_finalize_cshake(void *ctx, uint32_t rate);
-
-/** \brief NIST SP 800-185 left_encode helper. */
-static int exp_pqc_cs1_left_encode(uint8_t *out, size_t out_size,
-				   size_t *out_len, uint64_t value);
-
-/** \brief NIST SP 800-185 encode_string helper. */
-static int exp_pqc_cs1_encode_string(uint8_t *out, size_t out_size,
-				     size_t *out_len, const uint8_t *str,
-				     size_t str_len);
-
-/** \brief NIST SP 800-185 bytepad helper. */
-static int exp_pqc_cs1_bytepad(uint8_t *out, size_t out_size, size_t *out_len,
-			       const uint8_t *in, size_t in_len, size_t block);
-
-/** \brief cSHAKE256 via liboqs incremental SHA-3 (void API). */
-static int exp_pqc_cs1_cshake256(const uint8_t *in, size_t in_len,
-				 const char *func_name, const uint8_t *custom,
-				 size_t custom_len, uint8_t *out,
-				 size_t out_len);
-
-/** \brief KMAC256 via cSHAKE256 (RFC 9528 Section 4.1 for SHAKE256 suite). */
-static int exp_pqc_cs1_kmac256(const uint8_t *key, size_t key_len,
-			       const uint8_t *in, size_t in_len,
-			       const uint8_t *custom, size_t custom_len,
-			       uint8_t *out, size_t out_bits);
 
 /** \brief Import a key for experimental PQC cipher suite 1. */
 static int exp_pqc_cs1_key_import(void *user_ctx, enum edhoc_key_type key_type,
@@ -331,255 +282,6 @@ static int exp_pqc_cs1_export_raw_key(const void *kid, uint8_t *raw,
 	}
 
 	return EDHOC_SUCCESS;
-}
-
-static void exp_pqc_cs1_keccak_inc_finalize_cshake(void *ctx, uint32_t rate)
-{
-	uint64_t *state = ctx;
-	const unsigned int pos =
-		(unsigned int)state[EDHOC_EXP_PQC_CS1_KECCAK_INC_BYTEPOS_WORD];
-
-	KeccakP1600_AddByte(ctx, EDHOC_EXP_PQC_CS1_CSHAKE256_SUFFIX, pos);
-	KeccakP1600_AddByte(ctx, EDHOC_EXP_PQC_CS1_KECCAK_PAD_LAST_BYTE,
-			    (unsigned int)(rate - 1U));
-	state[EDHOC_EXP_PQC_CS1_KECCAK_INC_BYTEPOS_WORD] = 0;
-}
-
-static int exp_pqc_cs1_left_encode(uint8_t *out, size_t out_size,
-				   size_t *out_len, uint64_t value)
-{
-	uint8_t buf[8] = { 0 };
-	size_t n = 0;
-	size_t i = 0;
-
-	if (0 == value) {
-		if (out_size < 1) {
-			EDHOC_LOG_ERR("Left encode buffer too small");
-			return EDHOC_ERROR_BUFFER_TOO_SMALL;
-		}
-		out[0] = 0;
-		*out_len = 1;
-		return EDHOC_SUCCESS;
-	}
-
-	while (0 != value) {
-		buf[n++] = (uint8_t)(value & 0xFF);
-		value >>= 8;
-	}
-
-	if (out_size < n + 1) {
-		EDHOC_LOG_ERR("Left encode buffer too small");
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	out[0] = (uint8_t)n;
-	for (i = 0; i < n; ++i)
-		out[1 + i] = buf[n - 1 - i];
-
-	*out_len = n + 1;
-	return EDHOC_SUCCESS;
-}
-
-static int exp_pqc_cs1_encode_string(uint8_t *out, size_t out_size,
-				     size_t *out_len, const uint8_t *str,
-				     size_t str_len)
-{
-	size_t len_enc_len = 0;
-	int ret = exp_pqc_cs1_left_encode(out, out_size, &len_enc_len,
-					  (uint64_t)(str_len * 8));
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Left encode string length");
-		return ret;
-	}
-
-	if (out_size < len_enc_len + str_len) {
-		EDHOC_LOG_ERR("Encode string buffer too small");
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	if (0 != str_len)
-		memcpy(out + len_enc_len, str, str_len);
-
-	*out_len = len_enc_len + str_len;
-	return EDHOC_SUCCESS;
-}
-
-static int exp_pqc_cs1_bytepad(uint8_t *out, size_t out_size, size_t *out_len,
-			       const uint8_t *in, size_t in_len, size_t block)
-{
-	size_t len_enc_len = 0;
-	int ret = exp_pqc_cs1_left_encode(out, out_size, &len_enc_len, block);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Left encode block size");
-		return ret;
-	}
-
-	if (out_size < len_enc_len + in_len) {
-		EDHOC_LOG_ERR("Bytepad buffer too small");
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	memcpy(out + len_enc_len, in, in_len);
-
-	const size_t padded = len_enc_len + in_len;
-	const size_t pad_len = ((padded + block - 1) / block) * block;
-
-	if (out_size < pad_len) {
-		EDHOC_LOG_ERR("Bytepad padded buffer too small");
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	if (pad_len > padded)
-		memset(out + padded, 0, pad_len - padded);
-
-	*out_len = pad_len;
-	return EDHOC_SUCCESS;
-}
-
-static int exp_pqc_cs1_cshake256(const uint8_t *in, size_t in_len,
-				 const char *func_name, const uint8_t *custom,
-				 size_t custom_len, uint8_t *out,
-				 size_t out_len)
-{
-	uint8_t name_buf[EDHOC_EXP_PQC_CS1_KMAC_STRING_ENC_BUF_LEN] = { 0 };
-	uint8_t custom_buf[EDHOC_EXP_PQC_CS1_KMAC_STRING_ENC_BUF_LEN] = { 0 };
-	uint8_t prefix_buf[EDHOC_EXP_PQC_CS1_KMAC_PREFIX_BUF_LEN] = { 0 };
-	uint8_t padded_prefix[EDHOC_EXP_PQC_CS1_KMAC_PREFIX_BUF_LEN] = { 0 };
-	size_t name_len = 0;
-	size_t custom_enc_len = 0;
-	size_t prefix_len = 0;
-	size_t padded_len = 0;
-	OQS_SHA3_shake256_inc_ctx state = { 0 };
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	if (NULL == in || NULL == out || 0 == out_len || NULL == func_name) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	ret = exp_pqc_cs1_encode_string(name_buf, sizeof(name_buf), &name_len,
-					(const uint8_t *)func_name,
-					strlen(func_name));
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Encode function name");
-		return ret;
-	}
-
-	if (NULL == custom)
-		custom_len = 0;
-
-	ret = exp_pqc_cs1_encode_string(custom_buf, sizeof(custom_buf),
-					&custom_enc_len, custom, custom_len);
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Encode customization string");
-		return ret;
-	}
-
-	if (name_len + custom_enc_len > sizeof(prefix_buf)) {
-		EDHOC_LOG_ERR("Prefix buffer too small");
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	memcpy(prefix_buf, name_buf, name_len);
-	memcpy(prefix_buf + name_len, custom_buf, custom_enc_len);
-	prefix_len = name_len + custom_enc_len;
-
-	ret = exp_pqc_cs1_bytepad(padded_prefix, sizeof(padded_prefix),
-				  &padded_len, prefix_buf, prefix_len,
-				  EDHOC_EXP_PQC_CS1_CSHAKE256_RATE);
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Bytepad prefix");
-		return ret;
-	}
-
-	/* liboqs incremental SHA3 API is void; preconditions are checked above. */
-	OQS_SHA3_shake256_inc_init(&state);
-	OQS_SHA3_shake256_inc_absorb(&state, padded_prefix, padded_len);
-	OQS_SHA3_shake256_inc_absorb(&state, in, in_len);
-	exp_pqc_cs1_keccak_inc_finalize_cshake(
-		state.ctx, EDHOC_EXP_PQC_CS1_CSHAKE256_RATE);
-	OQS_SHA3_shake256_inc_squeeze(out, out_len, &state);
-	OQS_SHA3_shake256_inc_ctx_release(&state);
-
-	return EDHOC_SUCCESS;
-}
-
-static int exp_pqc_cs1_kmac256(const uint8_t *key, size_t key_len,
-			       const uint8_t *in, size_t in_len,
-			       const uint8_t *custom, size_t custom_len,
-			       uint8_t *out, size_t out_bits)
-{
-	uint8_t key_buf[EDHOC_EXP_PQC_CS1_KMAC_KEY_BUF_LEN] = { 0 };
-	uint8_t key_enc[EDHOC_EXP_PQC_CS1_KMAC_KEY_ENC_BUF_LEN] = { 0 };
-	uint8_t padded_key[EDHOC_EXP_PQC_CS1_KMAC_PADDED_KEY_BUF_LEN] = { 0 };
-	uint8_t msg_buf[EDHOC_EXP_PQC_CS1_KMAC_MSG_BUF_LEN] = { 0 };
-	uint8_t right[EDHOC_EXP_PQC_CS1_KMAC_LEFT_ENCODE_MAX_LEN] = { 0 };
-	size_t key_enc_len = 0;
-	size_t padded_key_len = 0;
-	size_t right_len = 0;
-	size_t msg_len = 0;
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	if (NULL == key || NULL == out || 0 == out_bits) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (key_len > sizeof(key_buf)) {
-		EDHOC_LOG_ERR("Key too long: %zu", key_len);
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	memcpy(key_buf, key, key_len);
-
-	if (key_len * 8 > EDHOC_EXP_PQC_CS1_KMAC_MAX_ENCODED_KEY_BITS) {
-		ret = exp_pqc_cs1_cshake256(
-			key_buf, key_len, "", NULL, 0, key_buf,
-			EDHOC_EXP_PQC_CS1_KMAC_LONG_KEY_DIGEST_LEN);
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("KMAC key hash");
-			return ret;
-		}
-		key_len = EDHOC_EXP_PQC_CS1_KMAC_LONG_KEY_DIGEST_LEN;
-	}
-
-	ret = exp_pqc_cs1_encode_string(key_enc, sizeof(key_enc), &key_enc_len,
-					key_buf, key_len);
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Encode KMAC key");
-		return ret;
-	}
-
-	ret = exp_pqc_cs1_bytepad(padded_key, sizeof(padded_key),
-				  &padded_key_len, key_enc, key_enc_len,
-				  EDHOC_EXP_PQC_CS1_CSHAKE256_RATE);
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Bytepad KMAC key");
-		return ret;
-	}
-
-	ret = exp_pqc_cs1_left_encode(right, sizeof(right), &right_len,
-				      out_bits);
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Encode output length");
-		return ret;
-	}
-
-	msg_len = padded_key_len + in_len + right_len;
-	if (msg_len > sizeof(msg_buf)) {
-		EDHOC_LOG_ERR("KMAC message too long: %zu", msg_len);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	memcpy(msg_buf, padded_key, padded_key_len);
-	if (0 != in_len && NULL != in)
-		memcpy(msg_buf + padded_key_len, in, in_len);
-	memcpy(msg_buf + padded_key_len + in_len, right, right_len);
-
-	return exp_pqc_cs1_cshake256(msg_buf, msg_len, "KMAC256", custom,
-				     custom_len, out, out_bits / 8U);
 }
 
 static int exp_pqc_cs1_key_import(void *user_ctx, enum edhoc_key_type key_type,
@@ -951,7 +653,7 @@ static int exp_pqc_cs1_extract(void *user_context, const void *key_id,
 			       size_t pseudo_random_key_size,
 			       size_t *pseudo_random_key_length)
 {
-	uint8_t input_key_material[EDHOC_EXP_PQC_CS1_KMAC_KEY_BUF_LEN] = { 0 };
+	uint8_t input_key_material[EDHOC_EXP_PQC_CS1_KDF_IKM_BUF_LEN] = { 0 };
 	size_t input_key_material_len = 0;
 	int ret;
 
@@ -976,10 +678,10 @@ static int exp_pqc_cs1_extract(void *user_context, const void *key_id,
 		return ret;
 	}
 
-	ret = exp_pqc_cs1_kmac256(salt, salt_len, input_key_material,
-				  input_key_material_len, NULL, 0,
-				  pseudo_random_key,
-				  EDHOC_EXP_PQC_CS1_HASH_LEN * 8);
+	/* EDHOC_Extract(salt, IKM) = KMAC256(salt, IKM, 8*hash_len, ""). */
+	ret = edhoc_kdf_kmac256(salt, salt_len, input_key_material,
+				input_key_material_len, pseudo_random_key,
+				EDHOC_EXP_PQC_CS1_HASH_LEN);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("KMAC extract");
 		return ret;
@@ -1013,9 +715,10 @@ static int exp_pqc_cs1_expand(void *user_context, const void *key_id,
 		return ret;
 	}
 
-	ret = exp_pqc_cs1_kmac256(prk, prk_len, info, info_length, NULL, 0,
-				  output_keying_material,
-				  output_keying_material_length * 8U);
+	/* EDHOC_Expand(PRK, info, L) = KMAC256(PRK, info, 8*L, ""). */
+	ret = edhoc_kdf_kmac256(prk, prk_len, info, info_length,
+				output_keying_material,
+				output_keying_material_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("KMAC expand");
 		return ret;

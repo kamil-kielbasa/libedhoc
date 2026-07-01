@@ -1,3 +1,18 @@
+Version 1.14.1
+--------------
+
+:Date: July 1, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Experimental PQC
+  cipher suite 1:
+
+  * Fixed ``EDHOC_Extract`` / ``EDHOC_Expand``: KMAC256 (RFC 9528 Section 4.1)
+    is now computed by XKCP and conforms to NIST SP 800-185, so the suite
+    derives correct keys. Verified against the published NIST KMAC256
+    known-answer vector.
+  * Enabling ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC`` now also builds XKCP and
+    requires ``xsltproc`` on the host.
+
 Version 1.14.0
 --------------
 

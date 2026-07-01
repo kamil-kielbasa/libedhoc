@@ -13,3 +13,6 @@
 [submodule "externals/liboqs"]
 	path = externals/liboqs
 	url = https://github.com/open-quantum-safe/liboqs.git
+[submodule "externals/XKCP"]
+	path = externals/XKCP
+	url = https://github.com/XKCP/XKCP.git

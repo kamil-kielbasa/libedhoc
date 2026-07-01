@@ -42,3 +42,45 @@ if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC AND NOT TARGET oqs)
     set(OQS_DIST_BUILD OFF CACHE BOOL "" FORCE)
     add_subdirectory(liboqs)
 endif()
+
+# --- XKCP (SP800-185 KMAC256 for the EDHOC_Extract/Expand KDF) ----------------
+#
+# XKCP ships its own build system that knows the correct file/header set per
+# platform, so the most robust integration is to let that build produce
+# libXKCP.a and link the result. The reference target (plain-64bit permutation,
+# matching liboqs) is generic64; it needs `make`, a C compiler and `xsltproc`.
+#
+# The resulting archive exposes KMAC256 (SP800-185.h). Its permutation symbols
+# are implementation-suffixed (KeccakP1600_plain64_*), so they do not clash with
+# the Keccak code liboqs vendors. Should a `multiple definition of Keccak...`
+# ever appear, harden the archive so KMAC256 is its only global symbol:
+#
+#   cd bin/generic64 && mkdir -p _kdf && cd _kdf
+#   ar x ../libXKCP.a && ld -r *.o -o combined.o
+#   printf 'KMAC256\n' > keep.txt
+#   objcopy --keep-global-symbols=keep.txt combined.o kdf.o
+#   ar rcs libXKCP_kdf.a kdf.o          # link this instead of libXKCP.a
+#
+if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC AND NOT TARGET xkcp)
+    include(ExternalProject)
+    set(XKCP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/XKCP)
+
+    ExternalProject_Add(xkcp_build
+        SOURCE_DIR        ${XKCP_SRC}
+        CONFIGURE_COMMAND ""
+        BUILD_IN_SOURCE   1
+        BUILD_COMMAND     make generic64/libXKCP.a
+        INSTALL_COMMAND   ""
+        BUILD_BYPRODUCTS  ${XKCP_SRC}/bin/generic64/libXKCP.a)
+
+    add_library(xkcp STATIC IMPORTED GLOBAL)
+    add_dependencies(xkcp xkcp_build)
+    set_target_properties(xkcp PROPERTIES
+        IMPORTED_LOCATION ${XKCP_SRC}/bin/generic64/libXKCP.a)
+
+    # Public XKCP headers (SP800-185.h among them) are collected here by the
+    # build. Exposed as a cache variable so tests/samples can add it to their
+    # include path without re-deriving the location.
+    set(XKCP_INCLUDE_DIR ${XKCP_SRC}/bin/generic64/libXKCP.a.headers
+        CACHE INTERNAL "XKCP public headers")
+endif()

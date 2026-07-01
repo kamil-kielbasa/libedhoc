@@ -77,7 +77,7 @@ Unit tests:
   - ``cipher_suite_0`` — EDHOC cipher suite 0 (EdDSA, ECDH, HKDF, AEAD, HASH)
   - ``cipher_suite_2`` — EDHOC cipher suite 2 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
   - ``cipher_suite_24`` — EDHOC cipher suite 24 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
-  - ``cipher_suite_exp_pqc_1`` — experimental PQC cipher suite 1 (ML-KEM-512, ML-DSA-44, KMAC256, liboqs); requires ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON``
+  - ``cipher_suite_exp_pqc_1`` — experimental PQC cipher suite 1 (ML-KEM-512, ML-DSA-44, KMAC256, AES-CCM; liboqs, XKCP, PSA); requires ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON``
   - ``api`` — EDHOC public API (context init, methods, cipher suites, bindings)
   - ``api_negative`` — Negative API tests (null args, invalid state, error paths)
   - ``error_message`` — EDHOC error message compose/process (success, unspecified, wrong suite, unknown cred)
