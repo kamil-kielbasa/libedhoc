@@ -11,7 +11,7 @@
 
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 
 /* Standard library headers: */
 #include <stdint.h>

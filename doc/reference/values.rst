@@ -2,10 +2,10 @@ EDHOC Values
 ============
 
 CBOR shortcut constants and key-derivation labels used internally by libedhoc
-and exposed in :file:`include/edhoc_values.h`. These are reference enums; for
+and exposed in :file:`include/edhoc/edhoc_values.h`. These are reference enums; for
 the EDHOC error codes see :doc:`error_codes`.
 
-| Header file: :file:`include/edhoc_values.h`
+| Header file: :file:`include/edhoc/edhoc_values.h`
 
 CBOR one-byte values
 --------------------

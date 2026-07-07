@@ -8,7 +8,7 @@ Internal Building Blocks
    library contributors. Application code should normally use the higher-level
    APIs from :doc:`messages`, :doc:`exporters` and friends instead.
 
-| Header file: :file:`include/edhoc_common.h`
+| Header file: :file:`library/internal/edhoc_common_internal.h`
 
 Common structures
 -----------------

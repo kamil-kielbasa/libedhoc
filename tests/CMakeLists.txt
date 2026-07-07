@@ -24,7 +24,7 @@ set(TEST_UNIT_SOURCES
     unit/cipher_suites/test_cipher_suite_24.c
     unit/error/test_error_message.c
     unit/exporters/test_exporters.c
-    unit/helpers/test_helpers.c
+    unit/coap/test_coap.c
     unit/coverage/coverage_common.c
     unit/coverage/test_coverage_msg1.c
     unit/coverage/test_coverage_msg2.c
@@ -43,7 +43,7 @@ set(TEST_UNIT_SOURCES
     unit/internals/test_internals_message4.c
     unit/internals/test_internals_error.c
     unit/internals/test_internals_message1.c
-    unit/internals/test_internals_helpers.c
+    unit/internals/test_internals_coap.c
     unit/internals/test_internals_api.c
     unit/message/test_message_paths.c)
 
@@ -78,7 +78,7 @@ if (DEFINED CONFIG_LIBEDHOC_MEM_BACKEND AND CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
         integration/test_mem_custom.c)
 endif()
 
-set(TEST_HELPER_SOURCES ${LIBEDHOC_HELPERS_SOURCES})
+set(TEST_HELPER_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES})
 
 set_source_files_properties(${TEST_HELPER_SOURCES} PROPERTIES
                             COMPILE_FLAGS "-Wno-format -Wno-format-pedantic -Wno-sign-conversion -Wno-conversion -Wno-switch-enum")
@@ -107,13 +107,14 @@ endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}/include
-                           ${CMAKE_CURRENT_SOURCE_DIR}/common/include)
+                           ${CMAKE_CURRENT_SOURCE_DIR}/common/include
+                           ${LIBEDHOC_INTERNAL_INCLUDE_DIR})
 
 # --- Link dependencies -------------------------------------------------------
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
                       libedhoc::edhoc
-                      libedhoc::helpers
+                      libedhoc::cipher_suites
                       libedhoc::backend_memory
                       unity)
 

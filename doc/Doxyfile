@@ -865,7 +865,8 @@ WARN_LOGFILE           =
 # Note: If this tag is empty the current directory is searched.
 
 INPUT                  = ../include \
-                         ../helpers/include \
+                         ../library/internal \
+                         ../library/cipher_suites \
                          ../backends/memory/include \
                          ../backends/log/include
 #../samples ../snippets
@@ -947,7 +948,7 @@ FILE_PATTERNS          = *.c \
 # be searched for input files as well.
 # The default value is: NO.
 
-RECURSIVE              = NO
+RECURSIVE              = YES
 
 # The EXCLUDE tag can be used to specify files and/or directories that should be
 # excluded from the INPUT source files. This way you can easily exclude a

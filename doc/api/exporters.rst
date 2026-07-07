@@ -11,7 +11,7 @@ A key update (``KEY_UPDATE``) can be performed on an established context to
 re-derive ``PRK_out`` from fresh entropy without running a new handshake; the
 OSCORE export must then be re-run to obtain refreshed keys.
 
-| Header file: :file:`include/edhoc.h`
+| Header file: :file:`include/edhoc/edhoc.h`
 
 .. doxygengroup:: edhoc-api-exporters
    :project: libedhoc

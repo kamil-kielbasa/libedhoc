@@ -20,7 +20,7 @@ zephyr_include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # test-vector headers need a manual include.
 target_sources(app PRIVATE
     src/main.c
-    ${LIBEDHOC_BENCHMARK_HELPERS_SOURCES})
+    ${LIBEDHOC_BENCHMARK_CIPHER_SUITE_SOURCES})
 
 target_include_directories(app PRIVATE
     ${LIBEDHOC_TESTS_DIR}/include

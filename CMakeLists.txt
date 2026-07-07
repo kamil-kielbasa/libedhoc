@@ -29,10 +29,9 @@ include(cmake/warnings.cmake)
 include(cmake/dependencies.cmake)
 
 # --- Targets -----------------------------------------------------------------
-# Order matters: backends define backend_* (used by include/library/helpers).
+# Order matters: backends define backend_* (used by include/library/cipher_suites).
 add_subdirectory(backends)
 add_subdirectory(include)
-add_subdirectory(helpers)
 add_subdirectory(library)
 
 if(LIBEDHOC_ENABLE_TESTS)
@@ -46,6 +45,9 @@ endif()
 # Only meaningful for a standalone install against system dependencies.
 if(PROJECT_IS_TOP_LEVEL AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     include(CMakePackageConfigHelpers)
+    # The reference cipher-suite source list is populated inside library/, whose
+    # PARENT_SCOPE does not reach here — re-read sources.cmake for the install.
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/sources.cmake)
     set(LIBEDHOC_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/libedhoc)
 
     # All targets reachable from the export must be installed together. Backends
@@ -53,7 +55,7 @@ if(PROJECT_IS_TOP_LEVEL AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     # they have to travel with it.
     install(TARGETS libedhoc libedhoc_api
                     backend_cbor backend_memory backend_log
-                    libedhoc_helpers
+                    libedhoc_cipher_suites
         EXPORT  libedhoc-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -71,13 +73,19 @@ if(PROJECT_IS_TOP_LEVEL AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     install(DIRECTORY include/ ${LIBEDHOC_GENERATED_DIR}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
     install(DIRECTORY backends/cbor/include/ backends/memory/include/
-                      backends/log/include/ helpers/include/
+                      backends/log/include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+    install(DIRECTORY library/cipher_suites/cipher_suite_0/
+                      library/cipher_suites/cipher_suite_2/
+                      library/cipher_suites/cipher_suite_24/
+                      library/cipher_suites/cipher_suite_pqc_1/
+                      library/cipher_suites/common/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
 
-    # Helper *sources* are examples/convenience, not library code → share/,
-    # never the cmake-package dir.
-    install(FILES ${LIBEDHOC_HELPERS_SOURCES}
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/libedhoc/helpers/src)
+    # Reference cipher-suite *sources* are examples/convenience, not library
+    # code → share/, never the cmake-package dir.
+    install(FILES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/libedhoc/cipher_suites/src)
 
     # find_package(libedhoc) re-resolves zcbor (PUBLIC on backend_cbor) — without
     # this, the imported backend_cbor would reference an unknown 'zcbor' target.

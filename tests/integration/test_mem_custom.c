@@ -17,7 +17,7 @@
 #include "test_mem_custom_handshake.h"
 
 /* EDHOC header: */
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 
 /* Memory backend facade: */
 #include "edhoc_backend_memory.h"

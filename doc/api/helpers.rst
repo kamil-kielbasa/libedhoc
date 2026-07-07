@@ -1,13 +1,14 @@
 Helpers, Macros and Utilities
 =============================
 
-This page collects the optional, ready-made helpers shipped under
-``helpers/`` together with small utility groups from the core headers.
+This page collects the optional, ready-made reference cipher suites shipped
+under ``library/cipher_suites/`` together with small utility groups from the
+core headers.
 
 Cipher suite 0
 --------------
 
-| Header file: :file:`helpers/include/edhoc_cipher_suite_0.h`
+| Header file: :file:`library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.h`
 
 .. doxygengroup:: edhoc-cipher-suite-0-api
    :project: libedhoc
@@ -16,7 +17,7 @@ Cipher suite 0
 Cipher suite 2
 --------------
 
-| Header file: :file:`helpers/include/edhoc_cipher_suite_2.h`
+| Header file: :file:`library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.h`
 
 .. doxygengroup:: edhoc-cipher-suite-2-api
    :project: libedhoc
@@ -34,7 +35,7 @@ Cipher suite 4
 Cipher suite 24
 ---------------
 
-| Header file: :file:`helpers/include/edhoc_cipher_suite_24.h`
+| Header file: :file:`library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.h`
 
 .. doxygengroup:: edhoc-cipher-suite-24-api
    :project: libedhoc
@@ -43,7 +44,7 @@ Cipher suite 24
 Experimental PQC cipher suite 1
 -------------------------------
 
-| Header file: :file:`helpers/include/edhoc_exp_pqc_cipher_suite_1.h`
+| Header file: :file:`library/cipher_suites/cipher_suite_pqc_1/edhoc_exp_pqc_cipher_suite_1.h`
 
 .. doxygengroup:: edhoc-exp-pqc-cipher-suite-1-api
    :project: libedhoc
@@ -56,7 +57,7 @@ Experimental PQC cipher suite 1
 Connection identifier helpers
 -----------------------------
 
-| Header file: :file:`helpers/include/edhoc_helpers.h`
+| Header file: :file:`include/edhoc/edhoc_coap.h`
 
 .. doxygengroup:: edhoc-api-connection-id
    :project: libedhoc
@@ -72,7 +73,7 @@ Buffer utilities
 Macros
 ------
 
-| Header file: :file:`include/edhoc_macros.h`
+| Header file: :file:`include/edhoc/edhoc_macros.h`
 
 .. doxygengroup:: edhoc-macros
    :project: libedhoc

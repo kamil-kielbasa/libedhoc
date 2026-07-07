@@ -53,3 +53,7 @@ dkms.conf
 
 # Build directories
 build/
+_build/
+
+# Tooling caches (clangd, Doxygen/Sphinx output, etc.)
+.cache/

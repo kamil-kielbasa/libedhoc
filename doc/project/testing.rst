@@ -46,10 +46,10 @@ Directory layout:
    │   │   ├── test_internals_message4.c
    │   │   ├── test_internals_error.c
    │   │   ├── test_internals_message1.c
-   │   │   ├── test_internals_helpers.c
+   │   │   ├── test_internals_coap.c
    │   │   └── test_internals_api.c
    │   ├── exporters/
-   │   ├── helpers/
+   │   ├── coap/
    │   ├── message/
    │   ├── error/
    │   └── mem/
@@ -83,7 +83,7 @@ Unit tests:
   - ``api_negative`` — Negative API tests (null args, invalid state, error paths)
   - ``error_message`` — EDHOC error message compose/process (success, unspecified, wrong suite, unknown cred)
   - ``exporters`` — PRK exporter, OSCORE session export, key update
-  - ``helpers`` — Connection ID, flow prepend/extract, CoAP transport helpers
+  - ``coap`` — Connection ID, flow prepend/extract, CoAP transport helpers
   - ``coverage_msg1`` … ``coverage_handshake`` — Mock-based failure injection split by message/topic
   - ``internals_common`` … ``internals_api`` — Internal function tests via ``STATIC`` / ``LIBEDHOC_MODULE_TESTS``
   - ``message_paths`` — Message composition/processing round-trips with real crypto
@@ -288,34 +288,31 @@ Unit Tests
    * - File
      - Group
      - Description
-   * - :file:`tests/unit/test_api.c`
+   * - :file:`tests/unit/api/test_api.c`
      - ``api``
      - EDHOC public API: context init, methods, cipher suites, connection ID, bindings
-   * - :file:`tests/unit/test_api_negative.c`
+   * - :file:`tests/unit/api/test_api_negative.c`
      - ``api_negative``
      - Negative tests: null pointers, invalid state, error paths for all API functions
-   * - :file:`tests/unit/test_crypto_suite0.c`
-     - ``crypto_suite0``
-     - Cipher suite 0: EdDSA, ECDH, HKDF, AEAD, HASH
-   * - :file:`tests/unit/test_crypto_suite2.c`
-     - ``crypto_suite2``
-     - Cipher suite 2: ECDSA, ECDH, HKDF, AEAD, HASH
-   * - :file:`tests/unit/test_error_message.c`
+   * - :file:`tests/unit/cipher_suites/test_cipher_suite_{0,2,24}.c`
+     - ``cipher_suite_0`` … ``cipher_suite_24``
+     - Cipher suites 0/2/24: signature, ECDH, HKDF, AEAD, HASH (plus experimental ``cipher_suite_exp_pqc_1``)
+   * - :file:`tests/unit/error/test_error_message.c`
      - ``error_message``
      - Error message compose/process: success, unspecified, wrong cipher suite, unknown cred
-   * - :file:`tests/unit/test_exporters.c`
+   * - :file:`tests/unit/exporters/test_exporters.c`
      - ``exporters``
      - PRK exporter, OSCORE session export, key update, error handling
-   * - :file:`tests/unit/test_helpers.c`
-     - ``helpers``
+   * - :file:`tests/unit/coap/test_coap.c`
+     - ``coap``
      - Connection ID equal/prepend/extract, flow prepend/extract, CoAP helpers
-   * - :file:`tests/unit/test_coverage.c`
-     - ``coverage``
-     - Mock-based failure injection for deep internal error paths
-   * - :file:`tests/unit/test_internals.c`
-     - ``internals``
+   * - :file:`tests/unit/coverage/test_coverage_*.c`
+     - ``coverage_msg1`` … ``coverage_handshake``
+     - Mock-based failure injection for deep internal error paths, split by message/topic
+   * - :file:`tests/unit/internals/test_internals_*.c`
+     - ``internals_common`` … ``internals_api``
      - Internal function testing via ``STATIC`` / ``LIBEDHOC_MODULE_TESTS``
-   * - :file:`tests/unit/test_message_paths.c`
+   * - :file:`tests/unit/message/test_message_paths.c`
      - ``message_paths``
      - Message composition/processing round-trips with real crypto
 
@@ -384,7 +381,7 @@ Static Analysis
    ./scripts/ci.sh cppcheck
 
 Runs cppcheck on :file:`library/` with ``--enable=warning,style`` and include paths for
-:file:`include/`, :file:`helpers/include/`, ``backends/cbor/include/``.
+:file:`include/edhoc/`, :file:`library/cipher_suites/`, ``backends/cbor/include/``.
 
 **Clang-tidy**
 

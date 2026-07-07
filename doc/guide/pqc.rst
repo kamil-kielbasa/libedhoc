@@ -7,7 +7,7 @@ library. The draft
 <https://datatracker.ietf.org/doc/html/draft-spm-lake-pqsuites-02>`_ is still
 in progress and no IANA cipher-suite value is assigned yet.
 
-What exists today is an **internal helper** under ``helpers/`` only. It is not
+What exists today is an **internal helper** under ``library/cipher_suites/cipher_suite_pqc_1/`` only. It is not
 wired into public ``edhoc.h`` API. Use it to prototype KEM-shaped crypto callbacks
 and algorithm sizes; do not expect a full post-quantum EDHOC handshake from the core library.
 
@@ -57,7 +57,7 @@ as NIKE-as-KEM (``encapsulate`` / ``decapsulate`` wrapping ``key_agreement``).
 API surface
 -----------
 
-Public symbols are in :file:`helpers/include/edhoc_exp_pqc_cipher_suite_1.h`:
+Public symbols are in :file:`library/cipher_suites/cipher_suite_pqc_1/edhoc_exp_pqc_cipher_suite_1.h`:
 
 * ``struct edhoc_crypto_pqc`` — KEM-shaped crypto vtable
   (``encapsulate`` / ``decapsulate`` replace ``key_agreement``).

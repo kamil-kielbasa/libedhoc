@@ -10,7 +10,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/warnings.cmake)
 # --- Fuzz sources ------------------------------------------------------------
 
 set(FUZZ_COMMON_SOURCES
-    ${LIBEDHOC_FUZZ_HELPERS_SOURCES}
+    ${LIBEDHOC_FUZZ_CIPHER_SUITE_SOURCES}
     ${LIBEDHOC_TEST_COMMON_SOURCES})
 
 set(FUZZ_TARGETS
@@ -32,7 +32,7 @@ foreach(target ${FUZZ_TARGETS})
 
     target_link_libraries(${target} PRIVATE
                           libedhoc::edhoc
-                          libedhoc::helpers
+                          libedhoc::cipher_suites
                           libedhoc::backend_memory
                           unity)
 

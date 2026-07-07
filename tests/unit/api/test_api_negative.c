@@ -11,7 +11,7 @@
 
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
 #include "edhoc_cipher_suite_0.h"

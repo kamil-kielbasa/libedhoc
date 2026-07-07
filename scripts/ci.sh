@@ -270,8 +270,8 @@ cmd_cppcheck() {
     section "Cppcheck"
     cd "${PROJECT_DIR}"
     cppcheck --enable=warning,style --inline-suppr --error-exitcode=1 \
-        -I include/ -I helpers/include/ -I backends/cbor/include/ \
-        library/*.c
+        -I include/ -I library/internal/ -I backends/cbor/include/ \
+        library/core/*.c
     ok "Cppcheck passed."
 }
 
@@ -301,18 +301,19 @@ cmd_clang_tidy() {
 
     cd "${PROJECT_DIR}"
     "$ct" -p "${BUILD_DIR}" \
-        library/edhoc.c \
-        library/edhoc_message_1.c \
-        library/edhoc_message_2.c \
-        library/edhoc_message_3.c \
-        library/edhoc_message_4.c \
-        library/edhoc_message_error.c \
-        library/edhoc_exporter.c \
-        library/edhoc_common.c \
-        helpers/src/edhoc_cipher_suite_0.c \
-        helpers/src/edhoc_cipher_suite_2.c \
-        helpers/src/edhoc_cipher_suite_24.c \
-        helpers/src/edhoc_helpers.c
+        library/core/edhoc.c \
+        library/core/edhoc_message_1.c \
+        library/core/edhoc_message_2.c \
+        library/core/edhoc_message_3.c \
+        library/core/edhoc_message_4.c \
+        library/core/edhoc_message_error.c \
+        library/core/edhoc_exporter.c \
+        library/core/edhoc_common.c \
+        library/core/edhoc_coap.c \
+        library/cipher_suites/edhoc_cipher_suite.c \
+        library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c \
+        library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c \
+        library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c
     ok "Clang-tidy passed."
 }
 
@@ -367,9 +368,25 @@ cmd_format() {
 #   west build -b native_sim sample/benchmark -p always
 #   ./build/zephyr/zephyr.exe
 
+# --------------- header hygiene ----------------------------------------------
+# Installed public headers must never include a private *_internal.h header.
+cmd_check_headers() {
+    section "Public header hygiene"
+    cd "${PROJECT_DIR}"
+    local offenders
+    offenders=$(grep -rEn '#[[:space:]]*include[[:space:]]*[<"][^">]*_internal\.h[">]' include/ || true)
+    if [[ -n "$offenders" ]]; then
+        err "Installed public headers must not include *_internal.h:"
+        err "$offenders"
+        exit 1
+    fi
+    ok "No public header includes a private *_internal.h header."
+}
+
 # --------------- all (full local CI) -----------------------------------------
 cmd_all() {
     section "Full CI pipeline"
+    cmd_check_headers
     cmd_coverage
     cmd_cppcheck
     cmd_clang_tidy
@@ -391,6 +408,7 @@ Build & Test:
 Analysis:
   cppcheck                Static analysis with cppcheck
   clang-tidy              Static analysis with clang-tidy
+  check-headers           Public headers must not include *_internal.h
   valgrind                Memcheck + DRD
   sanitizers [asan-ubsan] [--mem-backend X]  Build + test under sanitizers
   fuzz [seconds]          Build + run fuzz targets (default: 60s each)
@@ -431,6 +449,7 @@ main() {
         valgrind)    cmd_valgrind ;;
         cppcheck)    cmd_cppcheck ;;
         clang-tidy)  cmd_clang_tidy ;;
+        check-headers) cmd_check_headers ;;
         fuzz)        shift; cmd_fuzz "$@" ;;
         format)      shift; cmd_format "$@" ;;
         all)         cmd_all ;;

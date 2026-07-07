@@ -18,7 +18,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitions --------------------------------------- */

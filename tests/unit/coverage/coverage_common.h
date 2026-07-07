@@ -13,7 +13,7 @@
 
 /* Include files ----------------------------------------------------------- */
 #include "test_common.h"
-#include "edhoc_common.h"
+#include "edhoc_common_internal.h"
 #include "edhoc_cipher_suite_2.h"
 
 /* Defines ----------------------------------------------------------------- */

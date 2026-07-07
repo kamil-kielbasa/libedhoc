@@ -23,6 +23,13 @@ set(CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN 2 CACHE STRING "")
 set(CONFIG_LIBEDHOC_LOG_LEVEL                  3  CACHE STRING "")  # INF
 set(CONFIG_LIBEDHOC_MEM_BACKEND                0  CACHE STRING "")  # STACK
 
+# Reference cipher suites returned by edhoc_cipher_suite_get_*(). Disabling one
+# drops its source from the build and makes the getters return NULL for it.
+set(CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE      1  CACHE STRING "")
+set(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE      1  CACHE STRING "")
+set(CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE     1  CACHE STRING "")
+set(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE  0  CACHE STRING "")
+
 set(LIBEDHOC_GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated
     CACHE INTERNAL "Directory holding libedhoc generated headers (edhoc_config.h)")
 configure_file(

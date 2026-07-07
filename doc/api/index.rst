@@ -3,7 +3,7 @@ API Reference
 
 This section is the complete reference for the **libedhoc** C API. It is
 generated from the Doxygen comments in the public headers under
-``include/`` and ``helpers/include/``.
+``include/edhoc/`` and the reference suites under ``library/cipher_suites/``.
 
 If you are new to libedhoc, read :doc:`../getting_started/introduction` and
 :doc:`../getting_started/concepts` first; if you are about to write code,
@@ -64,7 +64,7 @@ Error model
 -----------
 
 All API functions return ``EDHOC_SUCCESS`` (0) on success or a negative error
-code on failure. Error codes are defined in :file:`include/edhoc_values.h` and
+code on failure. Error codes are defined in :file:`include/edhoc/edhoc_values.h` and
 listed on the :doc:`../reference/error_codes` page.
 
 After a message-processing function fails, use :c:func:`edhoc_error_get_code`

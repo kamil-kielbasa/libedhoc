@@ -15,7 +15,7 @@
 #include <string.h>
 
 /* EDHOC header: */
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */

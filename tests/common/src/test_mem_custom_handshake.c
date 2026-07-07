@@ -20,7 +20,7 @@
 #include "edhoc_cipher_suite_0.h"
 
 /* EDHOC header: */
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 
 /* Memory backend facade: */
 #include "edhoc_backend_memory.h"

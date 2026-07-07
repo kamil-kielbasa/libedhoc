@@ -36,7 +36,7 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol �
 
 ### Experimental Cipher Suites
 
-These helpers live under `helpers/` only. **libedhoc does not support them in the core EDHOC library** — the underlying specifications are still drafts and there is no full handshake integration.
+These helpers live under `library/cipher_suites/` only. **libedhoc does not support them in the core EDHOC library** — the underlying specifications are still drafts and there is no full handshake integration.
 
 | Suite | AEAD               | Hash     | Key exchange | Signature |
 |-------|--------------------|----------|--------------|-----------|

@@ -1,3 +1,33 @@
+Version 2.0.0
+-------------
+
+:Date: Unreleased
+
+**Breaking release.** Changes accumulate here as they land.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Public API layout
+  (breaking):
+
+  * All public headers now live under ``include/edhoc/``. Include the library
+    through the umbrella ``<edhoc/edhoc.h>``, or pick individual headers such as
+    ``<edhoc/edhoc_crypto.h>``. Replace any ``#include <edhoc.h>`` (or
+    ``"edhoc_*.h"``) with the ``<edhoc/...>`` form.
+  * New header ``<edhoc/edhoc_cipher_suite.h>`` holds ``struct
+    edhoc_cipher_suite``, the new ``enum edhoc_cipher_suite_id`` and the
+    recommended getters ``edhoc_cipher_suite_get_params(id)`` /
+    ``edhoc_cipher_suite_get_crypto(id)`` (keyed by suite id; the per-suite
+    ``edhoc_cipher_suite_N_get_*()`` getters remain available).
+  * The connection-id and message-framing helpers move to
+    ``<edhoc/edhoc_coap.h>`` and gain an ``edhoc_coap_`` prefix — for example
+    ``edhoc_prepend_flow()`` becomes ``edhoc_coap_prepend_flow()`` and
+    ``edhoc_extract_connection_id()`` becomes
+    ``edhoc_coap_extract_connection_id()``. They are now part of the core
+    library, so there is no separate helper source to compile.
+  * Each reference cipher suite has a Kconfig gate
+    ``CONFIG_LIBEDHOC_CIPHER_SUITE_{0,2,24,PQC_1}_ENABLE``. Disabling a suite
+    drops it from the build and makes ``edhoc_cipher_suite_get_*()`` return
+    ``NULL`` for that suite.
+
 Version 1.15.1
 --------------
 

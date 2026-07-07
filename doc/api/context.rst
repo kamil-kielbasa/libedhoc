@@ -7,7 +7,7 @@ set of callbacks (keys, crypto, credentials, optionally EAD), driven through
 the message-exchange phase, and finally torn down. See the lifecycle section
 of :doc:`index` for the strict call order.
 
-| Header file: :file:`include/edhoc_context.h`
+| Header file: :file:`include/edhoc/edhoc_context.h`
 
 Context object
 --------------
@@ -19,7 +19,7 @@ Context object
 Library version
 ---------------
 
-| Header file: :file:`include/edhoc.h`
+| Header file: :file:`include/edhoc/edhoc.h`
 
 .. doxygengroup:: edhoc-api-version
    :project: libedhoc
@@ -33,7 +33,7 @@ The setters configure a freshly-initialised context with the local
 :term:`connection identifier`. They may be called in any order, but must all
 run before any binder or message-exchange call.
 
-| Header file: :file:`include/edhoc.h`
+| Header file: :file:`include/edhoc/edhoc.h`
 
 .. doxygengroup:: edhoc-api-setters
    :project: libedhoc

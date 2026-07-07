@@ -8,11 +8,11 @@ interface** for key import/generation/destruction by identifier, and the
 verification. Private :term:`signature key`\ s and :term:`static DH key`\ s
 are referenced by identifier only.
 
-A pair of ready-made bindings for :term:`cipher suite` 0 and 2 against
-mbed TLS / PSA Crypto lives under ``helpers/`` and is documented on
-:doc:`helpers`.
+A set of ready-made bindings for :term:`cipher suite` 0, 2 and 24 against
+mbed TLS / PSA Crypto lives under ``library/cipher_suites/`` and is documented
+on :doc:`helpers`.
 
-| Header file: :file:`include/edhoc_crypto.h`
+| Header file: :file:`include/edhoc/edhoc_crypto.h`
 
 Keys
 ----

@@ -16,3 +16,6 @@ jobs:
         run: |
           mapfile -t FILES < <(git ls-files '*.c' '*.h' ':!:backends/**')
           clang-format --dry-run --Werror --style=file "${FILES[@]}"
+
+      - name: Check public header hygiene
+        run: bash scripts/ci.sh check-headers

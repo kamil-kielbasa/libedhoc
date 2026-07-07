@@ -19,7 +19,8 @@ if(CONFIG_LIBEDHOC_ENABLE)
     # module shipping public, helper and backend headers.
     zephyr_include_directories(
         ${LIBEDHOC_PUBLIC_INCLUDE_DIR}
-        ${LIBEDHOC_HELPERS_INCLUDE_DIR}
+        ${LIBEDHOC_INTERNAL_INCLUDE_DIR}
+        ${LIBEDHOC_CIPHER_SUITE_INCLUDE_DIRS}
         ${LIBEDHOC_BACKEND_CBOR_INCLUDE_DIR}
         ${LIBEDHOC_BACKEND_MEM_INCLUDE_DIR}
         ${LIBEDHOC_BACKEND_LOG_INCLUDE_DIR})

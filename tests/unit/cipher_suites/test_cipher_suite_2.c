@@ -19,9 +19,9 @@
 #include <string.h>
 
 /* EDHOC headers: */
-#include <edhoc_crypto.h>
-#include <edhoc_values.h>
-#include <edhoc_macros.h>
+#include <edhoc/edhoc_crypto.h>
+#include <edhoc/edhoc_values.h>
+#include <edhoc/edhoc_macros.h>
 
 /* Unity headers: */
 #include <unity.h>
@@ -1623,9 +1623,43 @@ TEST(cipher_suite_2, hkdf_sha256_second_kat)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(okm, comp_okm, ARRAY_SIZE(okm));
 }
 
+TEST(cipher_suite_2, enum_getters)
+{
+	/* The enum-keyed getters dispatch to the per-suite reference getters. */
+	TEST_ASSERT_EQUAL_PTR(edhoc_crypto, edhoc_cipher_suite_get_crypto(
+						    EDHOC_CIPHER_SUITE_2));
+	TEST_ASSERT_EQUAL_PTR(edhoc_suite, edhoc_cipher_suite_get_params(
+						   EDHOC_CIPHER_SUITE_2));
+
+	/* The other classic reference suites resolve as well. */
+	TEST_ASSERT_NOT_NULL(
+		edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_0));
+	TEST_ASSERT_NOT_NULL(
+		edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_24));
+	TEST_ASSERT_NOT_NULL(
+		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_0));
+	TEST_ASSERT_NOT_NULL(
+		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_24));
+
+	/* get_params exposes the IANA cipher suite value. */
+	TEST_ASSERT_EQUAL_INT32(
+		2, edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_2)->value);
+
+	/* PQC-1 has no classic representation yet; unknown ids are rejected. */
+	TEST_ASSERT_NULL(
+		edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_PQC_1));
+	TEST_ASSERT_NULL(
+		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_PQC_1));
+	TEST_ASSERT_NULL(
+		edhoc_cipher_suite_get_crypto((enum edhoc_cipher_suite_id)999));
+	TEST_ASSERT_NULL(
+		edhoc_cipher_suite_get_params((enum edhoc_cipher_suite_id)999));
+}
+
 TEST_GROUP_RUNNER(cipher_suite_2)
 {
 	RUN_TEST_CASE(cipher_suite_2, ecdsa);
+	RUN_TEST_CASE(cipher_suite_2, enum_getters);
 	RUN_TEST_CASE(cipher_suite_2, ecdh);
 	RUN_TEST_CASE(cipher_suite_2, hkdf);
 	RUN_TEST_CASE(cipher_suite_2, aead);

@@ -9,6 +9,9 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/sources.cmake)
 add_library(libedhoc STATIC ${LIBEDHOC_CORE_SOURCES})
 add_library(libedhoc::edhoc ALIAS libedhoc)
 
+# Private internal headers (library/internal/*_internal.h) — core only.
+target_include_directories(libedhoc PRIVATE ${LIBEDHOC_INTERNAL_INCLUDE_DIR})
+
 # --- Dependency surface ------------------------------------------------------
 # PUBLIC : the public headers are the API contract.
 # PRIVATE: backends are an implementation detail. Nothing in the public headers
@@ -57,3 +60,8 @@ endif()
 # The exported name matches the in-tree alias suffix, so find_package() and
 # add_subdirectory() consumers both write libedhoc::edhoc.
 set_target_properties(libedhoc PROPERTIES EXPORT_NAME edhoc)
+
+# --- Reference cipher-suite implementations ----------------------------------
+# The reference suites belong to the library, so their sub-tree is added here
+# rather than from the top-level CMakeLists.
+add_subdirectory(cipher_suites)

@@ -24,7 +24,7 @@
 
 /* EDHOC header: */
 #define EDHOC_ALLOW_PRIVATE_ACCESS
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 #include "test_ead.h"
 
 /* PSA crypto header: */

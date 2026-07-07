@@ -30,7 +30,7 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(api_negative);
 	RUN_TEST_GROUP(error_message);
 	RUN_TEST_GROUP(exporters);
-	RUN_TEST_GROUP(helpers);
+	RUN_TEST_GROUP(coap);
 	RUN_TEST_GROUP(coverage_msg1);
 	RUN_TEST_GROUP(coverage_msg2);
 	RUN_TEST_GROUP(coverage_msg3);
@@ -47,7 +47,7 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(internals_message4);
 	RUN_TEST_GROUP(internals_error);
 	RUN_TEST_GROUP(internals_message1);
-	RUN_TEST_GROUP(internals_helpers);
+	RUN_TEST_GROUP(internals_coap);
 	RUN_TEST_GROUP(internals_api);
 	RUN_TEST_GROUP(message_paths);
 #if CONFIG_LIBEDHOC_MEM_BACKEND == EDHOC_MEM_BACKEND_CUSTOM

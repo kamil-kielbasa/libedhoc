@@ -43,6 +43,51 @@ if LIBEDHOC_ENABLE
         int "Maximum length of authentication credentials hash algorithm in bytes."
         default 1
 
+    menu "Cipher suites"
+
+        config LIBEDHOC_CIPHER_SUITE_0_ENABLE
+            bool "Cipher suite 0 (X25519 / EdDSA / AES-CCM-16-64-128 / SHA-256)."
+            default y
+            help
+                Build the reference implementation of cipher suite 0.
+                External libraries: compact25519 (X25519 / Ed25519) and PSA
+                crypto (mbedTLS) for AES-CCM and SHA-256.
+
+        config LIBEDHOC_CIPHER_SUITE_2_ENABLE
+            bool "Cipher suite 2 (P-256 / ES256 / AES-CCM-16-64-128 / SHA-256)."
+            default y
+            help
+                Build the reference implementation of cipher suite 2.
+                External libraries: PSA crypto (mbedTLS) for P-256 / ES256,
+                AES-CCM and SHA-256.
+
+        config LIBEDHOC_CIPHER_SUITE_4_ENABLE
+            bool "Cipher suite 4 (X25519 / EdDSA / ChaCha20/Poly1305 / SHA-256)."
+            default y
+            help
+                Build the reference implementation of cipher suite 4.
+                External libraries: compact25519 (X25519 / Ed25519) and PSA
+                crypto (mbedTLS) for ChaCha20/Poly1305 and SHA-256.
+
+        config LIBEDHOC_CIPHER_SUITE_24_ENABLE
+            bool "Cipher suite 24 (P-384 / ES384 / A256GCM / SHA-384)."
+            default y
+            help
+                Build the reference implementation of cipher suite 24.
+                External libraries: PSA crypto (mbedTLS) for P-384 / ES384,
+                AES-GCM and SHA-384.
+
+        config LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE
+            bool "Experimental PQC cipher suite 1 (ML-KEM-512 / ML-DSA-44)."
+            default n
+            help
+                Build the experimental post-quantum reference cipher suite
+                (draft-spm-lake-pqsuites).
+                External libraries: liboqs (ML-KEM / ML-DSA), XKCP (KMAC256 /
+                SHAKE256) and PSA crypto (mbedTLS) for AES-CCM.
+
+    endmenu
+
     choice LIBEDHOC_MEM_BACKEND_CHOICE
         prompt "Select memory backend for libedhoc working buffers."
         default LIBEDHOC_MEM_BACKEND_STACK

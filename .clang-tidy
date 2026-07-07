@@ -13,6 +13,6 @@ Checks: >
 
 WarningsAsErrors: ''
 
-HeaderFilterRegex: '/(include/edhoc|library/|helpers/|port/|backends/).*\.h$'
+HeaderFilterRegex: '/(include/edhoc|library/|port/|backends/).*\.h$'
 
 FormatStyle: none

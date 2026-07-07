@@ -22,9 +22,9 @@
 #include <stddef.h>
 
 /* EDHOC headers: */
-#include <edhoc_crypto.h>
-#include <edhoc_values.h>
-#include <edhoc_macros.h>
+#include <edhoc/edhoc_crypto.h>
+#include <edhoc/edhoc_values.h>
+#include <edhoc/edhoc_macros.h>
 
 /* Unity headers: */
 #include <unity.h>

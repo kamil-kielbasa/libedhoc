@@ -10,7 +10,7 @@
 #ifndef TEST_CREDENTIALS_H
 #define TEST_CREDENTIALS_H
 
-#include <edhoc.h>
+#include <edhoc/edhoc.h>
 
 /**
  * \brief Credential fetch stub that returns a minimal x509 chain credential.
