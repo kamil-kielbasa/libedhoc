@@ -15,8 +15,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
@@ -141,7 +141,7 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
 				 ctx->prk_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -216,7 +216,7 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
 				 ctx->prk_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -289,7 +289,7 @@ STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, prk_exp,
 				 prk_exp_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -413,7 +413,7 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, secret,
 				 secret_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {

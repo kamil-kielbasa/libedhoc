@@ -15,8 +15,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -77,6 +77,11 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	if (!edhoc_context_configured(ctx)) {
+		EDHOC_LOG_ERR("Context not fully configured");
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
 	if (EDHOC_SM_START != ctx->status ||
 	    EDHOC_TH_STATE_INVALID != ctx->th_state ||
 	    EDHOC_PRK_STATE_INVALID != ctx->prk_state)
@@ -124,7 +129,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 					EDHOC_MEM_ALLOC_SIZE(dh_pub_key),
 					&dh_pub_key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != dh_priv_key_len ||
 	    csuite.ecc_key_length != dh_pub_key_len) {
@@ -279,7 +284,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	EDHOC_LOG_INF("Compose msg1 end");
 
 	ctx->nr_of_ead_tokens = 0;
-	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
+	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->th_state = EDHOC_TH_STATE_1;
 	ctx->status = EDHOC_SM_WAIT_M2;
@@ -306,6 +311,11 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	if (NULL == ctx || msg_1 == NULL || 0 == msg_1_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!edhoc_context_configured(ctx)) {
+		EDHOC_LOG_ERR("Context not fully configured");
+		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_SM_START != ctx->status ||
@@ -546,7 +556,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		}
 
 		ctx->nr_of_ead_tokens = 0;
-		memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
+		ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("EAD process: %d", ret);

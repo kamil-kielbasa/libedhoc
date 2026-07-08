@@ -13,6 +13,8 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Test vector header: */
+#include "test_platform.h"
+#include "edhoc_context_internal.h"
 #include "test_vector_x5chain_sign_keys_suite_0.h"
 
 /* Cipher suite 0 header: */
@@ -26,7 +28,6 @@
 #include <stdbool.h>
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 
 /* PSA crypto header: */
@@ -510,6 +511,9 @@ TEST_SETUP(handshake_x5chain_sig_suite0)
 	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_bind_platform(init_ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	ret = edhoc_context_init(resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -527,6 +531,9 @@ TEST_SETUP(handshake_x5chain_sig_suite0)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(resp_ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 

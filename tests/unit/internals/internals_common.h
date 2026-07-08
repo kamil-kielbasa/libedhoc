@@ -15,6 +15,7 @@
 #include "test_common.h"
 #include "edhoc_cipher_suite_0.h"
 #include "edhoc_common_internal.h"
+#include "edhoc_context_internal.h"
 #include <edhoc/edhoc_coap.h>
 
 /* Defines ----------------------------------------------------------------- */

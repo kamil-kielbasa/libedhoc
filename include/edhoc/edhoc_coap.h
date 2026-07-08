@@ -21,7 +21,7 @@
 #include <stdbool.h>
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_context.h>
+#include <edhoc/edhoc_types.h>
 #include <edhoc/edhoc_values.h>
 
 /* Defines ----------------------------------------------------------------- */

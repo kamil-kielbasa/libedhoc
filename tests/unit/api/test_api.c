@@ -10,7 +10,8 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
+#include "test_platform.h"
+#include "edhoc_context_internal.h"
 #include <edhoc/edhoc.h>
 
 /* Cipher suite headers: */
@@ -56,6 +57,17 @@ TEST(api, context_init)
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(api, context_size)
+{
+	/* The opaque size must be positive, stable across calls and match the
+	 * real layout that white-box code sees. */
+	const size_t size = edhoc_context_size();
+
+	TEST_ASSERT_GREATER_THAN(0, size);
+	TEST_ASSERT_EQUAL(sizeof(struct edhoc_context), size);
+	TEST_ASSERT_EQUAL(size, edhoc_context_size());
 }
 
 TEST(api, set_methods)
@@ -302,6 +314,7 @@ TEST(api, bindings)
 			  ctx.keys.destroy_key);
 
 	ret = edhoc_bind_crypto(&ctx, edhoc_cipher_suite_2_get_crypto());
+	edhoc_bind_platform(&ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->make_key_pair,
 			  ctx.crypto.make_key_pair);
@@ -375,6 +388,7 @@ TEST(api, get_cipher_suite_descriptors)
 TEST_GROUP_RUNNER(api)
 {
 	RUN_TEST_CASE(api, context_init);
+	RUN_TEST_CASE(api, context_size);
 	RUN_TEST_CASE(api, set_methods);
 	RUN_TEST_CASE(api, set_cipher_suites);
 	RUN_TEST_CASE(api, set_connection_id);

@@ -12,6 +12,8 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Cipher suite 2 header: */
+#include "test_platform.h"
+#include "edhoc_context_internal.h"
 #include "edhoc_cipher_suite_2.h"
 
 /* Standard library headers: */
@@ -22,7 +24,6 @@
 #include <stdbool.h>
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 #include "test_ead.h"
 
@@ -334,6 +335,8 @@ static void run_handshake(enum edhoc_method method)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_crypto(&init_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	ret = edhoc_bind_platform(&init_ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_credentials(&init_ctx, &cred_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -353,6 +356,8 @@ static void run_handshake(enum edhoc_method method)
 	ret = edhoc_bind_keys(&resp_ctx, edhoc_cipher_suite_2_get_keys());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_2_get_crypto());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	ret = edhoc_bind_platform(&resp_ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_credentials(&resp_ctx, &cred_resp);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

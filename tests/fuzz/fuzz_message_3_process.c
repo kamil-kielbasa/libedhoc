@@ -10,13 +10,14 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Standard library headers: */
+#include "test_platform.h"
+#include "edhoc_context_internal.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdbool.h>
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
@@ -69,6 +70,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_bind_crypto(&ctx, edhoc_cipher_suite_0_get_crypto());
 
 	edhoc_bind_credentials(&ctx, &test_cred_stubs);
+	edhoc_bind_platform(&ctx, test_get_platform());
 
 	/* Pre-seed context state as if message_2 was already composed. */
 	ctx.role = EDHOC_RESPONDER;

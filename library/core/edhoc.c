@@ -15,8 +15,8 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_backend_log.h"
 
 /* Standard library headers: */
@@ -45,6 +45,11 @@ int edhoc_context_init(struct edhoc_context *ctx)
 	return EDHOC_SUCCESS;
 }
 
+size_t edhoc_context_size(void)
+{
+	return sizeof(struct edhoc_context);
+}
+
 int edhoc_context_deinit(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
@@ -57,7 +62,18 @@ int edhoc_context_deinit(struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	memset(ctx, 0, sizeof(*ctx));
+	/* End-of-life erasure: use the non-elidable platform hook when a
+	 * platform is bound (any secret material only ever exists after
+	 * binding); otherwise a plain wipe is sufficient (no secrets yet).
+	 * Latch the callback first - the wipe also clears ctx->platform. */
+	void (*const zeroize)(void *buffer, size_t length) =
+		ctx->platform.zeroize;
+
+	if (NULL != zeroize) {
+		zeroize(ctx, sizeof(*ctx));
+	} else {
+		memset(ctx, 0, sizeof(*ctx));
+	}
 
 	return EDHOC_SUCCESS;
 }
@@ -78,6 +94,7 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 
 	ctx->method_len = method_len;
 	memcpy(ctx->method, method, sizeof(*method) * method_len);
+	ctx->methods_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -103,6 +120,7 @@ int edhoc_set_cipher_suites(struct edhoc_context *ctx,
 
 	ctx->csuite_len = csuite_len;
 	memcpy(ctx->csuite, csuite, sizeof(*csuite) * csuite_len);
+	ctx->cipher_suites_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -147,6 +165,7 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 	}
 
 	ctx->cid = *cid;
+	ctx->connection_id_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -186,6 +205,7 @@ int edhoc_bind_ead(struct edhoc_context *ctx, const struct edhoc_ead *ead)
 	}
 
 	ctx->ead = *ead;
+	ctx->ead_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -208,6 +228,7 @@ int edhoc_bind_keys(struct edhoc_context *ctx, const struct edhoc_keys *keys)
 	}
 
 	ctx->keys = *keys;
+	ctx->keys_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -235,6 +256,7 @@ int edhoc_bind_crypto(struct edhoc_context *ctx,
 	}
 
 	ctx->crypto = *crypto;
+	ctx->crypto_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -258,6 +280,31 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 	}
 
 	ctx->cred = *cred;
+	ctx->credentials_present = true;
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_bind_platform(struct edhoc_context *ctx,
+			const struct edhoc_platform *platform)
+{
+	if (NULL == ctx || NULL == platform) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!ctx->is_init) {
+		EDHOC_LOG_ERR("Bad state");
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	if (NULL == platform->zeroize) {
+		EDHOC_LOG_ERR("Bad state");
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	ctx->platform = *platform;
+	ctx->platform_present = true;
 
 	return EDHOC_SUCCESS;
 }

@@ -104,5 +104,6 @@ API pages
    credentials
    crypto
    ead
+   platform
    helpers
    internals

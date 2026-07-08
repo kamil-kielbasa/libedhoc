@@ -15,8 +15,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
@@ -339,7 +339,7 @@ STATIC int compute_key_iv_aad_4(const struct edhoc_context *ctx, uint8_t *key,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, key,
 				 key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand K_4: %d", ret);
@@ -377,7 +377,7 @@ STATIC int compute_key_iv_aad_4(const struct edhoc_context *ctx, uint8_t *key,
 
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, iv, iv_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -426,7 +426,7 @@ STATIC int compute_ciphertext(const struct edhoc_context *ctx,
 				  aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
 				  ctxt_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Encrypt CIPHERTEXT_4: %d", ret);
@@ -513,7 +513,7 @@ STATIC int decrypt_ciphertext_4(const struct edhoc_context *ctx,
 				  aad_len, ctxt, ctxt_len, ptxt, ptxt_len,
 				  &len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || ptxt_len != len) {
 		EDHOC_LOG_ERR("Decrypt CIPHERTEXT_4: %d, %zu, %zu", ret,
@@ -577,6 +577,11 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	    NULL == msg_4_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!edhoc_context_configured(ctx)) {
+		EDHOC_LOG_ERR("Context not fully configured");
+		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_SM_COMPLETED != ctx->status ||
@@ -753,7 +758,7 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	EDHOC_LOG_INF("Compose msg4 end");
 
 	ctx->nr_of_ead_tokens = 0;
-	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
+	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_PERSISTED;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
@@ -777,6 +782,11 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	if (NULL == ctx || NULL == msg_4 || 0 == msg_4_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!edhoc_context_configured(ctx)) {
+		EDHOC_LOG_ERR("Context not fully configured");
+		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_SM_COMPLETED != ctx->status ||
@@ -926,7 +936,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	EDHOC_LOG_INF("Process msg4 end");
 
 	ctx->nr_of_ead_tokens = 0;
-	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
+	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_PERSISTED;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;

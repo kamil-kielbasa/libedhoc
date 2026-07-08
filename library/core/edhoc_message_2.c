@@ -15,8 +15,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
@@ -304,7 +304,7 @@ STATIC int gen_dh_keys(struct edhoc_context *ctx)
 					ctx->dh_pub_key, ctx->dh_pub_key_len,
 					&pub_key_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != priv_key_len ||
 	    csuite.ecc_key_length != pub_key_len) {
@@ -345,7 +345,7 @@ STATIC int comp_dh_secret(struct edhoc_context *ctx)
 					ctx->dh_secret, ctx->dh_secret_len,
 					&secret_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || secret_len != csuite.ecc_key_length) {
 		EDHOC_LOG_ERR("Key agreement: %d, %zu, %zu", ret,
@@ -493,7 +493,7 @@ STATIC int comp_prk_2e(struct edhoc_context *ctx)
 	ret = ctx->crypto.extract(ctx->user_ctx, key_id, ctx->th, ctx->th_len,
 				  ctx->prk, ctx->prk_len, &out_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 
 	if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
 		EDHOC_LOG_ERR("Extract PRK_2e: %d, %zu, %zu", ret, ctx->prk_len,
@@ -577,7 +577,7 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 		ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXTRACT, grx,
 					   EDHOC_MEM_ALLOC_SIZE(grx), key_id);
-		memset(grx, 0, EDHOC_MEM_ALLOC_SIZEOF(grx));
+		ctx->platform.zeroize(grx, EDHOC_MEM_ALLOC_SIZEOF(grx));
 		EDHOC_MEM_FREE(grx);
 
 		if (EDHOC_SUCCESS != ret) {
@@ -591,7 +591,7 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 					  EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
 					  ctx->prk, ctx->prk_len, &out_len);
 		ctx->keys.destroy_key(ctx->user_ctx, key_id);
-		memset(key_id, 0, sizeof(key_id));
+		ctx->platform.zeroize(key_id, sizeof(key_id));
 		EDHOC_MEM_FREE(salt_3e2m);
 
 		if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
@@ -820,7 +820,7 @@ STATIC int comp_keystream(const struct edhoc_context *ctx,
 				 EDHOC_MEM_ALLOC_SIZE(info), keystream,
 				 keystream_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1315,7 +1315,7 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info,
 				 EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
 	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	memset(key_id, 0, sizeof(key_id));
+	ctx->platform.zeroize(key_id, sizeof(key_id));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1346,7 +1346,8 @@ STATIC int comp_grx(struct edhoc_context *ctx,
 					   ctx->dh_priv_key,
 					   ctx->dh_priv_key_len, key_id);
 		ctx->dh_priv_key_len = 0;
-		memset(ctx->dh_priv_key, 0, ARRAY_SIZE(ctx->dh_priv_key));
+		ctx->platform.zeroize(ctx->dh_priv_key,
+				      ARRAY_SIZE(ctx->dh_priv_key));
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Import DH private key for GRX: %d", ret);
@@ -1359,7 +1360,7 @@ STATIC int comp_grx(struct edhoc_context *ctx,
 						&secret_len);
 
 		ctx->keys.destroy_key(ctx->user_ctx, key_id);
-		memset(key_id, 0, sizeof(key_id));
+		ctx->platform.zeroize(key_id, sizeof(key_id));
 
 		if (EDHOC_SUCCESS != ret || secret_len != grx_len) {
 			EDHOC_LOG_ERR("Key agreement for GRX: %d, %zu, %zu",
@@ -1428,6 +1429,11 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	    NULL == msg_2_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!edhoc_context_configured(ctx)) {
+		EDHOC_LOG_ERR("Context not fully configured");
+		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_SM_RECEIVED_M1 != ctx->status ||
@@ -1689,7 +1695,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	ret = comp_keystream(ctx, prk_2e, EDHOC_MEM_ALLOC_SIZE(prk_2e),
 			     keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
-	memset(prk_2e, 0, EDHOC_MEM_ALLOC_SIZEOF(prk_2e));
+	ctx->platform.zeroize(prk_2e, EDHOC_MEM_ALLOC_SIZEOF(prk_2e));
 	EDHOC_MEM_FREE(prk_2e);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1741,7 +1747,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	/* 15. Clean-up EAD tokens. */
 	ctx->nr_of_ead_tokens = 0;
-	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
+	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_WAIT_M3;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
@@ -1776,6 +1782,11 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	if (NULL == ctx || NULL == msg_2 || 0 == msg_2_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!edhoc_context_configured(ctx)) {
+		EDHOC_LOG_ERR("Context not fully configured");
+		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_SM_WAIT_M2 != ctx->status ||
@@ -2053,7 +2064,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	/* 17. Clean-up EAD tokens. */
 	ctx->nr_of_ead_tokens = 0;
-	memset(ctx->ead_token, 0, sizeof(ctx->ead_token));
+	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_VERIFIED_M2;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;

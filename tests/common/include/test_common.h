@@ -17,7 +17,6 @@
 #include <stdbool.h>
 
 /* EDHOC headers */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 #include <edhoc/edhoc_macros.h>
 

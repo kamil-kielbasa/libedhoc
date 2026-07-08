@@ -18,8 +18,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
@@ -556,7 +556,7 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 	ret = ctx->crypto.verify(ctx->user_ctx, kid, cose_sign_1_buf,
 				 cose_sign_1_buf_len, sign, sign_len);
 	ctx->keys.destroy_key(ctx->user_ctx, kid);
-	memset(kid, 0, sizeof(kid));
+	ctx->platform.zeroize(kid, sizeof(kid));
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1285,7 +1285,7 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	ret = ctx->crypto.expand(ctx->user_ctx, kid, info_buf, len, mac,
 				 mac_len);
 	ctx->keys.destroy_key(ctx->user_ctx, kid);
-	memset(kid, 0, sizeof(kid));
+	ctx->platform.zeroize(kid, sizeof(kid));
 	EDHOC_MEM_FREE(info_buf);
 
 	if (EDHOC_SUCCESS != ret) {

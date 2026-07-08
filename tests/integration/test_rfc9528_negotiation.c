@@ -10,7 +10,9 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
+#include "test_platform.h"
+#include "test_credentials.h"
+#include "edhoc_context_internal.h"
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 2: */
@@ -173,6 +175,12 @@ TEST(rfc9528_negotiation, example_1)
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_bind_credentials(&init_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&init_ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	/* 2. Setup responder context. */
 	struct edhoc_context resp_ctx = { 0 };
 
@@ -184,6 +192,21 @@ TEST(rfc9528_negotiation, example_1)
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, csuites_resp,
 				      ARRAY_SIZE(csuites_resp));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&resp_ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* 3. Initiator compose message 1. */
@@ -280,6 +303,12 @@ TEST(rfc9528_negotiation, example_1)
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_bind_credentials(&init_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&init_ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	/* 5c. Initiator again compose message 1. */
 	msg_1_len = 0;
 	memset(msg_1, 0, sizeof(msg_1));
@@ -299,10 +328,19 @@ TEST(rfc9528_negotiation, example_1)
 				      ARRAY_SIZE(csuites_resp));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&resp_ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* 7. Responder successfully process message 1. */
@@ -369,6 +407,12 @@ TEST(rfc9528_negotiation, example_2)
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_bind_credentials(&init_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&init_ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	/* 2. Setup responder context. */
 	struct edhoc_context resp_ctx = { 0 };
 
@@ -380,6 +424,21 @@ TEST(rfc9528_negotiation, example_2)
 
 	ret = edhoc_set_cipher_suites(&resp_ctx, csuites_resp,
 				      ARRAY_SIZE(csuites_resp));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&resp_ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* 3. Initiator compose message 1. */
@@ -493,6 +552,12 @@ TEST(rfc9528_negotiation, example_2)
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_bind_credentials(&init_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&init_ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	/* 5c. Initiator again compose message 1. */
 	msg_1_len = 0;
 	memset(msg_1, 0, sizeof(msg_1));
@@ -512,10 +577,19 @@ TEST(rfc9528_negotiation, example_2)
 				      ARRAY_SIZE(csuites_resp));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(&resp_ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* 7. Responder successfully process message 1. */

@@ -13,6 +13,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test headers: */
+#include "edhoc_context_internal.h"
 #include "test_mem_custom.h"
 #include "test_mem_custom_handshake.h"
 

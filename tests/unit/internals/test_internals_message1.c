@@ -9,6 +9,7 @@
 
 /* Include files ----------------------------------------------------------- */
 
+#include "test_platform.h"
 #include "internals_common.h"
 
 /* Module defines ---------------------------------------------------------- */
@@ -62,6 +63,7 @@ TEST(internals_message1, msg1_compose_zero_csuites)
 	edhoc_set_connection_id(&ctx, &cid);
 	edhoc_bind_keys(&ctx, internals_keys);
 	edhoc_bind_crypto(&ctx, internals_crypto);
+	edhoc_bind_platform(&ctx, test_get_platform());
 
 	uint8_t msg1[256];
 	size_t msg1_len;

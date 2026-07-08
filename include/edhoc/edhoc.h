@@ -18,11 +18,12 @@
 #include <stddef.h>
 
 /* EDHOC headers: */
-#include "edhoc_context.h"
+#include "edhoc_types.h"
 #include "edhoc_credentials.h"
 #include "edhoc_cipher_suite.h"
 #include "edhoc_crypto.h"
 #include "edhoc_ead.h"
+#include "edhoc_platform.h"
 #include "edhoc_macros.h"
 #include "edhoc_values.h"
 
@@ -41,11 +42,43 @@
 /**@}*/
 
 /* Types and type definitions ---------------------------------------------- */
+
+/**
+ * \brief EDHOC context (opaque).
+ *
+ * The layout is library-internal and intentionally hidden from consumers.
+ * Allocate storage sized by \ref edhoc_context_size (stack VLA or heap), then
+ * drive the context through the public API. The full definition lives in
+ * \c library/internal/edhoc_context_internal.h and is available to the library
+ * core and to white-box tests only.
+ *
+ * \ingroup edhoc-context
+ */
+struct edhoc_context;
+
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
 /** \defgroup edhoc-api-setters EDHOC API setters
+ *
+ * After \ref edhoc_context_init, a context must be fully configured before the
+ * message-processing API will run. A message compose or process call made
+ * before every **mandatory** input is present returns
+ * \ref EDHOC_ERROR_BAD_STATE.
+ *
+ * **Mandatory** inputs:
+ *   - \ref edhoc_set_methods "method(s)"
+ *   - \ref edhoc_set_cipher_suites "cipher suite(s)"
+ *   - \ref edhoc_set_connection_id "connection identifier"
+ *   - \ref edhoc_bind_keys "keys interface"
+ *   - \ref edhoc_bind_crypto "crypto interface"
+ *   - \ref edhoc_bind_credentials "credentials interface"
+ *   - \ref edhoc_bind_platform "platform interface"
+ *
+ * **Optional** inputs:
+ *   - \ref edhoc_set_user_context "user context"
+ *   - \ref edhoc_bind_ead "external authorization data (EAD) interface"
  * @{
  */
 
@@ -60,6 +93,18 @@
  *         Input parameter is invalid.
  */
 int edhoc_context_init(struct edhoc_context *edhoc_context);
+
+/**
+ * \brief Size in bytes of an EDHOC context for this build.
+ *
+ * The context is opaque; its size depends on the Kconfig configuration and is
+ * not a compile-time constant. Allocate storage of at least this many bytes
+ * (stack VLA or heap, suitably aligned for \ref edhoc_context) and pass it to
+ * \ref edhoc_context_init.
+ *
+ * \return Size in bytes of \ref edhoc_context.
+ */
+size_t edhoc_context_size(void);
 
 /** 
  * \brief Deinitialize EDHOC context.
@@ -212,6 +257,25 @@ int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
  */
 int edhoc_bind_credentials(struct edhoc_context *edhoc_context,
 			   const struct edhoc_credentials *credentials);
+
+/** 
+ * \brief Bind EDHOC platform services callbacks.
+ *
+ * Mandatory. The message-processing API refuses to run until a platform with a
+ * valid \p zeroize callback is bound to the context.
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param[in] platform                  EDHOC platform structure with callbacks.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \retval #EDHOC_ERROR_INVALID_ARGUMENT
+ *         One or more input parameters are invalid.
+ * \retval #EDHOC_ERROR_BAD_STATE
+ *         Internal context state is incorrect.
+ */
+int edhoc_bind_platform(struct edhoc_context *edhoc_context,
+			const struct edhoc_platform *platform);
 
 /**@}*/
 

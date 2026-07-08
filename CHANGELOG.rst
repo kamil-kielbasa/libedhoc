@@ -28,6 +28,23 @@ Version 2.0.0
     drops it from the build and makes ``edhoc_cipher_suite_get_*()`` return
     ``NULL`` for that suite.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Opaque context and
+  mandatory platform binding (breaking):
+
+  * ``struct edhoc_context`` is now opaque — its layout is no longer part of the
+    public API and the ``EDHOC_PRIVATE()`` accessor macro is removed. Size the
+    storage with ``edhoc_context_size()`` (stack VLA or heap) instead of
+    declaring a ``struct edhoc_context`` by value, then call
+    ``edhoc_context_init()``.
+  * New mandatory platform binding: bind a ``struct edhoc_platform`` — a
+    non-elidable ``zeroize`` callback — with ``edhoc_bind_platform()`` before
+    running the handshake. The message compose/process API returns
+    ``EDHOC_ERROR_BAD_STATE`` until it is bound. End-of-life erasure of secrets
+    and key identifiers now routes through this hook.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : New crypto vtable and
+  mbedTLS update to v4.1.0 with cipher suite 2 alignments.
+
 Version 1.15.1
 --------------
 

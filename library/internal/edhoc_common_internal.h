@@ -22,7 +22,7 @@
 #endif
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_context.h>
+#include <edhoc/edhoc_types.h>
 #include <edhoc/edhoc_ead.h>
 #include <edhoc/edhoc_credentials.h>
 

@@ -28,7 +28,8 @@ foreach(target ${FUZZ_TARGETS})
                    ${FUZZ_COMMON_SOURCES})
 
     target_include_directories(${target} PRIVATE
-                               ${LIBEDHOC_TESTS_DIR}/common/include)
+                               ${LIBEDHOC_TESTS_DIR}/common/include
+                               ${LIBEDHOC_INTERNAL_INCLUDE_DIR})
 
     target_link_libraries(${target} PRIVATE
                           libedhoc::edhoc

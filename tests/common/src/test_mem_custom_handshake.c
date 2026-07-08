@@ -11,6 +11,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Internal test header: */
+#include "test_platform.h"
 #include "test_mem_custom_handshake.h"
 
 /* Test vector header: */
@@ -218,6 +219,10 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
 	if (EDHOC_SUCCESS != rc)
 		return rc;
 
+	rc = edhoc_bind_platform(initiator, test_get_platform());
+	if (EDHOC_SUCCESS != rc)
+		return rc;
+
 	rc = edhoc_bind_credentials(initiator, &cred_init);
 	if (EDHOC_SUCCESS != rc)
 		return rc;
@@ -244,6 +249,10 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
 		return rc;
 
 	rc = edhoc_bind_crypto(responder, edhoc_cipher_suite_0_get_crypto());
+	if (EDHOC_SUCCESS != rc)
+		return rc;
+
+	rc = edhoc_bind_platform(responder, test_get_platform());
 	if (EDHOC_SUCCESS != rc)
 		return rc;
 

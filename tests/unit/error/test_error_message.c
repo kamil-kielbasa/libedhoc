@@ -10,7 +10,6 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 
 /* Standard library headers: */

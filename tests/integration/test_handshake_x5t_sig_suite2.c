@@ -14,6 +14,8 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Test vector header: */
+#include "test_platform.h"
+#include "edhoc_context_internal.h"
 #include "test_vector_x5t_sign_keys_suite_2.h"
 
 /* Cipher suite 2 header: */
@@ -27,7 +29,6 @@
 #include <stdbool.h>
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 
 /* PSA crypto header: */
@@ -495,6 +496,9 @@ TEST_SETUP(handshake_x5t_sig_suite2)
 	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	ret = edhoc_bind_platform(init_ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	ret = edhoc_bind_credentials(init_ctx,
 				     &edhoc_auth_cred_single_cert_mocked_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -522,6 +526,9 @@ TEST_SETUP(handshake_x5t_sig_suite2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_platform(resp_ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(resp_ctx,

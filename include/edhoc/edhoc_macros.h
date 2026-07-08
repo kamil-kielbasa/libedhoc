@@ -45,21 +45,6 @@
 #define STATIC static
 #endif
 
-/**
- * \brief Access control macro for context structure members.
- *
- * When ``EDHOC_ALLOW_PRIVATE_ACCESS`` is **not** defined, each member is
- * prefixed with ``private_`` to discourage direct access. Defining
- * ``EDHOC_ALLOW_PRIVATE_ACCESS`` removes the prefix, granting direct access.
- *
- * \param member  Structure member name.
- */
-#ifndef EDHOC_ALLOW_PRIVATE_ACCESS
-#define EDHOC_PRIVATE(member) private_##member
-#else
-#define EDHOC_PRIVATE(member) member
-#endif
-
 /**@}*/
 
 /* Module interface variables and constants -------------------------------- */

@@ -10,13 +10,14 @@
 /* Include files ----------------------------------------------------------- */
 
 /* Standard library headers: */
+#include "test_platform.h"
+#include "edhoc_context_internal.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 #include <stdbool.h>
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
@@ -152,6 +153,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		.verify = auth_cred_verify_stub,
 	};
 	edhoc_bind_credentials(&ctx, &cred);
+	edhoc_bind_platform(&ctx, test_get_platform());
 
 	ctx.role = EDHOC_RESPONDER;
 	ctx.status = EDHOC_SM_START;

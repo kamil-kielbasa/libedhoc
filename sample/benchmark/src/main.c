@@ -25,7 +25,6 @@
 #include <time.h>
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 2 header: */
@@ -230,6 +229,14 @@ static int ead_process_stub(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
+static void sample_zeroize(void *buffer, size_t length)
+{
+	volatile unsigned char *p = (volatile unsigned char *)buffer;
+
+	while (0 != length--)
+		*p++ = 0U;
+}
+
 static void setup_context(struct edhoc_context *ctx,
 			  const struct edhoc_credentials *creds,
 			  const bool is_initiator)
@@ -265,6 +272,12 @@ static void setup_context(struct edhoc_context *ctx,
 		.process = ead_process_stub,
 	};
 	ret = edhoc_bind_ead(ctx, &ead);
+	assert(EDHOC_SUCCESS == ret);
+
+	static const struct edhoc_platform platform = {
+		.zeroize = sample_zeroize,
+	};
+	ret = edhoc_bind_platform(ctx, &platform);
 	assert(EDHOC_SUCCESS == ret);
 
 	(void)ret;
@@ -339,11 +352,15 @@ int main(void)
 	double total_handshake_max_us = 0.0;
 
 	for (size_t iter = 0; iter < iterations; iter++) {
-		struct edhoc_context init_ctx = { 0 };
-		setup_context(&init_ctx, &init_creds, true);
+		struct edhoc_context *init_ctx = malloc(edhoc_context_size());
 
-		struct edhoc_context resp_ctx = { 0 };
-		setup_context(&resp_ctx, &resp_creds, false);
+		assert(NULL != init_ctx);
+		setup_context(init_ctx, &init_creds, true);
+
+		struct edhoc_context *resp_ctx = malloc(edhoc_context_size());
+
+		assert(NULL != resp_ctx);
+		setup_context(resp_ctx, &resp_creds, false);
 
 		size_t msg1_len = 0;
 		uint8_t msg1[MSG_BUF_SIZE] = { 0 };
@@ -367,7 +384,7 @@ int main(void)
 		/* Phase 0: msg1 compose (initiator). */
 		t0 = clock_now();
 
-		ret = edhoc_message_1_compose(&init_ctx, msg1, sizeof(msg1),
+		ret = edhoc_message_1_compose(init_ctx, msg1, sizeof(msg1),
 					      &msg1_len);
 		t1 = clock_now();
 
@@ -380,10 +397,10 @@ int main(void)
 		/* Phase 1: msg1 process + msg2 compose (responder). */
 		t0 = clock_now();
 
-		ret = edhoc_message_1_process(&resp_ctx, msg1, msg1_len);
+		ret = edhoc_message_1_process(resp_ctx, msg1, msg1_len);
 
 		if (EDHOC_SUCCESS == ret)
-			ret = edhoc_message_2_compose(&resp_ctx, msg2,
+			ret = edhoc_message_2_compose(resp_ctx, msg2,
 						      sizeof(msg2), &msg2_len);
 		t1 = clock_now();
 
@@ -396,10 +413,10 @@ int main(void)
 		/* Phase 2: msg2 process + msg3 compose (initiator). */
 		t0 = clock_now();
 
-		ret = edhoc_message_2_process(&init_ctx, msg2, msg2_len);
+		ret = edhoc_message_2_process(init_ctx, msg2, msg2_len);
 
 		if (EDHOC_SUCCESS == ret)
-			ret = edhoc_message_3_compose(&init_ctx, msg3,
+			ret = edhoc_message_3_compose(init_ctx, msg3,
 						      sizeof(msg3), &msg3_len);
 
 		t1 = clock_now();
@@ -413,7 +430,7 @@ int main(void)
 		/* Phase 3: msg3 process (responder). */
 		t0 = clock_now();
 
-		ret = edhoc_message_3_process(&resp_ctx, msg3, msg3_len);
+		ret = edhoc_message_3_process(resp_ctx, msg3, msg3_len);
 
 		t1 = clock_now();
 
@@ -426,7 +443,7 @@ int main(void)
 		/* Phase 4: msg4 compose (responder). */
 		t0 = clock_now();
 
-		ret = edhoc_message_4_compose(&resp_ctx, msg4, sizeof(msg4),
+		ret = edhoc_message_4_compose(resp_ctx, msg4, sizeof(msg4),
 					      &msg4_len);
 
 		t1 = clock_now();
@@ -440,7 +457,7 @@ int main(void)
 		/* Phase 5: msg4 process (initiator). */
 		t0 = clock_now();
 
-		ret = edhoc_message_4_process(&init_ctx, msg4, msg4_len);
+		ret = edhoc_message_4_process(init_ctx, msg4, msg4_len);
 
 		t1 = clock_now();
 
@@ -472,14 +489,14 @@ int main(void)
 			t0 = clock_now();
 
 			ret = edhoc_export_oscore_session(
-				&init_ctx, init_secret, OSCORE_SECRET_LEN,
+				init_ctx, init_secret, OSCORE_SECRET_LEN,
 				init_salt, OSCORE_SALT_LEN, init_sid,
 				sizeof(init_sid), &init_sid_len, init_rid,
 				sizeof(init_rid), &init_rid_len);
 
 			if (EDHOC_SUCCESS == ret) {
 				ret = edhoc_export_oscore_session(
-					&resp_ctx, resp_secret,
+					resp_ctx, resp_secret,
 					OSCORE_SECRET_LEN, resp_salt,
 					OSCORE_SALT_LEN, resp_sid,
 					sizeof(resp_sid), &resp_sid_len,
@@ -513,8 +530,10 @@ int main(void)
 			total_handshake_max_us = total_iter_us;
 
 cleanup:
-		edhoc_context_deinit(&init_ctx);
-		edhoc_context_deinit(&resp_ctx);
+		edhoc_context_deinit(init_ctx);
+		edhoc_context_deinit(resp_ctx);
+		free(init_ctx);
+		free(resp_ctx);
 
 		if (EDHOC_SUCCESS != ret) {
 			printf("Handshake failed at iter %zu phase %zu: %d\n",

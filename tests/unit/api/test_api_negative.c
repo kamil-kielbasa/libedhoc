@@ -10,7 +10,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
+#include "edhoc_context_internal.h"
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
@@ -31,6 +31,7 @@
 /* Test helpers: */
 #include "test_ead.h"
 #include "test_credentials.h"
+#include "test_platform.h"
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -365,6 +366,79 @@ TEST(api_negative, bind_credentials_not_initialized)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 }
 
+/* -- bind_platform error paths -- */
+
+TEST(api_negative, bind_platform_null_ctx)
+{
+	int ret = edhoc_bind_platform(NULL, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(api_negative, bind_platform_null_platform)
+{
+	struct edhoc_context ctx = { 0 };
+	edhoc_context_init(&ctx);
+	int ret = edhoc_bind_platform(&ctx, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+	edhoc_context_deinit(&ctx);
+}
+
+TEST(api_negative, bind_platform_null_zeroize)
+{
+	struct edhoc_context ctx = { 0 };
+	edhoc_context_init(&ctx);
+	const struct edhoc_platform platform = { 0 }; /* zeroize == NULL */
+	int ret = edhoc_bind_platform(&ctx, &platform);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	edhoc_context_deinit(&ctx);
+}
+
+TEST(api_negative, bind_platform_not_initialized)
+{
+	struct edhoc_context ctx;
+	memset(&ctx, 0, sizeof(ctx));
+	int ret = edhoc_bind_platform(&ctx, test_get_platform());
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+}
+
+/* -- message API rejects a not-fully-configured context -- */
+
+TEST(api_negative, message_api_unconfigured_context)
+{
+	struct edhoc_context ctx = { 0 };
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_init(&ctx));
+
+	uint8_t buf[64] = { 0 };
+	size_t len = 0;
+
+	/* A freshly initialized context has no mandatory inputs bound, so
+	 * every message compose/process must reject it with
+	 * EDHOC_ERROR_BAD_STATE (the presence gate fires before the state
+	 * machine check). */
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_1_compose(&ctx, buf, sizeof(buf),
+						  &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_1_process(&ctx, buf, sizeof(buf)));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_2_compose(&ctx, buf, sizeof(buf),
+						  &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_2_process(&ctx, buf, sizeof(buf)));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_3_compose(&ctx, buf, sizeof(buf),
+						  &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_3_process(&ctx, buf, sizeof(buf)));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_4_compose(&ctx, buf, sizeof(buf),
+						  &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE,
+			  edhoc_message_4_process(&ctx, buf, sizeof(buf)));
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+}
+
 /* -- error_get_code error paths -- */
 
 TEST(api_negative, error_get_code_null_ctx)
@@ -694,6 +768,13 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, bind_credentials_null_cred);
 	RUN_TEST_CASE(api_negative, bind_credentials_null_callbacks);
 	RUN_TEST_CASE(api_negative, bind_credentials_not_initialized);
+
+	RUN_TEST_CASE(api_negative, bind_platform_null_ctx);
+	RUN_TEST_CASE(api_negative, bind_platform_null_platform);
+	RUN_TEST_CASE(api_negative, bind_platform_null_zeroize);
+	RUN_TEST_CASE(api_negative, bind_platform_not_initialized);
+
+	RUN_TEST_CASE(api_negative, message_api_unconfigured_context);
 
 	RUN_TEST_CASE(api_negative, error_get_code_null_ctx);
 	RUN_TEST_CASE(api_negative, error_get_code_null_code);

@@ -10,7 +10,8 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#define EDHOC_ALLOW_PRIVATE_ACCESS
+#include "test_platform.h"
+#include "edhoc_context_internal.h"
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
@@ -41,22 +42,24 @@ static const struct edhoc_crypto *crypto;
 
 static void setup_basic_context(struct edhoc_context *ctx)
 {
-	memset(ctx, 0, sizeof(*ctx));
-	edhoc_context_init(ctx);
-
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
-	edhoc_set_methods(ctx, method, 1);
-
-	edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_0_get_suite(), 1);
-
 	const struct edhoc_connection_id cid = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 1,
 	};
-	edhoc_set_connection_id(ctx, &cid);
 
-	edhoc_bind_keys(ctx, keys);
-	edhoc_bind_crypto(ctx, crypto);
+	memset(ctx, 0, sizeof(*ctx));
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_init(ctx));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_methods(ctx, method, 1));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_set_cipher_suites(
+				  ctx, edhoc_cipher_suite_0_get_suite(), 1));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_connection_id(ctx, &cid));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_bind_keys(ctx, keys));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_bind_crypto(ctx, crypto));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_bind_platform(ctx, test_get_platform()));
 }
 
 /* Module interface function definitions ----------------------------------- */

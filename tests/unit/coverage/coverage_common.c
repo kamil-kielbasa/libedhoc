@@ -8,6 +8,7 @@
  */
 
 /* Include files ----------------------------------------------------------- */
+#include "test_platform.h"
 #include "coverage_common.h"
 
 /* Module defines ---------------------------------------------------------- */
@@ -337,6 +338,10 @@ int coverage_setup_mock_context(struct edhoc_context *ctx,
 		return ret;
 
 	ret = edhoc_bind_crypto(ctx, &coverage_mock_crypto);
+	if (EDHOC_SUCCESS != ret)
+		return ret;
+
+	ret = edhoc_bind_platform(ctx, test_get_platform());
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 
