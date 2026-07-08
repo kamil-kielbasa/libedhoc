@@ -76,6 +76,7 @@ Naming Convention
 Unit tests:
   - ``cipher_suite_0`` — EDHOC cipher suite 0 (EdDSA, ECDH, HKDF, AEAD, HASH)
   - ``cipher_suite_2`` — EDHOC cipher suite 2 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
+  - ``cipher_suite_4`` — EDHOC cipher suite 4 (EdDSA, ECDH, HKDF, ChaCha20/Poly1305 AEAD, HASH; RFC 8439 KAT)
   - ``cipher_suite_24`` — EDHOC cipher suite 24 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
   - ``cipher_suite_exp_pqc_1`` — experimental PQC cipher suite 1 (ML-KEM-512, ML-DSA-44, KMAC256, AES-CCM; liboqs, XKCP, PSA); requires ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON``
   - ``api`` — EDHOC public API (context init, methods, cipher suites, bindings)

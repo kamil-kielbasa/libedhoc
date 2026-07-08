@@ -20,6 +20,7 @@ set(TEST_UNIT_SOURCES
     unit/api/test_api_negative.c
     unit/cipher_suites/test_cipher_suite_0.c
     unit/cipher_suites/test_cipher_suite_2.c
+    unit/cipher_suites/test_cipher_suite_4.c
     unit/cipher_suites/test_cipher_suite_24.c
     unit/error/test_error_message.c
     unit/exporters/test_exporters.c

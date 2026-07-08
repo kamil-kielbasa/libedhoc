@@ -1,3 +1,12 @@
+Version 1.15.0
+--------------
+
+:Date: July 8, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Cipher suites:
+
+  * Added **cipher suite 4** (ChaCha20/Poly1305, SHA-256, X25519, EdDSA) as a ready-to-use helper.
+
 Version 1.14.1
 --------------
 
