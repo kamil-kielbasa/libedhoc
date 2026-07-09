@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(libedhoc VERSION 1.15.0 LANGUAGES C)
+project(libedhoc VERSION 1.15.1 LANGUAGES C)
 
 # The public headers use C11 anonymous unions, so the library is C11. (The old
 # `set_property(GLOBAL PROPERTY C_STANDARD 99)` was a no-op — C_STANDARD is a

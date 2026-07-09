@@ -1,3 +1,14 @@
+Version 1.15.1
+--------------
+
+:Date: July 9, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI: the Valgrind
+  job no longer builds the experimental PQC cipher suite. liboqs dispatches
+  hand-written AVX2/AVX-512 ML-KEM code at runtime and Valgrind cannot decode
+  some of those opcodes, which aborted the run with SIGILL on AVX-512-capable
+  runners. No library code changed.
+
 Version 1.15.0
 --------------
 
