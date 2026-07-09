@@ -60,6 +60,7 @@ set(LIBEDHOC_HELPERS_SOURCES
     ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_helpers.c
     ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_cipher_suite_0.c
     ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_cipher_suite_2.c
+    ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_cipher_suite_4.c
     ${LIBEDHOC_ROOT_DIR}/helpers/src/edhoc_cipher_suite_24.c)
 
 if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)

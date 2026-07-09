@@ -21,6 +21,7 @@ static void run_all_test_groups(void)
 	/* ---- Unit tests ---- */
 	RUN_TEST_GROUP(cipher_suite_0);
 	RUN_TEST_GROUP(cipher_suite_2);
+	RUN_TEST_GROUP(cipher_suite_4);
 	RUN_TEST_GROUP(cipher_suite_24);
 #ifdef LIBEDHOC_ENABLE_EXPERIMENTAL_PQC
 	RUN_TEST_GROUP(cipher_suite_exp_pqc_1);

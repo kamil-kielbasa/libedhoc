@@ -22,6 +22,15 @@ Cipher suite 2
    :project: libedhoc
    :members:
 
+Cipher suite 4
+--------------
+
+| Header file: :file:`helpers/include/edhoc_cipher_suite_4.h`
+
+.. doxygengroup:: edhoc-cipher-suite-4-api
+   :project: libedhoc
+   :members:
+
 Cipher suite 24
 ---------------
 

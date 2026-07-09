@@ -31,6 +31,7 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol â€
 |-------|--------------------|---------|---------|-----------|
 | 0     | AES-CCM-16-64-128  | SHA-256 | X25519  | EdDSA     |
 | 2     | AES-CCM-16-64-128  | SHA-256 | P-256   | ES256     |
+| 4     | ChaCha20/Poly1305  | SHA-256 | X25519  | EdDSA     |
 | 24    | A256GCM            | SHA-384 | P-384   | ES384     |
 
 ### Experimental Cipher Suites

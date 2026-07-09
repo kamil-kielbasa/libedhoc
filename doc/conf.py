@@ -12,7 +12,7 @@ from pathlib import Path
 project = "libedhoc"
 copyright = "2026, Kamil Kielbasa"
 author = "Kamil Kielbasa"
-version = "v1.13.0"
+version = "v1.15.0"
 release = version
 
 # -- General configuration ---------------------------------------------------
