@@ -238,11 +238,15 @@ cmd_valgrind() {
     # Valgrind <= 3.19 does not support DWARF5 (GCC 11+ default).
     rm -rf "${BUILD_DIR}"
     mkdir -p "${BUILD_DIR}"
+    # Experimental PQC is OFF here: liboqs dispatches hand-written AVX2/AVX-512
+    # ML-KEM code at runtime, and Valgrind cannot decode some of those opcodes
+    # (SIGILL / exit 132 on AVX-512-capable runners). It carries no memcheck
+    # value, so exclude it from the Valgrind job (matches the coverage build). 
     cmake -B "${BUILD_DIR}" -S "${PROJECT_DIR}" \
         "${KCONFIG_OPTIONS[@]}" \
         "${MBEDTLS_OPTIONS[@]}" \
         -DLIBEDHOC_ENABLE_TESTS=ON \
-        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON \
+        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=OFF \
         -DCMAKE_C_COMPILER=gcc \
         -DCMAKE_BUILD_TYPE=Debug \
         "-DCMAKE_C_FLAGS=-gdwarf-4"
