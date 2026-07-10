@@ -311,11 +311,14 @@ STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
  *      3. Compute pseudo random key exporter (PRK_exporter).
  *      4. Derive secret.
  */
-int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
-			      uint8_t *secret, size_t secret_len)
+int edhoc_export_prk_exporter_with_context(struct edhoc_context *ctx,
+					   size_t label, const uint8_t *context,
+					   size_t context_len, uint8_t *secret,
+					   size_t secret_len)
 {
 	if (NULL == ctx || EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label ||
-	    NULL == secret || 0 == secret_len) {
+	    (NULL == context && 0 != context_len) || NULL == secret ||
+	    0 == secret_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -369,7 +372,7 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	/* 4. Derive secret. */
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req((int32_t)label);
-	len += edhoc_cbor_bstr_oh(0); /* cbor empty byte string. */
+	len += context_len + edhoc_cbor_bstr_oh(context_len);
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
@@ -381,8 +384,8 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 
 	const struct info input_info = (struct info){
 		.info_label = (int32_t)label,
-		.info_context.value = NULL,
-		.info_context.len = 0,
+		.info_context.value = context,
+		.info_context.len = context_len,
 		.info_length = (uint32_t)secret_len,
 	};
 
@@ -424,6 +427,13 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	EDHOC_LOG_HEXDUMP_DBG(secret, secret_len, "PRK exporter secret");
 
 	return EDHOC_SUCCESS;
+}
+
+int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
+			      uint8_t *secret, size_t secret_len)
+{
+	return edhoc_export_prk_exporter_with_context(ctx, label, NULL, 0,
+						      secret, secret_len);
 }
 
 int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *entropy,

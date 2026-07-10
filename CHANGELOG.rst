@@ -1,3 +1,14 @@
+Version 1.16.0
+--------------
+
+:Date: July 10, 2026
+
+* `@emiltin <https://github.com/emiltin>`__ : API:
+
+  * Added ``edhoc_export_prk_exporter_with_context`` to support the complete
+    RFC 9528 ``EDHOC_Exporter(label, context, length)`` input while preserving
+    the existing empty-context exporter API.
+
 Version 1.15.1
 --------------
 
