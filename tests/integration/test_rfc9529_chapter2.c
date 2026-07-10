@@ -1378,6 +1378,18 @@ TEST(rfc9529_chapter2, prk_exporter)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Secret, master_secret,
 				      ARRAY_SIZE(OSCORE_Master_Secret));
 
+	uint8_t master_secret_with_context[ARRAY_SIZE(OSCORE_Master_Secret)] = {
+		0
+	};
+	ret = edhoc_export_prk_exporter_with_context(
+		init_ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0,
+		master_secret_with_context,
+		ARRAY_SIZE(master_secret_with_context));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Secret,
+				      master_secret_with_context,
+				      ARRAY_SIZE(master_secret_with_context));
+
 	uint8_t master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
 
 	/* EDHOC PRK exporter - OSCORE master salt. */
@@ -1407,6 +1419,54 @@ TEST(rfc9529_chapter2, prk_exporter)
 	ret = edhoc_export_prk_exporter(init_ctx, label, secret_3,
 					ARRAY_SIZE(secret_3));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(rfc9529_chapter2, prk_exporter_with_context)
+{
+	struct edhoc_context *contexts[] = { init_ctx, resp_ctx };
+	for (size_t i = 0; i < ARRAY_SIZE(contexts); ++i) {
+		contexts[i]->status = EDHOC_SM_COMPLETED;
+		contexts[i]->th_state = EDHOC_TH_STATE_4;
+		contexts[i]->th_len = ARRAY_SIZE(TH_4);
+		memcpy(contexts[i]->th, TH_4, ARRAY_SIZE(TH_4));
+		contexts[i]->prk_state = EDHOC_PRK_STATE_4E3M;
+		contexts[i]->prk_len = ARRAY_SIZE(PRK_4e3m);
+		memcpy(contexts[i]->prk, PRK_4e3m, ARRAY_SIZE(PRK_4e3m));
+	}
+
+	const uint8_t context[] = { 0x72, 0x73, 0x6d, 0x70 };
+	const uint8_t expected_secret[] = {
+		0x7c, 0x6b, 0xb2, 0xfa, 0x7b, 0x34, 0xb5, 0x71,
+		0x9a, 0x26, 0xf8, 0xc0, 0xdc, 0xf0, 0xf1, 0x27,
+		0x40, 0xcf, 0x6f, 0x8a, 0x15, 0x6f, 0x19, 0x2c,
+		0x05, 0xa1, 0x89, 0x76, 0x9c, 0x19, 0xb6, 0x88,
+	};
+	uint8_t init_secret[ARRAY_SIZE(expected_secret)] = { 0 };
+	uint8_t resp_secret[ARRAY_SIZE(expected_secret)] = { 0 };
+
+	ret = edhoc_export_prk_exporter_with_context(
+		init_ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM, context,
+		ARRAY_SIZE(context), init_secret, ARRAY_SIZE(init_secret));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_secret, init_secret,
+				      ARRAY_SIZE(expected_secret));
+
+	ret = edhoc_export_prk_exporter_with_context(
+		resp_ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM, context,
+		ARRAY_SIZE(context), resp_secret, ARRAY_SIZE(resp_secret));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_secret, resp_secret,
+				      ARRAY_SIZE(init_secret));
+
+	const uint8_t other_context[] = { 0x52, 0x53, 0x4d, 0x50 };
+	uint8_t other_secret[ARRAY_SIZE(expected_secret)] = { 0 };
+	ret = edhoc_export_prk_exporter_with_context(
+		init_ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM,
+		other_context, ARRAY_SIZE(other_context), other_secret,
+		ARRAY_SIZE(other_secret));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_NOT_EQUAL(0, memcmp(init_secret, other_secret,
+					ARRAY_SIZE(init_secret)));
 }
 
 TEST(rfc9529_chapter2, handshake_real_crypto)
@@ -2372,6 +2432,7 @@ TEST_GROUP_RUNNER(rfc9529_chapter2)
 	RUN_TEST_CASE(rfc9529_chapter2, message_4_process);
 	RUN_TEST_CASE(rfc9529_chapter2, handshake);
 	RUN_TEST_CASE(rfc9529_chapter2, prk_exporter);
+	RUN_TEST_CASE(rfc9529_chapter2, prk_exporter_with_context);
 	RUN_TEST_CASE(rfc9529_chapter2, handshake_real_crypto);
 	RUN_TEST_CASE(rfc9529_chapter2, handshake_real_crypto_ead_single);
 	RUN_TEST_CASE(rfc9529_chapter2, handshake_real_crypto_ead_many);

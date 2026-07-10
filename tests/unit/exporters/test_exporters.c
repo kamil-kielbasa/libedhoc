@@ -257,6 +257,18 @@ TEST(exporters, prk_exporter_zero_length)
 	edhoc_context_deinit(&ctx);
 }
 
+TEST(exporters, prk_exporter_with_context_null_context)
+{
+	struct edhoc_context ctx = { 0 };
+	edhoc_context_init(&ctx);
+	uint8_t secret[32];
+	int ret = edhoc_export_prk_exporter_with_context(
+		&ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM, NULL, 1, secret,
+		sizeof(secret));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+	edhoc_context_deinit(&ctx);
+}
+
 TEST(exporters, prk_exporter_invalid_label)
 {
 	struct edhoc_context ctx = { 0 };
@@ -376,6 +388,7 @@ TEST_GROUP_RUNNER(exporters)
 
 	RUN_TEST_CASE(exporters, prk_exporter_null_secret);
 	RUN_TEST_CASE(exporters, prk_exporter_zero_length);
+	RUN_TEST_CASE(exporters, prk_exporter_with_context_null_context);
 	RUN_TEST_CASE(exporters, prk_exporter_invalid_label);
 	RUN_TEST_CASE(exporters, prk_exporter_bad_state);
 	/* OSCORE CID CBOR encode failures */

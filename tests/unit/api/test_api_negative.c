@@ -541,6 +541,16 @@ TEST(api_negative, export_prk_exporter_null_ctx)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
+TEST(api_negative, export_prk_exporter_with_context_null_ctx)
+{
+	const uint8_t context[] = { 0x01 };
+	uint8_t secret[32];
+	int ret = edhoc_export_prk_exporter_with_context(
+		NULL, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM, context,
+		ARRAY_SIZE(context), secret, sizeof(secret));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
 TEST(api_negative, export_oscore_session_null_ctx)
 {
 	uint8_t ms[16], salt[8], sid[8], rid[8];
@@ -717,6 +727,7 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, message_error_process_null_buf);
 
 	RUN_TEST_CASE(api_negative, export_prk_exporter_null_ctx);
+	RUN_TEST_CASE(api_negative, export_prk_exporter_with_context_null_ctx);
 	RUN_TEST_CASE(api_negative, export_oscore_session_null_ctx);
 	RUN_TEST_CASE(api_negative, export_oscore_session_null_ms);
 	RUN_TEST_CASE(api_negative, export_oscore_session_null_salt);

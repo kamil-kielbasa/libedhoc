@@ -541,8 +541,46 @@ int edhoc_message_error_process(const uint8_t *message_error,
  */
 
 /**
- * \brief Export derived keying material using the pseudorandom key exporter.
- * 
+ * \brief Export context-bound keying material using the pseudorandom key exporter.
+ *
+ * Implements EDHOC_Exporter(label, context, length) from RFC 9528, Section 4.2.1.
+ * The caller must use each (label, context) pair for only one purpose.
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param label                         PRK exporter label.
+ * \param[in] context                   Application-defined exporter context. May be NULL when
+ *                                      \p context_length is zero.
+ * \param context_length                Size of the \p context buffer in bytes.
+ * \param[out] secret                   Buffer where the generated secret is to be written.
+ * \param secret_length                 Size of the \p secret buffer in bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \retval #EDHOC_ERROR_INVALID_ARGUMENT
+ *         One or more input parameters are invalid.
+ * \retval #EDHOC_ERROR_BAD_STATE
+ *         Internal context state is incorrect.
+ * \retval #EDHOC_ERROR_NOT_PERMITTED
+ *         Operation not permitted in the current configuration.
+ * \retval #EDHOC_ERROR_CBOR_FAILURE
+ *         CBOR encoding failure.
+ * \retval #EDHOC_ERROR_CRYPTO_FAILURE
+ *         Cryptographic operation failure.
+ * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
+ *         Pseudorandom key derivation failed.
+ */
+int edhoc_export_prk_exporter_with_context(struct edhoc_context *edhoc_context,
+					   size_t label, const uint8_t *context,
+					   size_t context_length,
+					   uint8_t *secret,
+					   size_t secret_length);
+
+/**
+ * \brief Export derived keying material using an empty exporter context.
+ *
+ * This is equivalent to calling edhoc_export_prk_exporter_with_context() with
+ * an empty byte string as the exporter context.
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param label                         PRK exporter label.
  * \param[out] secret                   Buffer where the generated secret is to be written.
