@@ -77,6 +77,8 @@ enum edhoc_cipher_suite_id {
 	EDHOC_CIPHER_SUITE_0 = 0,
 	/** P-256 / ES256 / AES-CCM-16-64-128 / SHA-256. */
 	EDHOC_CIPHER_SUITE_2 = 2,
+	/** X25519 / EdDSA / ChaCha20-Poly1305 / SHA-256. */
+	EDHOC_CIPHER_SUITE_4 = 4,
 	/** P-384 / ES384 / A256GCM / SHA-384. */
 	EDHOC_CIPHER_SUITE_24 = 24,
 	/** Experimental ML-KEM + ML-DSA (private-use range until IANA assignment). */

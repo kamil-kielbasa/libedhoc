@@ -71,7 +71,6 @@ struct edhoc_context;
  *   - \ref edhoc_set_methods "method(s)"
  *   - \ref edhoc_set_cipher_suites "cipher suite(s)"
  *   - \ref edhoc_set_connection_id "connection identifier"
- *   - \ref edhoc_bind_keys "keys interface"
  *   - \ref edhoc_bind_crypto "crypto interface"
  *   - \ref edhoc_bind_credentials "credentials interface"
  *   - \ref edhoc_bind_platform "platform interface"
@@ -209,22 +208,6 @@ int edhoc_set_user_context(struct edhoc_context *edhoc_context,
  */
 int edhoc_bind_ead(struct edhoc_context *edhoc_context,
 		   const struct edhoc_ead *ead);
-
-/** 
- * \brief Bind EDHOC cryptographic keys callbacks.
- *
- * \param[in,out] edhoc_context         EDHOC context.
- * \param[in] keys                      EDHOC cryptographic keys structure with callbacks.
- *
- * \retval #EDHOC_SUCCESS
- *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- */
-int edhoc_bind_keys(struct edhoc_context *edhoc_context,
-		    const struct edhoc_keys *keys);
 
 /** 
  * \brief Bind EDHOC cryptographic operations callbacks.
