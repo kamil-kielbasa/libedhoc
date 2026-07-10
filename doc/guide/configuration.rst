@@ -21,8 +21,14 @@ Kconfig library configuration
 :C:`LIBEDHOC_MAX_LEN_OF_CONN_ID`
     | Maximum length of connection identifier in bytes.
 
-:C:`LIBEDHOC_MAX_LEN_OF_ECC_KEY`
-    | Maximum length of ECC (Elliptic Curve Cryptography) key in bytes.
+:C:`LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY`
+    | Maximum length of the KEM encapsulation key (``G_X``) in bytes.
+
+:C:`LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT`
+    | Maximum length of the KEM ciphertext (``G_Y``) in bytes.
+
+:C:`LIBEDHOC_MAX_LEN_OF_NIKE_KEY`
+    | Maximum length of the static Diffie-Hellman (NIKE) key in bytes.
 
 :C:`LIBEDHOC_MAX_LEN_OF_MAC`
     | Maximum length of hash in bytes.

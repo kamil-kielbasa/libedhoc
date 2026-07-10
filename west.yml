@@ -8,11 +8,12 @@ manifest:
   projects:
     - name: zephyr
       remote: zephyrproject-rtos
-      revision: v4.2.0
+      revision: v4.4.0
       import:
         name-allowlist:
           - zcbor
           - mbedtls
+          - tf-psa-crypto
 
     - name: compact25519
       remote: github

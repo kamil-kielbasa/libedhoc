@@ -52,8 +52,7 @@ Mkfile.old
 dkms.conf
 
 # Build directories
-build/
-_build/
+build*
 
 # Tooling caches (clangd, Doxygen/Sphinx output, etc.)
-.cache/
+.cache*

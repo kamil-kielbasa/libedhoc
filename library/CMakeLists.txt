@@ -27,8 +27,13 @@ target_link_libraries(libedhoc
 # Crypto libraries are used by the crypto callbacks in tests, helpers and
 # applications, not by the crypto-agnostic core. Kept BUILD_INTERFACE-only so
 # they are absent from the install export.
+#
+# mbedTLS 4.x (TF-PSA-Crypto) exposes the PSA crypto implementation as the
+# `tfpsacrypto` target (the former `mbedcrypto`); the reference cipher suites
+# only use PSA + the low-level ECP primitives it carries, never the TLS/X.509
+# layers, so we link that target directly.
 target_link_libraries(libedhoc PUBLIC
-    $<BUILD_INTERFACE:mbedtls>
+    $<BUILD_INTERFACE:tfpsacrypto>
     $<BUILD_INTERFACE:compact25519>
     $<BUILD_INTERFACE:zcbor>)
 

@@ -19,9 +19,23 @@ if LIBEDHOC_ENABLE
         int "Maximum length of connection identifier in bytes."
         default 1
 
-    config LIBEDHOC_MAX_LEN_OF_ECC_KEY
-        int "Maximum length of ECC (Elliptic Curve Cryptography) key in bytes."
+    config LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY
+        int "Maximum length of KEM encapsulation key (G_X) in bytes."
         default 32
+        help
+            DH suites: 32 (P-256 / X25519) or 65; ML-KEM-512: 800.
+
+    config LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT
+        int "Maximum length of KEM ciphertext (G_Y) in bytes."
+        default 32
+        help
+            DH suites: 32 (P-256 / X25519) or 65; ML-KEM-512: 768.
+
+    config LIBEDHOC_MAX_LEN_OF_NIKE_KEY
+        int "Maximum length of static Diffie-Hellman (NIKE) key in bytes."
+        default 32
+        help
+            Static-DH authentication key length; 0 on KEM-only builds.
 
     config LIBEDHOC_MAX_LEN_OF_MAC
         int "Maximum length of hash in bytes."

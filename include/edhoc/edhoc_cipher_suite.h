@@ -14,6 +14,7 @@
 /* Include files ----------------------------------------------------------- */
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 /* Forward declarations ---------------------------------------------------- */
 
@@ -28,10 +29,28 @@ struct edhoc_crypto;
 
 /**
  * \brief Structure for cipher suite value and related algorithms lengths in bytes.
+ *
+ *        Generalized for both NIKE (classical Diffie-Hellman) and KEM
+ *        (e.g. ML-KEM) key exchange. For a classical suite the ephemeral leg
+ *        is a NIKE-as-KEM shim, so the encapsulation key, the ciphertext and
+ *        the static-DH key all share the elliptic-curve public-key length.
  */
 struct edhoc_cipher_suite {
 	/** Cipher suite IANA registry value. */
 	int32_t value;
+
+	/** Whether the suite supports static Diffie-Hellman (gates methods 1/2/3). */
+	bool supports_dh_nike;
+
+	/** Key exchange: encapsulation key (\c G_X) length in bytes. */
+	size_t kem_public_key_length;
+	/** Key exchange: ciphertext (\c G_Y) length in bytes. */
+	size_t kem_ciphertext_length;
+	/** Static-DH authentication key length in bytes; 0 if unsupported. */
+	size_t nike_key_length;
+
+	/** Signature length in bytes. */
+	size_t sign_length;
 
 	/** EDHOC AEAD algorithm key length in bytes. */
 	size_t aead_key_length;
@@ -45,11 +64,6 @@ struct edhoc_cipher_suite {
 
 	/** EDHOC MAC length in bytes. */
 	size_t mac_length;
-
-	/** EDHOC ECC algorithm: key length in bytes. */
-	size_t ecc_key_length;
-	/** EDHOC ECC algorithm: signature length in bytes. */
-	size_t ecc_sign_length;
 };
 
 /**

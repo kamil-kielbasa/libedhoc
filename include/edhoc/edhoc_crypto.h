@@ -21,66 +21,24 @@
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 
-/** \defgroup edhoc-interface-crypto-keys EDHOC interface for cryptographic keys
+/** \defgroup edhoc-interface-crypto-usage EDHOC interface for cryptographic key usage
  * @{
  */
 
 /**
- * \brief EDHOC key types for cryptographic keys interface.
+ * \brief Usage of a key handle produced by \ref edhoc_crypto.expand.
+ *
+ *        A PSA / secure-element key must receive its policy at creation time,
+ *        so a key handle is created with the usage it will serve. Unlike the
+ *        removed \c enum \c edhoc_key_type, no raw secret ever crosses the
+ *        interface boundary: the usage only selects the policy of a key that
+ *        is derived and kept inside the backend key store.
  */
-enum edhoc_key_type {
-	/** Key type for generation of ephemeral Diffie-Hellman key pair. */
-	EDHOC_KT_MAKE_KEY_PAIR,
-	/** Key type for Diffie-Hellman keys agreement. */
-	EDHOC_KT_KEY_AGREEMENT,
-
-	/** Key type for signing. */
-	EDHOC_KT_SIGNATURE,
-	/** Key type for signature verification. */
-	EDHOC_KT_VERIFY,
-
-	/** Key type for HKDF extract. */
-	EDHOC_KT_EXTRACT,
-	/** Key type for HKDF expand. */
-	EDHOC_KT_EXPAND,
-
-	/** Key type for symmetric authenticated encryption. */
-	EDHOC_KT_ENCRYPT,
-	/** Key type for symmetric authenticated decryption. */
-	EDHOC_KT_DECRYPT,
-};
-
-/**
- * \brief Bind structure for cryptographic key identifiers.
- */
-struct edhoc_keys {
-	/**
-	 * \brief Import a cryptographic key and obtain its identifier.
-	 *
-	 * \param[in] user_context		User context.
-	 * \param key_type                      Requested key type.
-	 * \param[in] raw_key                   Raw key material.
-	 * \param raw_key_length                Size of the \p raw_key buffer in bytes.
-	 * \param[out] key_id                   Key identifier.
-	 *
-	 * \retval #EDHOC_SUCCESS
-	 *         Success.
-	 * \return Negative error code on failure.
-	 */
-	int (*import_key)(void *user_context, enum edhoc_key_type key_type,
-			  const uint8_t *raw_key, size_t raw_key_length,
-			  void *key_id);
-	/**
-	 * \brief Destroy a previously imported cryptographic key.
-	 *
-	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
-	 *
-	 * \retval #EDHOC_SUCCESS
-	 *         Success.
-	 * \return Negative error code on failure.
-	 */
-	int (*destroy_key)(void *user_context, void *key_id);
+enum edhoc_key_usage {
+	/** KDF input: chain salts, rolling pseudorandom keys, exported keys. */
+	EDHOC_KEY_USAGE_KDF,
+	/** AEAD key: K_3, K_4. */
+	EDHOC_KEY_USAGE_AEAD,
 };
 
 /**@}*/
@@ -90,56 +48,122 @@ struct edhoc_keys {
  */
 
 /**
- * \brief Bind structure for cryptographic operations.
+ * \brief Bind structure for cryptographic operations (handle-only, KEM-style).
+ *
+ *        Every long-lived secret is an opaque handle into the backend key
+ *        store (a software PSA slot, the TrustZone secure world or a secure
+ *        element); it is never serialized into \ref edhoc_context or onto the
+ *        stack. Peer public keys enter as raw bytes and one-shot public
+ *        outputs (keystreams, IVs, MACs) leave as raw bytes. The ephemeral key
+ *        exchange is expressed as a KEM: classical Diffie-Hellman suites
+ *        implement it as a thin NIKE-as-KEM shim, so ML-KEM drops in behind the
+ *        same interface with the wire unchanged (\c G_X carries the
+ *        encapsulation key, \c G_Y carries the ciphertext).
  */
 struct edhoc_crypto {
 	/**
-	 * \brief Generate an ephemeral ECDH key pair.
+	 * \brief Destroy a key handle and free its key-store slot.
+	 *
+	 *        Destroying a zeroed / no-key handle is a successful no-op, so
+	 *        \ref edhoc_context_deinit may re-destroy already-freed slots.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
-	 * \param[out] private_key              Private ephemeral ECDH key.
-	 * \param private_key_size              Size of the \p private_key buffer in bytes.
-	 * \param[out] private_key_length       On success, the number of bytes that make up the ECDH private key.
-	 * \param[out] public_key               Public ephemeral ECDH key.
-	 * \param public_key_size               Size of the \p public_key buffer in bytes.
-	 * \param[out] public_key_length        On success, the number of bytes that make up the ECDH public key.
+	 * \param[in,out] key_id                Key identifier to destroy.
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*make_key_pair)(void *user_context, const void *key_id,
-			     uint8_t *private_key, size_t private_key_size,
-			     size_t *private_key_length, uint8_t *public_key,
-			     size_t public_key_size, size_t *public_key_length);
+	int (*destroy_key)(void *user_context, void *key_id);
+
 	/**
-	 * \brief Compute ECDH key agreement (shared secret).
+	 * \brief Generate an ephemeral key pair (Initiator, message_1).
+	 *
+	 *        The decapsulation (private) key stays in the key store as a
+	 *        handle; only the encapsulation (public) key leaves, to be sent
+	 *        in \c G_X.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
-	 * \param[in] peer_public_key           Peer public ECDH key.
-	 * \param peer_public_key_length        Size of the \p peer_public_key buffer in bytes.
-	 * \param[out] shared_secret            ECDH shared secret.
-	 * \param shared_secret_size            Size of the \p shared_secret buffer in bytes.
-	 * \param[out] shared_secret_length     On success, the number of bytes that make up the ECDH shared secret.
+	 * \param[out] decapsulation_key_id     Handle of the generated private key.
+	 * \param[out] encapsulation_key        Public key, sent in \c G_X.
+	 * \param encapsulation_key_size        Size of the \p encapsulation_key buffer in bytes.
+	 * \param[out] encapsulation_key_length On success, the number of bytes that make up the encapsulation key.
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*key_agreement)(void *user_context, const void *key_id,
+	int (*generate_key_pair)(void *user_context, void *decapsulation_key_id,
+				 uint8_t *encapsulation_key,
+				 size_t encapsulation_key_size,
+				 size_t *encapsulation_key_length);
+	/**
+	 * \brief Encapsulate to a peer encapsulation key (Responder, message_2).
+	 *
+	 *        For a NIKE-as-KEM shim the backend generates its own ephemeral
+	 *        key pair, runs the key agreement and returns its ephemeral
+	 *        public key as \p ciphertext (sent in \c G_Y).
+	 *
+	 * \param[in] user_context		User context.
+	 * \param[in] encapsulation_key         Peer public key from \c G_X.
+	 * \param encapsulation_key_length      Size of the \p encapsulation_key buffer in bytes.
+	 * \param[out] shared_secret_key_id     Handle of the shared secret (\c G_XY).
+	 * \param[out] ciphertext               KEM ciphertext, sent in \c G_Y.
+	 * \param ciphertext_size               Size of the \p ciphertext buffer in bytes.
+	 * \param[out] ciphertext_length        On success, the number of bytes that make up the ciphertext.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*encapsulate)(void *user_context, const uint8_t *encapsulation_key,
+			   size_t encapsulation_key_length,
+			   void *shared_secret_key_id, uint8_t *ciphertext,
+			   size_t ciphertext_size, size_t *ciphertext_length);
+	/**
+	 * \brief Decapsulate a ciphertext (Initiator, after message_2).
+	 *
+	 * \param[in] user_context		User context.
+	 * \param[in] decapsulation_key_id      Handle of the private key from \ref generate_key_pair.
+	 * \param[in] ciphertext                KEM ciphertext from \c G_Y.
+	 * \param ciphertext_length             Size of the \p ciphertext buffer in bytes.
+	 * \param[out] shared_secret_key_id     Handle of the shared secret (\c G_XY).
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*decapsulate)(void *user_context, const void *decapsulation_key_id,
+			   const uint8_t *ciphertext, size_t ciphertext_length,
+			   void *shared_secret_key_id);
+
+	/**
+	 * \brief Static Diffie-Hellman key agreement (methods 1/2/3, NIKE suites).
+	 *
+	 *        Used only for static-DH authentication; the shared secret is
+	 *        produced as a handle, never as raw bytes.
+	 *
+	 * \param[in] user_context		User context.
+	 * \param[in] private_key_id            Handle of the local static private key.
+	 * \param[in] peer_public_key           Peer static public key (raw bytes).
+	 * \param peer_public_key_length        Size of the \p peer_public_key buffer in bytes.
+	 * \param[out] shared_secret_key_id     Handle of the shared secret.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*key_agreement)(void *user_context, const void *private_key_id,
 			     const uint8_t *peer_public_key,
 			     size_t peer_public_key_length,
-			     uint8_t *shared_secret, size_t shared_secret_size,
-			     size_t *shared_secret_length);
+			     void *shared_secret_key_id);
 
 	/**
 	 * \brief Generate a digital signature.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
-	 * \param[in] input                     Input message to sign.
+	 * \param[in] private_key_id            Handle of the signing key.
+	 * \param[in] input                     Full message to sign (not a digest).
 	 * \param input_length                  Size of the \p input buffer in bytes.
 	 * \param[out] signature                Buffer where the signature is to be written.
 	 * \param signature_size                Size of the \p signature buffer in bytes.
@@ -149,16 +173,17 @@ struct edhoc_crypto {
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*signature)(void *user_context, const void *key_id,
-			 const uint8_t *input, size_t input_length,
-			 uint8_t *signature, size_t signature_size,
-			 size_t *signature_length);
+	int (*sign)(void *user_context, const void *private_key_id,
+		    const uint8_t *input, size_t input_length,
+		    uint8_t *signature, size_t signature_size,
+		    size_t *signature_length);
 	/**
-	 * \brief Verify a digital signature.
+	 * \brief Verify a digital signature against a raw peer public key.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
-	 * \param[in] input                     Input message to verify.
+	 * \param[in] public_key                Peer public key (raw bytes).
+	 * \param public_key_length             Size of the \p public_key buffer in bytes.
+	 * \param[in] input                     Full signed message (not a digest).
 	 * \param input_length                  Size of the \p input buffer in bytes.
 	 * \param[in] signature                 Buffer containing the signature to verify.
 	 * \param signature_length              Size of the \p signature buffer in bytes.
@@ -167,54 +192,76 @@ struct edhoc_crypto {
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*verify)(void *user_context, const void *key_id,
-		      const uint8_t *input, size_t input_length,
-		      const uint8_t *signature, size_t signature_length);
+	int (*verify)(void *user_context, const uint8_t *public_key,
+		      size_t public_key_length, const uint8_t *input,
+		      size_t input_length, const uint8_t *signature,
+		      size_t signature_length);
 
 	/**
-	 * \brief Perform HKDF-Extract.
+	 * \brief EDHOC_Extract: derive a pseudorandom key handle from a salt.
+	 *
+	 *        The input keying material and the output pseudorandom key are
+	 *        handles; the salt is raw bytes. For \c PRK_2e the salt is the
+	 *        public \c TH_2; for the rolling pseudorandom keys it is a chain
+	 *        salt that the caller derives with \ref expand_raw and zeroizes
+	 *        after use.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
-	 * \param[in] salt                      Salt for extract.
-	 * \param salt_len                      Size of the \p salt buffer in bytes.
-	 * \param[out] pseudo_random_key        Buffer where the pseudorandom key is to be written.
-	 * \param pseudo_random_key_size        Size of the \p pseudo_random_key buffer in bytes.
-	 * \param[out] pseudo_random_key_length On success, the number of bytes that make up the pseudorandom key.
+	 * \param[in] ikm_key_id                Input keying material handle.
+	 * \param[in] salt                      Raw salt.
+	 * \param salt_length                   Size of the \p salt buffer in bytes.
+	 * \param[out] prk_key_id               Output pseudorandom key handle.
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*extract)(void *user_context, const void *key_id,
-		       const uint8_t *salt, size_t salt_len,
-		       uint8_t *pseudo_random_key,
-		       size_t pseudo_random_key_size,
-		       size_t *pseudo_random_key_length);
+	int (*extract)(void *user_context, const void *ikm_key_id,
+		       const uint8_t *salt, size_t salt_length,
+		       void *prk_key_id);
 	/**
-	 * \brief Perform HKDF-Expand.
+	 * \brief EDHOC_Expand producing a key handle (handle space).
+	 *
+	 *        The \p usage selects the policy of the created key, since a
+	 *        PSA / secure-element key must receive its policy at creation.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
-	 * \param[in] info                      Context and application-specific information.
+	 * \param[in] prk_key_id                Pseudorandom key handle.
+	 * \param[in] info                      CBOR-encoded info.
 	 * \param info_length                   Size of the \p info buffer in bytes.
-	 * \param[out] output_keying_material   Buffer where the output keying material is to be written.
-	 * \param output_keying_material_length Size of the \p output_keying_material buffer in bytes.
+	 * \param usage                         Policy of the produced key.
+	 * \param[out] output_key_id            Output key handle.
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*expand)(void *user_context, const void *key_id,
+	int (*expand)(void *user_context, const void *prk_key_id,
 		      const uint8_t *info, size_t info_length,
-		      uint8_t *output_keying_material,
-		      size_t output_keying_material_length);
+		      enum edhoc_key_usage usage, void *output_key_id);
+	/**
+	 * \brief EDHOC_Expand producing raw output (keystream, IV, MAC, exporter).
+	 *
+	 * \param[in] user_context		User context.
+	 * \param[in] prk_key_id                Pseudorandom key handle.
+	 * \param[in] info                      CBOR-encoded info.
+	 * \param info_length                   Size of the \p info buffer in bytes.
+	 * \param[out] output                   Raw output keying material.
+	 * \param output_length                 Requested output length in bytes.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*expand_raw)(void *user_context, const void *prk_key_id,
+			  const uint8_t *info, size_t info_length,
+			  uint8_t *output, size_t output_length);
 
 	/**
 	 * \brief Perform AEAD encryption.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
+	 * \param[in] key_id                    AEAD key handle.
 	 * \param[in] nonce                     Nonce or IV to use.
 	 * \param nonce_length                  Size of the \p nonce buffer in bytes.
 	 * \param[in] additional_data           Additional data that will be authenticated but not encrypted.
@@ -229,17 +276,18 @@ struct edhoc_crypto {
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*encrypt)(void *user_context, const void *key_id,
-		       const uint8_t *nonce, size_t nonce_length,
-		       const uint8_t *additional_data,
-		       size_t additional_data_length, const uint8_t *plaintext,
-		       size_t plaintext_length, uint8_t *ciphertext,
-		       size_t ciphertext_size, size_t *ciphertext_length);
+	int (*aead_encrypt)(void *user_context, const void *key_id,
+			    const uint8_t *nonce, size_t nonce_length,
+			    const uint8_t *additional_data,
+			    size_t additional_data_length,
+			    const uint8_t *plaintext, size_t plaintext_length,
+			    uint8_t *ciphertext, size_t ciphertext_size,
+			    size_t *ciphertext_length);
 	/**
 	 * \brief Perform AEAD decryption.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] key_id                    Key identifier.
+	 * \param[in] key_id                    AEAD key handle.
 	 * \param[in] nonce                     Nonce or IV to use.
 	 * \param nonce_length                  Size of the \p nonce buffer in bytes.
 	 * \param[in] additional_data           Additional data that will be authenticated but not encrypted.
@@ -254,19 +302,49 @@ struct edhoc_crypto {
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*decrypt)(void *user_context, const void *key_id,
-		       const uint8_t *nonce, size_t nonce_length,
-		       const uint8_t *additional_data,
-		       size_t additional_data_length, const uint8_t *ciphertext,
-		       size_t ciphertext_length, uint8_t *plaintext,
-		       size_t plaintext_size, size_t *plaintext_length);
+	int (*aead_decrypt)(void *user_context, const void *key_id,
+			    const uint8_t *nonce, size_t nonce_length,
+			    const uint8_t *additional_data,
+			    size_t additional_data_length,
+			    const uint8_t *ciphertext, size_t ciphertext_length,
+			    uint8_t *plaintext, size_t plaintext_size,
+			    size_t *plaintext_length);
 
 	/**
-	 * \brief Compute a cryptographic hash.
+	 * \brief Begin a multipart hash operation.
+	 *
+	 *        Multipart-only: large PQC transcripts must be hashed
+	 *        incrementally. The operation object is owned by the backend
+	 *        (no heap allocation in the library) and released by
+	 *        \ref hash_finish or \ref hash_abort.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] input                     Input message to hash.
+	 * \param[out] operation                On success, backend hash operation.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*hash_init)(void *user_context, void **operation);
+	/**
+	 * \brief Add input to a multipart hash operation.
+	 *
+	 * \param[in] user_context		User context.
+	 * \param[in] operation                 Backend hash operation.
+	 * \param[in] input                     Input message chunk to hash.
 	 * \param input_length                  Size of the \p input buffer in bytes.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*hash_update)(void *user_context, void *operation,
+			   const uint8_t *input, size_t input_length);
+	/**
+	 * \brief Finish a multipart hash operation and release it.
+	 *
+	 * \param[in] user_context		User context.
+	 * \param[in] operation                 Backend hash operation.
 	 * \param[out] hash                     Buffer where the hash is to be written.
 	 * \param hash_size                     Size of the \p hash buffer in bytes.
 	 * \param[out] hash_length              On success, the number of bytes that make up the hash.
@@ -275,9 +353,19 @@ struct edhoc_crypto {
 	 *         Success.
 	 * \return Negative error code on failure.
 	 */
-	int (*hash)(void *user_context, const uint8_t *input,
-		    size_t input_length, uint8_t *hash, size_t hash_size,
-		    size_t *hash_length);
+	int (*hash_finish)(void *user_context, void *operation, uint8_t *hash,
+			   size_t hash_size, size_t *hash_length);
+	/**
+	 * \brief Abort a multipart hash operation and release it.
+	 *
+	 * \param[in] user_context		User context.
+	 * \param[in] operation                 Backend hash operation.
+	 *
+	 * \retval #EDHOC_SUCCESS
+	 *         Success.
+	 * \return Negative error code on failure.
+	 */
+	int (*hash_abort)(void *user_context, void *operation);
 };
 
 /**@}*/
