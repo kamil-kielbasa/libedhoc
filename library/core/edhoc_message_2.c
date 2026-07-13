@@ -61,22 +61,25 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /** 
- * \brief Generate ECDH key pair (G_X, X).
+ * \brief KEM encapsulate to the peer's G_X (Responder): produce the KEM
+ *        ciphertext G_Y (into \p ctx->pub_eph_key) and the ephemeral
+ *        shared-secret handle.
  *
  * \param[in,out] ctx		EDHOC context.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure. 
  */
-STATIC int gen_dh_keys(struct edhoc_context *ctx);
+STATIC int comp_encapsulate(struct edhoc_context *ctx);
 
 /** 
- * \brief Compute ECDH shared secret (G_XY).
+ * \brief KEM decapsulate the peer's G_Y (Initiator): derive the ephemeral
+ *        shared-secret handle from the message-1 ephemeral private key.
  *
  * \param[in,out] ctx		EDHOC context.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure. 
  */
-STATIC int comp_dh_secret(struct edhoc_context *ctx);
+STATIC int comp_decapsulate(struct edhoc_context *ctx);
 
 /** 
  * \brief Compute transcript hash 2 (TH_2).
@@ -144,19 +147,17 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 			       size_t *ptxt_len);
 
 /** 
- * \brief Compute KEYSTREAM_2.
+ * \brief Compute KEYSTREAM_2 from the context PRK_2e handle (or PRK_3e2m for
+ *        methods 0/2, into which PRK_2e was moved).
  *
  * \param[in] ctx		EDHOC context.
- * \param[in] prk_2e		Buffer containing the PRK_2e.
- * \param prk_2e_len		Size of the \p prk_2e buffer in bytes.
  * \param[out] keystream	Buffer where the generated keystream is to be written.
  * \param keystream_len		Size of the \p keystream buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int comp_keystream(const struct edhoc_context *ctx,
-			  const uint8_t *prk_2e, size_t prk_2e_len,
-			  uint8_t *keystream, size_t keystream_len);
+STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
+			  size_t keystream_len);
 
 /** 
  * \brief Compute CIPHERTEXT_2.
@@ -253,106 +254,76 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len);
 
 /**
- * \brief Compute G_RX for PRK_3e2m.
+ * \brief Compute G_RX for PRK_3e2m into its context key slot.
  * 
  * \param[in,out] ctx           EDHOC context.
  * \param[in] auth_cred         Authentication credentials.
  * \param[in] pub_key           Peer public key.
  * \param pub_key_len           Peer public key length.
- * \param[out] grx              Buffer where the generated G_RX is to be written.
- * \param grx_len               Size of the \p grx buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_grx(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
-		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *grx,
-		    size_t grx_len);
+		    const uint8_t *pub_key, size_t pub_key_len);
 
 /* Static function definitions --------------------------------------------- */
 
-STATIC int gen_dh_keys(struct edhoc_context *ctx)
+STATIC int comp_encapsulate(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	/* Generate ephemeral key pair. */
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR, NULL,
-				   0, key_id);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key for DH key gen: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	/* Choose most preferred cipher suite. */
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
 
-	ctx->dh_pub_key_len = csuite.ecc_key_length;
-	ctx->dh_priv_key_len = csuite.ecc_key_length;
+	/* KEM encapsulate to the peer's encapsulation key G_X: the backend
+	 * produces the KEM ciphertext G_Y (ctx->pub_eph_key) and stores the
+	 * shared secret G_XY as a handle (the shared-secret slot). For classical
+	 * NIKE-as-KEM suites this wraps an ephemeral key generation plus a
+	 * Diffie-Hellman agreement. */
+	ctx->pub_eph_key_len = 0;
+	const int ret = ctx->itf.crypto.encapsulate(
+		ctx->user_ctx, ctx->peer_pub_eph_key, ctx->peer_pub_eph_key_len,
+		ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].key_id,
+		ctx->pub_eph_key, sizeof(ctx->pub_eph_key),
+		&ctx->pub_eph_key_len);
 
-	size_t pub_key_len = 0;
-	size_t priv_key_len = 0;
-	ret = ctx->crypto.make_key_pair(ctx->user_ctx, key_id, ctx->dh_priv_key,
-					ctx->dh_priv_key_len, &priv_key_len,
-					ctx->dh_pub_key, ctx->dh_pub_key_len,
-					&pub_key_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
-
-	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != priv_key_len ||
-	    csuite.ecc_key_length != pub_key_len) {
-		EDHOC_LOG_ERR("DH key pair generation: %d, %zu, %zu, %zu", ret,
-			      csuite.ecc_key_length, priv_key_len, pub_key_len);
+	if (EDHOC_SUCCESS != ret ||
+	    csuite.kem_ciphertext_length != ctx->pub_eph_key_len) {
+		EDHOC_LOG_ERR("Encapsulate: %d, %zu, %zu", ret,
+			      csuite.kem_ciphertext_length,
+			      ctx->pub_eph_key_len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
+	ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].present = true;
 	return EDHOC_SUCCESS;
 }
 
-STATIC int comp_dh_secret(struct edhoc_context *ctx)
+STATIC int comp_decapsulate(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
+	/* KEM decapsulate the peer's ciphertext G_Y with the ephemeral private
+	 * key handle from message 1; the shared secret G_XY is stored as a
+	 * handle (the shared-secret slot). */
+	const int ret = ctx->itf.crypto.decapsulate(
+		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
+		ctx->peer_pub_eph_key, ctx->peer_pub_eph_key_len,
+		ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].key_id);
 
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_KEY_AGREEMENT,
-				   ctx->dh_priv_key, ctx->dh_priv_key_len,
-				   key_id);
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key for DH secret: %d", ret);
+		EDHOC_LOG_ERR("Decapsulate: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
-	ctx->dh_secret_len = csuite.ecc_key_length;
-
-	size_t secret_len = 0;
-	ret = ctx->crypto.key_agreement(ctx->user_ctx, key_id,
-					ctx->dh_peer_pub_key,
-					ctx->dh_peer_pub_key_len,
-					ctx->dh_secret, ctx->dh_secret_len,
-					&secret_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
-
-	if (EDHOC_SUCCESS != ret || secret_len != csuite.ecc_key_length) {
-		EDHOC_LOG_ERR("Key agreement: %d, %zu, %zu", ret,
-			      csuite.ecc_key_length, secret_len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
+	ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].present = true;
 	return EDHOC_SUCCESS;
 }
 
@@ -369,88 +340,49 @@ STATIC int comp_th_2(struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
+	/* G_Y: own for the Responder, peer's for the Initiator. */
+	const uint8_t *g_y = NULL;
+	size_t g_y_len = 0;
+
+	switch (ctx->role) {
+	case EDHOC_INITIATOR:
+		g_y = ctx->peer_pub_eph_key;
+		g_y_len = ctx->peer_pub_eph_key_len;
+		break;
+	case EDHOC_RESPONDER:
+		g_y = ctx->pub_eph_key;
+		g_y_len = ctx->pub_eph_key_len;
+		break;
+	default:
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
 
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
 
-	/* Calculate required sizes for CBOR TH_2 = H(G_Y, H(message_1)). */
-	size_t g_y_len = 0;
-	g_y_len += csuite.ecc_key_length;
-	g_y_len += edhoc_cbor_bstr_oh(csuite.ecc_key_length);
+	/* TH_2 = H(G_Y, H(message_1)) streamed as CBOR byte-string segments:
+	 * bstr(G_Y) || bstr(H(message_1)). ctx->th holds H(message_1) on input
+	 * and receives TH_2 on output; the multipart update consumes it before
+	 * hash_finish overwrites it. */
+	const size_t h_msg_1_len = ctx->th_len;
 
-	size_t hash_len = 0;
-	hash_len += csuite.hash_length;
-	hash_len += edhoc_cbor_bstr_oh(csuite.hash_length);
+	uint8_t g_y_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
+	uint8_t h_msg_1_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
 
-	EDHOC_MEM_ALLOC(uint8_t, th_2, g_y_len + hash_len);
-	if (NULL == th_2) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
+	const struct hash_segment segments[] = {
+		{ g_y_hdr, edhoc_cbor_bstr_header(g_y_hdr, g_y_len) },
+		{ g_y, g_y_len },
+		{ h_msg_1_hdr,
+		  edhoc_cbor_bstr_header(h_msg_1_hdr, h_msg_1_len) },
+		{ ctx->th, h_msg_1_len },
+	};
 
-	size_t offset = 0;
-	size_t len_out = 0;
-	struct zcbor_string cbor_bstr = { 0 };
-
-	/* Cborise G_Y. */
-	switch (ctx->role) {
-	case EDHOC_INITIATOR:
-		cbor_bstr.value = ctx->dh_peer_pub_key;
-		cbor_bstr.len = ctx->dh_peer_pub_key_len;
-		break;
-	case EDHOC_RESPONDER:
-		cbor_bstr.value = ctx->dh_pub_key;
-		cbor_bstr.len = ctx->dh_pub_key_len;
-		break;
-	default:
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
-		EDHOC_MEM_FREE(th_2);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	len_out = 0;
-	ret = cbor_encode_byte_string_type_bstr_type(th_2, g_y_len, &cbor_bstr,
-						     &len_out);
-
-	if (ZCBOR_SUCCESS != ret || g_y_len != len_out) {
-		EDHOC_LOG_ERR("CBOR enc: %d, %zu, %zu", ret, g_y_len, len_out);
-		EDHOC_MEM_FREE(th_2);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	offset += len_out;
-
-	/* Cborise H(message_1). */
-	cbor_bstr.value = ctx->th;
-	cbor_bstr.len = ctx->th_len;
-
-	len_out = 0;
-	ret = cbor_encode_byte_string_type_bstr_type(&th_2[offset], hash_len,
-						     &cbor_bstr, &len_out);
-
-	if (ZCBOR_SUCCESS != ret || hash_len != len_out) {
-		EDHOC_LOG_ERR("CBOR enc: %d, %zu, %zu", ret, hash_len, len_out);
-		EDHOC_MEM_FREE(th_2);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	offset += len_out;
-
-	if (EDHOC_MEM_ALLOC_SIZE(th_2) < offset) {
-		EDHOC_LOG_ERR("Buffer too small for TH_2: %zu, %zu",
-			      EDHOC_MEM_ALLOC_SIZE(th_2), offset);
-		EDHOC_MEM_FREE(th_2);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	/* Calculate TH_2. */
 	ctx->th_len = csuite.hash_length;
 
 	size_t hash_length = 0;
-	ret = ctx->crypto.hash(ctx->user_ctx, th_2, EDHOC_MEM_ALLOC_SIZE(th_2),
-			       ctx->th, ctx->th_len, &hash_length);
-	EDHOC_MEM_FREE(th_2);
+	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
+					ctx->th, ctx->th_len, &hash_length);
 
 	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_length) {
 		EDHOC_LOG_ERR("TH_2 hash: %d, %zu, %zu", ret,
@@ -476,31 +408,20 @@ STATIC int comp_prk_2e(struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	ctx->prk_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
-
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXTRACT,
-				   ctx->dh_secret, ctx->dh_secret_len, key_id);
+	/* EDHOC_Extract(salt = TH_2, IKM = G_XY) -> PRK_2e. PRK_2e has its own
+	 * dedicated handle because it must outlive PRK_3e2m for KEYSTREAM_2; the
+	 * shared secret and pseudorandom key are handles, only TH_2 is raw. */
+	const int ret = ctx->itf.crypto.extract(
+		ctx->user_ctx,
+		ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].key_id, ctx->th,
+		ctx->th_len, ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key for PRK_2e: %d", ret);
+		EDHOC_LOG_ERR("Extract PRK_2e: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	size_t out_len = 0;
-	ret = ctx->crypto.extract(ctx->user_ctx, key_id, ctx->th, ctx->th_len,
-				  ctx->prk, ctx->prk_len, &out_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
-
-	if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
-		EDHOC_LOG_ERR("Extract PRK_2e: %d, %zu, %zu", ret, ctx->prk_len,
-			      out_len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
+	ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].present = true;
 	ctx->prk_state = EDHOC_PRK_STATE_2E;
 	return EDHOC_SUCCESS;
 }
@@ -523,6 +444,17 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 	switch (ctx->chosen_method) {
 	case EDHOC_METHOD_0:
 	case EDHOC_METHOD_2:
+		/* PRK_3e2m == PRK_2e: move PRK_2e's slot into PRK_3e2m so the
+		 * shared key is owned by a single handle that lives into message
+		 * 3. KEYSTREAM_2 reads PRK_3e2m for these methods. */
+		memcpy(ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id,
+		       ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id,
+		       sizeof(ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id));
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].present = true;
+		ctx->itf.platform.zeroize(
+			ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id,
+			sizeof(ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id));
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].present = false;
 		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
 
@@ -550,56 +482,35 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 				      EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
 				      "SALT_3e2m");
 
-		const size_t ecc_key_len =
-			ctx->csuite[ctx->chosen_csuite_idx].ecc_key_length;
-
-		EDHOC_MEM_ALLOC(uint8_t, grx, ecc_key_len);
-		if (NULL == grx) {
-			EDHOC_LOG_ERR("Memory allocation failed");
-			EDHOC_MEM_FREE(salt_3e2m);
-			return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-		}
-
-		ret = comp_grx(ctx, auth_cred, pub_key, pub_key_len, grx,
-			       EDHOC_MEM_ALLOC_SIZE(grx));
+		/* G_RX is a static-DH shared secret produced into its context
+		 * slot; it is the IKM for EDHOC_Extract and is released with the
+		 * other message 2 secrets (or by deinit on an error path). */
+		ret = comp_grx(ctx, auth_cred, pub_key, pub_key_len);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute G_RX: %d", ret);
-			EDHOC_MEM_FREE(grx);
 			EDHOC_MEM_FREE(salt_3e2m);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 		}
 
-		EDHOC_LOG_HEXDUMP_DBG(grx, EDHOC_MEM_ALLOC_SIZE(grx), "G_RX");
+		/* EDHOC_Extract(salt = SALT_3e2m, IKM = G_RX) -> PRK_3e2m in its
+		 * own dedicated handle. SALT_3e2m is spent afterwards. */
+		ret = ctx->itf.crypto.extract(
+			ctx->user_ctx,
+			ctx->key_slots[EDHOC_KEY_SLOT_G_RX].key_id, salt_3e2m,
+			EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
+			ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id);
 
-		ctx->prk_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
-
-		uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-		ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXTRACT, grx,
-					   EDHOC_MEM_ALLOC_SIZE(grx), key_id);
-		ctx->platform.zeroize(grx, EDHOC_MEM_ALLOC_SIZEOF(grx));
-		EDHOC_MEM_FREE(grx);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Import key for PRK_3e2m: %d", ret);
-			EDHOC_MEM_FREE(salt_3e2m);
-			return EDHOC_ERROR_CRYPTO_FAILURE;
-		}
-
-		size_t out_len = 0;
-		ret = ctx->crypto.extract(ctx->user_ctx, key_id, salt_3e2m,
-					  EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
-					  ctx->prk, ctx->prk_len, &out_len);
-		ctx->keys.destroy_key(ctx->user_ctx, key_id);
-		ctx->platform.zeroize(key_id, sizeof(key_id));
+		ctx->itf.platform.zeroize(salt_3e2m,
+					  EDHOC_MEM_ALLOC_SIZE(salt_3e2m));
 		EDHOC_MEM_FREE(salt_3e2m);
 
-		if (EDHOC_SUCCESS != ret || ctx->prk_len != out_len) {
-			EDHOC_LOG_ERR("Extract PRK_3e2m: %d, %zu, %zu", ret,
-				      ctx->prk_len, out_len);
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Extract PRK_3e2m: %d", ret);
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 		}
 
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].present = true;
 		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
 	}
@@ -759,12 +670,10 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-STATIC int comp_keystream(const struct edhoc_context *ctx,
-			  const uint8_t *prk_2e, size_t prk_2e_len,
-			  uint8_t *keystream, size_t keystream_len)
+STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
+			  size_t keystream_len)
 {
-	if (NULL == ctx || NULL == prk_2e || 0 == prk_2e_len ||
-	    NULL == keystream || 0 == keystream_len) {
+	if (NULL == ctx || NULL == keystream || 0 == keystream_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -806,21 +715,16 @@ STATIC int comp_keystream(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_2e,
-				   prk_2e_len, key_id);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import PRK_2e for keystream: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info,
-				 EDHOC_MEM_ALLOC_SIZE(info), keystream,
-				 keystream_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
+	/* EDHOC_Expand(PRK_2e, info) -> KEYSTREAM_2 (raw public output). For
+	 * methods 0/2 PRK_2e was moved into PRK_3e2m, so read whichever handle
+	 * still holds it. */
+	const void *prk_2e_key_id =
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].present ?
+			ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id :
+			ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id;
+	ret = ctx->itf.crypto.expand_raw(ctx->user_ctx, prk_2e_key_id, info,
+					 EDHOC_MEM_ALLOC_SIZE(info), keystream,
+					 keystream_len);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -853,7 +757,7 @@ STATIC int prepare_message_2(const struct edhoc_context *ctx,
 	size_t offset = 0;
 
 	size_t len = 0;
-	len += ctx->dh_pub_key_len;
+	len += ctx->pub_eph_key_len;
 	len += ctxt_len;
 
 	EDHOC_MEM_ALLOC(uint8_t, buffer, len);
@@ -862,8 +766,8 @@ STATIC int prepare_message_2(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	memcpy(&buffer[offset], ctx->dh_pub_key, ctx->dh_pub_key_len);
-	offset += ctx->dh_pub_key_len;
+	memcpy(&buffer[offset], ctx->pub_eph_key, ctx->pub_eph_key_len);
+	offset += ctx->pub_eph_key_len;
 
 	memcpy(&buffer[offset], ctxt, ctxt_len);
 	offset += ctxt_len;
@@ -915,7 +819,7 @@ STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 	}
 
 	len = dec_msg_2.len;
-	len -= ctx->csuite[ctx->chosen_csuite_idx].ecc_key_length;
+	len -= ctx->csuite[ctx->chosen_csuite_idx].kem_ciphertext_length;
 
 	*ctxt_len = len;
 	return EDHOC_SUCCESS;
@@ -945,11 +849,12 @@ STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 	/* Get Diffie-Hellmann peer public key (G_Y). */
 	const struct edhoc_cipher_suite csuite =
 		ctx->csuite[ctx->chosen_csuite_idx];
-	ctx->dh_peer_pub_key_len = csuite.ecc_key_length;
-	memcpy(ctx->dh_peer_pub_key, dec_msg_2.value, ctx->dh_peer_pub_key_len);
+	ctx->peer_pub_eph_key_len = csuite.kem_ciphertext_length;
+	memcpy(ctx->peer_pub_eph_key, dec_msg_2.value,
+	       ctx->peer_pub_eph_key_len);
 
 	/* Get CIPHERTEXT_2. */
-	const size_t offset = ctx->dh_peer_pub_key_len;
+	const size_t offset = ctx->peer_pub_eph_key_len;
 	memcpy(ctxt_2, &dec_msg_2.value[offset], ctxt_2_len);
 
 	return EDHOC_SUCCESS;
@@ -1195,56 +1100,26 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
+	/* TH_3 = H(TH_2, PLAINTEXT_2, CRED_R) streamed as:
+	 * bstr(TH_2) || PLAINTEXT_2 || CRED_R. ctx->th holds TH_2 on input and
+	 * receives TH_3 on output; the multipart update consumes it before
+	 * hash_finish overwrites it. */
+	const size_t th_2_len = ctx->th_len;
 
-	size_t len = 0;
-	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
-	len += ptxt_len;
-	len += mac_ctx->cred_len;
+	uint8_t th_2_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
 
-	EDHOC_MEM_ALLOC(uint8_t, th_3, len);
-	if (NULL == th_3) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	size_t offset = 0;
-	struct zcbor_string bstr = (struct zcbor_string){
-		.value = ctx->th,
-		.len = ctx->th_len,
+	const struct hash_segment segments[] = {
+		{ th_2_hdr, edhoc_cbor_bstr_header(th_2_hdr, th_2_len) },
+		{ ctx->th, th_2_len },
+		{ ptxt, ptxt_len },
+		{ mac_ctx->cred, mac_ctx->cred_len },
 	};
 
-	len = 0;
-	ret = cbor_encode_byte_string_type_bstr_type(
-		&th_3[offset], EDHOC_MEM_ALLOC_SIZE(th_3), &bstr, &len);
-	offset += len;
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc TH_3: %d", ret);
-		EDHOC_MEM_FREE(th_3);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	memcpy(&th_3[offset], ptxt, ptxt_len);
-	offset += ptxt_len;
-
-	memcpy(&th_3[offset], mac_ctx->cred, mac_ctx->cred_len);
-	offset += mac_ctx->cred_len;
-
-	if (EDHOC_MEM_ALLOC_SIZE(th_3) < offset) {
-		EDHOC_LOG_ERR("Buffer overflow: %zu, %zu",
-			      EDHOC_MEM_ALLOC_SIZE(th_3), offset);
-		EDHOC_MEM_FREE(th_3);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	/* Calculate TH_3. */
 	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
 
 	size_t hash_len = 0;
-	ret = ctx->crypto.hash(ctx->user_ctx, th_3, EDHOC_MEM_ALLOC_SIZE(th_3),
-			       ctx->th, ctx->th_len, &hash_len);
-	EDHOC_MEM_FREE(th_3);
+	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
+					ctx->th, ctx->th_len, &hash_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Hash TH_3: %d", ret);
@@ -1302,20 +1177,10 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				   ctx->prk_len, key_id);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import PRK_2e for salt_3e2m: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info,
-				 EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
+	/* EDHOC_Expand(PRK_2e, info) -> SALT_3e2m (raw). */
+	ret = ctx->itf.crypto.expand_raw(
+		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id,
+		info, EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1328,97 +1193,71 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 
 STATIC int comp_grx(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
-		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *grx,
-		    size_t grx_len)
+		    const uint8_t *pub_key, size_t pub_key_len)
 {
-	if (NULL == ctx || NULL == auth_cred || NULL == grx || 0 == grx_len) {
+	if (NULL == ctx || NULL == auth_cred) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	void *grx_key_id = ctx->key_slots[EDHOC_KEY_SLOT_G_RX].key_id;
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	switch (ctx->role) {
-	case EDHOC_INITIATOR: {
-		uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-		ret = ctx->keys.import_key(ctx->user_ctx,
-					   EDHOC_KT_KEY_AGREEMENT,
-					   ctx->dh_priv_key,
-					   ctx->dh_priv_key_len, key_id);
-		ctx->dh_priv_key_len = 0;
-		ctx->platform.zeroize(ctx->dh_priv_key,
-				      ARRAY_SIZE(ctx->dh_priv_key));
+	case EDHOC_INITIATOR:
+		/* G_RX = key_agreement(ephemeral private key, R's static public
+		 * key). The shared secret is produced as a handle. */
+		ret = ctx->itf.crypto.key_agreement(
+			ctx->user_ctx,
+			ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
+			pub_key, pub_key_len, grx_key_id);
+		break;
 
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Import DH private key for GRX: %d", ret);
-			return EDHOC_ERROR_CRYPTO_FAILURE;
-		}
-
-		size_t secret_len = 0;
-		ret = ctx->crypto.key_agreement(ctx->user_ctx, key_id, pub_key,
-						pub_key_len, grx, grx_len,
-						&secret_len);
-
-		ctx->keys.destroy_key(ctx->user_ctx, key_id);
-		ctx->platform.zeroize(key_id, sizeof(key_id));
-
-		if (EDHOC_SUCCESS != ret || secret_len != grx_len) {
-			EDHOC_LOG_ERR("Key agreement for GRX: %d, %zu, %zu",
-				      ret, grx_len, secret_len);
-			return EDHOC_ERROR_CRYPTO_FAILURE;
-		}
-
-		return EDHOC_SUCCESS;
-	}
-
-	case EDHOC_RESPONDER: {
-		size_t secret_len = 0;
-		ret = ctx->crypto.key_agreement(ctx->user_ctx,
-						auth_cred->priv_key_id,
-						ctx->dh_peer_pub_key,
-						ctx->dh_peer_pub_key_len, grx,
-						grx_len, &secret_len);
-
-		if (EDHOC_SUCCESS != ret || secret_len != grx_len) {
-			EDHOC_LOG_ERR("Key agreement for GRX: %d, %zu, %zu",
-				      ret, grx_len, secret_len);
-			return EDHOC_ERROR_CRYPTO_FAILURE;
-		}
-
-		return EDHOC_SUCCESS;
-	}
+	case EDHOC_RESPONDER:
+		/* G_RX = key_agreement(R's static private key, peer's ephemeral
+		 * public key G_X). */
+		ret = ctx->itf.crypto.key_agreement(ctx->user_ctx,
+						    auth_cred->priv_key_id,
+						    ctx->peer_pub_eph_key,
+						    ctx->peer_pub_eph_key_len,
+						    grx_key_id);
+		break;
 
 	default:
 		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	EDHOC_LOG_ERR("Unreachable code");
-	return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Key agreement for G_RX: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	ctx->key_slots[EDHOC_KEY_SLOT_G_RX].present = true;
+	return EDHOC_SUCCESS;
 }
 
 /* Module interface function definitions ----------------------------------- */
 
 /**
  * Steps for composition of message 2:
- *	1.  Generate ephemeral Diffie-Hellmann key pair.
- *	2.  Compute Diffie-Hellmann shared secret.
- *	3.  Compute Transcript Hash 2 (TH_2).
- *	4a. Compute Pseudo Random Key 2 (PRK_2e).
- *      4b. Copy of Pseudo Random Key 2 for keystream (step 12).
- *	5.  Fetch authentication credentials.
- *      6.  Compose EAD_2 if present.
- *      7.  Compute pseudorandom key (PRK_3e2m).
- *	8a. Compute required buffer length for context_2.
- *	8b. Cborise items required by context_2.
- *	8c. Compute Message Authentication Code (MAC_2).
- *	9.  Compute signature if needed (Signature_or_MAC_2).
- *	10. Prepare plaintext (PLAINTEXT_2).
- *	11. Compute key stream (KEYSTREAM_2).
- *      12. Compute Transcript Hash 3 (TH_3).
- *	13. Compute ciphertext (CIPHERTEXT_2).
- *	14. Cborise items for message 2.
- *      15. Clean-up EAD tokens.
+ *	1.  KEM encapsulate to the peer's G_X (produce G_Y and G_XY).
+ *	2.  Compute Transcript Hash 2 (TH_2).
+ *	3.  Compute Pseudo Random Key 2 (PRK_2e).
+ *	4.  Fetch authentication credentials.
+ *	5.  Compose EAD_2 if present.
+ *	6.  Compute pseudorandom key (PRK_3e2m).
+ *	7a. Compute required buffer length for context_2.
+ *	7b. Cborise items required by context_2.
+ *	7c. Compute Message Authentication Code (MAC_2).
+ *	8.  Compute signature if needed (Signature_or_MAC_2).
+ *	9.  Prepare plaintext (PLAINTEXT_2).
+ *	10. Compute key stream (KEYSTREAM_2).
+ *	11. Compute Transcript Hash 3 (TH_3).
+ *	12. Compute ciphertext (CIPHERTEXT_2).
+ *	13. Cborise items for message 2.
+ *	14. Release the message-2 scoped secrets (PRK_3e2m lives on).
+ *	15. Clean-up EAD tokens.
  */
 int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			    size_t msg_2_size, size_t *msg_2_len)
@@ -1451,28 +1290,18 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	/* 1. Generate ephemeral Diffie-Hellmann key pair. */
-	ret = gen_dh_keys(ctx);
+	/* 1. KEM encapsulate to the peer's G_X: produce the KEM ciphertext G_Y
+	 * (sent in message 2) and the shared-secret handle. */
+	ret = comp_encapsulate(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Generate DH keys: %d", ret);
+		EDHOC_LOG_ERR("Encapsulate: %d", ret);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->dh_pub_key, ctx->dh_pub_key_len, "G_Y");
-	EDHOC_LOG_HEXDUMP_DBG(ctx->dh_priv_key, ctx->dh_priv_key_len, "Y");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->pub_eph_key, ctx->pub_eph_key_len, "G_Y");
 
-	/* 2. Compute Diffie-Hellmann shared secret. */
-	ret = comp_dh_secret(ctx);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Compute DH secret: %d", ret);
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
-	}
-
-	EDHOC_LOG_HEXDUMP_DBG(ctx->dh_secret, ctx->dh_secret_len, "G_XY");
-
-	/* 3. Compute Transcript Hash 2 (TH_2). */
+	/* 2. Compute Transcript Hash 2 (TH_2). */
 	ret = comp_th_2(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1482,7 +1311,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_2");
 
-	/* 4a. Compute Pseudo Random Key 2 (PRK_2e). */
+	/* 3. Compute Pseudo Random Key 2 (PRK_2e). */
 	ret = comp_prk_2e(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1490,39 +1319,28 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->prk, ctx->prk_len, "PRK_2e");
-
-	/* 4b. Copy of Pseudo Random Key 2 for keystream (step 11). */
-	EDHOC_MEM_ALLOC(uint8_t, prk_2e, ctx->prk_len);
-	if (NULL == prk_2e) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-	memcpy(prk_2e, ctx->prk, EDHOC_MEM_ALLOC_SIZEOF(prk_2e));
-
-	/* 5. Fetch authentication credentials. */
+	/* 4. Fetch authentication credentials. */
 	struct edhoc_auth_creds auth_cred = { 0 };
-	ret = ctx->cred.fetch(ctx->user_ctx, &auth_cred);
+	ret = ctx->itf.cred.fetch(ctx->user_ctx, &auth_cred);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Fetch credentials: %d", ret);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	/* 6. Compose EAD_2 if present. */
-	if (NULL != ctx->ead.compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->ead.compose(ctx->user_ctx, ctx->message,
-				       ctx->ead_token,
-				       ARRAY_SIZE(ctx->ead_token) - 1,
-				       &ctx->nr_of_ead_tokens);
+	/* 5. Compose EAD_2 if present. */
+	if (NULL != ctx->itf.ead.compose &&
+	    0 != ARRAY_SIZE(ctx->ead_token) - 1) {
+		ret = ctx->itf.ead.compose(ctx->user_ctx, ctx->message,
+					   ctx->ead_token,
+					   ARRAY_SIZE(ctx->ead_token) - 1,
+					   &ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS != ret ||
 		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens) {
 			EDHOC_LOG_ERR("EAD_2 compose failure: %d, %zu, %zu",
 				      ret, ctx->nr_of_ead_tokens,
 				      ARRAY_SIZE(ctx->ead_token) - 1);
-			EDHOC_MEM_FREE(prk_2e);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
@@ -1541,32 +1359,27 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		}
 	}
 
-	/* 7. Compute pseudorandom key (PRK_3e2m). */
+	/* 6. Compute pseudorandom key (PRK_3e2m). */
 	ret = comp_prk_3e2m(ctx, &auth_cred, NULL, 0);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_3e2m: %d", ret);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->prk, ctx->prk_len, "PRK_3e2m");
-
-	/* 8a. Compute required buffer length for context_2. */
+	/* 7a. Compute required buffer length for context_2. */
 	size_t mac_ctx_len = 0;
 	ret = edhoc_comp_mac_context_length(ctx, &auth_cred, &mac_ctx_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_MEM_FREE(prk_2e);
 		return ret;
 	}
 
-	/* 8b. Cborise items required by context_2. */
+	/* 7b. Cborise items required by context_2. */
 	EDHOC_MEM_ALLOC(uint8_t, mac_ctx_buf,
 			sizeof(struct mac_context) + mac_ctx_len);
 	if (NULL == mac_ctx_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
@@ -1576,7 +1389,6 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	ret = edhoc_comp_mac_context(ctx, &auth_cred, mac_ctx);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return ret;
 	}
 
@@ -1587,12 +1399,11 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	EDHOC_LOG_HEXDUMP_DBG(mac_ctx->cred, mac_ctx->cred_len, "CRED_R");
 	EDHOC_LOG_HEXDUMP_DBG(mac_ctx->buf, mac_ctx->buf_len, "context_2");
 
-	/* 8c. Compute Message Authentication Code (MAC_2). */
+	/* 7c. Compute Message Authentication Code (MAC_2). */
 	size_t mac_length = 0;
 	ret = edhoc_comp_mac_length(ctx, &mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return ret;
 	}
 
@@ -1600,24 +1411,21 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	if (NULL == mac_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 	ret = edhoc_comp_mac(ctx, mac_ctx, mac_buf, mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return ret;
 	}
 
-	/* 9. Compute signature if needed (Signature_or_MAC_2). */
+	/* 8. Compute signature if needed (Signature_or_MAC_2). */
 	size_t sign_or_mac_length = 0;
 	ret = edhoc_comp_sign_or_mac_length(ctx, &sign_or_mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return ret;
 	}
 
@@ -1627,7 +1435,6 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 	ret = edhoc_comp_sign_or_mac(ctx, &auth_cred, mac_ctx, mac_buf,
@@ -1638,14 +1445,13 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(signature);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return ret;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(signature, signature_length,
 			      "Signature_or_MAC_2");
 
-	/* 10. Prepare plaintext (PLAINTEXT_2). */
+	/* 9. Prepare plaintext (PLAINTEXT_2). */
 	size_t plaintext_len = 0;
 	ret = comp_plaintext_2_len(ctx, mac_ctx, signature_length,
 				   &plaintext_len);
@@ -1654,7 +1460,6 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_LOG_ERR("Compute plaintext_2 length: %d", ret);
 		EDHOC_MEM_FREE(signature);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
@@ -1663,7 +1468,6 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(signature);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
@@ -1677,26 +1481,21 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_LOG_ERR("Prepare plaintext_2: %d", ret);
 		EDHOC_MEM_FREE(plaintext);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext, plaintext_len, "PLAINTEXT_2");
 
-	/* 11. Compute key stream (KEYSTREAM_2). */
+	/* 10. Compute key stream (KEYSTREAM_2). */
 	EDHOC_MEM_ALLOC(uint8_t, keystream, plaintext_len);
 	if (NULL == keystream) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(plaintext);
 		EDHOC_MEM_FREE(mac_ctx_buf);
-		EDHOC_MEM_FREE(prk_2e);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = comp_keystream(ctx, prk_2e, EDHOC_MEM_ALLOC_SIZE(prk_2e),
-			     keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
-	ctx->platform.zeroize(prk_2e, EDHOC_MEM_ALLOC_SIZEOF(prk_2e));
-	EDHOC_MEM_FREE(prk_2e);
+	ret = comp_keystream(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute keystream_2: %d", ret);
@@ -1709,7 +1508,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	EDHOC_LOG_HEXDUMP_DBG(keystream, EDHOC_MEM_ALLOC_SIZE(keystream),
 			      "KEYSTREAM_2");
 
-	/* 12. Compute Transcript Hash 3 (TH_3). */
+	/* 11. Compute Transcript Hash 3 (TH_3). */
 	ret = comp_th_3(ctx, mac_ctx, plaintext, plaintext_len);
 	EDHOC_MEM_FREE(mac_ctx_buf);
 
@@ -1722,7 +1521,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_3");
 
-	/* 13. Compute ciphertext (CIPHERTEXT_2). */
+	/* 12. Compute ciphertext (CIPHERTEXT_2). */
 	xor_arrays(plaintext, keystream, plaintext_len);
 	EDHOC_MEM_FREE(keystream);
 	const uint8_t *ciphertext = plaintext;
@@ -1730,7 +1529,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext, ciphertext_len, "CIPHERTEXT_2");
 
-	/* 14. Cborise items for message 2. */
+	/* 13. Cborise items for message 2. */
 	ret = prepare_message_2(ctx, ciphertext, ciphertext_len, msg_2,
 				msg_2_size, msg_2_len);
 
@@ -1745,9 +1544,17 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	EDHOC_LOG_HEXDUMP_DBG(msg_2, *msg_2_len, "message_2");
 	EDHOC_LOG_INF("Compose msg2 end");
 
+	/* 14. Release the message-2 scoped secrets (PRK_3e2m lives on). */
+	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Release message 2 secrets: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
 	/* 15. Clean-up EAD tokens. */
 	ctx->nr_of_ead_tokens = 0;
-	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+	ctx->itf.platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_WAIT_M3;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
@@ -1772,7 +1579,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
  *      14. Compute Message Authentication Code (MAC_2).
  *      15. Verify Signature_or_MAC_2.
  *      16. Compute Transcript Hash 3 (TH_3).
- *      17. Clean-up EAD tokens.
+ *      17. Release the message-2 scoped secrets (PRK_3e2m lives on).
+ *      18. Clean-up EAD tokens.
  */
 int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			    size_t msg_2_len)
@@ -1832,16 +1640,14 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext_2, EDHOC_MEM_ALLOC_SIZE(ciphertext_2),
 			      "CIPHERTEXT_2");
 
-	/* 3. Compute Diffie-Hellmann shared secret (G_XY). */
-	ret = comp_dh_secret(ctx);
+	/* 3. KEM decapsulate the peer's G_Y into the shared-secret handle. */
+	ret = comp_decapsulate(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Compute DH secret: %d", ret);
+		EDHOC_LOG_ERR("Decapsulate: %d", ret);
 		EDHOC_MEM_FREE(ciphertext_2);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
-
-	EDHOC_LOG_HEXDUMP_DBG(ctx->dh_secret, ctx->dh_secret_len, "G_XY");
 
 	/* 4. Compute Transcript Hash 2 (TH_2). */
 	ret = comp_th_2(ctx);
@@ -1863,8 +1669,6 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->prk, ctx->prk_len, "PRK_2e");
-
 	/* 6. Compute key stream (KEYSTREAM_2). */
 	EDHOC_MEM_ALLOC(uint8_t, keystream, EDHOC_MEM_ALLOC_SIZE(ciphertext_2));
 	if (NULL == keystream) {
@@ -1873,8 +1677,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = comp_keystream(ctx, ctx->prk, ctx->prk_len, keystream,
-			     EDHOC_MEM_ALLOC_SIZE(keystream));
+	ret = comp_keystream(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute keystream: %d", ret);
@@ -1922,10 +1725,11 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	}
 
 	/* 9. Process EAD if present. */
-	if (NULL != ctx->ead.process && 0 != ARRAY_SIZE(ctx->ead_token) - 1 &&
-	    0 != ctx->nr_of_ead_tokens) {
-		ret = ctx->ead.process(ctx->user_ctx, ctx->message,
-				       ctx->ead_token, ctx->nr_of_ead_tokens);
+	if (NULL != ctx->itf.ead.process &&
+	    0 != ARRAY_SIZE(ctx->ead_token) - 1 && 0 != ctx->nr_of_ead_tokens) {
+		ret = ctx->itf.ead.process(ctx->user_ctx, ctx->message,
+					   ctx->ead_token,
+					   ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("EAD_2 process: %d", ret);
@@ -1952,8 +1756,8 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	const uint8_t *pub_key = NULL;
 	size_t pub_key_len = 0;
 
-	ret = ctx->cred.verify(ctx->user_ctx, &parsed_ptxt.auth_cred, &pub_key,
-			       &pub_key_len);
+	ret = ctx->itf.cred.verify(ctx->user_ctx, &parsed_ptxt.auth_cred,
+				   &pub_key, &pub_key_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Credentials verification: %d", ret);
@@ -1971,8 +1775,6 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		EDHOC_MEM_FREE(ciphertext_2);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
-
-	EDHOC_LOG_HEXDUMP_DBG(ctx->prk, ctx->prk_len, "PRK_3e2m");
 
 	/* 12. Compute required buffer length for context_2. */
 	size_t mac_context_len = 0;
@@ -2062,9 +1864,17 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_3");
 	EDHOC_LOG_INF("Process msg2 end");
 
-	/* 17. Clean-up EAD tokens. */
+	/* 17. Release the message-2 scoped secrets (PRK_3e2m lives on). */
+	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Release message 2 secrets: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	/* 18. Clean-up EAD tokens. */
 	ctx->nr_of_ead_tokens = 0;
-	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+	ctx->itf.platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->status = EDHOC_SM_VERIFIED_M2;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;

@@ -62,12 +62,22 @@ int edhoc_context_deinit(struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
+	/* Free every live key-store slot: the handles are backend key-store
+	 * slots, so wiping the context memory alone would leak them. On the
+	 * first destroy failure stop and report it (the wipe is skipped). */
+	int ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_COUNT);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Release key slots: %d", ret);
+		return ret;
+	}
+
 	/* End-of-life erasure: use the non-elidable platform hook when a
 	 * platform is bound (any secret material only ever exists after
 	 * binding); otherwise a plain wipe is sufficient (no secrets yet).
-	 * Latch the callback first - the wipe also clears ctx->platform. */
+	 * Latch the callback first - the wipe also clears ctx->itf.platform. */
 	void (*const zeroize)(void *buffer, size_t length) =
-		ctx->platform.zeroize;
+		ctx->itf.platform.zeroize;
 
 	if (NULL != zeroize) {
 		zeroize(ctx, sizeof(*ctx));
@@ -204,31 +214,8 @@ int edhoc_bind_ead(struct edhoc_context *ctx, const struct edhoc_ead *ead)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->ead = *ead;
-	ctx->ead_present = true;
-
-	return EDHOC_SUCCESS;
-}
-
-int edhoc_bind_keys(struct edhoc_context *ctx, const struct edhoc_keys *keys)
-{
-	if (NULL == ctx || NULL == keys) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (!ctx->is_init) {
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	if (NULL == keys->import_key || NULL == keys->destroy_key) {
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	ctx->keys = *keys;
-	ctx->keys_present = true;
+	ctx->itf.ead = *ead;
+	ctx->itf.ead_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -246,17 +233,20 @@ int edhoc_bind_crypto(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (NULL == crypto->make_key_pair || NULL == crypto->key_agreement ||
-	    NULL == crypto->signature || NULL == crypto->verify ||
-	    NULL == crypto->extract || NULL == crypto->expand ||
-	    NULL == crypto->encrypt || NULL == crypto->decrypt ||
-	    NULL == crypto->hash) {
+	if (NULL == crypto->destroy_key || NULL == crypto->generate_key_pair ||
+	    NULL == crypto->encapsulate || NULL == crypto->decapsulate ||
+	    NULL == crypto->key_agreement || NULL == crypto->sign ||
+	    NULL == crypto->verify || NULL == crypto->extract ||
+	    NULL == crypto->expand || NULL == crypto->expand_raw ||
+	    NULL == crypto->aead_encrypt || NULL == crypto->aead_decrypt ||
+	    NULL == crypto->hash_init || NULL == crypto->hash_update ||
+	    NULL == crypto->hash_finish || NULL == crypto->hash_abort) {
 		EDHOC_LOG_ERR("Bad state");
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->crypto = *crypto;
-	ctx->crypto_present = true;
+	ctx->itf.crypto = *crypto;
+	ctx->itf.crypto_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -279,8 +269,8 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->cred = *cred;
-	ctx->credentials_present = true;
+	ctx->itf.cred = *cred;
+	ctx->itf.credentials_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -303,8 +293,8 @@ int edhoc_bind_platform(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->platform = *platform;
-	ctx->platform_present = true;
+	ctx->itf.platform = *platform;
+	ctx->itf.platform_present = true;
 
 	return EDHOC_SUCCESS;
 }

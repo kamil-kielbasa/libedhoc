@@ -38,6 +38,22 @@
 #include <stddef.h>
 #include <stdbool.h>
 
+/* Defines ----------------------------------------------------------------- */
+
+/**
+ * \brief Storage size for an own/peer ephemeral public value.
+ *
+ *        The Initiator's \c G_X carries the encapsulation key and the
+ *        Responder's \c G_Y carries the KEM ciphertext; a single buffer must
+ *        hold whichever the local role produces, so it is sized to the larger
+ *        of the two (they are equal for the classical NIKE-as-KEM suites).
+ */
+#define EDHOC_MAX_LEN_OF_EPHEMERAL_KEY                               \
+	(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY >                 \
+			 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT ? \
+		 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY :         \
+		 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT)
+
 /* Types and type definitions ---------------------------------------------- */
 
 /**
@@ -128,6 +144,72 @@ enum edhoc_prk_state {
 };
 
 /**
+ * \brief Identifiers of the key-store handles held by an \ref edhoc_context.
+ *
+ *        Used to index \ref edhoc_context.key_slots; \ref EDHOC_KEY_SLOT_COUNT
+ *        is the number of slots, not a slot itself.
+ */
+enum edhoc_key_slot_id {
+	/** Initiator ephemeral (decapsulation) private key. */
+	EDHOC_KEY_SLOT_EPHEMERAL,
+	/** Ephemeral shared secret \c G_XY. */
+	EDHOC_KEY_SLOT_SHARED_SECRET,
+	/** Static-DH shared secret \c G_RX (IKM for PRK_3e2m, message 2). */
+	EDHOC_KEY_SLOT_G_RX,
+	/** RFC 9528: 4.1.1.1. PRK_2e. */
+	EDHOC_KEY_SLOT_PRK_2E,
+	/** RFC 9528: 4.1.1.2. PRK_3e2m. */
+	EDHOC_KEY_SLOT_PRK_3E2M,
+	/** Static-DH shared secret \c G_IY (IKM for PRK_4e3m, message 3). */
+	EDHOC_KEY_SLOT_G_IY,
+	/** RFC 9528: 4.1.1.3. PRK_4e3m. */
+	EDHOC_KEY_SLOT_PRK_4E3M,
+	/** RFC 9528: 4.1.3. PRK_out. */
+	EDHOC_KEY_SLOT_PRK_OUT,
+	/** RFC 9528: 4.2.1. PRK_exporter. */
+	EDHOC_KEY_SLOT_PRK_EXPORTER,
+	/** Number of key slots (sentinel, not a slot). */
+	EDHOC_KEY_SLOT_COUNT,
+};
+
+/**
+ * \brief A key-store handle slot: the backend key identifier paired with the
+ *        liveness flag that says whether the slot currently owns a live key.
+ */
+struct edhoc_key_slot {
+	/** Backend key-store handle. */
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN];
+	/** Set while \p key_id holds a live key-store slot. */
+	bool present;
+};
+
+/**
+ * \brief The bound EDHOC interfaces together with their "present" flags.
+ *
+ *        Grouping each interface with the flag its \c edhoc_bind_* setter
+ *        raises keeps all binding state in one place.
+ */
+struct edhoc_interfaces {
+	/** EDHOC interface for cryptographic function operations. */
+	struct edhoc_crypto crypto;
+	/** EDHOC interface for authentication credentials. */
+	struct edhoc_credentials cred;
+	/** EDHOC interface for platform services (mandatory \c zeroize). */
+	struct edhoc_platform platform;
+	/** EDHOC interface for external authorization data. */
+	struct edhoc_ead ead;
+
+	/** Set once \ref edhoc_bind_crypto succeeds. */
+	bool crypto_present : 1;
+	/** Set once \ref edhoc_bind_credentials succeeds. */
+	bool credentials_present : 1;
+	/** Set once \ref edhoc_bind_platform succeeds. */
+	bool platform_present : 1;
+	/** Set once \ref edhoc_bind_ead succeeds (optional interface). */
+	bool ead_present : 1;
+};
+
+/**
  * \brief EDHOC context.
  */
 struct edhoc_context {
@@ -157,23 +239,22 @@ struct edhoc_context {
 	/** EDHOC peer connection identifier. */
 	struct edhoc_connection_id peer_cid;
 
-	/** EDHOC ephemeral Diffie-Hellman public key. */
-	uint8_t dh_pub_key[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
-	/** Size of the \p dh_pub_key buffer in bytes. */
-	size_t dh_pub_key_len;
-	/** EDHOC ephemeral Diffie-Hellman private key. */
-	uint8_t dh_priv_key[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
-	/** Size of the \p dh_priv_key buffer in bytes. */
-	size_t dh_priv_key_len;
+	/** Set once \ref edhoc_set_methods succeeds. */
+	bool methods_present : 1;
+	/** Set once \ref edhoc_set_cipher_suites succeeds. */
+	bool cipher_suites_present : 1;
+	/** Set once \ref edhoc_set_connection_id succeeds. */
+	bool connection_id_present : 1;
 
-	/** EDHOC ephemeral Diffie-Hellman peer public key. */
-	uint8_t dh_peer_pub_key[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
-	/** Size of the \p dh_peer_pub_key buffer in bytes. */
-	size_t dh_peer_pub_key_len;
-	/** EDHOC ephemeral Diffie-Hellman key agreement. */
-	uint8_t dh_secret[CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY];
-	/** Size of the \p dh_secret buffer in bytes. */
-	size_t dh_secret_len;
+	/** EDHOC peer ephemeral public value (peer's \c G_X / \c G_Y). Public. */
+	uint8_t peer_pub_eph_key[EDHOC_MAX_LEN_OF_EPHEMERAL_KEY];
+	/** Size of the \p peer_pub_eph_key buffer in bytes. */
+	size_t peer_pub_eph_key_len;
+
+	/** EDHOC own ephemeral public value (own \c G_X / \c G_Y). Public. */
+	uint8_t pub_eph_key[EDHOC_MAX_LEN_OF_EPHEMERAL_KEY];
+	/** Size of the \p pub_eph_key buffer in bytes. */
+	size_t pub_eph_key_len;
 
 	/** Is context initialized? */
 	bool is_init;
@@ -195,38 +276,12 @@ struct edhoc_context {
 
 	/** EDHOC context pseudorandom key state. */
 	enum edhoc_prk_state prk_state;
-	/** EDHOC context pseudorandom key buffer. */
-	uint8_t prk[CONFIG_LIBEDHOC_MAX_LEN_OF_MAC];
-	/** Size of the \p prk buffer in bytes. */
-	size_t prk_len;
 
-	/** EDHOC interface for external authorization data. */
-	struct edhoc_ead ead;
-	/** EDHOC interface for cryptographic key operations. */
-	struct edhoc_keys keys;
-	/** EDHOC interface for cryptographic function operations. */
-	struct edhoc_crypto crypto;
-	/** EDHOC interface for authentication credentials. */
-	struct edhoc_credentials cred;
-	/** EDHOC interface for platform services (mandatory \c zeroize). */
-	struct edhoc_platform platform;
+	/** Key-store handle slots, indexed by \ref edhoc_key_slot_id. */
+	struct edhoc_key_slot key_slots[EDHOC_KEY_SLOT_COUNT];
 
-	/** Set once \ref edhoc_set_methods succeeds. */
-	bool methods_present : 1;
-	/** Set once \ref edhoc_set_cipher_suites succeeds. */
-	bool cipher_suites_present : 1;
-	/** Set once \ref edhoc_set_connection_id succeeds. */
-	bool connection_id_present : 1;
-	/** Set once \ref edhoc_bind_keys succeeds. */
-	bool keys_present : 1;
-	/** Set once \ref edhoc_bind_crypto succeeds. */
-	bool crypto_present : 1;
-	/** Set once \ref edhoc_bind_credentials succeeds. */
-	bool credentials_present : 1;
-	/** Set once \ref edhoc_bind_platform succeeds. */
-	bool platform_present : 1;
-	/** Set once \ref edhoc_bind_ead succeeds (optional interface). */
-	bool ead_present : 1;
+	/** Bound EDHOC interfaces and their "present" flags. */
+	struct edhoc_interfaces itf;
 
 	/** EDHOC EAD tokens buffer. */
 	struct edhoc_ead_token
@@ -241,11 +296,17 @@ struct edhoc_context {
 	enum edhoc_error_code error_code;
 };
 
+/* Module interface variables and constants -------------------------------- */
+/* Extern variables and constant declarations ------------------------------ */
+/* Module interface function declarations ---------------------------------- */
+
+/* Static inline function definitions -------------------------------------- */
+
 /**
  * \brief Is every mandatory input present in \p ctx?
  *
  * The mandatory inputs are the local method(s), cipher suite(s) and connection
- * identifier, plus the keys, crypto, credentials and platform interfaces. The
+ * identifier, plus the crypto, credentials and platform interfaces. The
  * external authorization data interface is optional and is not checked here.
  *
  * \param[in] ctx                       EDHOC context.
@@ -255,13 +316,86 @@ struct edhoc_context {
 static inline bool edhoc_context_configured(const struct edhoc_context *ctx)
 {
 	return ctx->methods_present && ctx->cipher_suites_present &&
-	       ctx->connection_id_present && ctx->keys_present &&
-	       ctx->crypto_present && ctx->credentials_present &&
-	       ctx->platform_present;
+	       ctx->connection_id_present && ctx->itf.crypto_present &&
+	       ctx->itf.credentials_present && ctx->itf.platform_present;
 }
 
-/* Module interface variables and constants -------------------------------- */
-/* Extern variables and constant declarations ------------------------------ */
-/* Module interface function declarations ---------------------------------- */
+/**
+ * \brief Human-readable name of a context key slot, for diagnostics.
+ *
+ * \param slot                          Key slot identifier.
+ *
+ * \return Static string naming the slot.
+ */
+static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
+{
+	switch (slot) {
+	case EDHOC_KEY_SLOT_EPHEMERAL:
+		return "ephemeral";
+	case EDHOC_KEY_SLOT_SHARED_SECRET:
+		return "shared secret";
+	case EDHOC_KEY_SLOT_G_RX:
+		return "G_RX";
+	case EDHOC_KEY_SLOT_PRK_2E:
+		return "PRK_2e";
+	case EDHOC_KEY_SLOT_PRK_3E2M:
+		return "PRK_3e2m";
+	case EDHOC_KEY_SLOT_G_IY:
+		return "G_IY";
+	case EDHOC_KEY_SLOT_PRK_4E3M:
+		return "PRK_4e3m";
+	case EDHOC_KEY_SLOT_PRK_OUT:
+		return "PRK_out";
+	case EDHOC_KEY_SLOT_PRK_EXPORTER:
+		return "PRK_exporter";
+	default:
+		return "unknown";
+	}
+}
+
+/**
+ * \brief Destroy every live key-store handle in slots [0, \p up_to_slot).
+ *
+ *        Iterates the context key slots up to (but excluding) \p up_to_slot,
+ *        destroying each backend handle still present, wiping its identifier
+ *        and clearing its "present" flag. Already-released slots are skipped,
+ *        so each stage releases only the handles it retires: message 2 up to
+ *        \ref EDHOC_KEY_SLOT_PRK_3E2M, message 3 up to \ref EDHOC_KEY_SLOT_PRK_OUT
+ *        and \ref edhoc_context_deinit up to \ref EDHOC_KEY_SLOT_COUNT. The
+ *        caller is expected to log a diagnostic on failure.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param up_to_slot                    First slot NOT released (exclusive bound).
+ *
+ * \return #EDHOC_SUCCESS, or the first destroy error encountered.
+ */
+static inline int edhoc_release_key_slots(struct edhoc_context *ctx,
+					  enum edhoc_key_slot_id up_to_slot)
+{
+	if (NULL == ctx->itf.crypto.destroy_key) {
+		return EDHOC_SUCCESS;
+	}
+
+	for (enum edhoc_key_slot_id slot = EDHOC_KEY_SLOT_EPHEMERAL; slot < up_to_slot; ++slot) {
+		struct edhoc_key_slot *key_slot = &ctx->key_slots[slot];
+
+		if (!key_slot->present) {
+			continue;
+		}
+
+		const int ret = ctx->itf.crypto.destroy_key(ctx->user_ctx,
+							    key_slot->key_id);
+
+		if (EDHOC_SUCCESS != ret) {
+			return ret;
+		}
+
+		ctx->itf.platform.zeroize(key_slot->key_id,
+					  sizeof(key_slot->key_id));
+		key_slot->present = false;
+	}
+
+	return EDHOC_SUCCESS;
+}
 
 #endif /* EDHOC_CONTEXT_INTERNAL_H */

@@ -613,6 +613,38 @@ size_t edhoc_cbor_bstr_oh(size_t length)
 	}
 }
 
+size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length)
+{
+	EDHOC_ASSERT(NULL != header);
+	EDHOC_ASSERT(EDHOC_CBOR_BSTR_HEADER_MAX_LEN >= length);
+
+	if (length <= 23) {
+		header[0] = (uint8_t)(0x40u | length);
+		return 1;
+	}
+
+	if (length <= UINT8_MAX) {
+		header[0] = 0x58u;
+		header[1] = (uint8_t)length;
+		return 2;
+	}
+
+	if (length <= UINT16_MAX) {
+		header[0] = 0x59u;
+		header[1] = (uint8_t)(length >> 8);
+		header[2] = (uint8_t)(length & 0xFFu);
+		return 3;
+	}
+
+	header[0] = 0x5Au;
+	header[1] = (uint8_t)(length >> 24);
+	header[2] = (uint8_t)(length >> 16);
+	header[3] = (uint8_t)(length >> 8);
+	header[4] = (uint8_t)(length & 0xFFu);
+
+	return 5;
+}
+
 size_t edhoc_cbor_map_oh(size_t items)
 {
 	(void)items;
@@ -630,6 +662,48 @@ size_t edhoc_cbor_array_oh(size_t items)
 		return 3;
 
 	return 4;
+}
+
+int edhoc_comp_hash(const struct edhoc_context *ctx,
+		    const struct hash_segment *segments, size_t nr_of_segments,
+		    uint8_t *hash, size_t hash_size, size_t *hash_len)
+{
+	void *op = NULL;
+	int rc = EDHOC_SUCCESS;
+	int ret = ctx->itf.crypto.hash_init(ctx->user_ctx, &op);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Hash init: %d", ret);
+		return ret;
+	}
+
+	for (size_t i = 0; i < nr_of_segments; ++i) {
+		ret = ctx->itf.crypto.hash_update(
+			ctx->user_ctx, op, segments[i].ptr, segments[i].len);
+
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Hash update: %d", ret);
+			goto abort;
+		}
+	}
+
+	ret = ctx->itf.crypto.hash_finish(ctx->user_ctx, op, hash, hash_size,
+					  hash_len);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Hash finish: %d", ret);
+		goto abort;
+	}
+
+	return EDHOC_SUCCESS;
+
+abort:
+	rc = ctx->itf.crypto.hash_abort(ctx->user_ctx, op);
+	if (EDHOC_SUCCESS != rc) {
+		EDHOC_LOG_ERR("Hash abort: %d", rc);
+	}
+
+	return ret;
 }
 
 int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,

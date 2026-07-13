@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -105,45 +106,26 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	/* 1b. Choose most preferred method. */
 	ctx->chosen_method = ctx->method[0];
 
-	/* 2. Generate ephemeral Diffie-Hellmann key pair. */
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_MAKE_KEY_PAIR, NULL,
-				   0, key_id);
+	/* 2. Generate the ephemeral key pair (KEM). The decapsulation (private)
+	 * key stays in the ephemeral key slot; the encapsulation (public) key
+	 * G_X is written to ctx->pub_eph_key and serialised into message 1. */
+	ctx->pub_eph_key_len = 0;
+	ret = ctx->itf.crypto.generate_key_pair(
+		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
+		ctx->pub_eph_key, ARRAY_SIZE(ctx->pub_eph_key),
+		&ctx->pub_eph_key_len);
 
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import ephemeral DH key: %d", ret);
+	if (EDHOC_SUCCESS != ret ||
+	    csuite.kem_public_key_length != ctx->pub_eph_key_len) {
+		EDHOC_LOG_ERR("Generate key pair: %d, %zu, %zu", ret,
+			      csuite.kem_public_key_length,
+			      ctx->pub_eph_key_len);
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
-	EDHOC_MEM_ALLOC(uint8_t, dh_pub_key, csuite.ecc_key_length);
-	if (NULL == dh_pub_key) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
+	ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].present = true;
 
-	size_t dh_priv_key_len = 0;
-	size_t dh_pub_key_len = 0;
-	ret = ctx->crypto.make_key_pair(ctx->user_ctx, key_id, ctx->dh_priv_key,
-					ARRAY_SIZE(ctx->dh_priv_key),
-					&dh_priv_key_len, dh_pub_key,
-					EDHOC_MEM_ALLOC_SIZE(dh_pub_key),
-					&dh_pub_key_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
-
-	if (EDHOC_SUCCESS != ret || csuite.ecc_key_length != dh_priv_key_len ||
-	    csuite.ecc_key_length != dh_pub_key_len) {
-		EDHOC_LOG_ERR("Generate key pair: %d, %zu, %zu, %zu", ret,
-			      csuite.ecc_key_length, dh_priv_key_len,
-			      dh_pub_key_len);
-		EDHOC_MEM_FREE(dh_pub_key);
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
-	}
-
-	ctx->dh_priv_key_len = dh_priv_key_len;
-
-	EDHOC_LOG_HEXDUMP_DBG(dh_pub_key, dh_pub_key_len, "G_X");
-	EDHOC_LOG_HEXDUMP_DBG(ctx->dh_priv_key, ctx->dh_priv_key_len, "X");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->pub_eph_key, ctx->pub_eph_key_len, "G_X");
 
 	struct message_1 cbor_enc_msg_1 = { 0 };
 
@@ -167,7 +149,6 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				ctx->csuite_len,
 				ARRAY_SIZE(cbor_enc_msg_1.message_1_SUITES_I
 						   .suites_int_l_int));
-			EDHOC_MEM_FREE(dh_pub_key);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -178,8 +159,8 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	}
 
 	/* 3c. Fill CBOR structure for message 1 - ephemeral public key. */
-	cbor_enc_msg_1.message_1_G_X.value = dh_pub_key;
-	cbor_enc_msg_1.message_1_G_X.len = EDHOC_MEM_ALLOC_SIZE(dh_pub_key);
+	cbor_enc_msg_1.message_1_G_X.value = ctx->pub_eph_key;
+	cbor_enc_msg_1.message_1_G_X.len = ctx->pub_eph_key_len;
 
 	/* 3d. Fill CBOR structure for message 1 - connection identifier. */
 	switch (ctx->cid.encode_type) {
@@ -197,23 +178,22 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	default:
 		EDHOC_LOG_ERR("Invalid cid enc type: %d", ctx->cid.encode_type);
-		EDHOC_MEM_FREE(dh_pub_key);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	/* 3e. Fill CBOR structure for message 1 - external authorization data if present. */
-	if (NULL != ctx->ead.compose && 0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->ead.compose(ctx->user_ctx, ctx->message,
-				       ctx->ead_token,
-				       ARRAY_SIZE(ctx->ead_token) - 1,
-				       &ctx->nr_of_ead_tokens);
+	if (NULL != ctx->itf.ead.compose &&
+	    0 != ARRAY_SIZE(ctx->ead_token) - 1) {
+		ret = ctx->itf.ead.compose(ctx->user_ctx, ctx->message,
+					   ctx->ead_token,
+					   ARRAY_SIZE(ctx->ead_token) - 1,
+					   &ctx->nr_of_ead_tokens);
 
 		if (EDHOC_SUCCESS != ret ||
 		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens) {
 			EDHOC_LOG_ERR("EAD compose: %d, %zu, %zu", ret,
 				      ctx->nr_of_ead_tokens,
 				      ARRAY_SIZE(ctx->ead_token) - 1);
-			EDHOC_MEM_FREE(dh_pub_key);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
@@ -260,20 +240,17 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc msg1: %d", ret);
-		EDHOC_MEM_FREE(dh_pub_key);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
-
-	/* The ephemeral public key has been serialised into msg_1. */
-	EDHOC_MEM_FREE(dh_pub_key);
 
 	EDHOC_LOG_HEXDUMP_DBG(msg_1, *msg_1_len, "message_1");
 
 	/* 5. Compute H(cbor(msg_1)) and cache it. */
 	ctx->th_len = csuite.hash_length;
 	size_t hash_len = 0;
-	ret = ctx->crypto.hash(ctx->user_ctx, msg_1, *msg_1_len, ctx->th,
-			       ctx->th_len, &hash_len);
+	const struct hash_segment segments[] = { { msg_1, *msg_1_len } };
+	ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments), ctx->th,
+			      ctx->th_len, &hash_len);
 
 	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_len) {
 		EDHOC_LOG_ERR("Hash: %d, %zu, %zu", ret, csuite.hash_length,
@@ -284,7 +261,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	EDHOC_LOG_INF("Compose msg1 end");
 
 	ctx->nr_of_ead_tokens = 0;
-	ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+	ctx->itf.platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
 
 	ctx->th_state = EDHOC_TH_STATE_1;
 	ctx->status = EDHOC_SM_WAIT_M2;
@@ -442,17 +419,17 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 
-	/* 3c. Verify ephemeral public key. */
-	if (cbor_dec_msg_1.message_1_G_X.len != csuite.ecc_key_length) {
+	/* 3c. Verify ephemeral public key (peer G_X = encapsulation key). */
+	if (cbor_dec_msg_1.message_1_G_X.len != csuite.kem_public_key_length) {
 		EDHOC_LOG_ERR("Invalid G_X length: %zu, %zu",
-			      csuite.ecc_key_length,
+			      csuite.kem_public_key_length,
 			      cbor_dec_msg_1.message_1_G_X.len);
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 
-	ctx->dh_peer_pub_key_len = cbor_dec_msg_1.message_1_G_X.len;
-	memcpy(ctx->dh_peer_pub_key, cbor_dec_msg_1.message_1_G_X.value,
-	       csuite.ecc_key_length);
+	ctx->peer_pub_eph_key_len = cbor_dec_msg_1.message_1_G_X.len;
+	memcpy(ctx->peer_pub_eph_key, cbor_dec_msg_1.message_1_G_X.value,
+	       csuite.kem_public_key_length);
 
 	/* 3d. Verify connection identifier. */
 	switch (cbor_dec_msg_1.message_1_C_I_choice) {
@@ -514,7 +491,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	/* 4. Process EAD if present. */
 	if (true == cbor_dec_msg_1.message_1_EAD_1_m_present &&
-	    NULL != ctx->ead.process) {
+	    NULL != ctx->itf.ead.process) {
 		if (ARRAY_SIZE(ctx->ead_token) - 1 <
 		    cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count) {
 			EDHOC_LOG_ERR(
@@ -538,8 +515,9 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 					.ead_x_ead_value.len;
 		}
 
-		ret = ctx->ead.process(ctx->user_ctx, ctx->message,
-				       ctx->ead_token, ctx->nr_of_ead_tokens);
+		ret = ctx->itf.ead.process(ctx->user_ctx, ctx->message,
+					   ctx->ead_token,
+					   ctx->nr_of_ead_tokens);
 
 		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
 			EDHOC_LOG_HEXDUMP_DBG(
@@ -556,7 +534,8 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		}
 
 		ctx->nr_of_ead_tokens = 0;
-		ctx->platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+		ctx->itf.platform.zeroize(ctx->ead_token,
+					  sizeof(ctx->ead_token));
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("EAD process: %d", ret);
@@ -567,8 +546,9 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	/* 5. Compute H(cbor(msg_1)) and cache it. */
 	ctx->th_len = csuite.hash_length;
 	size_t hash_len = 0;
-	ret = ctx->crypto.hash(ctx->user_ctx, msg_1, msg_1_len, ctx->th,
-			       ctx->th_len, &hash_len);
+	const struct hash_segment segments[] = { { msg_1, msg_1_len } };
+	ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments), ctx->th,
+			      ctx->th_len, &hash_len);
 
 	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_len) {
 		EDHOC_LOG_ERR("Hash: %d, %zu, %zu", ret, csuite.hash_length,

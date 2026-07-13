@@ -32,6 +32,11 @@
 #include <stdbool.h>
 
 /* Defines ----------------------------------------------------------------- */
+
+/** Maximum number of bytes \ref edhoc_cbor_bstr_header can emit: a one-byte
+ *  initial byte plus a four-byte length, for payloads up to \c UINT32_MAX. */
+#define EDHOC_CBOR_BSTR_HEADER_MAX_LEN (5)
+
 /* Types and type definitions ---------------------------------------------- */
 
 /** \defgroup edhoc-common-structures EDHOC common structures
@@ -112,6 +117,16 @@ struct plaintext {
 	size_t ead_len;
 };
 
+/**
+ * \brief A single input segment for the multipart transcript-hash helper.
+ */
+struct hash_segment {
+	/** Pointer to the segment bytes. */
+	const uint8_t *ptr;
+	/** Number of bytes in the segment. */
+	size_t len;
+};
+
 /**@}*/
 
 /* Module interface variables and constants -------------------------------- */
@@ -150,6 +165,19 @@ size_t edhoc_cbor_tstr_oh(size_t length);
 size_t edhoc_cbor_bstr_oh(size_t length);
 
 /** 
+ * \brief Emit the CBOR byte-string header framing a payload of \p length
+ *        bytes, so it can be streamed (e.g. into a hash) without a contiguous
+ *        copy of the header and the payload.
+ *
+ * \param[out] header   Buffer of at least \ref EDHOC_CBOR_BSTR_HEADER_MAX_LEN
+ *                      bytes receiving the header.
+ * \param length        Length of the byte-string payload.
+ *
+ * \return Number of header bytes written.
+ */
+size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length);
+
+/** 
  * \brief Compute CBOR overhead for a map.
  *
  * \param items                         Number of key-value pairs in the map.
@@ -166,6 +194,32 @@ size_t edhoc_cbor_map_oh(size_t items);
  * \return Number of CBOR overhead bytes for encoding an array of \p items elements.
  */
 size_t edhoc_cbor_array_oh(size_t items);
+
+/**@}*/
+
+/** \defgroup edhoc-common-hash EDHOC common transcript hash
+ * @{
+ */
+
+/**
+ * \brief Compute a hash over an ordered list of byte segments using the
+ *        multipart backend interface (init / update.. / finish), avoiding a
+ *        contiguous assembly buffer. A single-input caller passes one segment.
+ *
+ * \param[in] ctx                       EDHOC context.
+ * \param[in] segments                  Ordered input segments to hash.
+ * \param nr_of_segments                Number of entries in \p segments.
+ * \param[out] hash                     Buffer receiving the computed hash.
+ * \param hash_size                     Size of the \p hash buffer in bytes.
+ * \param[out] hash_len                 On success, number of hash bytes written.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_comp_hash(const struct edhoc_context *ctx,
+		    const struct hash_segment *segments, size_t nr_of_segments,
+		    uint8_t *hash, size_t hash_size, size_t *hash_len);
 
 /**@}*/
 
