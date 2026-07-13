@@ -484,9 +484,9 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	ret = ctx->crypto.signature(ctx->user_ctx, cred->priv_key_id,
-				    cose_sign_1_buf, cose_sign_1_buf_len, sign,
-				    sign_size, sign_len);
+	ret = ctx->itf.crypto.sign(ctx->user_ctx, cred->priv_key_id,
+				   cose_sign_1_buf, cose_sign_1_buf_len, sign,
+				   sign_size, sign_len);
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -543,20 +543,11 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	uint8_t kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_VERIFY, pub_key,
-				   pub_key_len, kid);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key: %d", ret);
-		EDHOC_MEM_FREE(cose_sign_1_buf);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ret = ctx->crypto.verify(ctx->user_ctx, kid, cose_sign_1_buf,
-				 cose_sign_1_buf_len, sign, sign_len);
-	ctx->keys.destroy_key(ctx->user_ctx, kid);
-	ctx->platform.zeroize(kid, sizeof(kid));
+	/* The crypto interface verifies against the peer's raw public key
+	 * directly, so no key-store import is required. */
+	ret = ctx->itf.crypto.verify(ctx->user_ctx, pub_key, pub_key_len,
+				     cose_sign_1_buf, cose_sign_1_buf_len, sign,
+				     sign_len);
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1346,20 +1337,15 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	uint8_t kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				   ctx->prk_len, kid);
+	/* MAC = EDHOC_Expand(PRK, info) as raw output. The PRK is the message's
+	 * own handle: PRK_3e2m for message 2, PRK_4e3m for message 3. */
+	const void *prk_key_id =
+		(EDHOC_MSG_2 == ctx->message) ?
+			ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id :
+			ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M].key_id;
 
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key: %d", ret);
-		EDHOC_MEM_FREE(info_buf);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ret = ctx->crypto.expand(ctx->user_ctx, kid, info_buf, len, mac,
-				 mac_len);
-	ctx->keys.destroy_key(ctx->user_ctx, kid);
-	ctx->platform.zeroize(kid, sizeof(kid));
+	ret = ctx->itf.crypto.expand_raw(ctx->user_ctx, prk_key_id, info_buf,
+					 len, mac, mac_len);
 	EDHOC_MEM_FREE(info_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1390,7 +1376,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
-			*sign_or_mac_len = csuite.ecc_sign_length;
+			*sign_or_mac_len = csuite.sign_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_1:
@@ -1409,7 +1395,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 		switch (ctx->chosen_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
-			*sign_or_mac_len = csuite.ecc_sign_length;
+			*sign_or_mac_len = csuite.sign_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_2:

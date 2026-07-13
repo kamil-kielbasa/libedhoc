@@ -115,8 +115,9 @@ static int generate_key_pair(void *user_context, void *decapsulation_key_id,
 /** \brief Encapsulate to a peer key (\ref edhoc_crypto.encapsulate). */
 static int encapsulate(void *user_context, const uint8_t *encapsulation_key,
 		       size_t encapsulation_key_length,
-		       void *shared_secret_key_id, uint8_t *ciphertext,
-		       size_t ciphertext_size, size_t *ciphertext_length);
+		       void *decapsulation_key_id, void *shared_secret_key_id,
+		       uint8_t *ciphertext, size_t ciphertext_size,
+		       size_t *ciphertext_length);
 
 /** \brief Decapsulate a ciphertext (\ref edhoc_crypto.decapsulate). */
 static int decapsulate(void *user_context, const void *decapsulation_key_id,
@@ -490,23 +491,28 @@ static int generate_key_pair(void *user_context, void *decaps_key_id,
 }
 
 static int encapsulate(void *user_context, const uint8_t *encaps_key,
-		       size_t encaps_key_len, void *shr_sec_key_id,
-		       uint8_t *ciphertext, size_t ciphertext_size,
-		       size_t *ciphertext_len)
+		       size_t encaps_key_len, void *decaps_key_id,
+		       void *shr_sec_key_id, uint8_t *ciphertext,
+		       size_t ciphertext_size, size_t *ciphertext_len)
 {
 	(void)user_context;
 
 	if (NULL == encaps_key || 0 == encaps_key_len ||
-	    NULL == shr_sec_key_id || NULL == ciphertext ||
-	    0 == ciphertext_size || NULL == ciphertext_len) {
+	    NULL == decaps_key_id || NULL == shr_sec_key_id ||
+	    NULL == ciphertext || 0 == ciphertext_size ||
+	    NULL == ciphertext_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	psa_key_id_t *decapsulation_kid = decaps_key_id;
 	psa_key_id_t *shared_secret_kid = shr_sec_key_id;
+	*decapsulation_kid = PSA_KEY_ID_NULL;
 	*shared_secret_kid = PSA_KEY_ID_NULL;
 
-	/* NIKE-as-KEM: generate an ephemeral pair; its public key is G_Y. */
+	/* NIKE-as-KEM: generate an ephemeral pair; its public key is G_Y and
+	 * its private key is retained (decaps_key_id) for the static-DH G_IY
+	 * agreement in message 3. */
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	set_ecdh_keypair_attributes(&attr);
 
@@ -531,8 +537,13 @@ static int encapsulate(void *user_context, const uint8_t *encaps_key,
 	ret = compute_shared_secret(ephemeral_kid, encaps_key, encaps_key_len,
 				    shared_secret_kid);
 
-	destroy_volatile_key(ephemeral_kid);
-	return ret;
+	if (EDHOC_SUCCESS != ret) {
+		destroy_volatile_key(ephemeral_kid);
+		return ret;
+	}
+
+	*decapsulation_kid = ephemeral_kid;
+	return EDHOC_SUCCESS;
 }
 
 static int decapsulate(void *user_context, const void *decaps_key_id,

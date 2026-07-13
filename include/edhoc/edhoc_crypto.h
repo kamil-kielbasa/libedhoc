@@ -102,11 +102,16 @@ struct edhoc_crypto {
 	 *
 	 *        For a NIKE-as-KEM shim the backend generates its own ephemeral
 	 *        key pair, runs the key agreement and returns its ephemeral
-	 *        public key as \p ciphertext (sent in \c G_Y).
+	 *        public key as \p ciphertext (sent in \c G_Y). The ephemeral
+	 *        private key is retained as \p decapsulation_key_id so the
+	 *        Responder can reuse it for the static-DH \c G_IY agreement in
+	 *        message_3 (methods 2 and 3).
 	 *
 	 * \param[in] user_context		User context.
 	 * \param[in] encapsulation_key         Peer public key from \c G_X.
 	 * \param encapsulation_key_length      Size of the \p encapsulation_key buffer in bytes.
+	 * \param[out] decapsulation_key_id     Handle of the retained ephemeral private key. A KEM
+	 *                                      without static-DH support leaves it a null handle.
 	 * \param[out] shared_secret_key_id     Handle of the shared secret (\c G_XY).
 	 * \param[out] ciphertext               KEM ciphertext, sent in \c G_Y.
 	 * \param ciphertext_size               Size of the \p ciphertext buffer in bytes.
@@ -118,6 +123,7 @@ struct edhoc_crypto {
 	 */
 	int (*encapsulate)(void *user_context, const uint8_t *encapsulation_key,
 			   size_t encapsulation_key_length,
+			   void *decapsulation_key_id,
 			   void *shared_secret_key_id, uint8_t *ciphertext,
 			   size_t ciphertext_size, size_t *ciphertext_length);
 	/**

@@ -280,13 +280,15 @@ STATIC int comp_encapsulate(struct edhoc_context *ctx)
 		ctx->csuite[ctx->chosen_csuite_idx];
 
 	/* KEM encapsulate to the peer's encapsulation key G_X: the backend
-	 * produces the KEM ciphertext G_Y (ctx->pub_eph_key) and stores the
-	 * shared secret G_XY as a handle (the shared-secret slot). For classical
-	 * NIKE-as-KEM suites this wraps an ephemeral key generation plus a
-	 * Diffie-Hellman agreement. */
+	 * produces the KEM ciphertext G_Y (ctx->pub_eph_key), stores the shared
+	 * secret G_XY as a handle (the shared-secret slot) and retains its
+	 * ephemeral private key (the ephemeral slot) for the later static-DH
+	 * G_IY agreement in message 3. For classical NIKE-as-KEM suites this
+	 * wraps an ephemeral key generation plus a Diffie-Hellman agreement. */
 	ctx->pub_eph_key_len = 0;
 	const int ret = ctx->itf.crypto.encapsulate(
 		ctx->user_ctx, ctx->peer_pub_eph_key, ctx->peer_pub_eph_key_len,
+		ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
 		ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].key_id,
 		ctx->pub_eph_key, sizeof(ctx->pub_eph_key),
 		&ctx->pub_eph_key_len);
@@ -299,6 +301,7 @@ STATIC int comp_encapsulate(struct edhoc_context *ctx)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
+	ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].present = true;
 	ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].present = true;
 	return EDHOC_SUCCESS;
 }
@@ -447,14 +450,8 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		/* PRK_3e2m == PRK_2e: move PRK_2e's slot into PRK_3e2m so the
 		 * shared key is owned by a single handle that lives into message
 		 * 3. KEYSTREAM_2 reads PRK_3e2m for these methods. */
-		memcpy(ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id,
-		       ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id,
-		       sizeof(ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id));
-		ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].present = true;
-		ctx->itf.platform.zeroize(
-			ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id,
-			sizeof(ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id));
-		ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].present = false;
+		edhoc_move_key_slot(ctx, EDHOC_KEY_SLOT_PRK_3E2M,
+				    EDHOC_KEY_SLOT_PRK_2E);
 		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
 

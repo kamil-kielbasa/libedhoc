@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <string.h>
 
 /* Defines ----------------------------------------------------------------- */
 
@@ -150,8 +151,6 @@ enum edhoc_prk_state {
  *        is the number of slots, not a slot itself.
  */
 enum edhoc_key_slot_id {
-	/** Initiator ephemeral (decapsulation) private key. */
-	EDHOC_KEY_SLOT_EPHEMERAL,
 	/** Ephemeral shared secret \c G_XY. */
 	EDHOC_KEY_SLOT_SHARED_SECRET,
 	/** Static-DH shared secret \c G_RX (IKM for PRK_3e2m, message 2). */
@@ -160,8 +159,15 @@ enum edhoc_key_slot_id {
 	EDHOC_KEY_SLOT_PRK_2E,
 	/** RFC 9528: 4.1.1.2. PRK_3e2m. */
 	EDHOC_KEY_SLOT_PRK_3E2M,
+	/** Local ephemeral (decapsulation) private key: the Initiator's from
+	 *  \ref edhoc_crypto.generate_key_pair (message 1) or the Responder's from
+	 *  \ref edhoc_crypto.encapsulate (message 2). Retained past message 2 so the
+	 *  Responder can compute \c G_IY (message 3 static-DH, methods 2/3). */
+	EDHOC_KEY_SLOT_EPHEMERAL,
 	/** Static-DH shared secret \c G_IY (IKM for PRK_4e3m, message 3). */
 	EDHOC_KEY_SLOT_G_IY,
+	/** Message 3 content-encryption key \c K_3 (AEAD, derived from PRK_3e2m). */
+	EDHOC_KEY_SLOT_K_3,
 	/** RFC 9528: 4.1.1.3. PRK_4e3m. */
 	EDHOC_KEY_SLOT_PRK_4E3M,
 	/** RFC 9528: 4.1.3. PRK_out. */
@@ -330,8 +336,6 @@ static inline bool edhoc_context_configured(const struct edhoc_context *ctx)
 static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
 {
 	switch (slot) {
-	case EDHOC_KEY_SLOT_EPHEMERAL:
-		return "ephemeral";
 	case EDHOC_KEY_SLOT_SHARED_SECRET:
 		return "shared secret";
 	case EDHOC_KEY_SLOT_G_RX:
@@ -340,8 +344,12 @@ static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
 		return "PRK_2e";
 	case EDHOC_KEY_SLOT_PRK_3E2M:
 		return "PRK_3e2m";
+	case EDHOC_KEY_SLOT_EPHEMERAL:
+		return "ephemeral";
 	case EDHOC_KEY_SLOT_G_IY:
 		return "G_IY";
+	case EDHOC_KEY_SLOT_K_3:
+		return "K_3";
 	case EDHOC_KEY_SLOT_PRK_4E3M:
 		return "PRK_4e3m";
 	case EDHOC_KEY_SLOT_PRK_OUT:
@@ -354,13 +362,42 @@ static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
 }
 
 /**
+ * \brief Adopt a live key handle from one slot into another.
+ *
+ *        Copies the source slot's key identifier into the destination slot and
+ *        marks it present, then wipes the source identifier and clears its
+ *        present flag. The key-store handle itself is untouched: the same key
+ *        simply changes ownership from \p src_slot to \p dst_slot. Used when a
+ *        derived key is carried unchanged into the next key-schedule slot
+ *        (PRK_2e -> PRK_3e2m for methods 0/2; PRK_3e2m -> PRK_4e3m for methods
+ *        0/1) so the shared key is always owned by exactly one slot.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param dst_slot                      Destination slot (receives the handle).
+ * \param src_slot                      Source slot (wiped and cleared).
+ */
+static inline void edhoc_move_key_slot(struct edhoc_context *ctx,
+				       enum edhoc_key_slot_id dst_slot,
+				       enum edhoc_key_slot_id src_slot)
+{
+	struct edhoc_key_slot *dst = &ctx->key_slots[dst_slot];
+	struct edhoc_key_slot *src = &ctx->key_slots[src_slot];
+
+	memcpy(dst->key_id, src->key_id, sizeof(dst->key_id));
+	dst->present = true;
+
+	ctx->itf.platform.zeroize(src->key_id, sizeof(src->key_id));
+	src->present = false;
+}
+
+/**
  * \brief Destroy every live key-store handle in slots [0, \p up_to_slot).
  *
  *        Iterates the context key slots up to (but excluding) \p up_to_slot,
  *        destroying each backend handle still present, wiping its identifier
  *        and clearing its "present" flag. Already-released slots are skipped,
  *        so each stage releases only the handles it retires: message 2 up to
- *        \ref EDHOC_KEY_SLOT_PRK_3E2M, message 3 up to \ref EDHOC_KEY_SLOT_PRK_OUT
+ *        \ref EDHOC_KEY_SLOT_PRK_3E2M, message 3 up to \ref EDHOC_KEY_SLOT_PRK_4E3M
  *        and \ref edhoc_context_deinit up to \ref EDHOC_KEY_SLOT_COUNT. The
  *        caller is expected to log a diagnostic on failure.
  *
@@ -376,7 +413,7 @@ static inline int edhoc_release_key_slots(struct edhoc_context *ctx,
 		return EDHOC_SUCCESS;
 	}
 
-	for (enum edhoc_key_slot_id slot = EDHOC_KEY_SLOT_EPHEMERAL; slot < up_to_slot; ++slot) {
+	for (enum edhoc_key_slot_id slot = 0; slot < up_to_slot; ++slot) {
 		struct edhoc_key_slot *key_slot = &ctx->key_slots[slot];
 
 		if (!key_slot->present) {
