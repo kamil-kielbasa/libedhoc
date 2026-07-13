@@ -168,6 +168,8 @@ enum edhoc_key_slot_id {
 	EDHOC_KEY_SLOT_G_IY,
 	/** Message 3 content-encryption key \c K_3 (AEAD, derived from PRK_3e2m). */
 	EDHOC_KEY_SLOT_K_3,
+	/** Message 4 content-encryption key \c K_4 (AEAD, derived from PRK_4e3m). */
+	EDHOC_KEY_SLOT_K_4,
 	/** RFC 9528: 4.1.1.3. PRK_4e3m. */
 	EDHOC_KEY_SLOT_PRK_4E3M,
 	/** RFC 9528: 4.1.3. PRK_out. */
@@ -350,6 +352,8 @@ static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
 		return "G_IY";
 	case EDHOC_KEY_SLOT_K_3:
 		return "K_3";
+	case EDHOC_KEY_SLOT_K_4:
+		return "K_4";
 	case EDHOC_KEY_SLOT_PRK_4E3M:
 		return "PRK_4e3m";
 	case EDHOC_KEY_SLOT_PRK_OUT:
