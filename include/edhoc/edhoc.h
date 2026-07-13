@@ -590,9 +590,16 @@ int edhoc_message_error_process(const uint8_t *message_error,
 
 /**
  * \brief Export derived keying material using the pseudorandom key exporter.
+ *
+ *        Implements RFC 9528: 4.2.1. EDHOC_Exporter(label, context, length),
+ *        deriving \p secret_length bytes bound to the application-supplied
+ *        \p context byte string. Pass a null \p context (with
+ *        \p context_length equal to zero) for an empty context.
  * 
  * \param[in,out] edhoc_context         EDHOC context.
  * \param label                         PRK exporter label.
+ * \param[in] context                   Exporter context byte string (may be NULL when \p context_length is 0).
+ * \param context_length                Size of the \p context buffer in bytes.
  * \param[out] secret                   Buffer where the generated secret is to be written.
  * \param secret_length                 Size of the \p secret buffer in bytes.
  *
@@ -612,6 +619,7 @@ int edhoc_message_error_process(const uint8_t *message_error,
  *         Pseudorandom key derivation failed.
  */
 int edhoc_export_prk_exporter(struct edhoc_context *edhoc_context, size_t label,
+			      const uint8_t *context, size_t context_length,
 			      uint8_t *secret, size_t secret_length);
 
 /**

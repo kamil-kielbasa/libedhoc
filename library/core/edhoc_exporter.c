@@ -68,14 +68,13 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len);
 
 /**
- * \brief Compute exporter pseudo random key (PRK_exporter).
+ * \brief Compute exporter pseudo random key (PRK_exporter) into its key slot.
  *
- * \param[in] ctx		EDHOC context.
+ * \param[in,out] ctx		EDHOC context.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
-				uint8_t *prk_exp, size_t prk_exp_len);
+STATIC int compute_prk_exporter(struct edhoc_context *ctx);
 
 /* Static function definitions --------------------------------------------- */
 
@@ -100,7 +99,7 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
+	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT);
 	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
 	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
 
@@ -111,7 +110,7 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 	}
 
 	/* Generate PRK_out. */
-	struct info input_info = {
+	const struct info input_info = {
 		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT,
 		.info_context.value = ctx->th,
 		.info_context.len = ctx->th_len,
@@ -128,28 +127,29 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				   ctx->prk_len, key_id);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
-				 ctx->prk_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
+	/* EDHOC_Expand(PRK_4e3m, info) -> PRK_out (KDF key handle). */
+	ret = ctx->itf.crypto.expand(
+		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M].key_id,
+		info, len, EDHOC_KEY_USAGE_KDF,
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_OUT].key_id);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand: %d", ret);
+		EDHOC_LOG_ERR("Expand PRK_out: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->prk, ctx->prk_len, "PRK_out");
+	ctx->key_slots[EDHOC_KEY_SLOT_PRK_OUT].present = true;
+
+	/* PRK_4e3m is spent; release it. After the handshake messages have
+	 * freed their secrets it is the only live slot below PRK_out, so the
+	 * prefix release destroys exactly that handle. */
+	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_OUT);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Release PRK_4e3m: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
 
 	ctx->prk_state = EDHOC_PRK_STATE_OUT;
 	return EDHOC_SUCCESS;
@@ -186,7 +186,7 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 	}
 
 	/* Generate PRK_out. */
-	struct info input_info = {
+	const struct info input_info = {
 		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT,
 		.info_context.value = entropy,
 		.info_context.len = entropy_len,
@@ -203,33 +203,40 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				   ctx->prk_len, key_id);
+	/* new PRK_out = EDHOC_Expand(PRK_out, info(entropy)). The old PRK_out
+	 * handle is taken from a local copy so the derivation can write the new
+	 * handle straight into the PRK_out slot; the old handle is destroyed
+	 * afterwards. */
+	uint8_t old_prk_out[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	memcpy(old_prk_out, ctx->key_slots[EDHOC_KEY_SLOT_PRK_OUT].key_id,
+	       sizeof(old_prk_out));
 
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, ctx->prk,
-				 ctx->prk_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
+	ret = ctx->itf.crypto.expand(
+		ctx->user_ctx, old_prk_out, info, len, EDHOC_KEY_USAGE_KDF,
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_OUT].key_id);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand: %d", ret);
+		EDHOC_LOG_ERR("Expand new PRK_out: %d", ret);
+		/* Restore the old PRK_out handle so the slot stays valid. */
+		memcpy(ctx->key_slots[EDHOC_KEY_SLOT_PRK_OUT].key_id,
+		       old_prk_out, sizeof(old_prk_out));
+		ctx->itf.platform.zeroize(old_prk_out, sizeof(old_prk_out));
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->prk_state = EDHOC_PRK_STATE_OUT;
+	ret = ctx->itf.crypto.destroy_key(ctx->user_ctx, old_prk_out);
+	ctx->itf.platform.zeroize(old_prk_out, sizeof(old_prk_out));
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Destroy old PRK_out: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
 	return EDHOC_SUCCESS;
 }
 
-STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
-				uint8_t *prk_exp, size_t prk_exp_len)
+STATIC int compute_prk_exporter(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -258,7 +265,7 @@ STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	struct info input_info = {
+	const struct info input_info = {
 		.info_label =
 			(int32_t)EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER,
 		.info_context.value = NULL,
@@ -276,29 +283,19 @@ STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, ctx->prk,
-				   ctx->prk_len, key_id);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, prk_exp,
-				 prk_exp_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
+	/* EDHOC_Expand(PRK_out, info) -> PRK_exporter (KDF key handle). */
+	ret = ctx->itf.crypto.expand(
+		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_OUT].key_id,
+		info, len, EDHOC_KEY_USAGE_KDF,
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_EXPORTER].key_id);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand: %d", ret);
+		EDHOC_LOG_ERR("Expand PRK_exporter: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(prk_exp, prk_exp_len, "PRK_exporter");
-
+	ctx->key_slots[EDHOC_KEY_SLOT_PRK_EXPORTER].present = true;
 	return EDHOC_SUCCESS;
 }
 
@@ -307,15 +304,17 @@ STATIC int compute_prk_exporter(const struct edhoc_context *ctx,
 /**
  * Steps for PRK exporter:
  *      1. Compute pseudorandom key output if needed (PRK_out).
- *      2. Choose most preferred cipher suite.
+ *      2. Cborise the exporter info (label, context, output length).
  *      3. Compute pseudo random key exporter (PRK_exporter).
- *      4. Derive secret.
+ *      4. Derive the secret and release the transient PRK_exporter.
  */
 int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
+			      const uint8_t *context, size_t context_len,
 			      uint8_t *secret, size_t secret_len)
 {
 	if (NULL == ctx || EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM < label ||
-	    NULL == secret || 0 == secret_len) {
+	    (NULL == context && 0 != context_len) || NULL == secret ||
+	    0 == secret_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -346,43 +345,22 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 		}
 	}
 
-	/* 2. Choose most preferred cipher suite. */
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
-
-	/* 3. Compute pseudo random key exporter (PRK_exporter). */
-	EDHOC_MEM_ALLOC(uint8_t, prk_exporter, csuite.hash_length);
-	if (NULL == prk_exporter) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	ret = compute_prk_exporter(ctx, prk_exporter,
-				   EDHOC_MEM_ALLOC_SIZE(prk_exporter));
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Compute PRK_exporter: %d", ret);
-		EDHOC_MEM_FREE(prk_exporter);
-		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
-	}
-
-	/* 4. Derive secret. */
+	/* 2. Cborise the exporter info (label, context, output length). */
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req((int32_t)label);
-	len += edhoc_cbor_bstr_oh(0); /* cbor empty byte string. */
-	len += edhoc_cbor_int_mem_req((int32_t)csuite.hash_length);
+	len += context_len + edhoc_cbor_bstr_oh(context_len);
+	len += edhoc_cbor_int_mem_req((int32_t)secret_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
 		EDHOC_LOG_ERR("Memory allocation failed");
-		EDHOC_MEM_FREE(prk_exporter);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
 	const struct info input_info = (struct info){
 		.info_label = (int32_t)label,
-		.info_context.value = NULL,
-		.info_context.len = 0,
+		.info_context.value = context,
+		.info_context.len = context_len,
 		.info_length = (uint32_t)secret_len,
 	};
 
@@ -393,31 +371,40 @@ int edhoc_export_prk_exporter(struct edhoc_context *ctx, size_t label,
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc exporter secret info: %d", ret);
 		EDHOC_MEM_FREE(info);
-		EDHOC_MEM_FREE(prk_exporter);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	ret = ctx->keys.import_key(ctx->user_ctx, EDHOC_KT_EXPAND, prk_exporter,
-				   EDHOC_MEM_ALLOC_SIZE(prk_exporter), key_id);
+	/* 3. Compute the transient PRK_exporter (its context slot). */
+	ret = compute_prk_exporter(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Import key: %d", ret);
+		EDHOC_LOG_ERR("Compute PRK_exporter: %d", ret);
 		EDHOC_MEM_FREE(info);
-		EDHOC_MEM_FREE(prk_exporter);
+		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
+	}
+
+	/* 4. Derive the secret, then release the transient PRK_exporter. */
+	ret = ctx->itf.crypto.expand_raw(
+		ctx->user_ctx,
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_EXPORTER].key_id, info, len,
+		secret, secret_len);
+	EDHOC_MEM_FREE(info);
+
+	const int destroy_ret = ctx->itf.crypto.destroy_key(
+		ctx->user_ctx,
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_EXPORTER].key_id);
+	ctx->itf.platform.zeroize(
+		ctx->key_slots[EDHOC_KEY_SLOT_PRK_EXPORTER].key_id,
+		sizeof(ctx->key_slots[EDHOC_KEY_SLOT_PRK_EXPORTER].key_id));
+	ctx->key_slots[EDHOC_KEY_SLOT_PRK_EXPORTER].present = false;
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Expand exporter secret: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	EDHOC_MEM_FREE(prk_exporter);
-
-	ret = ctx->crypto.expand(ctx->user_ctx, key_id, info, len, secret,
-				 secret_len);
-	ctx->keys.destroy_key(ctx->user_ctx, key_id);
-	ctx->platform.zeroize(key_id, sizeof(key_id));
-	EDHOC_MEM_FREE(info);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand: %d", ret);
+	if (EDHOC_SUCCESS != destroy_ret) {
+		EDHOC_LOG_ERR("Destroy PRK_exporter: %d", destroy_ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -461,8 +448,6 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *entropy,
 		EDHOC_LOG_ERR("Compute new PRK_out: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
-
-	EDHOC_LOG_HEXDUMP_DBG(ctx->prk, ctx->prk_len, "new PRK_out");
 
 	ctx->status = status;
 	ctx->is_oscore_export_allowed = true;
@@ -509,7 +494,7 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 
 	/* 1. Derive OSCORE master secret. */
 	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
-					secret, secret_len);
+					NULL, 0, secret, secret_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master secret: %d", ret);
@@ -518,7 +503,7 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx, uint8_t *secret,
 
 	/* 2. Derive OSCORE master salt. */
 	ret = edhoc_export_prk_exporter(ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT,
-					salt, salt_len);
+					NULL, 0, salt, salt_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master salt: %d", ret);
