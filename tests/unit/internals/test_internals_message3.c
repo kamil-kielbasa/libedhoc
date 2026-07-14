@@ -21,7 +21,6 @@ TEST_GROUP(internals_message3);
 TEST_SETUP(internals_message3)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
 
@@ -173,39 +172,33 @@ TEST(internals_message3, decrypt_ciphertext_3_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	uint8_t key[16] = { 0 }, iv[13] = { 0 }, aad[32] = { 0 };
+	uint8_t iv[13] = { 0 }, aad[32] = { 0 };
 	uint8_t ctxt[16] = { 0 }, ptxt[16] = { 0 };
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(NULL, key, 16, iv, 13, aad, 32,
-					       ctxt, 16, ptxt, 16));
+			  decrypt_ciphertext_3(NULL, iv, 13, aad, 32, ctxt, 16,
+					       ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, NULL, 16, iv, 13, aad, 32,
-					       ctxt, 16, ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, NULL, 13, aad, 32, ctxt,
+					       16, ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 0, iv, 13, aad, 32,
-					       ctxt, 16, ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, iv, 0, aad, 32, ctxt, 16,
+					       ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 16, NULL, 13, aad, 32,
-					       ctxt, 16, ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, iv, 13, NULL, 32, ctxt, 16,
+					       ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 16, iv, 0, aad, 32,
-					       ctxt, 16, ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 0, ctxt, 16,
+					       ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, NULL, 32,
-					       ctxt, 16, ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 32, ctxt, 0,
+					       ptxt, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 0,
-					       ctxt, 16, ptxt, 16));
+			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 32, ctxt, 16,
+					       NULL, 16));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 32,
-					       ctxt, 0, ptxt, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 32,
-					       ctxt, 16, NULL, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, key, 16, iv, 13, aad, 32,
-					       ctxt, 16, ptxt, 0));
+			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 32, ctxt, 16,
+					       ptxt, 0));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 

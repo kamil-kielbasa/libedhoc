@@ -29,7 +29,7 @@ TEST_TEAR_DOWN(coverage_msg1)
 	mbedtls_psa_crypto_free();
 }
 
-TEST(coverage_msg1, msg1_compose_key_import_fail)
+TEST(coverage_msg1, msg1_compose_generate_key_pair_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
@@ -43,17 +43,17 @@ TEST(coverage_msg1, msg1_compose_key_import_fail)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
-TEST(coverage_msg1, msg1_compose_make_key_pair_fail)
+TEST(coverage_msg1, msg1_compose_hash_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
 			  coverage_setup_mock_context(&ctx, EDHOC_METHOD_0));
-	coverage_mock_reset(2);
+	coverage_mock_reset(3);
 
 	uint8_t msg[256] = { 0 };
 	size_t msg_len = 0;
 	int ret = edhoc_message_1_compose(&ctx, msg, sizeof(msg), &msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
@@ -291,8 +291,8 @@ TEST(coverage_msg1, msg1_compose_with_ead)
 
 TEST_GROUP_RUNNER(coverage_msg1)
 {
-	RUN_TEST_CASE(coverage_msg1, msg1_compose_key_import_fail);
-	RUN_TEST_CASE(coverage_msg1, msg1_compose_make_key_pair_fail);
+	RUN_TEST_CASE(coverage_msg1, msg1_compose_generate_key_pair_fail);
+	RUN_TEST_CASE(coverage_msg1, msg1_compose_hash_fail);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_buffer_too_small);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_method_mismatch);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_hash_fail);

@@ -77,6 +77,26 @@ static int ead_compose_msg4(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
+static void inject_prk_4e3m(struct edhoc_context *ctx, const uint8_t *prk,
+			    size_t prk_len)
+{
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_algorithm(&attr, PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_256));
+	psa_set_key_enrollment_algorithm(&attr,
+					 PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	TEST_ASSERT_EQUAL(PSA_SUCCESS,
+			  psa_import_key(&attr, prk, prk_len, &kid));
+
+	struct edhoc_key_slot *slot = &ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M];
+	memcpy(slot->key_id, &kid, sizeof(kid));
+	slot->present = true;
+}
+
 static void setup_initiator_suite0(struct edhoc_context *ctx)
 {
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
@@ -91,9 +111,6 @@ static void setup_initiator_suite0(struct edhoc_context *ctx)
 			  edhoc_set_cipher_suites(
 				  ctx, edhoc_cipher_suite_0_get_suite(), 1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_connection_id(ctx, &cid));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_bind_keys(ctx,
-					  edhoc_cipher_suite_0_get_keys()));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
 			  edhoc_bind_crypto(ctx,
 					    edhoc_cipher_suite_0_get_crypto()));
@@ -117,9 +134,6 @@ static void setup_responder_suite0(struct edhoc_context *ctx)
 			  edhoc_set_cipher_suites(
 				  ctx, edhoc_cipher_suite_0_get_suite(), 1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_connection_id(ctx, &cid));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_bind_keys(ctx,
-					  edhoc_cipher_suite_0_get_keys()));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
 			  edhoc_bind_crypto(ctx,
 					    edhoc_cipher_suite_0_get_crypto()));
@@ -185,7 +199,6 @@ TEST(message_paths, msg1_compose_multiple_cipher_suites)
 	};
 	edhoc_set_connection_id(&ctx, &cid);
 
-	edhoc_bind_keys(&ctx, edhoc_cipher_suite_2_get_keys());
 	edhoc_bind_crypto(&ctx, edhoc_cipher_suite_2_get_crypto());
 	edhoc_bind_credentials(&ctx, &test_cred_stubs);
 	edhoc_bind_platform(&ctx, test_get_platform());
@@ -334,10 +347,12 @@ TEST(message_paths, msg4_compose_with_ead)
 	ctx.th_state = EDHOC_TH_STATE_4;
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 	ctx.chosen_csuite_idx = 0;
 	memset(ctx.th, 0xAA, 32);
-	memset(ctx.prk, 0xBB, 32);
+
+	uint8_t prk[32];
+	memset(prk, 0xBB, sizeof(prk));
+	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
 	uint8_t msg[256] = { 0 };
 	size_t msg_len = 0;
@@ -367,10 +382,9 @@ TEST(message_paths, msg4_compose_process_roundtrip)
 	resp_ctx.th_state = EDHOC_TH_STATE_4;
 	resp_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	resp_ctx.th_len = sizeof(th);
-	resp_ctx.prk_len = sizeof(prk);
 	resp_ctx.chosen_csuite_idx = 0;
 	memcpy(resp_ctx.th, th, sizeof(th));
-	memcpy(resp_ctx.prk, prk, sizeof(prk));
+	inject_prk_4e3m(&resp_ctx, prk, sizeof(prk));
 
 	uint8_t msg[256] = { 0 };
 	size_t msg_len = 0;
@@ -383,10 +397,9 @@ TEST(message_paths, msg4_compose_process_roundtrip)
 	init_ctx.th_state = EDHOC_TH_STATE_4;
 	init_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	init_ctx.th_len = sizeof(th);
-	init_ctx.prk_len = sizeof(prk);
 	init_ctx.chosen_csuite_idx = 0;
 	memcpy(init_ctx.th, th, sizeof(th));
-	memcpy(init_ctx.prk, prk, sizeof(prk));
+	inject_prk_4e3m(&init_ctx, prk, sizeof(prk));
 
 	ret = edhoc_message_4_process(&init_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -427,10 +440,9 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 	resp_ctx.th_state = EDHOC_TH_STATE_4;
 	resp_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	resp_ctx.th_len = sizeof(th);
-	resp_ctx.prk_len = sizeof(prk);
 	resp_ctx.chosen_csuite_idx = 0;
 	memcpy(resp_ctx.th, th, sizeof(th));
-	memcpy(resp_ctx.prk, prk, sizeof(prk));
+	inject_prk_4e3m(&resp_ctx, prk, sizeof(prk));
 
 	uint8_t msg[256] = { 0 };
 	size_t msg_len = 0;
@@ -443,10 +455,9 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 	init_ctx.th_state = EDHOC_TH_STATE_4;
 	init_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	init_ctx.th_len = sizeof(th);
-	init_ctx.prk_len = sizeof(prk);
 	init_ctx.chosen_csuite_idx = 0;
 	memcpy(init_ctx.th, th, sizeof(th));
-	memcpy(init_ctx.prk, prk, sizeof(prk));
+	inject_prk_4e3m(&init_ctx, prk, sizeof(prk));
 
 	ret = edhoc_message_4_process(&init_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

@@ -21,7 +21,6 @@
 /* Types and type definitions ---------------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 
-extern const struct edhoc_keys coverage_mock_keys;
 extern const struct edhoc_crypto coverage_mock_crypto;
 extern const struct edhoc_credentials coverage_mock_creds;
 extern const struct edhoc_ead coverage_mock_ead;

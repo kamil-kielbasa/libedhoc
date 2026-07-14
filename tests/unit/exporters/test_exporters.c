@@ -35,10 +35,34 @@
 /* Static function declarations -------------------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 
-static const struct edhoc_keys *keys;
 static const struct edhoc_crypto *crypto;
 
 /* Static function definitions --------------------------------------------- */
+
+/*
+ * The exporter tests inject a known PRK_4e3m without running a handshake. Under
+ * the handle-only crypto interface the PRK is a key-store handle, so import the
+ * raw material as a DERIVE key and publish the handle in the PRK_4e3m slot.
+ */
+static void inject_prk_4e3m(struct edhoc_context *ctx, const uint8_t *prk,
+			    size_t prk_len)
+{
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_algorithm(&attr, PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_256));
+	psa_set_key_enrollment_algorithm(&attr,
+					 PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	TEST_ASSERT_EQUAL(PSA_SUCCESS,
+			  psa_import_key(&attr, prk, prk_len, &kid));
+
+	struct edhoc_key_slot *slot = &ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M];
+	memcpy(slot->key_id, &kid, sizeof(kid));
+	slot->present = true;
+}
 
 static void setup_basic_context(struct edhoc_context *ctx)
 {
@@ -56,7 +80,6 @@ static void setup_basic_context(struct edhoc_context *ctx)
 			  edhoc_set_cipher_suites(
 				  ctx, edhoc_cipher_suite_0_get_suite(), 1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_connection_id(ctx, &cid));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_bind_keys(ctx, keys));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_bind_crypto(ctx, crypto));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
 			  edhoc_bind_platform(ctx, test_get_platform()));
@@ -69,7 +92,6 @@ TEST_GROUP(exporters);
 TEST_SETUP(exporters)
 {
 	psa_crypto_init();
-	keys = edhoc_cipher_suite_0_get_keys();
 	crypto = edhoc_cipher_suite_0_get_crypto();
 }
 
@@ -244,7 +266,7 @@ TEST(exporters, prk_exporter_null_secret)
 	struct edhoc_context ctx = { 0 };
 	edhoc_context_init(&ctx);
 	int ret = edhoc_export_prk_exporter(
-		&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 32);
+		&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0, NULL, 32);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	edhoc_context_deinit(&ctx);
 }
@@ -255,7 +277,7 @@ TEST(exporters, prk_exporter_zero_length)
 	edhoc_context_init(&ctx);
 	uint8_t secret[32];
 	int ret = edhoc_export_prk_exporter(
-		&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, secret, 0);
+		&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0, secret, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	edhoc_context_deinit(&ctx);
 }
@@ -268,7 +290,8 @@ TEST(exporters, prk_exporter_invalid_label)
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 
 	uint8_t secret[32];
-	int ret = edhoc_export_prk_exporter(&ctx, 100, secret, sizeof(secret));
+	int ret = edhoc_export_prk_exporter(&ctx, 100, NULL, 0, secret,
+					    sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -284,7 +307,7 @@ TEST(exporters, prk_exporter_bad_state)
 	uint8_t secret[32];
 	int ret = edhoc_export_prk_exporter(&ctx,
 					    OSCORE_EXTRACT_LABEL_MASTER_SECRET,
-					    secret, sizeof(secret));
+					    NULL, 0, secret, sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -301,8 +324,10 @@ TEST(exporters, oscore_session_sender_id_encode_fail)
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	memset(ctx.th, 0xAB, 32);
 	ctx.th_len = 32;
-	memset(ctx.prk, 0xCD, 32);
-	ctx.prk_len = 32;
+
+	uint8_t prk[32] = { 0 };
+	memset(prk, 0xCD, sizeof(prk));
+	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
 	ctx.peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 	ctx.peer_cid.int_value = 24;
@@ -337,8 +362,10 @@ TEST(exporters, oscore_session_recipient_id_encode_fail)
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	memset(ctx.th, 0xAB, 32);
 	ctx.th_len = 32;
-	memset(ctx.prk, 0xCD, 32);
-	ctx.prk_len = 32;
+
+	uint8_t prk[32] = { 0 };
+	memset(prk, 0xCD, sizeof(prk));
+	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
 	ctx.peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 	ctx.peer_cid.int_value = 1;

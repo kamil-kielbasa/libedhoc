@@ -49,7 +49,7 @@ TEST(coverage_msg2, msg2_compose_dh_fail)
 	ret = edhoc_message_1_process(&resp_ctx, msg1, msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	coverage_mock_reset(3);
+	coverage_mock_reset(1);
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
@@ -79,11 +79,11 @@ TEST(coverage_msg2, msg2_compose_cred_fetch_fail)
 	ret = edhoc_message_1_process(&resp_ctx, msg1, msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	coverage_mock_reset(7);
+	coverage_mock_reset(4);
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
@@ -109,7 +109,7 @@ TEST(coverage_msg2, msg2_compose_hash_fail)
 	ret = edhoc_message_1_process(&resp_ctx, msg1, msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	coverage_mock_reset(5);
+	coverage_mock_reset(2);
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
@@ -139,11 +139,11 @@ TEST(coverage_msg2, msg2_compose_ead_fail)
 	ret = edhoc_message_1_process(&resp_ctx, msg1, msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	coverage_mock_reset(6);
+	coverage_mock_reset(5);
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_EAD_COMPOSE_FAILURE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
@@ -169,7 +169,7 @@ TEST(coverage_msg2, msg2_compose_signature_fail)
 	ret = edhoc_message_1_process(&resp_ctx, msg1, msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	coverage_mock_reset(10);
+	coverage_mock_reset(7);
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
@@ -199,7 +199,7 @@ TEST(coverage_msg2, msg2_compose_encrypt_fail)
 	ret = edhoc_message_1_process(&resp_ctx, msg1, msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	coverage_mock_reset(12);
+	coverage_mock_reset(8);
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
@@ -401,9 +401,10 @@ TEST(coverage_msg2, msg2_compose_method2_failure_sweep)
 		size_t msg2_len = 0;
 		ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2),
 					      &msg2_len);
+		/* Method 2 (Responder = Signature) composes msg2 with the same
+		 * crypto-op profile as method 0. */
 		coverage_assert_sweep_result(
-			ret,
-			coverage_msg2_compose_method_sweep_must_fail(fail_pt));
+			ret, coverage_msg2_compose_m0_must_fail(fail_pt));
 
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
 				  edhoc_context_deinit(&init_ctx));

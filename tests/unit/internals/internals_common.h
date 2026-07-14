@@ -22,8 +22,22 @@
 /* Types and type definitions ---------------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 
-extern const struct edhoc_keys *internals_keys;
 extern const struct edhoc_crypto *internals_crypto;
+
+/*
+ * Publish a known PRK (raw bytes) as a key-store handle in the given slot so the
+ * white-box tests can drive the internal KDF helpers without a full handshake.
+ */
+extern void internals_inject_prk(struct edhoc_context *ctx,
+				 enum edhoc_key_slot_id slot,
+				 const uint8_t *prk, size_t prk_len);
+
+/*
+ * Import a raw scalar as an X25519 ECDH private-key handle (suite 0) and store
+ * the handle in \p key_id, for auth_cred.priv_key_id in the static-DH tests.
+ */
+extern void internals_inject_ecdh_key(uint8_t *key_id, const uint8_t *priv,
+				      size_t priv_len);
 
 /* Extern variables and constant declarations ------------------------------ */
 
@@ -46,18 +60,16 @@ extern int comp_prk_3e2m(struct edhoc_context *ctx,
 			 const uint8_t *pub_key, size_t pub_key_len);
 extern int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len);
-extern int gen_dh_keys(struct edhoc_context *ctx);
-extern int comp_dh_secret(struct edhoc_context *ctx);
-extern int comp_keystream(const struct edhoc_context *ctx,
-			  const uint8_t *prk_2e, size_t prk_2e_len,
-			  uint8_t *keystream, size_t keystream_len);
+extern int comp_encapsulate(struct edhoc_context *ctx);
+extern int comp_decapsulate(struct edhoc_context *ctx);
+extern int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
+			  size_t keystream_len);
 extern int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
 extern int comp_grx(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
-		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *grx,
-		    size_t grx_len);
+		    const uint8_t *pub_key, size_t pub_key_len);
 extern int comp_plaintext_2_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_2_len);
@@ -87,8 +99,7 @@ extern int comp_th_4(struct edhoc_context *ctx,
 		     size_t ptxt_len);
 extern int comp_giy(struct edhoc_context *ctx,
 		    const struct edhoc_auth_creds *auth_cred,
-		    const uint8_t *pub_key, size_t pub_key_len, uint8_t *giy,
-		    size_t giy_len);
+		    const uint8_t *pub_key, size_t pub_key_len);
 extern int comp_plaintext_3_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_3_len);
@@ -102,7 +113,6 @@ extern int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
 extern int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
 		       const uint8_t **ctxt_3, size_t *ctxt_3_len);
 extern int decrypt_ciphertext_3(const struct edhoc_context *ctx,
-				const uint8_t *key, size_t key_len,
 				const uint8_t *iv, size_t iv_len,
 				const uint8_t *aad, size_t aad_len,
 				const uint8_t *ctxt, size_t ctxt_len,

@@ -131,13 +131,16 @@ TEST(api, set_cipher_suites)
 	const struct edhoc_cipher_suite single_cipher_suite[] = {
 		{
 			.value = 1 << 1,
+			.supports_dh_nike = true,
 			.aead_key_length = 1 << 2,
 			.aead_tag_length = 1 << 3,
 			.aead_iv_length = 1 << 4,
 			.hash_length = 1 << 5,
 			.mac_length = 1 << 6,
-			.ecc_key_length = 1 << 7,
-			.ecc_sign_length = 1 << 8,
+			.kem_public_key_length = 1 << 7,
+			.kem_ciphertext_length = 1 << 8,
+			.nike_key_length = 1 << 9,
+			.sign_length = 1 << 10,
 		},
 	};
 	ret = edhoc_set_cipher_suites(&ctx, single_cipher_suite,
@@ -157,10 +160,16 @@ TEST(api, set_cipher_suites)
 				  ctx.csuite[i].hash_length);
 		TEST_ASSERT_EQUAL(single_cipher_suite[i].mac_length,
 				  ctx.csuite[i].mac_length);
-		TEST_ASSERT_EQUAL(single_cipher_suite[i].ecc_key_length,
-				  ctx.csuite[i].ecc_key_length);
-		TEST_ASSERT_EQUAL(single_cipher_suite[i].ecc_sign_length,
-				  ctx.csuite[i].ecc_sign_length);
+		TEST_ASSERT_EQUAL(single_cipher_suite[i].supports_dh_nike,
+				  ctx.csuite[i].supports_dh_nike);
+		TEST_ASSERT_EQUAL(single_cipher_suite[i].kem_public_key_length,
+				  ctx.csuite[i].kem_public_key_length);
+		TEST_ASSERT_EQUAL(single_cipher_suite[i].kem_ciphertext_length,
+				  ctx.csuite[i].kem_ciphertext_length);
+		TEST_ASSERT_EQUAL(single_cipher_suite[i].nike_key_length,
+				  ctx.csuite[i].nike_key_length);
+		TEST_ASSERT_EQUAL(single_cipher_suite[i].sign_length,
+				  ctx.csuite[i].sign_length);
 	}
 
 	ret = edhoc_context_deinit(&ctx);
@@ -180,13 +189,16 @@ TEST(api, set_cipher_suites)
 		int v = (int)(i + 1);
 		many_cipher_suite[i] = (struct edhoc_cipher_suite){
 			.value = v << 1,
+			.supports_dh_nike = true,
 			.aead_key_length = v << 2,
 			.aead_tag_length = v << 3,
 			.aead_iv_length = v << 4,
 			.hash_length = v << 5,
 			.mac_length = v << 6,
-			.ecc_key_length = v << 7,
-			.ecc_sign_length = v << 8,
+			.kem_public_key_length = v << 7,
+			.kem_ciphertext_length = v << 8,
+			.nike_key_length = v << 9,
+			.sign_length = v << 10,
 		};
 	}
 
@@ -207,10 +219,16 @@ TEST(api, set_cipher_suites)
 				  ctx.csuite[i].hash_length);
 		TEST_ASSERT_EQUAL(many_cipher_suite[i].mac_length,
 				  ctx.csuite[i].mac_length);
-		TEST_ASSERT_EQUAL(many_cipher_suite[i].ecc_key_length,
-				  ctx.csuite[i].ecc_key_length);
-		TEST_ASSERT_EQUAL(many_cipher_suite[i].ecc_sign_length,
-				  ctx.csuite[i].ecc_sign_length);
+		TEST_ASSERT_EQUAL(many_cipher_suite[i].supports_dh_nike,
+				  ctx.csuite[i].supports_dh_nike);
+		TEST_ASSERT_EQUAL(many_cipher_suite[i].kem_public_key_length,
+				  ctx.csuite[i].kem_public_key_length);
+		TEST_ASSERT_EQUAL(many_cipher_suite[i].kem_ciphertext_length,
+				  ctx.csuite[i].kem_ciphertext_length);
+		TEST_ASSERT_EQUAL(many_cipher_suite[i].nike_key_length,
+				  ctx.csuite[i].nike_key_length);
+		TEST_ASSERT_EQUAL(many_cipher_suite[i].sign_length,
+				  ctx.csuite[i].sign_length);
 	}
 
 	ret = edhoc_context_deinit(&ctx);
@@ -303,42 +321,49 @@ TEST(api, bindings)
 
 	ret = edhoc_bind_ead(&ctx, &test_ead_stubs);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(test_ead_stubs.compose, ctx.ead.compose);
-	TEST_ASSERT_EQUAL(test_ead_stubs.process, ctx.ead.process);
-
-	ret = edhoc_bind_keys(&ctx, edhoc_cipher_suite_2_get_keys());
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_keys()->import_key,
-			  ctx.keys.import_key);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_keys()->destroy_key,
-			  ctx.keys.destroy_key);
+	TEST_ASSERT_EQUAL(test_ead_stubs.compose, ctx.itf.ead.compose);
+	TEST_ASSERT_EQUAL(test_ead_stubs.process, ctx.itf.ead.process);
 
 	ret = edhoc_bind_crypto(&ctx, edhoc_cipher_suite_2_get_crypto());
 	edhoc_bind_platform(&ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->make_key_pair,
-			  ctx.crypto.make_key_pair);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->destroy_key,
+			  ctx.itf.crypto.destroy_key);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->generate_key_pair,
+			  ctx.itf.crypto.generate_key_pair);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->encapsulate,
+			  ctx.itf.crypto.encapsulate);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->decapsulate,
+			  ctx.itf.crypto.decapsulate);
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->key_agreement,
-			  ctx.crypto.key_agreement);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->signature,
-			  ctx.crypto.signature);
+			  ctx.itf.crypto.key_agreement);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->sign,
+			  ctx.itf.crypto.sign);
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->verify,
-			  ctx.crypto.verify);
+			  ctx.itf.crypto.verify);
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->extract,
-			  ctx.crypto.extract);
+			  ctx.itf.crypto.extract);
 	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->expand,
-			  ctx.crypto.expand);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->encrypt,
-			  ctx.crypto.encrypt);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->decrypt,
-			  ctx.crypto.decrypt);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash,
-			  ctx.crypto.hash);
+			  ctx.itf.crypto.expand);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->expand_raw,
+			  ctx.itf.crypto.expand_raw);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->aead_encrypt,
+			  ctx.itf.crypto.aead_encrypt);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->aead_decrypt,
+			  ctx.itf.crypto.aead_decrypt);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_init,
+			  ctx.itf.crypto.hash_init);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_update,
+			  ctx.itf.crypto.hash_update);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_finish,
+			  ctx.itf.crypto.hash_finish);
+	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_abort,
+			  ctx.itf.crypto.hash_abort);
 
 	ret = edhoc_bind_credentials(&ctx, &test_cred_stubs);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(test_cred_stubs.fetch, ctx.cred.fetch);
-	TEST_ASSERT_EQUAL(test_cred_stubs.verify, ctx.cred.verify);
+	TEST_ASSERT_EQUAL(test_cred_stubs.fetch, ctx.itf.cred.fetch);
+	TEST_ASSERT_EQUAL(test_cred_stubs.verify, ctx.itf.cred.verify);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -351,37 +376,46 @@ TEST(api, get_cipher_suite_descriptors)
 	suite = edhoc_cipher_suite_0_get_suite();
 	TEST_ASSERT_NOT_NULL(suite);
 	TEST_ASSERT_EQUAL(0, suite->value);
+	TEST_ASSERT_TRUE(suite->supports_dh_nike);
 	TEST_ASSERT_EQUAL(16, suite->aead_key_length);
 	TEST_ASSERT_EQUAL(8, suite->aead_tag_length);
 	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
 	TEST_ASSERT_EQUAL(32, suite->hash_length);
 	TEST_ASSERT_EQUAL(8, suite->mac_length);
-	TEST_ASSERT_EQUAL(32, suite->ecc_key_length);
-	TEST_ASSERT_EQUAL(64, suite->ecc_sign_length);
+	TEST_ASSERT_EQUAL(32, suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(32, suite->kem_ciphertext_length);
+	TEST_ASSERT_EQUAL(32, suite->nike_key_length);
+	TEST_ASSERT_EQUAL(64, suite->sign_length);
 	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_0_get_suite());
 
 	suite = edhoc_cipher_suite_2_get_suite();
 	TEST_ASSERT_NOT_NULL(suite);
 	TEST_ASSERT_EQUAL(2, suite->value);
+	TEST_ASSERT_TRUE(suite->supports_dh_nike);
 	TEST_ASSERT_EQUAL(16, suite->aead_key_length);
 	TEST_ASSERT_EQUAL(8, suite->aead_tag_length);
 	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
 	TEST_ASSERT_EQUAL(32, suite->hash_length);
 	TEST_ASSERT_EQUAL(8, suite->mac_length);
-	TEST_ASSERT_EQUAL(32, suite->ecc_key_length);
-	TEST_ASSERT_EQUAL(64, suite->ecc_sign_length);
+	TEST_ASSERT_EQUAL(32, suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(32, suite->kem_ciphertext_length);
+	TEST_ASSERT_EQUAL(32, suite->nike_key_length);
+	TEST_ASSERT_EQUAL(64, suite->sign_length);
 	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_2_get_suite());
 
 	suite = edhoc_cipher_suite_24_get_suite();
 	TEST_ASSERT_NOT_NULL(suite);
 	TEST_ASSERT_EQUAL(24, suite->value);
+	TEST_ASSERT_TRUE(suite->supports_dh_nike);
 	TEST_ASSERT_EQUAL(32, suite->aead_key_length);
 	TEST_ASSERT_EQUAL(16, suite->aead_tag_length);
 	TEST_ASSERT_EQUAL(12, suite->aead_iv_length);
 	TEST_ASSERT_EQUAL(48, suite->hash_length);
 	TEST_ASSERT_EQUAL(16, suite->mac_length);
-	TEST_ASSERT_EQUAL(48, suite->ecc_key_length);
-	TEST_ASSERT_EQUAL(96, suite->ecc_sign_length);
+	TEST_ASSERT_EQUAL(48, suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(48, suite->kem_ciphertext_length);
+	TEST_ASSERT_EQUAL(48, suite->nike_key_length);
+	TEST_ASSERT_EQUAL(96, suite->sign_length);
 	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_24_get_suite());
 }
 

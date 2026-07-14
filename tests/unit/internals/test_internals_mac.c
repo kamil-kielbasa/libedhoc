@@ -21,7 +21,6 @@ TEST_GROUP(internals_mac);
 TEST_SETUP(internals_mac)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
 
@@ -650,8 +649,6 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 	ctx.th_len = 32;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	memset(ctx.th, 0xAA, 32);
-	memset(ctx.prk, 0xBB, 32);
-	ctx.prk_len = 32;
 	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 	ctx.cid.int_value = 5;
 
@@ -740,8 +737,6 @@ TEST(internals_mac, comp_sign_or_mac_method2_msg3)
 	ctx.th_len = 32;
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	memset(ctx.th, 0xAA, 32);
-	memset(ctx.prk, 0xBB, 32);
-	ctx.prk_len = 32;
 
 	static const uint8_t dummy_cred[50] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -1238,7 +1233,6 @@ TEST(internals_mac, comp_mac_invalid_message)
 	ctx.chosen_method = EDHOC_METHOD_0;
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
-	ctx.prk_len = 32;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1260,7 +1254,6 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg2)
 	ctx.chosen_method = EDHOC_METHOD_0;
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
-	ctx.prk_len = 32;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1282,7 +1275,6 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg3)
 	ctx.chosen_method = EDHOC_METHOD_0;
 	ctx.th_state = EDHOC_TH_STATE_3;
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
-	ctx.prk_len = 32;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1724,7 +1716,6 @@ TEST(internals_mac, comp_mac_null_args)
 	ctx.role = EDHOC_RESPONDER;
 	ctx.message = EDHOC_MSG_2;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
-	ctx.prk_len = 32;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1752,8 +1743,6 @@ TEST(internals_mac, comp_mac_msg1)
 	ctx.chosen_method = EDHOC_METHOD_0;
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
-	ctx.prk_len = 32;
-	memset(ctx.prk, 0xAB, 32);
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;

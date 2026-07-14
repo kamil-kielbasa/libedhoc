@@ -21,7 +21,6 @@ TEST_GROUP(internals_message4);
 TEST_SETUP(internals_message4)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
 
@@ -56,9 +55,8 @@ TEST(internals_message4, comp_th_4_bad_state)
 
 TEST(internals_message4, comp_giy_null)
 {
-	uint8_t giy[32];
 	struct edhoc_auth_creds ac = { 0 };
-	int ret = comp_giy(NULL, &ac, NULL, 0, giy, sizeof(giy));
+	int ret = comp_giy(NULL, &ac, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -70,11 +68,9 @@ TEST(internals_message4, comp_giy_invalid_role)
 	ctx.chosen_method = EDHOC_METHOD_2;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.prk_len = 32;
 
 	struct edhoc_auth_creds ac = { 0 };
-	uint8_t giy[32];
-	int ret = comp_giy(&ctx, &ac, NULL, 0, giy, sizeof(giy));
+	int ret = comp_giy(&ctx, &ac, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));

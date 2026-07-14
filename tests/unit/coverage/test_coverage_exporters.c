@@ -39,7 +39,8 @@ TEST(coverage_exporters, prk_exporter_bad_label)
 
 	uint8_t secret[32] = { 0 };
 	coverage_mock_reset(0);
-	int ret = edhoc_export_prk_exporter(&ctx, 100, secret, sizeof(secret));
+	int ret = edhoc_export_prk_exporter(&ctx, 100, NULL, 0, secret,
+					    sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
@@ -53,12 +54,11 @@ TEST(coverage_exporters, prk_exporter_expand_fail)
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	uint8_t secret[32] = { 0 };
-	coverage_mock_reset(4);
-	int ret =
-		edhoc_export_prk_exporter(&ctx, 32769, secret, sizeof(secret));
+	coverage_mock_reset(2);
+	int ret = edhoc_export_prk_exporter(&ctx, 32769, NULL, 0, secret,
+					    sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
@@ -73,7 +73,6 @@ TEST(coverage_exporters, oscore_export_wrong_status)
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.is_oscore_export_allowed = true;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 	ctx.peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 	ctx.peer_cid.int_value = -8;
 
@@ -98,7 +97,6 @@ TEST(coverage_exporters, key_update_success)
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	uint8_t entropy[16] = { 1, 2, 3 };
 	coverage_mock_reset(0);
@@ -117,10 +115,9 @@ TEST(coverage_exporters, key_update_extract_fail)
 	ctx.status = EDHOC_SM_COMPLETED;
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	uint8_t entropy[16] = { 1, 2, 3 };
-	coverage_mock_reset(2);
+	coverage_mock_reset(1);
 	int ret = edhoc_export_key_update(&ctx, entropy, sizeof(entropy));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
 
@@ -136,7 +133,6 @@ TEST(coverage_exporters, oscore_export_bstr_cid)
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.is_oscore_export_allowed = true;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 	ctx.peer_cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
 	ctx.peer_cid.bstr_length = 2;
 	ctx.peer_cid.bstr_value[0] = 0xAA;
@@ -158,7 +154,7 @@ TEST(coverage_exporters, oscore_export_bstr_cid)
 TEST(coverage_exporters, prk_exporter_failure_sweep)
 {
 	const int mock_fail_pt_first = 1;
-	const int mock_fail_pt_last = 4;
+	const int mock_fail_pt_last = 2;
 
 	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
 	     fail_pt++) {
@@ -168,13 +164,12 @@ TEST(coverage_exporters, prk_exporter_failure_sweep)
 		ctx.status = EDHOC_SM_COMPLETED;
 		ctx.prk_state = EDHOC_PRK_STATE_OUT;
 		ctx.th_len = 32;
-		ctx.prk_len = 32;
 
 		uint8_t secret[32] = { 0 };
 		coverage_mock_reset(fail_pt);
-		int ret = edhoc_export_prk_exporter(&ctx, 32769, secret,
-						    sizeof(secret));
-		if (fail_pt <= 2) {
+		int ret = edhoc_export_prk_exporter(&ctx, 32769, NULL, 0,
+						    secret, sizeof(secret));
+		if (fail_pt == 1) {
 			TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE,
 					  ret);
 		} else {
@@ -188,7 +183,7 @@ TEST(coverage_exporters, prk_exporter_failure_sweep)
 TEST(coverage_exporters, oscore_export_failure_sweep)
 {
 	const int mock_fail_pt_first = 1;
-	const int mock_fail_pt_last = 6;
+	const int mock_fail_pt_last = 4;
 
 	for (int fail_pt = mock_fail_pt_first; fail_pt <= mock_fail_pt_last;
 	     fail_pt++) {
@@ -199,7 +194,6 @@ TEST(coverage_exporters, oscore_export_failure_sweep)
 		ctx.prk_state = EDHOC_PRK_STATE_OUT;
 		ctx.is_oscore_export_allowed = true;
 		ctx.th_len = 32;
-		ctx.prk_len = 32;
 		ctx.peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 		ctx.peer_cid.int_value = -8;
 

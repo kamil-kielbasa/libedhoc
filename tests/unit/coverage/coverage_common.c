@@ -35,78 +35,99 @@ bool coverage_mock_should_fail(void)
 
 /* Static function definitions --------------------------------------------- */
 
-/* Mock key callbacks */
-static int mock_key_import(void *user_ctx, enum edhoc_key_type key_type,
-			   const uint8_t *raw_key, size_t raw_key_len,
-			   void *kid)
-{
-	(void)user_ctx;
-	(void)key_type;
-	(void)raw_key;
-	(void)raw_key_len;
-	if (coverage_mock_should_fail())
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	memset(kid, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
-	return EDHOC_SUCCESS;
-}
-
-static int mock_key_destroy(void *user_ctx, void *kid)
-{
-	(void)user_ctx;
-	(void)kid;
-	return EDHOC_SUCCESS;
-}
-
 /*
  * The coverage tests bind the real cipher suite 2 descriptor (P-256 / SHA-256)
- * together with these mock crypto callbacks. Cipher suite 2 produces 32-byte
- * ECC keys, shared secrets, hashes and PRKs regardless of the context buffer
- * capacity (CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY / _MAC, which are sized for the
- * largest supported cipher suite). The mocks therefore report these fixed
- * suite-2 lengths so the core's length checks remain consistent.
+ * together with these handle-only mock crypto callbacks. The mock never touches
+ * PSA: OUT key handles get a fixed non-null placeholder (the core only tracks
+ * slot liveness, never the handle value) and raw outputs are filled with a
+ * constant. Cipher suite 2 produces 32-byte ECC keys, shared secrets, hashes
+ * and PRKs, so the mocks report those fixed lengths.
+ *
+ * Failure injection counts the meaningful operations. destroy_key and the
+ * multipart-hash bookkeeping (hash_init / hash_update / hash_abort) do NOT
+ * increment the counter, so a full hash still costs one failure-injection step
+ * (at hash_finish), matching the old single-shot hash callback.
  */
 #define MOCK_SUITE2_ECC_KEY_LEN ((size_t)32)
 #define MOCK_SUITE2_HASH_LEN ((size_t)32)
 
-/* Mock crypto callbacks */
-static int mock_make_key_pair(void *user_ctx, const void *kid,
-			      uint8_t *priv_key, size_t priv_key_size,
-			      size_t *priv_key_len, uint8_t *pub_key,
-			      size_t pub_key_size, size_t *pub_key_len)
+static void mock_set_handle(void *key_id)
+{
+	if (NULL != key_id)
+		memset(key_id, 0x11, CONFIG_LIBEDHOC_KEY_ID_LEN);
+}
+
+static int mock_destroy_key(void *user_ctx, void *key_id)
 {
 	(void)user_ctx;
-	(void)kid;
-	if (coverage_mock_should_fail())
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	memset(priv_key, 0xAA, priv_key_size);
-	*priv_key_len = MOCK_SUITE2_ECC_KEY_LEN;
-	memset(pub_key, 0xBB, pub_key_size);
-	*pub_key_len = MOCK_SUITE2_ECC_KEY_LEN;
+	(void)key_id;
 	return EDHOC_SUCCESS;
 }
 
-static int mock_key_agreement(void *user_ctx, const void *kid,
-			      const uint8_t *pub_key, size_t pub_key_len,
-			      uint8_t *secret, size_t secret_size,
-			      size_t *secret_len)
+static int mock_generate_key_pair(void *user_ctx, void *decaps_key_id,
+				  uint8_t *encaps_key, size_t encaps_key_size,
+				  size_t *encaps_key_len)
 {
 	(void)user_ctx;
-	(void)kid;
-	(void)pub_key;
-	(void)pub_key_len;
 	if (coverage_mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
-	memset(secret, 0xCC, secret_size);
-	*secret_len = MOCK_SUITE2_ECC_KEY_LEN;
+	mock_set_handle(decaps_key_id);
+	memset(encaps_key, 0xBB, encaps_key_size);
+	*encaps_key_len = MOCK_SUITE2_ECC_KEY_LEN;
 	return EDHOC_SUCCESS;
 }
 
-static int mock_signature(void *user_ctx, const void *kid, const uint8_t *input,
-			  size_t input_len, uint8_t *sign, size_t sign_size,
-			  size_t *sign_len)
+static int mock_encapsulate(void *user_ctx, const uint8_t *encaps_key,
+			    size_t encaps_key_len, void *decaps_key_id,
+			    void *shared_secret_key_id, uint8_t *ciphertext,
+			    size_t ciphertext_size, size_t *ciphertext_len)
 {
 	(void)user_ctx;
-	(void)kid;
+	(void)encaps_key;
+	(void)encaps_key_len;
+	if (coverage_mock_should_fail())
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	mock_set_handle(decaps_key_id);
+	mock_set_handle(shared_secret_key_id);
+	memset(ciphertext, 0xCC, ciphertext_size);
+	*ciphertext_len = MOCK_SUITE2_ECC_KEY_LEN;
+	return EDHOC_SUCCESS;
+}
+
+static int mock_decapsulate(void *user_ctx, const void *decaps_key_id,
+			    const uint8_t *ciphertext, size_t ciphertext_len,
+			    void *shared_secret_key_id)
+{
+	(void)user_ctx;
+	(void)decaps_key_id;
+	(void)ciphertext;
+	(void)ciphertext_len;
+	if (coverage_mock_should_fail())
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	mock_set_handle(shared_secret_key_id);
+	return EDHOC_SUCCESS;
+}
+
+static int mock_key_agreement(void *user_ctx, const void *priv_key_id,
+			      const uint8_t *peer_pub, size_t peer_pub_len,
+			      void *shared_secret_key_id)
+{
+	(void)user_ctx;
+	(void)priv_key_id;
+	(void)peer_pub;
+	(void)peer_pub_len;
+	if (coverage_mock_should_fail())
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	mock_set_handle(shared_secret_key_id);
+	return EDHOC_SUCCESS;
+}
+
+static int mock_sign(void *user_ctx, const void *priv_key_id,
+		     const uint8_t *input, size_t input_len, uint8_t *sign,
+		     size_t sign_size, size_t *sign_len)
+{
+	(void)user_ctx;
+	(void)priv_key_id;
 	(void)input;
 	(void)input_len;
 	if (coverage_mock_should_fail())
@@ -116,11 +137,13 @@ static int mock_signature(void *user_ctx, const void *kid, const uint8_t *input,
 	return EDHOC_SUCCESS;
 }
 
-static int mock_verify(void *user_ctx, const void *kid, const uint8_t *input,
+static int mock_verify(void *user_ctx, const uint8_t *pub_key,
+		       size_t pub_key_len, const uint8_t *input,
 		       size_t input_len, const uint8_t *sign, size_t sign_len)
 {
 	(void)user_ctx;
-	(void)kid;
+	(void)pub_key;
+	(void)pub_key_len;
 	(void)input;
 	(void)input_len;
 	(void)sign;
@@ -130,41 +153,56 @@ static int mock_verify(void *user_ctx, const void *kid, const uint8_t *input,
 	return EDHOC_SUCCESS;
 }
 
-static int mock_extract(void *user_ctx, const void *kid, const uint8_t *salt,
-			size_t salt_len, uint8_t *prk, size_t prk_size,
-			size_t *prk_len)
+static int mock_extract(void *user_ctx, const void *ikm_key_id,
+			const uint8_t *salt, size_t salt_len, void *prk_key_id)
 {
 	(void)user_ctx;
-	(void)kid;
+	(void)ikm_key_id;
 	(void)salt;
 	(void)salt_len;
 	if (coverage_mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
-	memset(prk, 0xEE, prk_size);
-	*prk_len = MOCK_SUITE2_HASH_LEN;
+	mock_set_handle(prk_key_id);
 	return EDHOC_SUCCESS;
 }
 
-static int mock_expand(void *user_ctx, const void *kid, const uint8_t *info,
-		       size_t info_len, uint8_t *okm, size_t okm_len)
+static int mock_expand(void *user_ctx, const void *prk_key_id,
+		       const uint8_t *info, size_t info_len,
+		       enum edhoc_key_usage usage, void *output_key_id)
 {
 	(void)user_ctx;
-	(void)kid;
+	(void)prk_key_id;
+	(void)info;
+	(void)info_len;
+	(void)usage;
+	if (coverage_mock_should_fail())
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	mock_set_handle(output_key_id);
+	return EDHOC_SUCCESS;
+}
+
+static int mock_expand_raw(void *user_ctx, const void *prk_key_id,
+			   const uint8_t *info, size_t info_len,
+			   uint8_t *output, size_t output_len)
+{
+	(void)user_ctx;
+	(void)prk_key_id;
 	(void)info;
 	(void)info_len;
 	if (coverage_mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
-	memset(okm, 0xFF, okm_len);
+	memset(output, 0xFF, output_len);
 	return EDHOC_SUCCESS;
 }
 
-static int mock_encrypt(void *user_ctx, const void *kid, const uint8_t *nonce,
-			size_t nonce_len, const uint8_t *aad, size_t aad_len,
-			const uint8_t *ptxt, size_t ptxt_len, uint8_t *ctxt,
-			size_t ctxt_size, size_t *ctxt_len)
+static int mock_aead_encrypt(void *user_ctx, const void *key_id,
+			     const uint8_t *nonce, size_t nonce_len,
+			     const uint8_t *aad, size_t aad_len,
+			     const uint8_t *ptxt, size_t ptxt_len,
+			     uint8_t *ctxt, size_t ctxt_size, size_t *ctxt_len)
 {
 	(void)user_ctx;
-	(void)kid;
+	(void)key_id;
 	(void)nonce;
 	(void)nonce_len;
 	(void)aad;
@@ -179,13 +217,14 @@ static int mock_encrypt(void *user_ctx, const void *kid, const uint8_t *nonce,
 	return EDHOC_SUCCESS;
 }
 
-static int mock_decrypt(void *user_ctx, const void *kid, const uint8_t *nonce,
-			size_t nonce_len, const uint8_t *aad, size_t aad_len,
-			const uint8_t *ctxt, size_t ctxt_len, uint8_t *ptxt,
-			size_t ptxt_size, size_t *ptxt_len)
+static int mock_aead_decrypt(void *user_ctx, const void *key_id,
+			     const uint8_t *nonce, size_t nonce_len,
+			     const uint8_t *aad, size_t aad_len,
+			     const uint8_t *ctxt, size_t ctxt_len,
+			     uint8_t *ptxt, size_t ptxt_size, size_t *ptxt_len)
 {
 	(void)user_ctx;
-	(void)kid;
+	(void)key_id;
 	(void)nonce;
 	(void)nonce_len;
 	(void)aad;
@@ -201,12 +240,33 @@ static int mock_decrypt(void *user_ctx, const void *kid, const uint8_t *nonce,
 	return EDHOC_SUCCESS;
 }
 
-static int mock_hash(void *user_ctx, const uint8_t *input, size_t input_len,
-		     uint8_t *hash, size_t hash_size, size_t *hash_len)
+/* A single static token is a valid backend-owned multipart hash operation. */
+static int mock_hash_op_token;
+
+static int mock_hash_init(void *user_ctx, void **operation)
 {
 	(void)user_ctx;
+	if (NULL == operation)
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	*operation = &mock_hash_op_token;
+	return EDHOC_SUCCESS;
+}
+
+static int mock_hash_update(void *user_ctx, void *operation,
+			    const uint8_t *input, size_t input_len)
+{
+	(void)user_ctx;
+	(void)operation;
 	(void)input;
 	(void)input_len;
+	return EDHOC_SUCCESS;
+}
+
+static int mock_hash_finish(void *user_ctx, void *operation, uint8_t *hash,
+			    size_t hash_size, size_t *hash_len)
+{
+	(void)user_ctx;
+	(void)operation;
 	if (coverage_mock_should_fail())
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	memset(hash, 0x11, hash_size);
@@ -214,23 +274,32 @@ static int mock_hash(void *user_ctx, const uint8_t *input, size_t input_len,
 	return EDHOC_SUCCESS;
 }
 
+static int mock_hash_abort(void *user_ctx, void *operation)
+{
+	(void)user_ctx;
+	(void)operation;
+	return EDHOC_SUCCESS;
+}
+
 /* Module interface variables and constants -------------------------------- */
 
-const struct edhoc_keys coverage_mock_keys = {
-	.import_key = mock_key_import,
-	.destroy_key = mock_key_destroy,
-};
-
 const struct edhoc_crypto coverage_mock_crypto = {
-	.make_key_pair = mock_make_key_pair,
+	.destroy_key = mock_destroy_key,
+	.generate_key_pair = mock_generate_key_pair,
+	.encapsulate = mock_encapsulate,
+	.decapsulate = mock_decapsulate,
 	.key_agreement = mock_key_agreement,
-	.signature = mock_signature,
+	.sign = mock_sign,
 	.verify = mock_verify,
 	.extract = mock_extract,
 	.expand = mock_expand,
-	.encrypt = mock_encrypt,
-	.decrypt = mock_decrypt,
-	.hash = mock_hash,
+	.expand_raw = mock_expand_raw,
+	.aead_encrypt = mock_aead_encrypt,
+	.aead_decrypt = mock_aead_decrypt,
+	.hash_init = mock_hash_init,
+	.hash_update = mock_hash_update,
+	.hash_finish = mock_hash_finish,
+	.hash_abort = mock_hash_abort,
 };
 
 /* Mock credential callbacks */
@@ -330,10 +399,6 @@ int coverage_setup_mock_context(struct edhoc_context *ctx,
 		.int_value = -24,
 	};
 	ret = edhoc_set_connection_id(ctx, &cid);
-	if (EDHOC_SUCCESS != ret)
-		return ret;
-
-	ret = edhoc_bind_keys(ctx, &coverage_mock_keys);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 

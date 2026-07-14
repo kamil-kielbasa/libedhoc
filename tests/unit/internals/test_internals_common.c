@@ -21,7 +21,6 @@ TEST_GROUP(internals_common);
 TEST_SETUP(internals_common)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
 
@@ -413,7 +412,6 @@ TEST(internals_common, compute_prk_out_bad_th_state)
 	ctx.th_state = EDHOC_TH_STATE_3;
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
@@ -428,7 +426,6 @@ TEST(internals_common, compute_prk_out_bad_prk_state)
 	ctx.th_state = EDHOC_TH_STATE_4;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
@@ -449,11 +446,12 @@ TEST(internals_common, compute_prk_out_success)
 	ctx.th_state = EDHOC_TH_STATE_4;
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
+	uint8_t prk[32] = { 0 };
 	for (size_t i = 0; i < 32; i++) {
 		ctx.th[i] = (uint8_t)(i + 1);
-		ctx.prk[i] = (uint8_t)(i + 0x20);
+		prk[i] = (uint8_t)(i + 0x20);
 	}
+	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_4E3M, prk, sizeof(prk));
 
 	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -467,7 +465,6 @@ TEST(internals_common, compute_new_prk_out_bad_state)
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	ctx.prk_len = 32;
 
 	uint8_t entropy[16] = { 0xAA };
 	int ret = compute_new_prk_out(&ctx, entropy, sizeof(entropy));
@@ -483,11 +480,12 @@ TEST(internals_common, compute_new_prk_out_success)
 	ctx.th_state = EDHOC_TH_STATE_4;
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
+	uint8_t prk[32] = { 0 };
 	for (size_t i = 0; i < 32; i++) {
 		ctx.th[i] = (uint8_t)(i + 1);
-		ctx.prk[i] = (uint8_t)(i + 0x20);
+		prk[i] = (uint8_t)(i + 0x20);
 	}
+	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_4E3M, prk, sizeof(prk));
 
 	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -504,7 +502,6 @@ TEST(internals_common, compute_prk_exporter_bad_state)
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	ctx.prk_len = 32;
 
 	uint8_t prk_exp[32] = { 0 };
 	int ret = compute_prk_exporter(&ctx, prk_exp, sizeof(prk_exp));
@@ -520,11 +517,12 @@ TEST(internals_common, compute_prk_exporter_success)
 	ctx.th_state = EDHOC_TH_STATE_4;
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
+	uint8_t prk[32] = { 0 };
 	for (size_t i = 0; i < 32; i++) {
 		ctx.th[i] = (uint8_t)(i + 1);
-		ctx.prk[i] = (uint8_t)(i + 0x20);
+		prk[i] = (uint8_t)(i + 0x20);
 	}
+	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_4E3M, prk, sizeof(prk));
 
 	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -543,7 +541,6 @@ TEST(internals_common, comp_salt_3e2m_bad_th_state)
 	ctx.th_state = EDHOC_TH_STATE_1;
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	uint8_t salt[32] = { 0 };
 	int ret = comp_salt_3e2m(&ctx, salt, sizeof(salt));
@@ -559,7 +556,6 @@ TEST(internals_common, comp_salt_3e2m_bad_prk_state)
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	uint8_t salt[32] = { 0 };
 	int ret = comp_salt_3e2m(&ctx, salt, sizeof(salt));
@@ -575,7 +571,6 @@ TEST(internals_common, comp_salt_4e3m_bad_th_state)
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	uint8_t salt[32] = { 0 };
 	int ret = comp_salt_4e3m(&ctx, salt, sizeof(salt));
@@ -591,7 +586,6 @@ TEST(internals_common, comp_salt_4e3m_bad_prk_state)
 	ctx.th_state = EDHOC_TH_STATE_3;
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	uint8_t salt[32] = { 0 };
 	int ret = comp_salt_4e3m(&ctx, salt, sizeof(salt));
@@ -609,7 +603,6 @@ TEST(internals_common, comp_prk_3e2m_method_0)
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
@@ -630,27 +623,27 @@ TEST(internals_common, comp_prk_3e2m_method_1)
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
-	for (size_t i = 0; i < 32; i++) {
+	for (size_t i = 0; i < 32; i++)
 		ctx.th[i] = (uint8_t)(i + 1);
-		ctx.prk[i] = (uint8_t)(i + 0x20);
-	}
 
-	uint8_t dh_priv[32];
-	uint8_t dh_peer_pub[32];
+	uint8_t prk_2e[32] = { 0 };
+	uint8_t dh_priv[32] = { 0 };
 	for (size_t i = 0; i < 32; i++) {
+		prk_2e[i] = (uint8_t)(i + 0x20);
 		dh_priv[i] = (uint8_t)(i + 0x40);
-		dh_peer_pub[i] = (uint8_t)(i + 0x60);
 	}
-	memcpy(ctx.dh_priv_key, dh_priv, 32);
-	ctx.dh_priv_key_len = 32;
-	memcpy(ctx.dh_peer_pub_key, dh_peer_pub, 32);
-	ctx.dh_peer_pub_key_len = 32;
+	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_2E, prk_2e,
+			     sizeof(prk_2e));
+
+	/* Responder G_RX = key_agreement(its static key, peer ephemeral G_X). */
+	for (size_t i = 0; i < 32; i++)
+		ctx.peer_pub_eph_key[i] = (uint8_t)(i + 0x60);
+	ctx.peer_pub_eph_key_len = 32;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
-	edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_KEY_AGREEMENT, dh_priv,
-					32, auth_cred.priv_key_id);
+	internals_inject_ecdh_key(auth_cred.priv_key_id, dh_priv,
+				  sizeof(dh_priv));
 
 	uint8_t pub_key[32];
 	for (size_t i = 0; i < 32; i++)
@@ -672,7 +665,6 @@ TEST(internals_common, comp_prk_3e2m_method_max)
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.th_state = EDHOC_TH_STATE_2;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
@@ -692,7 +684,6 @@ TEST(internals_common, comp_prk_4e3m_method_0)
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.th_state = EDHOC_TH_STATE_3;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
@@ -713,27 +704,29 @@ TEST(internals_common, comp_prk_4e3m_method_2)
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.th_state = EDHOC_TH_STATE_3;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
-	for (size_t i = 0; i < 32; i++) {
+	for (size_t i = 0; i < 32; i++)
 		ctx.th[i] = (uint8_t)(i + 1);
-		ctx.prk[i] = (uint8_t)(i + 0x20);
+
+	uint8_t prk_3e2m[32] = { 0 };
+	uint8_t dh_priv[32] = { 0 };
+	for (size_t i = 0; i < 32; i++) {
+		prk_3e2m[i] = (uint8_t)(i + 0x20);
+		dh_priv[i] = (uint8_t)(i + 0x40);
 	}
 
-	uint8_t dh_priv[32];
-	uint8_t dh_peer_pub[32];
-	for (size_t i = 0; i < 32; i++) {
-		dh_priv[i] = (uint8_t)(i + 0x40);
-		dh_peer_pub[i] = (uint8_t)(i + 0x60);
-	}
-	memcpy(ctx.dh_priv_key, dh_priv, 32);
-	ctx.dh_priv_key_len = 32;
-	memcpy(ctx.dh_peer_pub_key, dh_peer_pub, 32);
-	ctx.dh_peer_pub_key_len = 32;
+	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_3E2M, prk_3e2m,
+			     sizeof(prk_3e2m));
+
+	/* Initiator G_IY = key_agreement(its static key, peer ephemeral G_Y). */
+	for (size_t i = 0; i < 32; i++)
+		ctx.peer_pub_eph_key[i] = (uint8_t)(i + 0x60);
+
+	ctx.peer_pub_eph_key_len = 32;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
-	edhoc_cipher_suite_0_key_import(NULL, EDHOC_KT_KEY_AGREEMENT, dh_priv,
-					32, auth_cred.priv_key_id);
+	internals_inject_ecdh_key(auth_cred.priv_key_id, dh_priv,
+				  sizeof(dh_priv));
 
 	uint8_t pub_key[32];
 	for (size_t i = 0; i < 32; i++)
@@ -755,7 +748,6 @@ TEST(internals_common, comp_prk_4e3m_method_max)
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.th_state = EDHOC_TH_STATE_3;
 	ctx.th_len = 32;
-	ctx.prk_len = 32;
 
 	struct edhoc_auth_creds auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;

@@ -22,7 +22,6 @@ TEST_GROUP(internals_message1);
 TEST_SETUP(internals_message1)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
 
@@ -61,7 +60,6 @@ TEST(internals_message1, msg1_compose_zero_csuites)
 		.int_value = 1,
 	};
 	edhoc_set_connection_id(&ctx, &cid);
-	edhoc_bind_keys(&ctx, internals_keys);
 	edhoc_bind_crypto(&ctx, internals_crypto);
 	edhoc_bind_platform(&ctx, test_get_platform());
 

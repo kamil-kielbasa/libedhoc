@@ -260,42 +260,6 @@ TEST(api_negative, bind_ead_not_initialized)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 }
 
-/* -- bind_keys error paths -- */
-
-TEST(api_negative, bind_keys_null_ctx)
-{
-	int ret = edhoc_bind_keys(NULL, edhoc_cipher_suite_0_get_keys());
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(api_negative, bind_keys_null_keys)
-{
-	struct edhoc_context ctx = { 0 };
-	edhoc_context_init(&ctx);
-	int ret = edhoc_bind_keys(&ctx, NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-	edhoc_context_deinit(&ctx);
-}
-
-TEST(api_negative, bind_keys_null_callbacks)
-{
-	struct edhoc_context ctx = { 0 };
-	edhoc_context_init(&ctx);
-	const struct edhoc_keys keys = { .import_key = NULL,
-					 .destroy_key = NULL };
-	int ret = edhoc_bind_keys(&ctx, &keys);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-	edhoc_context_deinit(&ctx);
-}
-
-TEST(api_negative, bind_keys_not_initialized)
-{
-	struct edhoc_context ctx;
-	memset(&ctx, 0, sizeof(ctx));
-	int ret = edhoc_bind_keys(&ctx, edhoc_cipher_suite_0_get_keys());
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-}
-
 /* -- bind_crypto error paths -- */
 
 TEST(api_negative, bind_crypto_null_ctx)
@@ -611,7 +575,8 @@ TEST(api_negative, message_error_process_null_buf)
 TEST(api_negative, export_prk_exporter_null_ctx)
 {
 	uint8_t secret[32];
-	int ret = edhoc_export_prk_exporter(NULL, 0, secret, sizeof(secret));
+	int ret = edhoc_export_prk_exporter(NULL, 0, NULL, 0, secret,
+					    sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -753,11 +718,6 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, bind_ead_null_ead);
 	RUN_TEST_CASE(api_negative, bind_ead_both_callbacks_null);
 	RUN_TEST_CASE(api_negative, bind_ead_not_initialized);
-
-	RUN_TEST_CASE(api_negative, bind_keys_null_ctx);
-	RUN_TEST_CASE(api_negative, bind_keys_null_keys);
-	RUN_TEST_CASE(api_negative, bind_keys_null_callbacks);
-	RUN_TEST_CASE(api_negative, bind_keys_not_initialized);
 
 	RUN_TEST_CASE(api_negative, bind_crypto_null_ctx);
 	RUN_TEST_CASE(api_negative, bind_crypto_null_crypto);

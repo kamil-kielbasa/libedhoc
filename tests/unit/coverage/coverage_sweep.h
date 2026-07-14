@@ -33,7 +33,7 @@ static inline void coverage_assert_sweep_result(int ret, bool must_fail)
 
 static inline bool coverage_msg1_compose_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 4;
+	return fail_pt >= 1 && fail_pt <= 3;
 }
 
 static inline bool coverage_msg1_process_must_fail(int fail_pt)
@@ -43,7 +43,7 @@ static inline bool coverage_msg1_process_must_fail(int fail_pt)
 
 static inline bool coverage_msg2_compose_m0_must_fail(int fail_pt)
 {
-	return fail_pt >= 4 && fail_pt <= 15;
+	return fail_pt >= 1 && fail_pt <= 9;
 }
 
 static inline bool coverage_msg2_compose_m0_high_must_fail(int fail_pt)
@@ -54,27 +54,28 @@ static inline bool coverage_msg2_compose_m0_high_must_fail(int fail_pt)
 
 static inline bool coverage_msg2_compose_method_sweep_must_fail(int fail_pt)
 {
-	return fail_pt >= 4 && fail_pt <= 12;
+	return fail_pt >= 1 && fail_pt <= 11;
 }
 
 static inline bool coverage_msg2_process_m0_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 13;
+	return fail_pt >= 1 && fail_pt <= 8;
 }
 
 static inline bool coverage_msg2_process_m3_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 17;
+	return fail_pt >= 1 && fail_pt <= 10;
 }
 
 static inline bool coverage_msg2_process_method_sweep_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 17;
+	return fail_pt >= 1 && fail_pt <= 10;
 }
 
 static inline bool coverage_msg2_compose_method3_high_must_fail(int fail_pt)
 {
-	return fail_pt >= 13 && fail_pt <= 19;
+	(void)fail_pt;
+	return false;
 }
 
 static inline bool coverage_msg2_compose_gap_must_fail(int fail_pt)
@@ -91,37 +92,37 @@ static inline bool coverage_msg2_process_gap_must_fail(int fail_pt)
 
 static inline bool coverage_msg2_compose_extended_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 15;
+	return fail_pt >= 1 && fail_pt <= 9;
 }
 
 static inline bool coverage_msg2_compose_bstr_cid_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 15;
+	return fail_pt >= 1 && fail_pt <= 9;
 }
 
 static inline bool coverage_msg2_process_bstr_cid_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 13;
+	return fail_pt >= 1 && fail_pt <= 8;
 }
 
 static inline bool coverage_msg3_compose_sweep_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 12;
+	return fail_pt >= 1 && fail_pt <= 8;
 }
 
 static inline bool coverage_msg3_compose_method_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 16;
+	return fail_pt >= 1 && fail_pt <= 10;
 }
 
 static inline bool coverage_msg3_process_method_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 16;
+	return fail_pt >= 1 && fail_pt <= 9;
 }
 
 static inline bool coverage_msg3_process_sweep_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 12;
+	return fail_pt >= 1 && fail_pt <= 7;
 }
 
 static inline bool coverage_msg3_compose_extended_must_fail(int fail_pt)
@@ -138,7 +139,7 @@ static inline bool coverage_msg3_process_extended_must_fail(int fail_pt)
 
 static inline bool coverage_msg3_compose_bstr_cid_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 12;
+	return fail_pt >= 1 && fail_pt <= 8;
 }
 
 static inline bool coverage_msg3_gap_must_fail(int fail_pt)
@@ -149,22 +150,22 @@ static inline bool coverage_msg3_gap_must_fail(int fail_pt)
 
 static inline bool coverage_msg4_compose_sweep_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 7;
+	return fail_pt >= 1 && fail_pt <= 4;
 }
 
 static inline bool coverage_msg4_compose_method_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 7;
+	return fail_pt >= 1 && fail_pt <= 4;
 }
 
 static inline bool coverage_msg4_process_sweep_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 6;
+	return fail_pt >= 1 && fail_pt <= 3;
 }
 
 static inline bool coverage_msg4_process_method_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 6;
+	return fail_pt >= 1 && fail_pt <= 3;
 }
 
 static inline bool coverage_msg4_compose_extended_must_fail(int fail_pt)
@@ -198,17 +199,17 @@ static inline bool coverage_msg4_gap_must_fail(int fail_pt)
 
 static inline bool coverage_oscore_export_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 10;
+	return fail_pt >= 1 && fail_pt <= 5;
 }
 
 static inline bool coverage_key_update_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 4;
+	return fail_pt >= 1 && fail_pt <= 2;
 }
 
 static inline bool coverage_oscore_export_extended_must_fail(int fail_pt)
 {
-	return fail_pt >= 1 && fail_pt <= 10;
+	return fail_pt >= 1 && fail_pt <= 5;
 }
 
 #endif /* COVERAGE_SWEEP_H */

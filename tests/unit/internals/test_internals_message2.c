@@ -21,7 +21,6 @@ TEST_GROUP(internals_message2);
 TEST_SETUP(internals_message2)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_keys = edhoc_cipher_suite_0_get_keys();
 	internals_crypto = edhoc_cipher_suite_0_get_crypto();
 }
 
@@ -49,22 +48,22 @@ TEST(internals_message2, comp_th_2_bad_state)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
-TEST(internals_message2, gen_dh_keys_null)
+TEST(internals_message2, comp_encapsulate_null)
 {
-	int ret = gen_dh_keys(NULL);
+	int ret = comp_encapsulate(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(internals_message2, comp_dh_secret_null)
+TEST(internals_message2, comp_decapsulate_null)
 {
-	int ret = comp_dh_secret(NULL);
+	int ret = comp_decapsulate(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message2, comp_keystream_null)
 {
 	uint8_t ks[64];
-	int ret = comp_keystream(NULL, NULL, 0, ks, sizeof(ks));
+	int ret = comp_keystream(NULL, ks, sizeof(ks));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -74,11 +73,9 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 	internals_setup_crypto_context(&ctx);
 	ctx.th_state = EDHOC_TH_STATE_1;
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
-	ctx.prk_len = 32;
 
-	uint8_t prk[32] = { 0 };
 	uint8_t ks[64];
-	int ret = comp_keystream(&ctx, prk, 32, ks, sizeof(ks));
+	int ret = comp_keystream(&ctx, ks, sizeof(ks));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
@@ -86,9 +83,8 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 
 TEST(internals_message2, comp_grx_null)
 {
-	uint8_t grx[32];
 	struct edhoc_auth_creds ac = { 0 };
-	int ret = comp_grx(NULL, &ac, NULL, 0, grx, sizeof(grx));
+	int ret = comp_grx(NULL, &ac, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -100,11 +96,9 @@ TEST(internals_message2, comp_grx_invalid_role)
 	ctx.chosen_method = EDHOC_METHOD_1;
 	ctx.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.prk_len = 32;
 
 	struct edhoc_auth_creds ac = { 0 };
-	uint8_t grx[32];
-	int ret = comp_grx(&ctx, &ac, NULL, 0, grx, sizeof(grx));
+	int ret = comp_grx(&ctx, &ac, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
@@ -247,8 +241,8 @@ TEST_GROUP_RUNNER(internals_message2)
 {
 	RUN_TEST_CASE(internals_message2, comp_th_2_null);
 	RUN_TEST_CASE(internals_message2, comp_th_2_bad_state);
-	RUN_TEST_CASE(internals_message2, gen_dh_keys_null);
-	RUN_TEST_CASE(internals_message2, comp_dh_secret_null);
+	RUN_TEST_CASE(internals_message2, comp_encapsulate_null);
+	RUN_TEST_CASE(internals_message2, comp_decapsulate_null);
 	RUN_TEST_CASE(internals_message2, comp_keystream_null);
 	RUN_TEST_CASE(internals_message2, comp_keystream_bad_th_state);
 	RUN_TEST_CASE(internals_message2, comp_grx_null);
