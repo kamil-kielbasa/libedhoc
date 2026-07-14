@@ -19,7 +19,8 @@
 static void run_all_test_groups(void)
 {
 	/* ---- Unit tests ---- */
-	RUN_TEST_GROUP(cipher_suite_0);
+	RUN_TEST_GROUP(cipher_suite_0_positive);
+	RUN_TEST_GROUP(cipher_suite_0_negative);
 	RUN_TEST_GROUP(cipher_suite_2_positive);
 	RUN_TEST_GROUP(cipher_suite_2_negative);
 	RUN_TEST_GROUP(cipher_suite_4);
