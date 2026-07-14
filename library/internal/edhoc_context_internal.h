@@ -360,6 +360,7 @@ static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
 		return "PRK_out";
 	case EDHOC_KEY_SLOT_PRK_EXPORTER:
 		return "PRK_exporter";
+	case EDHOC_KEY_SLOT_COUNT:
 	default:
 		return "unknown";
 	}

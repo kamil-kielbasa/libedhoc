@@ -1465,6 +1465,12 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 	}
 
+	if (ctxt_len < csuite.aead_tag_length) {
+		EDHOC_LOG_ERR("CIPHERTEXT_3 shorter than the AEAD tag: %zu",
+			      ctxt_len);
+		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
+	}
+
 	/* 3. Compute IV_3 and AAD_3 (K_3 is produced into its context slot). */
 	EDHOC_MEM_ALLOC(uint8_t, iv, csuite.aead_iv_length);
 	if (NULL == iv) {

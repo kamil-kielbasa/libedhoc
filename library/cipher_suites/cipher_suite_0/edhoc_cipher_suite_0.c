@@ -271,11 +271,17 @@ static int compute_shared_secret(psa_key_id_t priv_key,
 {
 	EDHOC_ASSERT(PSA_KEY_ID_NULL != priv_key);
 	EDHOC_ASSERT(NULL != peer_pub_key);
-	EDHOC_ASSERT(EDHOC_CIPHER_SUITE_0_ECC_KEY_LEN == peer_pub_key_len);
+	EDHOC_ASSERT(0 != peer_pub_key_len);
 	EDHOC_ASSERT(NULL != shr_sec_key);
 
+	
+	if (EDHOC_CIPHER_SUITE_0_ECC_KEY_LEN != peer_pub_key_len) {
+		EDHOC_LOG_ERR("Invalid peer public key length: %zu", peer_pub_key_len);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+		
 	*shr_sec_key = PSA_KEY_ID_NULL;
-
+	
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 
 	set_derive_key_attributes(&attr);
