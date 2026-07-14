@@ -23,7 +23,8 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(cipher_suite_0_negative);
 	RUN_TEST_GROUP(cipher_suite_2_positive);
 	RUN_TEST_GROUP(cipher_suite_2_negative);
-	RUN_TEST_GROUP(cipher_suite_4);
+	RUN_TEST_GROUP(cipher_suite_4_positive);
+	RUN_TEST_GROUP(cipher_suite_4_negative);
 	RUN_TEST_GROUP(cipher_suite_24);
 #ifdef LIBEDHOC_ENABLE_EXPERIMENTAL_PQC
 	RUN_TEST_GROUP(cipher_suite_exp_pqc_1);
