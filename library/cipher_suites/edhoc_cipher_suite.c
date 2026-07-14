@@ -29,6 +29,9 @@
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE
 #include "edhoc_cipher_suite_2.h"
 #endif
+#if CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE
+#include "edhoc_cipher_suite_4.h"
+#endif
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE
 #include "edhoc_cipher_suite_24.h"
 #endif
@@ -46,6 +49,10 @@ edhoc_cipher_suite_get_params(enum edhoc_cipher_suite_id id)
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE
 	case EDHOC_CIPHER_SUITE_2:
 		return edhoc_cipher_suite_2_get_suite();
+#endif
+#if CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE
+	case EDHOC_CIPHER_SUITE_4:
+		return edhoc_cipher_suite_4_get_suite();
 #endif
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE
 	case EDHOC_CIPHER_SUITE_24:
@@ -70,6 +77,10 @@ edhoc_cipher_suite_get_crypto(enum edhoc_cipher_suite_id id)
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE
 	case EDHOC_CIPHER_SUITE_2:
 		return edhoc_cipher_suite_2_get_crypto();
+#endif
+#if CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE
+	case EDHOC_CIPHER_SUITE_4:
+		return edhoc_cipher_suite_4_get_crypto();
 #endif
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE
 	case EDHOC_CIPHER_SUITE_24:

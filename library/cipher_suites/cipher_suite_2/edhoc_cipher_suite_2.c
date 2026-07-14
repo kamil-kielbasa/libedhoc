@@ -1,7 +1,8 @@
 /**
  * \file    edhoc_cipher_suite_2.c
  * \author  Kamil Kielbasa
- * \brief   Example implementation of cipher suite 2.
+ * \brief   Implementation of cipher suite 2
+ *          (P-256 / ES256 / AES-CCM-16-64-128 / SHA-256).
  * 
  * \copyright Copyright (c) 2025
  * 
@@ -205,6 +206,13 @@ static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 				  uint8_t *decomp_key, size_t decomp_key_size,
 				  size_t *decomp_key_len)
 {
+	EDHOC_ASSERT(NULL != grp);
+	EDHOC_ASSERT(NULL != raw_key);
+	EDHOC_ASSERT(0 != raw_key_len);
+	EDHOC_ASSERT(NULL != decomp_key);
+	EDHOC_ASSERT(0 != decomp_key_size);
+	EDHOC_ASSERT(NULL != decomp_key_len);
+
 	int ret = 0;
 
 	const size_t p_len = mbedtls_mpi_size(&grp->P);
@@ -212,13 +220,19 @@ static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 	*decomp_key_len = (2 * p_len) + 1;
 
 	if (decomp_key_size < *decomp_key_len) {
+		EDHOC_LOG_ERR("Decompressed key buffer too small: %zu",
+			      decomp_key_size);
 		return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL;
 	}
 
 	/* Defensive bounds check. Unreachable via the public API. */
-	if (raw_key_len > p_len) { /* LCOV_EXCL_LINE */
-		return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL; /* LCOV_EXCL_LINE */
+	/* LCOV_EXCL_START */
+	if (raw_key_len > p_len) {
+		EDHOC_LOG_ERR("Raw key length exceeds field size: %zu",
+			      raw_key_len);
+		return MBEDTLS_ERR_ECP_BUFFER_TOO_SMALL;
 	}
+	/* LCOV_EXCL_STOP */
 
 	/* decomp_key will consist of 0x04|X|Y */
 	(void)memcpy(&decomp_key[1], raw_key, raw_key_len);
@@ -283,6 +297,10 @@ static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 
 // cppcheck-suppress unusedLabel
 cleanup:
+	if (0 != ret) {
+		EDHOC_LOG_ERR("Elliptic curve point decompression: %d", ret);
+	}
+
 	mbedtls_mpi_free(&r);
 	mbedtls_mpi_free(&x);
 	mbedtls_mpi_free(&n);
