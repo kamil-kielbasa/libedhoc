@@ -23,6 +23,9 @@
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 
+/* PSA crypto header: */
+#include <psa/crypto.h>
+
 /* Memory backend facade: */
 #include "edhoc_backend_memory.h"
 
@@ -43,6 +46,8 @@
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 
+static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
+				uint8_t *key_id);
 static int auth_cred_fetch_init(void *user_ctx,
 				struct edhoc_auth_creds *auth_cred);
 static int auth_cred_fetch_resp(void *user_ctx,
@@ -55,6 +60,25 @@ static int auth_cred_verify_resp(void *user_ctx,
 				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /* Static function definitions --------------------------------------------- */
+
+/* Import a 64-byte Ed25519 private key (seed||pub) as an exportable RAW_DATA
+ * key: cipher suite 0 exports it and signs with Compact25519. */
+static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
+				uint8_t *key_id)
+{
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_EXPORT);
+	psa_set_key_type(&attr, PSA_KEY_TYPE_RAW_DATA);
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	const psa_status_t status = psa_import_key(&attr, priv, priv_len, &kid);
+	if (PSA_SUCCESS != status)
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+
+	memcpy(key_id, &kid, sizeof(kid));
+	return EDHOC_SUCCESS;
+}
 
 static int auth_cred_fetch_init(void *user_ctx,
 				struct edhoc_auth_creds *auth_cred)
@@ -69,10 +93,8 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	const int res = edhoc_cipher_suite_0_key_import(NULL,
-							EDHOC_KT_SIGNATURE,
-							SK_I, ARRAY_SIZE(SK_I),
-							auth_cred->priv_key_id);
+	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
+					     auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -93,10 +115,8 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	const int res = edhoc_cipher_suite_0_key_import(NULL,
-							EDHOC_KT_SIGNATURE,
-							SK_R, ARRAY_SIZE(SK_R),
-							auth_cred->priv_key_id);
+	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
+					     auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -211,10 +231,6 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
 	if (EDHOC_SUCCESS != rc)
 		return rc;
 
-	rc = edhoc_bind_keys(initiator, edhoc_cipher_suite_0_get_keys());
-	if (EDHOC_SUCCESS != rc)
-		return rc;
-
 	rc = edhoc_bind_crypto(initiator, edhoc_cipher_suite_0_get_crypto());
 	if (EDHOC_SUCCESS != rc)
 		return rc;
@@ -241,10 +257,6 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
 		return rc;
 
 	rc = edhoc_set_connection_id(responder, &resp_cid);
-	if (EDHOC_SUCCESS != rc)
-		return rc;
-
-	rc = edhoc_bind_keys(responder, edhoc_cipher_suite_0_get_keys());
 	if (EDHOC_SUCCESS != rc)
 		return rc;
 

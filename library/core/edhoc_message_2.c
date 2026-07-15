@@ -815,8 +815,16 @@ STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	len = dec_msg_2.len;
-	len -= ctx->csuite[ctx->chosen_csuite_idx].kem_ciphertext_length;
+	const size_t g_y_len =
+		ctx->csuite[ctx->chosen_csuite_idx].kem_ciphertext_length;
+
+	if (dec_msg_2.len <= g_y_len) {
+		EDHOC_LOG_ERR("Decoded message_2 too short for G_Y: %zu, %zu",
+			      dec_msg_2.len, g_y_len);
+		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
+	}
+
+	len = dec_msg_2.len - g_y_len;
 
 	*ctxt_len = len;
 	return EDHOC_SUCCESS;

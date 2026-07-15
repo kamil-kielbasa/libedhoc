@@ -133,6 +133,25 @@ static void record_phase(struct bench_result *result,
 	*total_iter_us += us;
 }
 
+/* Import a raw P-256 scalar as an ECDSA (SIGN_HASH) private key handle. */
+static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
+				uint8_t *key_id)
+{
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_HASH);
+	psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+	psa_set_key_type(&attr,
+			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	if (PSA_SUCCESS != psa_import_key(&attr, priv, priv_len, &kid))
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	memcpy(key_id, &kid, sizeof(kid));
+	return EDHOC_SUCCESS;
+}
+
 static int cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 {
 	(void)user_ctx;
@@ -142,9 +161,8 @@ static int cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	auth_cred->x509_chain.cert[0] = CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
-	return edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_SIGNATURE, SK_I,
-					       ARRAY_SIZE(SK_I),
-					       auth_cred->priv_key_id);
+	return import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
+				    auth_cred->priv_key_id);
 }
 
 static int cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred)
@@ -156,9 +174,8 @@ static int cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred)
 	auth_cred->x509_chain.cert[0] = CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
-	return edhoc_cipher_suite_2_key_import(NULL, EDHOC_KT_SIGNATURE, SK_R,
-					       ARRAY_SIZE(SK_R),
-					       auth_cred->priv_key_id);
+	return import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
+				    auth_cred->priv_key_id);
 }
 
 static int cred_verify_init(void *user_ctx, struct edhoc_auth_creds *auth_cred,
@@ -256,9 +273,6 @@ static void setup_context(struct edhoc_context *ctx,
 		.int_value = is_initiator ? -14 : -24,
 	};
 	ret = edhoc_set_connection_id(ctx, &cid);
-	assert(EDHOC_SUCCESS == ret);
-
-	ret = edhoc_bind_keys(ctx, edhoc_cipher_suite_2_get_keys());
 	assert(EDHOC_SUCCESS == ret);
 
 	ret = edhoc_bind_crypto(ctx, edhoc_cipher_suite_2_get_crypto());

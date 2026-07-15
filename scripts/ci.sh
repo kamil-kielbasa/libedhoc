@@ -90,8 +90,10 @@ cmd_build() {
 
     section "Build (${compiler}${mem_backend:+, mem=${mem_backend}})"
 
-    local experimental_pqc=ON
-    [[ "$coverage" == true ]] && experimental_pqc=OFF
+    # Experimental PQC is temporarily OFF in CI until cipher_suite_pqc_1 is
+    # migrated to the handle-only crypto vtable (tracked separately; see
+    # PQC-PLAN.md). Re-enable together with a dedicated PQC job.
+    local experimental_pqc=OFF
 
     local cmake_args=(-DLIBEDHOC_ENABLE_TESTS=ON
                       -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC="${experimental_pqc}")
@@ -294,7 +296,7 @@ cmd_clang_tidy() {
         echo "Building with Clang compile_commands.json..."
         cmake_configure \
             -DLIBEDHOC_ENABLE_TESTS=ON \
-        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON \
+        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=OFF \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -G Ninja

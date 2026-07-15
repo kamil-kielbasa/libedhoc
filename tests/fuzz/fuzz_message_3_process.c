@@ -66,7 +66,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_set_connection_id(&ctx, &cid);
 
 	edhoc_bind_ead(&ctx, &test_ead_stubs);
-	edhoc_bind_keys(&ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(&ctx, edhoc_cipher_suite_0_get_crypto());
 
 	edhoc_bind_credentials(&ctx, &test_cred_stubs);
@@ -81,8 +80,27 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	ctx.th_len = 32;
 	memset(ctx.th, 0xAA, ctx.th_len);
 	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
-	ctx.prk_len = 32;
-	memset(ctx.prk, 0xCC, ctx.prk_len);
+
+	/* Seed PRK_3e2m as a live derive key-store handle; message_3 processing
+	 * decrypts CIPHERTEXT_3 with a key expanded from it. */
+	uint8_t dummy_prk[32];
+	memset(dummy_prk, 0xCC, sizeof(dummy_prk));
+
+	psa_key_attributes_t prk_attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&prk_attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_type(&prk_attr, PSA_KEY_TYPE_DERIVE);
+	psa_set_key_usage_flags(&prk_attr, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_algorithm(&prk_attr, PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_256));
+	psa_set_key_enrollment_algorithm(&prk_attr,
+					 PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
+
+	psa_key_id_t prk_kid = PSA_KEY_ID_NULL;
+	if (PSA_SUCCESS ==
+	    psa_import_key(&prk_attr, dummy_prk, sizeof(dummy_prk), &prk_kid)) {
+		memcpy(ctx.key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id, &prk_kid,
+		       sizeof(prk_kid));
+		ctx.key_slots[EDHOC_KEY_SLOT_PRK_3E2M].present = true;
+	}
 
 	edhoc_message_3_process(&ctx, data, size);
 

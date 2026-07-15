@@ -67,7 +67,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_set_connection_id(&ctx, &cid);
 
 	edhoc_bind_ead(&ctx, &test_ead_stubs);
-	edhoc_bind_keys(&ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(&ctx, edhoc_cipher_suite_0_get_crypto());
 
 	edhoc_bind_credentials(&ctx, &test_cred_stubs);
@@ -82,8 +81,26 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	ctx.th_len = 32;
 	memset(ctx.th, 0xAA, ctx.th_len);
 	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
-	ctx.dh_priv_key_len = 32;
-	memset(ctx.dh_priv_key, 0xBB, ctx.dh_priv_key_len);
+
+	/* Seed the initiator ephemeral private key as a live key-store handle;
+	 * message_2 processing decapsulates G_XY with it. */
+	uint8_t dummy_eph[32];
+	memset(dummy_eph, 0xBB, sizeof(dummy_eph));
+
+	psa_key_attributes_t eph_attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&eph_attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_usage_flags(&eph_attr, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_algorithm(&eph_attr, PSA_ALG_ECDH);
+	psa_set_key_type(&eph_attr,
+			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_MONTGOMERY));
+
+	psa_key_id_t eph_kid = PSA_KEY_ID_NULL;
+	if (PSA_SUCCESS ==
+	    psa_import_key(&eph_attr, dummy_eph, sizeof(dummy_eph), &eph_kid)) {
+		memcpy(ctx.key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id, &eph_kid,
+		       sizeof(eph_kid));
+		ctx.key_slots[EDHOC_KEY_SLOT_EPHEMERAL].present = true;
+	}
 
 	edhoc_message_2_process(&ctx, data, size);
 

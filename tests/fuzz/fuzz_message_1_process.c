@@ -145,7 +145,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		.process = ead_process_stub,
 	};
 	edhoc_bind_ead(&ctx, &ead);
-	edhoc_bind_keys(&ctx, edhoc_cipher_suite_0_get_keys());
 	edhoc_bind_crypto(&ctx, edhoc_cipher_suite_0_get_crypto());
 
 	const struct edhoc_credentials cred = {
