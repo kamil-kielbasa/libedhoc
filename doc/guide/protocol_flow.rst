@@ -23,8 +23,8 @@ CoAP + EDHOC message exchange
   | edhoc_set_cipher_suites()               edhoc_set_cipher_suites() |
   | edhoc_set_connection_id()               edhoc_set_connection_id() |
   | edhoc_bind_ead()                                 edhoc_bind_ead() |
-  | edhoc_bind_keys()                               edhoc_bind_keys() |
   | edhoc_bind_crypto()                           edhoc_bind_crypto() |
+  | edhoc_bind_platform()                       edhoc_bind_platform() |
   | edhoc_bind_credentials()                 edhoc_bind_credentials() |
   |                                                                   |
   | edhoc_message_1_compose()                                         |

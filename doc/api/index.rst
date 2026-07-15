@@ -35,8 +35,8 @@ Deviating from this sequence results in ``EDHOC_ERROR_BAD_STATE``.
 
 .. code-block:: c
 
-   edhoc_bind_keys(&ctx, &keys);
    edhoc_bind_crypto(&ctx, &crypto);
+   edhoc_bind_platform(&ctx, &platform);
    edhoc_bind_credentials(&ctx, &cred);
    edhoc_bind_ead(&ctx, &ead);          /* optional */
 

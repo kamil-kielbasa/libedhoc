@@ -447,6 +447,16 @@ exit:
 	return result;
 }
 
+/* Load a PSA key handle from a (possibly unaligned) key-store slot. The slot is
+ * a raw uint8_t buffer, so a direct cast to psa_key_id_t* would be a misaligned
+ * access (undefined behaviour); copy the bytes into an aligned value instead. */
+static inline psa_key_id_t load_key_id(const void *key_id)
+{
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	memcpy(&kid, key_id, sizeof(kid));
+	return kid;
+}
+
 static int destroy_key(void *user_context, void *key_id)
 {
 	(void)user_context;
@@ -456,7 +466,7 @@ static int destroy_key(void *user_context, void *key_id)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	psa_key_id_t psa_kid = *(psa_key_id_t *)key_id;
+	psa_key_id_t psa_kid = load_key_id(key_id);
 
 	/* Destroying a zeroed / no-key handle is a successful no-op. */
 	if (PSA_KEY_ID_NULL == psa_kid) {
@@ -582,7 +592,7 @@ static int decapsulate(void *user_context, const void *decaps_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t decap_kid = *(const psa_key_id_t *)decaps_key_id;
+	const psa_key_id_t decap_kid = load_key_id(decaps_key_id);
 
 	return compute_shared_secret(decap_kid, ciphertext, ciphertext_len,
 				     shr_sec_key_id);
@@ -600,7 +610,7 @@ static int key_agreement(void *user_context, const void *priv_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t private_kid = *(const psa_key_id_t *)priv_key_id;
+	const psa_key_id_t private_kid = load_key_id(priv_key_id);
 
 	return compute_shared_secret(private_kid, peer_pub_key,
 				     peer_pub_key_len, shr_sec_key_id);
@@ -623,7 +633,7 @@ static int sign(void *user_context, const void *priv_key_id,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	const psa_key_id_t private_kid = *(const psa_key_id_t *)priv_key_id;
+	const psa_key_id_t private_kid = load_key_id(priv_key_id);
 
 	uint8_t digest[PSA_HASH_LENGTH(EDHOC_CIPHER_SUITE_2_HASH_ALG)] = { 0 };
 	size_t digest_len = 0;
@@ -728,7 +738,7 @@ static int extract(void *user_context, const void *ikm_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t ikm_kid = *(const psa_key_id_t *)ikm_key_id;
+	const psa_key_id_t ikm_kid = load_key_id(ikm_key_id);
 	psa_key_id_t *prk_kid = prk_key_id;
 	*prk_kid = PSA_KEY_ID_NULL;
 
@@ -789,7 +799,7 @@ static int expand(void *user_context, const void *prk_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t prk_kid = *(const psa_key_id_t *)prk_key_id;
+	const psa_key_id_t prk_kid = load_key_id(prk_key_id);
 	psa_key_id_t *output_kid = out_key_id;
 	*output_kid = PSA_KEY_ID_NULL;
 
@@ -877,7 +887,7 @@ static int expand_raw(void *user_context, const void *prk_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t prk_kid = *(const psa_key_id_t *)prk_key_id;
+	const psa_key_id_t prk_kid = load_key_id(prk_key_id);
 	psa_key_derivation_operation_t op = PSA_KEY_DERIVATION_OPERATION_INIT;
 
 	psa_status_t status = psa_key_derivation_setup(
@@ -935,7 +945,7 @@ static int aead_encrypt(void *user_context, const void *key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t psa_kid = *(const psa_key_id_t *)key_id;
+	const psa_key_id_t psa_kid = load_key_id(key_id);
 
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	psa_status_t status = psa_get_key_attributes(psa_kid, &attr);
@@ -978,7 +988,7 @@ static int aead_decrypt(void *user_context, const void *key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t psa_kid = *(const psa_key_id_t *)key_id;
+	const psa_key_id_t psa_kid = load_key_id(key_id);
 
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	psa_status_t status = psa_get_key_attributes(psa_kid, &attr);

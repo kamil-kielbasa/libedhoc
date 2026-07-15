@@ -55,8 +55,8 @@ the :term:`OSCORE` material.
    edhoc_set_connection_id(&ctx, &conn_id);
 
    /* 3. Bind callbacks (any order). */
-   edhoc_bind_keys(&ctx, &keys);
    edhoc_bind_crypto(&ctx, &crypto);
+   edhoc_bind_platform(&ctx, &platform);
    edhoc_bind_credentials(&ctx, &cred);
    /* edhoc_bind_ead(&ctx, &ead); -- optional */
 
