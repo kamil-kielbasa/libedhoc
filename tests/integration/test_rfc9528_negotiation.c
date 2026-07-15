@@ -46,59 +46,45 @@ static const uint8_t G_X[] = {
 	0x0b, 0x96, 0xc1, 0xb7, 0xc8, 0xdb, 0xca, 0x2f, 0xc3, 0xb6,
 };
 
-static int edhoc_cipher_suite_2_make_key_pair_init(
-	void *user_ctx, const void *kid, uint8_t *priv_key,
-	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
-	size_t pub_key_size, size_t *pub_key_len);
-
-static const struct edhoc_keys *edhoc_keys;
-
-static const struct edhoc_crypto edhoc_crypto_mocked_init = {
-	.make_key_pair = edhoc_cipher_suite_2_make_key_pair_init,
-	.key_agreement = edhoc_cipher_suite_2_key_agreement,
-	.signature = edhoc_cipher_suite_2_signature,
-	.verify = edhoc_cipher_suite_2_verify,
-	.extract = edhoc_cipher_suite_2_extract,
-	.expand = edhoc_cipher_suite_2_expand,
-	.encrypt = edhoc_cipher_suite_2_encrypt,
-	.decrypt = edhoc_cipher_suite_2_decrypt,
-	.hash = edhoc_cipher_suite_2_hash,
-};
-
-static const struct edhoc_crypto edhoc_crypto_mocked_resp = {
-	.make_key_pair = edhoc_cipher_suite_2_make_key_pair,
-	.key_agreement = edhoc_cipher_suite_2_key_agreement,
-	.signature = edhoc_cipher_suite_2_signature,
-	.verify = edhoc_cipher_suite_2_verify,
-	.extract = edhoc_cipher_suite_2_extract,
-	.expand = edhoc_cipher_suite_2_expand,
-	.encrypt = edhoc_cipher_suite_2_encrypt,
-	.decrypt = edhoc_cipher_suite_2_decrypt,
-	.hash = edhoc_cipher_suite_2_hash,
-};
+/* Real cipher-suite-2 vtable with only generate_key_pair overridden to inject
+ * the RFC's fixed initiator ephemeral; populated in TEST_SETUP. */
+static struct edhoc_crypto edhoc_crypto_mocked_init;
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
 
-static int edhoc_cipher_suite_2_make_key_pair_init(
-	void *user_ctx, const void *kid, uint8_t *priv_key,
-	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
-	size_t pub_key_size, size_t *pub_key_len)
+static int make_key_pair_init(void *user_context, void *decapsulation_key_id,
+			      uint8_t *encapsulation_key,
+			      size_t encapsulation_key_size,
+			      size_t *encapsulation_key_length)
 {
-	(void)user_ctx;
-	(void)kid;
+	(void)user_context;
 
-	if (NULL == priv_key || 0 == priv_key_size || NULL == priv_key_len ||
-	    NULL == pub_key || 0 == pub_key_size || NULL == pub_key_len)
+	if (NULL == decapsulation_key_id || NULL == encapsulation_key ||
+	    0 == encapsulation_key_size || NULL == encapsulation_key_length)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	*priv_key_len = ARRAY_SIZE(X);
-	memcpy(priv_key, X, ARRAY_SIZE(X));
+	if (encapsulation_key_size < ARRAY_SIZE(G_X))
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	*pub_key_len = ARRAY_SIZE(G_X);
-	memcpy(pub_key, G_X, ARRAY_SIZE(G_X));
+	/* Import the RFC's fixed initiator ephemeral private key X as an ECDH
+	 * key so message 1 reproduces the RFC's G_X on the wire. */
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_algorithm(&attr, PSA_ALG_ECDH);
+	psa_set_key_type(&attr,
+			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+
+	psa_key_id_t *psa_kid = decapsulation_key_id;
+	*psa_kid = PSA_KEY_ID_NULL;
+	if (PSA_SUCCESS != psa_import_key(&attr, X, ARRAY_SIZE(X), psa_kid))
+		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+
+	memcpy(encapsulation_key, G_X, ARRAY_SIZE(G_X));
+	*encapsulation_key_length = ARRAY_SIZE(G_X);
 
 	return EDHOC_SUCCESS;
 }
@@ -111,7 +97,9 @@ TEST_SETUP(rfc9528_negotiation)
 {
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
-	edhoc_keys = edhoc_cipher_suite_2_get_keys();
+
+	edhoc_crypto_mocked_init = *edhoc_cipher_suite_2_get_crypto();
+	edhoc_crypto_mocked_init.generate_key_pair = make_key_pair_init;
 }
 
 TEST_TEAR_DOWN(rfc9528_negotiation)
@@ -140,12 +128,12 @@ TEST(rfc9528_negotiation, example_1)
 	const enum edhoc_method methods[] = { EDHOC_METHOD_1 };
 	const struct edhoc_cipher_suite csuites_init[] = {
 		[0].value = 5,
-		[0].ecc_key_length = 32,
+		[0].kem_public_key_length = 32,
 		[0].hash_length = 32,
 	};
 	const struct edhoc_cipher_suite csuites_resp[] = {
 		[0].value = 6,
-		[0].ecc_key_length = 32,
+		[0].kem_public_key_length = 32,
 		[0].hash_length = 32,
 	};
 	const struct edhoc_connection_id conn_id_init = {
@@ -167,9 +155,6 @@ TEST(rfc9528_negotiation, example_1)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
@@ -197,10 +182,7 @@ TEST(rfc9528_negotiation, example_1)
 	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);
@@ -287,17 +269,14 @@ TEST(rfc9528_negotiation, example_1)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const struct edhoc_cipher_suite fixed_csuites_init[] = {
-		[0].value = 5, [0].ecc_key_length = 32, [0].hash_length = 32,
-		[1].value = 6, [1].ecc_key_length = 32, [1].hash_length = 32,
+		[0].value = 5, [0].kem_public_key_length = 32, [0].hash_length = 32,
+		[1].value = 6, [1].kem_public_key_length = 32, [1].hash_length = 32,
 	};
 	ret = edhoc_set_cipher_suites(&init_ctx, fixed_csuites_init,
 				      ARRAY_SIZE(fixed_csuites_init));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
@@ -331,10 +310,7 @@ TEST(rfc9528_negotiation, example_1)
 	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);
@@ -373,12 +349,12 @@ TEST(rfc9528_negotiation, example_2)
 {
 	const enum edhoc_method methods[] = { EDHOC_METHOD_1 };
 	const struct edhoc_cipher_suite csuites_init[] = {
-		[0].value = 5, [0].ecc_key_length = 32, [0].hash_length = 32,
-		[1].value = 6, [1].ecc_key_length = 32, [1].hash_length = 32,
+		[0].value = 5, [0].kem_public_key_length = 32, [0].hash_length = 32,
+		[1].value = 6, [1].kem_public_key_length = 32, [1].hash_length = 32,
 	};
 	const struct edhoc_cipher_suite csuites_resp[] = {
-		[0].value = 9, [0].ecc_key_length = 32, [0].hash_length = 32,
-		[1].value = 8, [1].ecc_key_length = 32, [1].hash_length = 32,
+		[0].value = 9, [0].kem_public_key_length = 32, [0].hash_length = 32,
+		[1].value = 8, [1].kem_public_key_length = 32, [1].hash_length = 32,
 	};
 	const struct edhoc_connection_id conn_id_init = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
@@ -399,9 +375,6 @@ TEST(rfc9528_negotiation, example_2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
@@ -429,10 +402,7 @@ TEST(rfc9528_negotiation, example_2)
 	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);
@@ -533,10 +503,10 @@ TEST(rfc9528_negotiation, example_2)
          * To avoid regeneration to all files, cipher suite 5 is missed.
          */
 	const struct edhoc_cipher_suite fixed_csuites_init[] = {
-		/* [0].value = 5, [0].ecc_key_length = 32, [0].hash_length = 32, */
-		[0].value = 6, [0].ecc_key_length = 32, [0].hash_length = 32,
-		[1].value = 7, [1].ecc_key_length = 32, [1].hash_length = 32,
-		[2].value = 8, [2].ecc_key_length = 32, [2].hash_length = 32,
+		/* [0].value = 5, [0].kem_public_key_length = 32, [0].hash_length = 32, */
+		[0].value = 6, [0].kem_public_key_length = 32, [0].hash_length = 32,
+		[1].value = 7, [1].kem_public_key_length = 32, [1].hash_length = 32,
+		[2].value = 8, [2].kem_public_key_length = 32, [2].hash_length = 32,
 
 	};
 	ret = edhoc_set_cipher_suites(&init_ctx, fixed_csuites_init,
@@ -544,9 +514,6 @@ TEST(rfc9528_negotiation, example_2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_set_connection_id(&init_ctx, &conn_id_init);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_keys(&init_ctx, edhoc_keys);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_crypto(&init_ctx, &edhoc_crypto_mocked_init);
@@ -580,10 +547,7 @@ TEST(rfc9528_negotiation, example_2)
 	ret = edhoc_set_connection_id(&resp_ctx, &conn_id_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_crypto(&resp_ctx, &edhoc_crypto_mocked_resp);
+	ret = edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&resp_ctx, &test_cred_stubs);

@@ -15,6 +15,7 @@
 
 /* Test vector header: */
 #include "test_platform.h"
+#include "test_key_agreement.h"
 #include "edhoc_context_internal.h"
 #include "test_vector_x5t_sign_keys_suite_2.h"
 
@@ -42,7 +43,6 @@
 
 #define OSCORE_MASTER_SECRET_LENGTH (16)
 #define OSCORE_MASTER_SALT_LENGTH (8)
-#define DH_KEY_AGREEMENT_LENGTH (32)
 #define ENTROPY_LENGTH (16)
 #define EAD_TOKEN_BUFFER_LEN (300)
 #define MAX_NR_OF_EAD_TOKENS (3)
@@ -166,19 +166,32 @@ static const struct edhoc_ead_token ead_single_token_msg_4 = {
 	.value_len = ARRAY_SIZE(ead_val_msg_4),
 };
 
-static const struct edhoc_keys *edhoc_keys;
+/* Import a raw P-256 scalar as an ECDSA (SIGN_HASH) private key handle. */
+static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
+				uint8_t *key_id)
+{
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_HASH);
+	psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+	psa_set_key_type(&attr,
+			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
 
-static const struct edhoc_crypto edhoc_crypto = {
-	.make_key_pair = edhoc_cipher_suite_2_make_key_pair,
-	.key_agreement = edhoc_cipher_suite_2_key_agreement,
-	.signature = edhoc_cipher_suite_2_signature,
-	.verify = edhoc_cipher_suite_2_verify,
-	.extract = edhoc_cipher_suite_2_extract,
-	.expand = edhoc_cipher_suite_2_expand,
-	.encrypt = edhoc_cipher_suite_2_encrypt,
-	.decrypt = edhoc_cipher_suite_2_decrypt,
-	.hash = edhoc_cipher_suite_2_hash,
-};
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	if (PSA_SUCCESS != psa_import_key(&attr, priv, priv_len, &kid))
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	memcpy(key_id, &kid, sizeof(kid));
+	return EDHOC_SUCCESS;
+}
+
+/* Bind cipher suite 2 to the shared key-agreement probe helper. */
+static void assert_peers_share_slot_key(const struct edhoc_context *lhs,
+					const struct edhoc_context *rhs,
+					enum edhoc_key_slot_id slot)
+{
+	test_assert_peers_share_slot_key(EDHOC_CIPHER_SUITE_2, lhs, rhs, slot);
+}
 
 static const struct edhoc_credentials edhoc_auth_cred_single_cert_mocked_init = {
 	.fetch = auth_cred_fetch_init,
@@ -220,10 +233,8 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL,
-							EDHOC_KT_SIGNATURE,
-							SK_I, ARRAY_SIZE(SK_I),
-							auth_cred->priv_key_id);
+	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
+					     auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -254,10 +265,8 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL,
-							EDHOC_KT_SIGNATURE,
-							SK_R, ARRAY_SIZE(SK_R),
-							auth_cred->priv_key_id);
+	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
+					     auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -453,7 +462,6 @@ TEST_SETUP(handshake_x5t_sig_suite2)
 {
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
-	edhoc_keys = edhoc_cipher_suite_2_get_keys();
 
 	const enum edhoc_method methods[] = { METHOD };
 	const struct edhoc_cipher_suite cipher_suites[] = {
@@ -490,10 +498,7 @@ TEST_SETUP(handshake_x5t_sig_suite2)
 	ret = edhoc_bind_ead(init_ctx, &edhoc_ead_single_token);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(init_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto);
+	ret = edhoc_bind_crypto(init_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_platform(init_ctx, test_get_platform());
@@ -522,10 +527,7 @@ TEST_SETUP(handshake_x5t_sig_suite2)
 	ret = edhoc_bind_ead(resp_ctx, &edhoc_ead_single_token);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(resp_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto);
+	ret = edhoc_bind_crypto(resp_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_platform(resp_ctx, test_get_platform());
@@ -538,13 +540,13 @@ TEST_SETUP(handshake_x5t_sig_suite2)
 
 TEST_TEAR_DOWN(handshake_x5t_sig_suite2)
 {
-	mbedtls_psa_crypto_free();
-
 	ret = edhoc_context_deinit(init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_deinit(resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	mbedtls_psa_crypto_free();
 }
 
 TEST(handshake_x5t_sig_suite2, handshake)
@@ -669,11 +671,9 @@ TEST(handshake_x5t_sig_suite2, handshake)
 				      init_ead_ctx.token[0].value,
 				      init_ead_ctx.token[0].value_len);
 
-	TEST_ASSERT_EQUAL(DH_KEY_AGREEMENT_LENGTH, init_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL(DH_KEY_AGREEMENT_LENGTH, resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, resp_ctx->dh_secret,
-				      DH_KEY_AGREEMENT_LENGTH);
+	/* Both peers derived the DH secret into the same PRK_3e2m handle. */
+	assert_peers_share_slot_key(init_ctx, resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_3E2M);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));
@@ -728,6 +728,10 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_3.value,
 				      resp_ead_ctx.token[0].value,
 				      resp_ead_ctx.token[0].value_len);
+
+	/* Both peers derived the same PRK_4e3m handle (message 3/4 auth key). */
+	assert_peers_share_slot_key(init_ctx, resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_4E3M);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));
@@ -859,9 +863,9 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->prk_state);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
 
-	TEST_ASSERT_EQUAL(init_ctx->prk_len, resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->prk, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	/* Both peers still share PRK_out after the key update. */
+	assert_peers_share_slot_key(init_ctx, resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_OUT);
 
 	/* Derive OSCORE master secret and master salt. */
 	memset(init_master_secret, 0, sizeof(init_master_secret));

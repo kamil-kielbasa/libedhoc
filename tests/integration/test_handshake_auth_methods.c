@@ -13,6 +13,7 @@
 
 /* Cipher suite 2 header: */
 #include "test_platform.h"
+#include "test_key_agreement.h"
 #include "edhoc_context_internal.h"
 #include "edhoc_cipher_suite_2.h"
 
@@ -37,7 +38,7 @@
 /* Module defines ---------------------------------------------------------- */
 
 #define TEST_HANDSHAKE_MSG_BUF_SIZE                                 \
-	((size_t)(64U + (CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY * 8U) + \
+	((size_t)(64U + (CONFIG_LIBEDHOC_MAX_LEN_OF_NIKE_KEY * 8U) + \
 		  (CONFIG_LIBEDHOC_MAX_LEN_OF_MAC * 4U) +           \
 		  (CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN * 320U)))
 
@@ -155,14 +156,21 @@ static const uint8_t TEST_VEC_CRED_R[] = {
 
 /* Module types and type definitiones -------------------------------------- */
 
+/* The library no longer exposes a key-type enum (auth keys are opaque handles),
+ * so the test tracks each peer's auth key kind (signature vs static-DH). */
+enum test_auth_key_kind {
+	TEST_AUTH_KEY_SIGN,
+	TEST_AUTH_KEY_DH,
+};
+
 struct test_context {
 	enum edhoc_method method;
 	const uint8_t *init_pk;
 	size_t init_pk_len;
 	const uint8_t *resp_pk;
 	size_t resp_pk_len;
-	enum edhoc_key_type init_key_type;
-	enum edhoc_key_type resp_key_type;
+	enum test_auth_key_kind init_key_type;
+	enum test_auth_key_kind resp_key_type;
 };
 
 /* Module interface variables and constants -------------------------------- */
@@ -173,6 +181,41 @@ static struct test_context current_test_ctx;
 
 /* Static function definitions --------------------------------------------- */
 
+/* Import a raw P-256 scalar as either an ECDSA sign or ECDH key-agreement
+ * private key handle, selected by the auth method's key type. */
+static int import_auth_priv_key(enum test_auth_key_kind key_type,
+				const uint8_t *priv, size_t priv_len,
+				uint8_t *key_id)
+{
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+
+	if (TEST_AUTH_KEY_SIGN == key_type) {
+		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_SIGN_HASH);
+		psa_set_key_algorithm(&attr, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+	} else {
+		psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
+		psa_set_key_algorithm(&attr, PSA_ALG_ECDH);
+	}
+	psa_set_key_type(&attr,
+			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	if (PSA_SUCCESS != psa_import_key(&attr, priv, priv_len, &kid))
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+
+	memcpy(key_id, &kid, sizeof(kid));
+	return EDHOC_SUCCESS;
+}
+
+/* Bind cipher suite 2 to the shared key-agreement probe helper. */
+static void assert_peers_share_slot_key(const struct edhoc_context *lhs,
+					const struct edhoc_context *rhs,
+					enum edhoc_key_slot_id slot)
+{
+	test_assert_peers_share_slot_key(EDHOC_CIPHER_SUITE_2, lhs, rhs, slot);
+}
+
 static int auth_cred_fetch_init(void *user_ctx,
 				struct edhoc_auth_creds *auth_cred)
 {
@@ -182,8 +225,8 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = TEST_VEC_CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(TEST_VEC_CRED_I);
 
-	const int res = edhoc_cipher_suite_2_key_import(
-		NULL, current_test_ctx.init_key_type, TEST_VEC_SK_I,
+	const int res = import_auth_priv_key(
+		current_test_ctx.init_key_type, TEST_VEC_SK_I,
 		ARRAY_SIZE(TEST_VEC_SK_I), auth_cred->priv_key_id);
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -200,8 +243,8 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = TEST_VEC_CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(TEST_VEC_CRED_R);
 
-	const int res = edhoc_cipher_suite_2_key_import(
-		NULL, current_test_ctx.resp_key_type, TEST_VEC_SK_R,
+	const int res = import_auth_priv_key(
+		current_test_ctx.resp_key_type, TEST_VEC_SK_R,
 		ARRAY_SIZE(TEST_VEC_SK_R), auth_cred->priv_key_id);
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -234,7 +277,7 @@ static int auth_cred_verify_init(void *user_ctx,
 	*pub_key = current_test_ctx.init_pk;
 	*pub_key_len = current_test_ctx.init_pk_len;
 
-	if (EDHOC_KT_SIGNATURE == current_test_ctx.init_key_type) {
+	if (TEST_AUTH_KEY_SIGN == current_test_ctx.init_key_type) {
 		if (*pub_key_len != ARRAY_SIZE(TEST_VEC_PK_I_SIG) ||
 		    0 != memcmp(*pub_key, TEST_VEC_PK_I_SIG, *pub_key_len))
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -272,7 +315,7 @@ static int auth_cred_verify_resp(void *user_ctx,
 	*pub_key = current_test_ctx.resp_pk;
 	*pub_key_len = current_test_ctx.resp_pk_len;
 
-	if (EDHOC_KT_SIGNATURE == current_test_ctx.resp_key_type) {
+	if (TEST_AUTH_KEY_SIGN == current_test_ctx.resp_key_type) {
 		if (*pub_key_len != ARRAY_SIZE(TEST_VEC_PK_R_SIG) ||
 		    0 != memcmp(*pub_key, TEST_VEC_PK_R_SIG, *pub_key_len))
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -331,8 +374,6 @@ static void run_handshake(enum edhoc_method method)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_ead(&init_ctx, &test_ead_stubs);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ret = edhoc_bind_keys(&init_ctx, edhoc_cipher_suite_2_get_keys());
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_crypto(&init_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_platform(&init_ctx, test_get_platform());
@@ -352,8 +393,6 @@ static void run_handshake(enum edhoc_method method)
 	ret = edhoc_set_connection_id(&resp_ctx, &cid_r);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_ead(&resp_ctx, &test_ead_stubs);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ret = edhoc_bind_keys(&resp_ctx, edhoc_cipher_suite_2_get_keys());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_bind_crypto(&resp_ctx, edhoc_cipher_suite_2_get_crypto());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -379,6 +418,10 @@ static void run_handshake(enum edhoc_method method)
 	ret = edhoc_message_2_process(&init_ctx, msg_2, msg_2_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	/* Both peers derived the DH secret into the same PRK_3e2m handle. */
+	assert_peers_share_slot_key(&init_ctx, &resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_3E2M);
+
 	/* Message 3: Initiator -> Responder */
 	memset(buffer, 0, sizeof(buffer));
 	ret = edhoc_message_3_compose(&init_ctx, msg_3,
@@ -387,6 +430,10 @@ static void run_handshake(enum edhoc_method method)
 
 	ret = edhoc_message_3_process(&resp_ctx, msg_3, msg_3_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	/* Both peers derived the same PRK_4e3m handle (message 3/4 auth key). */
+	assert_peers_share_slot_key(&init_ctx, &resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_4E3M);
 
 	/* Message 4: Responder -> Initiator */
 	memset(buffer, 0, sizeof(buffer));
@@ -431,6 +478,10 @@ static void run_handshake(enum edhoc_method method)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_salt, resp_master_salt,
 				      OSCORE_MASTER_SALT_LENGTH);
 
+	/* Both peers derived the same PRK_out handle. */
+	assert_peers_share_slot_key(&init_ctx, &resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_OUT);
+
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -462,8 +513,8 @@ TEST(handshake_auth_methods, method_1_handshake)
 		.init_pk_len = ARRAY_SIZE(TEST_VEC_PK_I_SIG),
 		.resp_pk = TEST_VEC_PK_R_DH,
 		.resp_pk_len = ARRAY_SIZE(TEST_VEC_PK_R_DH),
-		.init_key_type = EDHOC_KT_SIGNATURE,
-		.resp_key_type = EDHOC_KT_KEY_AGREEMENT,
+		.init_key_type = TEST_AUTH_KEY_SIGN,
+		.resp_key_type = TEST_AUTH_KEY_DH,
 	};
 
 	run_handshake(EDHOC_METHOD_1);
@@ -477,8 +528,8 @@ TEST(handshake_auth_methods, method_2_handshake)
 		.init_pk_len = ARRAY_SIZE(TEST_VEC_PK_I_DH),
 		.resp_pk = TEST_VEC_PK_R_SIG,
 		.resp_pk_len = ARRAY_SIZE(TEST_VEC_PK_R_SIG),
-		.init_key_type = EDHOC_KT_KEY_AGREEMENT,
-		.resp_key_type = EDHOC_KT_SIGNATURE,
+		.init_key_type = TEST_AUTH_KEY_DH,
+		.resp_key_type = TEST_AUTH_KEY_SIGN,
 	};
 
 	run_handshake(EDHOC_METHOD_2);

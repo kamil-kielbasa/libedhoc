@@ -11,6 +11,8 @@
 
 /* Test vector header: */
 #include "test_platform.h"
+#include "test_rfc9529_support.h"
+#include "test_key_agreement.h"
 #include "edhoc_context_internal.h"
 #include "test_vector_rfc9529_chapter_3.h"
 
@@ -38,22 +40,6 @@
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static function declarations -------------------------------------------- */
-
-/**
- * \brief Mocked EDHOC crypto function ECDH make key pair for initiator.
- */
-static int edhoc_cipher_suite_2_make_key_pair_init(
-	void *user_context, const void *key_id, uint8_t *private_key,
-	size_t private_key_size, size_t *private_key_length,
-	uint8_t *public_key, size_t public_key_size, size_t *public_key_length);
-
-/**
- * \brief Mocked EDHOC crypto function ECDH make key pair for responder.
- */
-static int edhoc_cipher_suite_2_make_key_pair_resp(
-	void *user_context, const void *key_id, uint8_t *private_key,
-	size_t private_key_size, size_t *private_key_length,
-	uint8_t *public_key, size_t public_key_size, size_t *public_key_length);
 
 /**
  * \brief Authentication credentials fetch callback for initiator.
@@ -114,64 +100,73 @@ static struct edhoc_context *resp_ctx = &edhoc_responder_context;
 static const struct edhoc_cipher_suite edhoc_cipher_suites_init[] = {
 	{
 		.value = 6,
+		.supports_dh_nike = true,
 		.aead_key_length = 16,
 		.aead_tag_length = 8,
 		.aead_iv_length = 13,
 		.hash_length = 32,
 		.mac_length = 8,
-		.ecc_key_length = 32,
-		.ecc_sign_length = 64,
+		.kem_public_key_length = 32,
+		.kem_ciphertext_length = 32,
+		.nike_key_length = 32,
+		.sign_length = 64,
 	},
 	{
 		.value = 2,
+		.supports_dh_nike = true,
 		.aead_key_length = 16,
 		.aead_tag_length = 8,
 		.aead_iv_length = 13,
 		.hash_length = 32,
 		.mac_length = 8,
-		.ecc_key_length = 32,
-		.ecc_sign_length = 64,
+		.kem_public_key_length = 32,
+		.kem_ciphertext_length = 32,
+		.nike_key_length = 32,
+		.sign_length = 64,
 	},
 };
 
 static const struct edhoc_cipher_suite edhoc_cipher_suites_resp[] = {
 	{
 		.value = 2,
+		.supports_dh_nike = true,
 		.aead_key_length = 16,
 		.aead_tag_length = 8,
 		.aead_iv_length = 13,
 		.hash_length = 32,
 		.mac_length = 8,
-		.ecc_key_length = 32,
-		.ecc_sign_length = 64,
+		.kem_public_key_length = 32,
+		.kem_ciphertext_length = 32,
+		.nike_key_length = 32,
+		.sign_length = 64,
 	},
 };
 
-static const struct edhoc_keys *edhoc_keys;
+static struct edhoc_crypto edhoc_crypto_mocked_init;
+static struct edhoc_crypto edhoc_crypto_mocked_resp;
 
-static const struct edhoc_crypto edhoc_crypto_mocked_init = {
-	.make_key_pair = edhoc_cipher_suite_2_make_key_pair_init,
-	.key_agreement = edhoc_cipher_suite_2_key_agreement,
-	.signature = edhoc_cipher_suite_2_signature,
-	.verify = edhoc_cipher_suite_2_verify,
-	.extract = edhoc_cipher_suite_2_extract,
-	.expand = edhoc_cipher_suite_2_expand,
-	.encrypt = edhoc_cipher_suite_2_encrypt,
-	.decrypt = edhoc_cipher_suite_2_decrypt,
-	.hash = edhoc_cipher_suite_2_hash,
-};
+/* Import a raw P-256 scalar as an ECDH (static-DH) private key handle. */
+static int import_dh_priv_key(const uint8_t *priv, size_t priv_len,
+			      uint8_t *key_id)
+{
+	TEST_ASSERT_NOT_NULL(priv);
+	TEST_ASSERT_NOT_EQUAL(0, priv_len);
+	TEST_ASSERT_NOT_NULL(key_id);
 
-static const struct edhoc_crypto edhoc_crypto_mocked_resp = {
-	.make_key_pair = edhoc_cipher_suite_2_make_key_pair_resp,
-	.key_agreement = edhoc_cipher_suite_2_key_agreement,
-	.signature = edhoc_cipher_suite_2_signature,
-	.verify = edhoc_cipher_suite_2_verify,
-	.extract = edhoc_cipher_suite_2_extract,
-	.expand = edhoc_cipher_suite_2_expand,
-	.encrypt = edhoc_cipher_suite_2_encrypt,
-	.decrypt = edhoc_cipher_suite_2_decrypt,
-	.hash = edhoc_cipher_suite_2_hash,
-};
+	const psa_key_id_t kid = tv_import_p256(priv, priv_len);
+
+	memcpy(key_id, &kid, sizeof(kid));
+
+	return EDHOC_SUCCESS;
+}
+
+/* Bind cipher suite 2 to the shared key-agreement probe helper. */
+static void assert_peers_share_slot_key(const struct edhoc_context *lhs,
+					const struct edhoc_context *rhs,
+					enum edhoc_key_slot_id slot)
+{
+	test_assert_peers_share_slot_key(EDHOC_CIPHER_SUITE_2, lhs, rhs, slot);
+}
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.fetch = auth_cred_fetch_init,
@@ -195,44 +190,107 @@ static const struct edhoc_credentials edhoc_auth_cred_mocked_resp_any = {
 
 /* Static function definitions --------------------------------------------- */
 
-static int edhoc_cipher_suite_2_make_key_pair_init(
-	void *user_ctx, const void *kid, uint8_t *priv_key,
-	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
-	size_t pub_key_size, size_t *pub_key_len)
+/* Initiator ephemeral: inject the RFC's fixed X / G_X. */
+static int mocked_generate_key_pair_init(void *user_ctx, void *decaps_key_id,
+					 uint8_t *encaps_key,
+					 size_t encaps_key_size,
+					 size_t *encaps_key_len)
 {
 	(void)user_ctx;
 
-	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
-	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
-	    NULL == pub_key_len)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
+	TEST_ASSERT_NOT_NULL(decaps_key_id);
+	TEST_ASSERT_NOT_NULL(encaps_key);
+	TEST_ASSERT_TRUE(encaps_key_size >= ARRAY_SIZE(G_X));
+	TEST_ASSERT_NOT_NULL(encaps_key_len);
 
-	*priv_key_len = ARRAY_SIZE(X);
-	memcpy(priv_key, X, ARRAY_SIZE(X));
+	const psa_key_id_t kid = tv_import_p256(X, ARRAY_SIZE(X));
 
-	*pub_key_len = ARRAY_SIZE(G_X);
-	memcpy(pub_key, G_X, ARRAY_SIZE(G_X));
+	memcpy(decaps_key_id, &kid, sizeof(kid));
+
+	memcpy(encaps_key, G_X, ARRAY_SIZE(G_X));
+	*encaps_key_len = ARRAY_SIZE(G_X);
 
 	return EDHOC_SUCCESS;
 }
 
-static int edhoc_cipher_suite_2_make_key_pair_resp(
-	void *user_ctx, const void *kid, uint8_t *priv_key,
-	size_t priv_key_size, size_t *priv_key_len, uint8_t *pub_key,
-	size_t pub_key_size, size_t *pub_key_len)
+/* Responder ephemeral: inject the RFC's fixed Y / G_Y (retained for the
+ * static-DH G_IY agreement in message 3) and hand back the RFC's G_XY. */
+static int mocked_encapsulate_resp(void *user_ctx, const uint8_t *encaps_key,
+				   size_t encaps_key_len, void *decaps_key_id,
+				   void *shared_secret_key_id,
+				   uint8_t *ciphertext, size_t ciphertext_size,
+				   size_t *ciphertext_len)
 {
 	(void)user_ctx;
 
-	if (NULL == kid || NULL == priv_key || 0 == priv_key_size ||
-	    NULL == priv_key_len || NULL == pub_key || 0 == pub_key_size ||
-	    NULL == pub_key_len)
-		return EDHOC_ERROR_INVALID_ARGUMENT;
+	TEST_ASSERT_NOT_NULL(encaps_key);
+	TEST_ASSERT_NOT_EQUAL(0, encaps_key_len);
+	TEST_ASSERT_NOT_NULL(decaps_key_id);
+	TEST_ASSERT_NOT_NULL(shared_secret_key_id);
+	TEST_ASSERT_NOT_NULL(ciphertext);
+	TEST_ASSERT_TRUE(ciphertext_size >= ARRAY_SIZE(G_Y));
+	TEST_ASSERT_NOT_NULL(ciphertext_len);
 
-	*priv_key_len = ARRAY_SIZE(Y);
-	memcpy(priv_key, Y, ARRAY_SIZE(Y));
+	/* The library must hand us the initiator's ephemeral public key G_X. */
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_X), encaps_key_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_X, encaps_key, encaps_key_len);
 
-	*pub_key_len = ARRAY_SIZE(G_X);
-	memcpy(pub_key, G_Y, ARRAY_SIZE(G_Y));
+	const psa_key_id_t eph = tv_import_p256(Y, ARRAY_SIZE(Y));
+
+	/* Cross-check the responder's shared secret G_XY = ECDH(Y, G_X). EDHOC
+	 * transmits only the 32-byte x-coordinate, so decompress G_X to a full
+	 * SECP_R1 point before the raw agreement. */
+	uint8_t g_x_point[TEST_P256_UNCOMPRESSED_LEN] = { 0 };
+	size_t g_x_point_len = 0;
+	tv_p256_uncompress(encaps_key, encaps_key_len, g_x_point,
+			   sizeof(g_x_point), &g_x_point_len);
+	tv_check_shared_secret(eph, g_x_point, g_x_point_len, G_XY,
+			       ARRAY_SIZE(G_XY));
+
+	memcpy(ciphertext, G_Y, ARRAY_SIZE(G_Y));
+	*ciphertext_len = ARRAY_SIZE(G_Y);
+
+	const psa_key_id_t shared = tv_import_derive(G_XY, ARRAY_SIZE(G_XY));
+
+	memcpy(shared_secret_key_id, &shared, sizeof(shared));
+	memcpy(decaps_key_id, &eph, sizeof(eph));
+
+	return EDHOC_SUCCESS;
+}
+
+/* Initiator side of G_XY: pin the received ciphertext to the RFC's G_Y, verify
+ * G_XY = ECDH(X, G_Y), and hand back the RFC's G_XY. The real decapsulation is
+ * still exercised by handshake_real_crypto. */
+static int mocked_decapsulate_init(void *user_ctx, const void *decaps_key_id,
+				   const uint8_t *ciphertext,
+				   size_t ciphertext_len,
+				   void *shared_secret_key_id)
+{
+	(void)user_ctx;
+
+	TEST_ASSERT_NOT_NULL(decaps_key_id);
+	TEST_ASSERT_NOT_NULL(ciphertext);
+	TEST_ASSERT_NOT_NULL(shared_secret_key_id);
+
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_Y), ciphertext_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_Y, ciphertext, ciphertext_len);
+
+	/* Cross-check the initiator's shared secret G_XY = ECDH(X, G_Y). EDHOC
+	 * transmits only the 32-byte x-coordinate, so decompress G_Y to a full
+	 * SECP_R1 point before the raw agreement. */
+	psa_key_id_t eph = PSA_KEY_ID_NULL;
+	memcpy(&eph, decaps_key_id, sizeof(eph));
+
+	uint8_t g_y_point[TEST_P256_UNCOMPRESSED_LEN] = { 0 };
+	size_t g_y_point_len = 0;
+	tv_p256_uncompress(ciphertext, ciphertext_len, g_y_point,
+			   sizeof(g_y_point), &g_y_point_len);
+	tv_check_shared_secret(eph, g_y_point, g_y_point_len, G_XY,
+			       ARRAY_SIZE(G_XY));
+
+	const psa_key_id_t shared = tv_import_derive(G_XY, ARRAY_SIZE(G_XY));
+
+	memcpy(shared_secret_key_id, &shared, sizeof(shared));
 
 	return EDHOC_SUCCESS;
 }
@@ -252,10 +310,8 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->key_id.key_id_bstr_length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL,
-							EDHOC_KT_KEY_AGREEMENT,
-							SK_I, ARRAY_SIZE(SK_I),
-							auth_cred->priv_key_id);
+	const int res = import_dh_priv_key(SK_I, ARRAY_SIZE(SK_I),
+					   auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -279,10 +335,8 @@ static int auth_cred_fetch_init_any(void *user_ctx,
 	auth_cred->any.cred = CRED_I_cborised;
 	auth_cred->any.cred_len = ARRAY_SIZE(CRED_I_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL,
-							EDHOC_KT_KEY_AGREEMENT,
-							SK_I, ARRAY_SIZE(SK_I),
-							auth_cred->priv_key_id);
+	const int res = import_dh_priv_key(SK_I, ARRAY_SIZE(SK_I),
+					   auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -305,10 +359,8 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->key_id.key_id_bstr_length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL,
-							EDHOC_KT_KEY_AGREEMENT,
-							SK_R, ARRAY_SIZE(SK_R),
-							auth_cred->priv_key_id);
+	const int res = import_dh_priv_key(SK_R, ARRAY_SIZE(SK_R),
+					   auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -332,10 +384,8 @@ static int auth_cred_fetch_resp_any(void *user_ctx,
 	auth_cred->any.cred = CRED_R_cborised;
 	auth_cred->any.cred_len = ARRAY_SIZE(CRED_R_cborised);
 
-	const int res = edhoc_cipher_suite_2_key_import(NULL,
-							EDHOC_KT_KEY_AGREEMENT,
-							SK_R, ARRAY_SIZE(SK_R),
-							auth_cred->priv_key_id);
+	const int res = import_dh_priv_key(SK_R, ARRAY_SIZE(SK_R),
+					   auth_cred->priv_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -421,7 +471,16 @@ TEST_SETUP(rfc9529_chapter3)
 {
 	ret = psa_crypto_init();
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, ret);
-	edhoc_keys = edhoc_cipher_suite_2_get_keys();
+
+	edhoc_crypto_mocked_init =
+		*edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
+	edhoc_crypto_mocked_init.generate_key_pair =
+		mocked_generate_key_pair_init;
+	edhoc_crypto_mocked_init.decapsulate = mocked_decapsulate_init;
+
+	edhoc_crypto_mocked_resp =
+		*edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
+	edhoc_crypto_mocked_resp.encapsulate = mocked_encapsulate_resp;
 
 	const enum edhoc_method methods[] = { METHOD };
 
@@ -448,9 +507,6 @@ TEST_SETUP(rfc9529_chapter3)
 	ret = edhoc_set_connection_id(init_ctx, &init_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(init_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
 	ret = edhoc_bind_crypto(init_ctx, &edhoc_crypto_mocked_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -473,9 +529,6 @@ TEST_SETUP(rfc9529_chapter3)
 	ret = edhoc_set_connection_id(resp_ctx, &resp_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_bind_keys(resp_ctx, edhoc_keys);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
 	ret = edhoc_bind_crypto(resp_ctx, &edhoc_crypto_mocked_resp);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -488,13 +541,13 @@ TEST_SETUP(rfc9529_chapter3)
 
 TEST_TEAR_DOWN(rfc9529_chapter3)
 {
-	mbedtls_psa_crypto_free();
-
 	ret = edhoc_context_deinit(init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_deinit(resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	mbedtls_psa_crypto_free();
 }
 
 TEST(rfc9529_chapter3, message_1_compose)
@@ -522,11 +575,6 @@ TEST(rfc9529_chapter3, message_1_compose)
 				      init_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(0, init_ctx->prk_len);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(X), init_ctx->dh_priv_key_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(X, init_ctx->dh_priv_key,
-				      init_ctx->dh_priv_key_len);
 }
 
 TEST(rfc9529_chapter3, message_1_process)
@@ -548,15 +596,14 @@ TEST(rfc9529_chapter3, message_1_process)
 				      resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(0, resp_ctx->prk_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->peer_cid.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0], resp_ctx->peer_cid.int_value);
 
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_X), resp_ctx->dh_peer_pub_key_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_X, resp_ctx->dh_peer_pub_key,
-				      resp_ctx->dh_peer_pub_key_len);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_X), resp_ctx->peer_pub_eph_key_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_X, resp_ctx->peer_pub_eph_key,
+				      resp_ctx->peer_pub_eph_key_len);
 }
 
 TEST(rfc9529_chapter3, message_2_compose)
@@ -569,8 +616,8 @@ TEST(rfc9529_chapter3, message_2_compose)
 	resp_ctx->th_len = ARRAY_SIZE(H_message_1);
 	memcpy(resp_ctx->th, H_message_1, sizeof(H_message_1));
 
-	resp_ctx->dh_peer_pub_key_len = ARRAY_SIZE(G_X);
-	memcpy(resp_ctx->dh_peer_pub_key, G_X, ARRAY_SIZE(G_X));
+	resp_ctx->peer_pub_eph_key_len = ARRAY_SIZE(G_X);
+	memcpy(resp_ctx->peer_pub_eph_key, G_X, ARRAY_SIZE(G_X));
 
 	resp_ctx->peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 	resp_ctx->peer_cid.int_value = (int8_t)C_I[0];
@@ -597,13 +644,9 @@ TEST(rfc9529_chapter3, message_2_compose)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(resp_ctx->th, TH_3, resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_3e2m), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_3e2m, resp_ctx->prk,
-				      resp_ctx->prk_len);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_XY), resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_XY, resp_ctx->dh_secret,
-				      resp_ctx->dh_secret_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
+				     ARRAY_SIZE(PRK_3e2m));
 }
 
 TEST(rfc9529_chapter3, message_2_compose_any)
@@ -620,8 +663,8 @@ TEST(rfc9529_chapter3, message_2_compose_any)
 	resp_ctx->th_len = ARRAY_SIZE(H_message_1);
 	memcpy(resp_ctx->th, H_message_1, sizeof(H_message_1));
 
-	resp_ctx->dh_peer_pub_key_len = ARRAY_SIZE(G_X);
-	memcpy(resp_ctx->dh_peer_pub_key, G_X, ARRAY_SIZE(G_X));
+	resp_ctx->peer_pub_eph_key_len = ARRAY_SIZE(G_X);
+	memcpy(resp_ctx->peer_pub_eph_key, G_X, ARRAY_SIZE(G_X));
 
 	resp_ctx->peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
 	resp_ctx->peer_cid.int_value = (int8_t)C_I[0];
@@ -648,13 +691,9 @@ TEST(rfc9529_chapter3, message_2_compose_any)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(resp_ctx->th, TH_3, resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_3e2m), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_3e2m, resp_ctx->prk,
-				      resp_ctx->prk_len);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_XY), resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_XY, resp_ctx->dh_secret,
-				      resp_ctx->dh_secret_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
+				     ARRAY_SIZE(PRK_3e2m));
 }
 
 TEST(rfc9529_chapter3, message_2_process)
@@ -667,8 +706,8 @@ TEST(rfc9529_chapter3, message_2_process)
 	init_ctx->th_len = ARRAY_SIZE(H_message_1);
 	memcpy(init_ctx->th, H_message_1, ARRAY_SIZE(H_message_1));
 
-	init_ctx->dh_priv_key_len = ARRAY_SIZE(X);
-	memcpy(init_ctx->dh_priv_key, X, ARRAY_SIZE(X));
+	tv_inject_slot(init_ctx, EDHOC_KEY_SLOT_EPHEMERAL,
+		       tv_import_p256(X, ARRAY_SIZE(X)));
 
 	ret = edhoc_message_2_process(init_ctx, message_2,
 				      ARRAY_SIZE(message_2));
@@ -686,13 +725,9 @@ TEST(rfc9529_chapter3, message_2_process)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->th, TH_3, init_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_3e2m), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_3e2m, init_ctx->prk,
-				      init_ctx->prk_len);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_XY), init_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->dh_secret, G_XY,
-				      init_ctx->dh_secret_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
+				     ARRAY_SIZE(PRK_3e2m));
 
 	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
 			  init_ctx->peer_cid.encode_type);
@@ -710,14 +745,11 @@ TEST(rfc9529_chapter3, message_3_compose)
 	memcpy(init_ctx->th, TH_3, ARRAY_SIZE(TH_3));
 
 	init_ctx->prk_state = EDHOC_PRK_STATE_3E2M;
-	init_ctx->prk_len = ARRAY_SIZE(PRK_3e2m);
-	memcpy(init_ctx->prk, PRK_3e2m, ARRAY_SIZE(PRK_3e2m));
+	tv_inject_slot(init_ctx, EDHOC_KEY_SLOT_PRK_3E2M,
+		       tv_import_derive(PRK_3e2m, ARRAY_SIZE(PRK_3e2m)));
 
-	init_ctx->dh_peer_pub_key_len = ARRAY_SIZE(G_Y);
-	memcpy(init_ctx->dh_peer_pub_key, G_Y, ARRAY_SIZE(G_Y));
-
-	init_ctx->dh_secret_len = ARRAY_SIZE(G_XY);
-	memcpy(init_ctx->dh_secret, G_XY, ARRAY_SIZE(G_XY));
+	init_ctx->peer_pub_eph_key_len = ARRAY_SIZE(G_Y);
+	memcpy(init_ctx->peer_pub_eph_key, G_Y, ARRAY_SIZE(G_Y));
 
 	size_t msg_3_len = 0;
 	uint8_t msg_3[ARRAY_SIZE(message_3)] = { 0 };
@@ -741,9 +773,9 @@ TEST(rfc9529_chapter3, message_3_compose)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, init_ctx->th, init_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, init_ctx->prk,
-				      init_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 }
 
 TEST(rfc9529_chapter3, message_3_compose_any)
@@ -761,14 +793,11 @@ TEST(rfc9529_chapter3, message_3_compose_any)
 	memcpy(init_ctx->th, TH_3, ARRAY_SIZE(TH_3));
 
 	init_ctx->prk_state = EDHOC_PRK_STATE_3E2M;
-	init_ctx->prk_len = ARRAY_SIZE(PRK_3e2m);
-	memcpy(init_ctx->prk, PRK_3e2m, ARRAY_SIZE(PRK_3e2m));
+	tv_inject_slot(init_ctx, EDHOC_KEY_SLOT_PRK_3E2M,
+		       tv_import_derive(PRK_3e2m, ARRAY_SIZE(PRK_3e2m)));
 
-	init_ctx->dh_peer_pub_key_len = ARRAY_SIZE(G_Y);
-	memcpy(init_ctx->dh_peer_pub_key, G_Y, ARRAY_SIZE(G_Y));
-
-	init_ctx->dh_secret_len = ARRAY_SIZE(G_XY);
-	memcpy(init_ctx->dh_secret, G_XY, ARRAY_SIZE(G_XY));
+	init_ctx->peer_pub_eph_key_len = ARRAY_SIZE(G_Y);
+	memcpy(init_ctx->peer_pub_eph_key, G_Y, ARRAY_SIZE(G_Y));
 
 	size_t msg_3_len = 0;
 	uint8_t msg_3[ARRAY_SIZE(message_3)] = { 0 };
@@ -792,9 +821,9 @@ TEST(rfc9529_chapter3, message_3_compose_any)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, init_ctx->th, init_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, init_ctx->prk,
-				      init_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 }
 
 TEST(rfc9529_chapter3, message_3_process)
@@ -808,14 +837,11 @@ TEST(rfc9529_chapter3, message_3_process)
 	memcpy(resp_ctx->th, TH_3, ARRAY_SIZE(TH_3));
 
 	resp_ctx->prk_state = EDHOC_PRK_STATE_3E2M;
-	resp_ctx->prk_len = ARRAY_SIZE(PRK_3e2m);
-	memcpy(resp_ctx->prk, PRK_3e2m, ARRAY_SIZE(PRK_3e2m));
+	tv_inject_slot(resp_ctx, EDHOC_KEY_SLOT_PRK_3E2M,
+		       tv_import_derive(PRK_3e2m, ARRAY_SIZE(PRK_3e2m)));
 
-	resp_ctx->dh_priv_key_len = ARRAY_SIZE(Y);
-	memcpy(resp_ctx->dh_priv_key, Y, ARRAY_SIZE(Y));
-
-	resp_ctx->dh_secret_len = ARRAY_SIZE(G_XY);
-	memcpy(resp_ctx->dh_secret, G_XY, ARRAY_SIZE(G_XY));
+	tv_inject_slot(resp_ctx, EDHOC_KEY_SLOT_EPHEMERAL,
+		       tv_import_p256(Y, ARRAY_SIZE(Y)));
 
 	ret = edhoc_message_3_process(resp_ctx, message_3,
 				      ARRAY_SIZE(message_3));
@@ -833,9 +859,9 @@ TEST(rfc9529_chapter3, message_3_process)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, resp_ctx->th, resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 }
 
 TEST(rfc9529_chapter3, message_4_compose)
@@ -849,8 +875,8 @@ TEST(rfc9529_chapter3, message_4_compose)
 	memcpy(resp_ctx->th, TH_4, ARRAY_SIZE(TH_4));
 
 	resp_ctx->prk_state = EDHOC_PRK_STATE_4E3M;
-	resp_ctx->prk_len = ARRAY_SIZE(PRK_4e3m);
-	memcpy(resp_ctx->prk, PRK_4e3m, ARRAY_SIZE(PRK_4e3m));
+	tv_inject_slot(resp_ctx, EDHOC_KEY_SLOT_PRK_4E3M,
+		       tv_import_derive(PRK_4e3m, ARRAY_SIZE(PRK_4e3m)));
 
 	size_t msg_4_len = 0;
 	uint8_t msg_4[ARRAY_SIZE(message_4) + 1] = { 0 };
@@ -874,9 +900,9 @@ TEST(rfc9529_chapter3, message_4_compose)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, resp_ctx->th, resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 }
 
 TEST(rfc9529_chapter3, message_4_process)
@@ -890,8 +916,8 @@ TEST(rfc9529_chapter3, message_4_process)
 	memcpy(init_ctx->th, TH_4, ARRAY_SIZE(TH_4));
 
 	init_ctx->prk_state = EDHOC_PRK_STATE_4E3M;
-	init_ctx->prk_len = ARRAY_SIZE(PRK_4e3m);
-	memcpy(init_ctx->prk, PRK_4e3m, ARRAY_SIZE(PRK_4e3m));
+	tv_inject_slot(init_ctx, EDHOC_KEY_SLOT_PRK_4E3M,
+		       tv_import_derive(PRK_4e3m, ARRAY_SIZE(PRK_4e3m)));
 
 	ret = edhoc_message_4_process(init_ctx, message_4,
 				      ARRAY_SIZE(message_4));
@@ -909,9 +935,9 @@ TEST(rfc9529_chapter3, message_4_process)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, init_ctx->th, init_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, init_ctx->prk,
-				      init_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 }
 
 TEST(rfc9529_chapter3, handshake)
@@ -938,16 +964,11 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(message_1, msg_1, msg_1_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(0, init_ctx->prk_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_1, init_ctx->th_state);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(H_message_1), init_ctx->th_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(H_message_1, init_ctx->th,
 				      init_ctx->th_len);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(X), init_ctx->dh_priv_key_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(X, init_ctx->dh_priv_key,
-				      init_ctx->dh_priv_key_len);
 
 	/* EDHOC message 1 process. */
 	ret = edhoc_message_1_process(resp_ctx, msg_1, msg_1_len);
@@ -966,15 +987,14 @@ TEST(rfc9529_chapter3, handshake)
 				      resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(0, resp_ctx->prk_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->peer_cid.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0], resp_ctx->peer_cid.int_value);
 
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_X), resp_ctx->dh_peer_pub_key_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_X, resp_ctx->dh_peer_pub_key,
-				      resp_ctx->dh_peer_pub_key_len);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_X), resp_ctx->peer_pub_eph_key_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_X, resp_ctx->peer_pub_eph_key,
+				      resp_ctx->peer_pub_eph_key_len);
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_2_len = 0;
@@ -1000,13 +1020,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_3, resp_ctx->th, resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_3e2m), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_3e2m, resp_ctx->prk,
-				      resp_ctx->prk_len);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_XY), resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_XY, resp_ctx->dh_secret,
-				      resp_ctx->dh_secret_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
+				     ARRAY_SIZE(PRK_3e2m));
 
 	/* EDHOC message 2 process. */
 	ret = edhoc_message_2_process(init_ctx, msg_2, msg_2_len);
@@ -1024,13 +1040,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL(false, init_ctx->is_oscore_export_allowed);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_3e2m), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_3e2m, init_ctx->prk,
-				      init_ctx->prk_len);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_XY), init_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_XY, init_ctx->dh_secret,
-				      init_ctx->dh_secret_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
+				     ARRAY_SIZE(PRK_3e2m));
 
 	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
 			  init_ctx->peer_cid.encode_type);
@@ -1060,9 +1072,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, init_ctx->th, init_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, init_ctx->prk,
-				      init_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 
 	/* EDHOC message 3 process. */
 	ret = edhoc_message_3_process(resp_ctx, msg_3, msg_3_len);
@@ -1080,9 +1092,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, resp_ctx->th, resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_4_len = 0;
@@ -1108,9 +1120,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, resp_ctx->th, resp_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 
 	/* EDHOC message 4 process. */
 	ret = edhoc_message_4_process(init_ctx, msg_4, msg_4_len);
@@ -1128,9 +1140,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, init_ctx->th, init_ctx->th_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_4e3m), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_4e3m, init_ctx->prk,
-				      init_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
+				     ARRAY_SIZE(PRK_4e3m));
 
 	/* Derive OSCORE master secret and master salt. */
 	uint8_t init_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
@@ -1152,9 +1164,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL(false, init_ctx->is_oscore_export_allowed);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_out), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_out, init_ctx->prk,
-				      init_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_OUT, PRK_out,
+				     ARRAY_SIZE(PRK_out));
 
 	/* Derive OSCORE master secret and master salt. */
 	uint8_t resp_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
@@ -1176,9 +1188,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL(false, resp_ctx->is_oscore_export_allowed);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(PRK_out), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(PRK_out, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_OUT, PRK_out,
+				     ARRAY_SIZE(PRK_out));
 
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_secret, resp_master_secret,
 				      sizeof(resp_master_secret));
@@ -1224,9 +1236,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL(true, init_ctx->is_oscore_export_allowed);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(keyUpdate_PRK_out), init_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(keyUpdate_PRK_out, init_ctx->prk,
-				      init_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
+				     EDHOC_KEY_SLOT_PRK_OUT, keyUpdate_PRK_out,
+				     ARRAY_SIZE(keyUpdate_PRK_out));
 
 	/* EDHOC key update method. */
 	ret = edhoc_export_key_update(resp_ctx, keyUpdate_context,
@@ -1237,9 +1249,9 @@ TEST(rfc9529_chapter3, handshake)
 	TEST_ASSERT_EQUAL(true, resp_ctx->is_oscore_export_allowed);
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(keyUpdate_PRK_out), resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(keyUpdate_PRK_out, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_OUT, keyUpdate_PRK_out,
+				     ARRAY_SIZE(keyUpdate_PRK_out));
 
 	/* Derive OSCORE master secret and master salt. */
 	memset(init_master_secret, 0, sizeof(init_master_secret));
@@ -1323,6 +1335,15 @@ TEST(rfc9529_chapter3, handshake_real_crypto)
 {
 	uint8_t buffer[200] = { 0 };
 
+	/* Required injections. */
+	ret = edhoc_bind_crypto(
+		init_ctx, edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_bind_crypto(
+		resp_ctx, edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_1_len = 0;
 	uint8_t *msg_1 = buffer;
@@ -1390,14 +1411,8 @@ TEST(rfc9529_chapter3, handshake_real_crypto)
 			  init_ctx->peer_cid.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_R[0], init_ctx->peer_cid.int_value);
 
-	TEST_ASSERT_EQUAL(edhoc_cipher_suites_init[1].ecc_key_length,
-			  init_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suites_resp[0].ecc_key_length,
-			  resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL(init_ctx->dh_secret_len, resp_ctx->dh_secret_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(
-		init_ctx->dh_secret, resp_ctx->dh_secret,
-		edhoc_cipher_suites_resp[0].ecc_key_length);
+	assert_peers_share_slot_key(init_ctx, resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_3E2M);
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_3_len = 0;
@@ -1429,6 +1444,9 @@ TEST(rfc9529_chapter3, handshake_real_crypto)
 	ret = edhoc_error_get_code(resp_ctx, &error_code_recv);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
+
+	assert_peers_share_slot_key(init_ctx, resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_4E3M);
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_4_len = 0;
@@ -1530,9 +1548,8 @@ TEST(rfc9529_chapter3, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->prk_state);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
 
-	TEST_ASSERT_EQUAL(init_ctx->prk_len, resp_ctx->prk_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_ctx->prk, resp_ctx->prk,
-				      resp_ctx->prk_len);
+	assert_peers_share_slot_key(init_ctx, resp_ctx,
+				    EDHOC_KEY_SLOT_PRK_OUT);
 
 	/* Derive OSCORE master secret and master salt. */
 	memset(init_master_secret, 0, sizeof(init_master_secret));
