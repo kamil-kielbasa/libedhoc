@@ -37,18 +37,23 @@ target_compile_definitions(app PRIVATE _POSIX_C_SOURCE=200809L)
 # pulled into the partial link remain unresolved at the NSI stage, so the
 # mbedtls archives must be provided to the NSI runner link.
 #
-# Zephyr >= 4.x splits mbedTLS into TF-PSA-Crypto (the crypto core,
-# libtfpsacrypto.a) plus the mbedtls / mbedx509 archives; older Zephyr shipped a
-# single mbedTLSCrypto / mbedTLSBase / mbedTLSX509 set at a different path.
-# Resolve the archives by CMake target so the on-disk name/layout is never
-# hard-coded: $<TARGET_FILE:...> is expanded when natsim reads
-# RUNNER_LINK_LIBRARIES via $<TARGET_PROPERTY:...> (see natsim_config.cmake).
+# Zephyr >= 4.x splits mbedTLS into TF-PSA-Crypto: the crypto core builds as the
+# tfpsacrypto target alongside the mbedtls / mbedx509 archives (older Zephyr
+# shipped a single mbedTLSCrypto / mbedTLSBase / mbedTLSX509 set).
+#
+# RUNNER_LINK_LIBRARIES is emitted verbatim into nsi_config via
+# $<JOIN:$<TARGET_PROPERTY:...>> and then consumed by make (natsim_config.cmake),
+# so generator expressions stored here (e.g. $<TARGET_FILE:>) are NOT
+# re-evaluated: they would leak literally into the Makefile and break its parse.
+# Resolve each archive path at configure time from the target's own binary
+# directory instead, so the mbedtls on-disk layout is never hard-coded here.
 if(TARGET native_simulator)
   set(_edhoc_nsi_mbedtls_libs "")
   foreach(_lib tfpsacrypto mbedtls mbedx509              # Zephyr >= 4.x
                mbedTLSCrypto mbedTLSBase mbedTLSX509)    # legacy Zephyr <= 3.x
     if(TARGET ${_lib})
-      list(APPEND _edhoc_nsi_mbedtls_libs $<TARGET_FILE:${_lib}>)
+      get_target_property(_edhoc_lib_dir ${_lib} BINARY_DIR)
+      list(APPEND _edhoc_nsi_mbedtls_libs ${_edhoc_lib_dir}/lib${_lib}.a)
     endif()
   endforeach()
   if(_edhoc_nsi_mbedtls_libs)
