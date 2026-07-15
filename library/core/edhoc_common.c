@@ -607,7 +607,8 @@ size_t edhoc_cbor_bstr_oh(size_t length)
 size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length)
 {
 	EDHOC_ASSERT(NULL != header);
-	EDHOC_ASSERT(EDHOC_CBOR_BSTR_HEADER_MAX_LEN >= edhoc_cbor_bstr_oh(length));
+	EDHOC_ASSERT(EDHOC_CBOR_BSTR_HEADER_MAX_LEN >=
+		     edhoc_cbor_bstr_oh(length));
 
 	if (length <= 23) {
 		header[0] = (uint8_t)(0x40u | length);

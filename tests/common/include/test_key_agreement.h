@@ -57,13 +57,12 @@
  * \param[in] rhs                       Second EDHOC context.
  * \param slot                          Key slot to compare across both peers.
  */
-static inline void
-test_assert_peers_share_slot_key(enum edhoc_cipher_suite_id suite,
-				 const struct edhoc_context *lhs,
-				 const struct edhoc_context *rhs,
-				 enum edhoc_key_slot_id slot)
+static inline void test_assert_peers_share_slot_key(
+	enum edhoc_cipher_suite_id suite, const struct edhoc_context *lhs,
+	const struct edhoc_context *rhs, enum edhoc_key_slot_id slot)
 {
-	const struct edhoc_crypto *crypto = edhoc_cipher_suite_get_crypto(suite);
+	const struct edhoc_crypto *crypto =
+		edhoc_cipher_suite_get_crypto(suite);
 	static const uint8_t info[] = { 'k', 'e', 'y', '-', 'c',
 					'h', 'e', 'c', 'k' };
 	uint8_t lhs_okm[TEST_SLOT_KEY_CHECK_LENGTH] = { 0 };

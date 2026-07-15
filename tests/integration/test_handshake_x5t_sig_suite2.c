@@ -864,8 +864,7 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
 
 	/* Both peers still share PRK_out after the key update. */
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_OUT);
+	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
 
 	/* Derive OSCORE master secret and master salt. */
 	memset(init_master_secret, 0, sizeof(init_master_secret));

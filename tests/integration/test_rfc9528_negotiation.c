@@ -269,8 +269,12 @@ TEST(rfc9528_negotiation, example_1)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const struct edhoc_cipher_suite fixed_csuites_init[] = {
-		[0].value = 5, [0].kem_public_key_length = 32, [0].hash_length = 32,
-		[1].value = 6, [1].kem_public_key_length = 32, [1].hash_length = 32,
+		[0].value = 5,
+		[0].kem_public_key_length = 32,
+		[0].hash_length = 32,
+		[1].value = 6,
+		[1].kem_public_key_length = 32,
+		[1].hash_length = 32,
 	};
 	ret = edhoc_set_cipher_suites(&init_ctx, fixed_csuites_init,
 				      ARRAY_SIZE(fixed_csuites_init));
@@ -349,12 +353,20 @@ TEST(rfc9528_negotiation, example_2)
 {
 	const enum edhoc_method methods[] = { EDHOC_METHOD_1 };
 	const struct edhoc_cipher_suite csuites_init[] = {
-		[0].value = 5, [0].kem_public_key_length = 32, [0].hash_length = 32,
-		[1].value = 6, [1].kem_public_key_length = 32, [1].hash_length = 32,
+		[0].value = 5,
+		[0].kem_public_key_length = 32,
+		[0].hash_length = 32,
+		[1].value = 6,
+		[1].kem_public_key_length = 32,
+		[1].hash_length = 32,
 	};
 	const struct edhoc_cipher_suite csuites_resp[] = {
-		[0].value = 9, [0].kem_public_key_length = 32, [0].hash_length = 32,
-		[1].value = 8, [1].kem_public_key_length = 32, [1].hash_length = 32,
+		[0].value = 9,
+		[0].kem_public_key_length = 32,
+		[0].hash_length = 32,
+		[1].value = 8,
+		[1].kem_public_key_length = 32,
+		[1].hash_length = 32,
 	};
 	const struct edhoc_connection_id conn_id_init = {
 		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
@@ -504,9 +516,15 @@ TEST(rfc9528_negotiation, example_2)
          */
 	const struct edhoc_cipher_suite fixed_csuites_init[] = {
 		/* [0].value = 5, [0].kem_public_key_length = 32, [0].hash_length = 32, */
-		[0].value = 6, [0].kem_public_key_length = 32, [0].hash_length = 32,
-		[1].value = 7, [1].kem_public_key_length = 32, [1].hash_length = 32,
-		[2].value = 8, [2].kem_public_key_length = 32, [2].hash_length = 32,
+		[0].value = 6,
+		[0].kem_public_key_length = 32,
+		[0].hash_length = 32,
+		[1].value = 7,
+		[1].kem_public_key_length = 32,
+		[1].hash_length = 32,
+		[2].value = 8,
+		[2].kem_public_key_length = 32,
+		[2].hash_length = 32,
 
 	};
 	ret = edhoc_set_cipher_suites(&init_ctx, fixed_csuites_init,

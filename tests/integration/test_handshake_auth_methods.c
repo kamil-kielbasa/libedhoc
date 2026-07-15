@@ -37,9 +37,9 @@
 
 /* Module defines ---------------------------------------------------------- */
 
-#define TEST_HANDSHAKE_MSG_BUF_SIZE                                 \
+#define TEST_HANDSHAKE_MSG_BUF_SIZE                                  \
 	((size_t)(64U + (CONFIG_LIBEDHOC_MAX_LEN_OF_NIKE_KEY * 8U) + \
-		  (CONFIG_LIBEDHOC_MAX_LEN_OF_MAC * 4U) +           \
+		  (CONFIG_LIBEDHOC_MAX_LEN_OF_MAC * 4U) +            \
 		  (CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN * 320U)))
 
 /*
@@ -225,9 +225,10 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = TEST_VEC_CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(TEST_VEC_CRED_I);
 
-	const int res = import_auth_priv_key(
-		current_test_ctx.init_key_type, TEST_VEC_SK_I,
-		ARRAY_SIZE(TEST_VEC_SK_I), auth_cred->priv_key_id);
+	const int res = import_auth_priv_key(current_test_ctx.init_key_type,
+					     TEST_VEC_SK_I,
+					     ARRAY_SIZE(TEST_VEC_SK_I),
+					     auth_cred->priv_key_id);
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
@@ -243,9 +244,10 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->x509_chain.cert[0] = TEST_VEC_CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(TEST_VEC_CRED_R);
 
-	const int res = import_auth_priv_key(
-		current_test_ctx.resp_key_type, TEST_VEC_SK_R,
-		ARRAY_SIZE(TEST_VEC_SK_R), auth_cred->priv_key_id);
+	const int res = import_auth_priv_key(current_test_ctx.resp_key_type,
+					     TEST_VEC_SK_R,
+					     ARRAY_SIZE(TEST_VEC_SK_R),
+					     auth_cred->priv_key_id);
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 

@@ -783,8 +783,7 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain)
 				      resp_sender_id_len);
 
 	/* Both peers still share PRK_out after the key update. */
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_OUT);
+	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
 }
 
 TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
@@ -1205,8 +1204,7 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 				      resp_sender_id_len);
 
 	/* Both peers still share PRK_out after the key update. */
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_OUT);
+	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
 }
 
 TEST_GROUP_RUNNER(handshake_x5chain_sig_suite2)

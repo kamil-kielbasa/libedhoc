@@ -1362,8 +1362,8 @@ TEST(rfc9529_chapter2, prk_exporter)
 
 	/* EDHOC PRK exporter - OSCORE master secret. */
 	ret = edhoc_export_prk_exporter(init_ctx,
-					OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,
-					0, master_secret,
+					OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+					NULL, 0, master_secret,
 					ARRAY_SIZE(master_secret));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Secret, master_secret,
@@ -1373,8 +1373,9 @@ TEST(rfc9529_chapter2, prk_exporter)
 
 	/* EDHOC PRK exporter - OSCORE master salt. */
 	ret = edhoc_export_prk_exporter(init_ctx,
-					OSCORE_EXTRACT_LABEL_MASTER_SALT, NULL, 0,
-					master_salt, ARRAY_SIZE(master_salt));
+					OSCORE_EXTRACT_LABEL_MASTER_SALT, NULL,
+					0, master_salt,
+					ARRAY_SIZE(master_salt));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Salt, master_salt,
 				      ARRAY_SIZE(OSCORE_Master_Salt));
@@ -1634,8 +1635,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->prk_state);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
 
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_OUT);
+	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
 
 	memset(init_master_secret, 0, sizeof(init_master_secret));
 	memset(init_master_salt, 0, sizeof(init_master_salt));
@@ -2002,8 +2002,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_single)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_recipient_id, resp_sender_id,
 				      resp_sender_id_len);
 
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_OUT);
+	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
 }
 
 TEST(rfc9529_chapter2, handshake_real_crypto_ead_many)
@@ -2357,8 +2356,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_many)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_recipient_id, resp_sender_id,
 				      resp_sender_id_len);
 
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_OUT);
+	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
 }
 
 TEST_GROUP_RUNNER(rfc9529_chapter2)

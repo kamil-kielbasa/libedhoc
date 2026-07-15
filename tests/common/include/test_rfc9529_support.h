@@ -94,8 +94,8 @@ static inline psa_key_id_t tv_import_x25519(const uint8_t *scalar,
 			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_MONTGOMERY));
 
 	psa_key_id_t kid = PSA_KEY_ID_NULL;
-	const psa_status_t status = psa_import_key(&attr, scalar, scalar_len,
-						   &kid);
+	const psa_status_t status =
+		psa_import_key(&attr, scalar, scalar_len, &kid);
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, status);
 
 	return kid;
@@ -124,8 +124,8 @@ static inline psa_key_id_t tv_import_p256(const uint8_t *scalar,
 			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
 
 	psa_key_id_t kid = PSA_KEY_ID_NULL;
-	const psa_status_t status = psa_import_key(&attr, scalar, scalar_len,
-						   &kid);
+	const psa_status_t status =
+		psa_import_key(&attr, scalar, scalar_len, &kid);
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, status);
 
 	return kid;
@@ -152,12 +152,12 @@ static inline psa_key_id_t tv_import_derive(const uint8_t *bytes,
 	psa_set_key_type(&attr, PSA_KEY_TYPE_DERIVE);
 	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
 	psa_set_key_algorithm(&attr, PSA_ALG_HKDF_EXPAND(PSA_ALG_SHA_256));
-	psa_set_key_enrollment_algorithm(
-		&attr, PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
+	psa_set_key_enrollment_algorithm(&attr,
+					 PSA_ALG_HKDF_EXTRACT(PSA_ALG_SHA_256));
 
 	psa_key_id_t kid = PSA_KEY_ID_NULL;
-	const psa_status_t status = psa_import_key(&attr, bytes, bytes_len,
-						   &kid);
+	const psa_status_t status =
+		psa_import_key(&attr, bytes, bytes_len, &kid);
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, status);
 
 	return kid;
@@ -215,8 +215,8 @@ static inline void tv_p256_uncompress(const uint8_t *raw_key,
 
 	mbedtls_ecp_group grp;
 	mbedtls_ecp_group_init(&grp);
-	TEST_ASSERT_EQUAL(
-		0, mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_SECP256R1));
+	TEST_ASSERT_EQUAL(0, mbedtls_ecp_group_load(&grp,
+						    MBEDTLS_ECP_DP_SECP256R1));
 
 	const size_t p_len = mbedtls_mpi_size(&grp.P);
 
@@ -312,9 +312,9 @@ static inline void tv_check_shared_secret(psa_key_id_t priv,
 	uint8_t raw[TEST_RFC9529_OKM_LEN] = { 0 };
 	size_t raw_len = 0;
 
-	const psa_status_t status = psa_raw_key_agreement(
-		PSA_ALG_ECDH, priv, peer_pub, peer_pub_len, raw, sizeof(raw),
-		&raw_len);
+	const psa_status_t status =
+		psa_raw_key_agreement(PSA_ALG_ECDH, priv, peer_pub,
+				      peer_pub_len, raw, sizeof(raw), &raw_len);
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, status);
 
 	TEST_ASSERT_EQUAL(g_xy_len, raw_len);
@@ -335,18 +335,17 @@ static inline void tv_check_shared_secret(psa_key_id_t priv,
  * \param[in] ref                       Expected key material (RFC vector).
  * \param ref_len                       Length of \p ref in bytes.
  */
-static inline void
-tv_assert_slot_equals_vector(enum edhoc_cipher_suite_id suite,
-			     const struct edhoc_context *ctx,
-			     enum edhoc_key_slot_id slot, const uint8_t *ref,
-			     size_t ref_len)
+static inline void tv_assert_slot_equals_vector(
+	enum edhoc_cipher_suite_id suite, const struct edhoc_context *ctx,
+	enum edhoc_key_slot_id slot, const uint8_t *ref, size_t ref_len)
 {
 	TEST_ASSERT_NOT_NULL(ctx);
 	TEST_ASSERT_TRUE(slot < EDHOC_KEY_SLOT_COUNT);
 	TEST_ASSERT_NOT_NULL(ref);
 	TEST_ASSERT_NOT_EQUAL(0, ref_len);
 
-	const struct edhoc_crypto *crypto = edhoc_cipher_suite_get_crypto(suite);
+	const struct edhoc_crypto *crypto =
+		edhoc_cipher_suite_get_crypto(suite);
 	static const uint8_t info[] = { 'k', 'e', 'y', '-', 'c',
 					'h', 'e', 'c', 'k' };
 	uint8_t okm_ctx[TEST_RFC9529_OKM_LEN] = { 0 };

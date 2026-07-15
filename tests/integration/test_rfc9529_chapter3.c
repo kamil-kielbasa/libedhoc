@@ -1548,8 +1548,7 @@ TEST(rfc9529_chapter3, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->prk_state);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
 
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_OUT);
+	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
 
 	/* Derive OSCORE master secret and master salt. */
 	memset(init_master_secret, 0, sizeof(init_master_secret));
