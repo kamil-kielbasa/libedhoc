@@ -367,6 +367,39 @@ static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
 }
 
 /**
+ * \brief Return a pointer to a slot's opaque key-store handle.
+ *
+ *        The pointed-to buffer is what the crypto backend reads (as an input
+ *        handle) or writes (as an output handle). The pointer is non-const so
+ *        one accessor serves both roles regardless of how the caller holds
+ *        \p ctx; treat the bytes as opaque.
+ *
+ * \param[in] ctx                       EDHOC context.
+ * \param slot                          Key slot to access.
+ *
+ * \return Pointer to the slot's #CONFIG_LIBEDHOC_KEY_ID_LEN-byte handle buffer.
+ */
+static inline void *edhoc_key_slot_id(const struct edhoc_context *ctx,
+				      enum edhoc_key_slot_id slot)
+{
+	return (void *)ctx->key_slots[slot].key_id;
+}
+
+/**
+ * \brief Is a key slot currently holding a live key-store handle?
+ *
+ * \param[in] ctx                       EDHOC context.
+ * \param slot                          Key slot to query.
+ *
+ * \return \c true when the slot holds a handle.
+ */
+static inline bool edhoc_key_slot_present(const struct edhoc_context *ctx,
+					  enum edhoc_key_slot_id slot)
+{
+	return ctx->key_slots[slot].present;
+}
+
+/**
  * \brief Adopt a live key handle from one slot into another.
  *
  *        Copies the source slot's key identifier into the destination slot and
@@ -381,7 +414,7 @@ static inline const char *edhoc_key_slot_name(enum edhoc_key_slot_id slot)
  * \param dst_slot                      Destination slot (receives the handle).
  * \param src_slot                      Source slot (wiped and cleared).
  */
-static inline void edhoc_move_key_slot(struct edhoc_context *ctx,
+static inline void edhoc_key_slot_move(struct edhoc_context *ctx,
 				       enum edhoc_key_slot_id dst_slot,
 				       enum edhoc_key_slot_id src_slot)
 {
@@ -396,48 +429,143 @@ static inline void edhoc_move_key_slot(struct edhoc_context *ctx,
 }
 
 /**
+ * \brief Copy a slot's key-store handle into a caller-provided buffer.
+ *
+ * \param[in] ctx                       EDHOC context.
+ * \param slot                          Source key slot.
+ * \param[out] key_id                   Buffer of #CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
+ */
+static inline void edhoc_key_slot_snapshot(const struct edhoc_context *ctx,
+					   enum edhoc_key_slot_id slot,
+					   uint8_t *key_id)
+{
+	memcpy(key_id, ctx->key_slots[slot].key_id,
+	       sizeof(ctx->key_slots[slot].key_id));
+}
+
+/**
+ * \brief Write a key-store handle into a slot and mark the slot present.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param slot                          Destination key slot.
+ * \param[in] key_id                    Buffer of #CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
+ */
+static inline void edhoc_key_slot_restore(struct edhoc_context *ctx,
+					  enum edhoc_key_slot_id slot,
+					  const uint8_t *key_id)
+{
+	struct edhoc_key_slot *key_slot = &ctx->key_slots[slot];
+
+	memcpy(key_slot->key_id, key_id, sizeof(key_slot->key_id));
+	key_slot->present = true;
+}
+
+/**
+ * \brief Mark a key slot as holding a live key-store handle.
+ *
+ *        Call after a crypto operation has written a handle into the slot's
+ *        \ref edhoc_key_slot.key_id.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param slot                          Key slot that now holds a handle.
+ */
+static inline void edhoc_key_slot_mark_present(struct edhoc_context *ctx,
+					       enum edhoc_key_slot_id slot)
+{
+	ctx->key_slots[slot].present = true;
+}
+
+/**
+ * \brief Destroy the live key-store handle held by a single slot.
+ *
+ *        Destroys the backend handle when the slot is present, then wipes its
+ *        identifier and clears the "present" flag. A slot that is not present,
+ *        or a context without a bound \c destroy_key, is a successful no-op.
+ *        On a destroy failure the slot is left untouched (still present) so the
+ *        caller can retry or surface the error.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param slot                          Key slot to release.
+ *
+ * \return #EDHOC_SUCCESS, or the destroy_key error.
+ */
+static inline int edhoc_key_slot_release(struct edhoc_context *ctx,
+					 enum edhoc_key_slot_id slot)
+{
+	struct edhoc_key_slot *key_slot = &ctx->key_slots[slot];
+
+	if (!key_slot->present || NULL == ctx->itf.crypto.destroy_key) {
+		return EDHOC_SUCCESS;
+	}
+
+	const int ret =
+		ctx->itf.crypto.destroy_key(ctx->user_ctx, key_slot->key_id);
+
+	if (EDHOC_SUCCESS != ret) {
+		return ret;
+	}
+
+	ctx->itf.platform.zeroize(key_slot->key_id, sizeof(key_slot->key_id));
+	key_slot->present = false;
+
+	return EDHOC_SUCCESS;
+}
+
+/**
  * \brief Destroy every live key-store handle in slots [0, \p up_to_slot).
  *
  *        Iterates the context key slots up to (but excluding) \p up_to_slot,
- *        destroying each backend handle still present, wiping its identifier
- *        and clearing its "present" flag. Already-released slots are skipped,
- *        so each stage releases only the handles it retires: message 2 up to
- *        \ref EDHOC_KEY_SLOT_PRK_3E2M, message 3 up to \ref EDHOC_KEY_SLOT_PRK_4E3M
- *        and \ref edhoc_context_deinit up to \ref EDHOC_KEY_SLOT_COUNT. The
- *        caller is expected to log a diagnostic on failure.
+ *        releasing each via \ref edhoc_key_slot_release. Already-released slots
+ *        are skipped, so each stage releases only the handles it retires:
+ *        message 2 up to \ref EDHOC_KEY_SLOT_PRK_3E2M, message 3 up to
+ *        \ref EDHOC_KEY_SLOT_PRK_4E3M and \ref edhoc_context_deinit up to
+ *        \ref EDHOC_KEY_SLOT_COUNT. The caller is expected to log a diagnostic
+ *        on failure.
  *
  * \param[in,out] ctx                   EDHOC context.
  * \param up_to_slot                    First slot NOT released (exclusive bound).
  *
  * \return #EDHOC_SUCCESS, or the first destroy error encountered.
  */
-static inline int edhoc_release_key_slots(struct edhoc_context *ctx,
-					  enum edhoc_key_slot_id up_to_slot)
+static inline int
+edhoc_key_slot_release_up_to(struct edhoc_context *ctx,
+			     enum edhoc_key_slot_id up_to_slot)
 {
-	if (NULL == ctx->itf.crypto.destroy_key) {
-		return EDHOC_SUCCESS;
-	}
-
 	for (enum edhoc_key_slot_id slot = 0; slot < up_to_slot; ++slot) {
-		struct edhoc_key_slot *key_slot = &ctx->key_slots[slot];
-
-		if (!key_slot->present) {
-			continue;
-		}
-
-		const int ret = ctx->itf.crypto.destroy_key(ctx->user_ctx,
-							    key_slot->key_id);
+		const int ret = edhoc_key_slot_release(ctx, slot);
 
 		if (EDHOC_SUCCESS != ret) {
 			return ret;
 		}
-
-		ctx->itf.platform.zeroize(key_slot->key_id,
-					  sizeof(key_slot->key_id));
-		key_slot->present = false;
 	}
 
 	return EDHOC_SUCCESS;
+}
+
+/**
+ * \brief Destroy a key-store handle held in a raw buffer and wipe the buffer.
+ *
+ *        The raw-buffer companion to \ref edhoc_key_slot_release: it operates
+ *        on a handle kept outside \ref edhoc_context.key_slots (a local
+ *        snapshot, or a caller-owned exporter output) rather than on a key
+ *        slot. Destroying a zeroed / no-key handle is a successful no-op.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param[in,out] key_id                Buffer of #CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
+ *
+ * \return #EDHOC_SUCCESS, or the destroy_key error.
+ */
+static inline int edhoc_key_destroy(struct edhoc_context *ctx, void *key_id)
+{
+	int ret = EDHOC_SUCCESS;
+
+	if (NULL != ctx->itf.crypto.destroy_key) {
+		ret = ctx->itf.crypto.destroy_key(ctx->user_ctx, key_id);
+	}
+
+	ctx->itf.platform.zeroize(key_id, CONFIG_LIBEDHOC_KEY_ID_LEN);
+
+	return ret;
 }
 
 #endif /* EDHOC_CONTEXT_INTERNAL_H */

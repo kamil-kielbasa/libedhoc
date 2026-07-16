@@ -65,7 +65,7 @@ int edhoc_context_deinit(struct edhoc_context *ctx)
 	/* Free every live key-store slot: the handles are backend key-store
 	 * slots, so wiping the context memory alone would leak them. On the
 	 * first destroy failure stop and report it (the wipe is skipped). */
-	int ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_COUNT);
+	int ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_COUNT);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Release key slots: %d", ret);

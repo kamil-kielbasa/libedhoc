@@ -589,15 +589,68 @@ int edhoc_message_error_process(const uint8_t *message_error,
  */
 
 /**
- * \brief Export derived keying material using the pseudorandom key exporter.
+ * \brief Export application keying material as a key-store handle.
  *
  *        Implements RFC 9528: 4.2.1. EDHOC_Exporter(label, context, length),
- *        deriving \p secret_length bytes bound to the application-supplied
- *        \p context byte string. Pass a null \p context (with
- *        \p context_length equal to zero) for an empty context.
- * 
+ *        deriving a key from PRK_exporter and returning it as an opaque
+ *        key-store handle (a key reference) rather than raw bytes. Prefer this
+ *        form when the derived key must never be exposed as bytes (for example
+ *        a TrustZone or secure element); use \ref edhoc_export_raw() when the
+ *        caller needs the raw bytes.
+ *
+ *        The derived length is governed by \p usage, not chosen by the caller:
+ *        #EDHOC_KEY_USAGE_KDF yields a derivation key of the cipher suite hash
+ *        length; #EDHOC_KEY_USAGE_AEAD yields an AEAD key of the cipher suite
+ *        AEAD key length. Because the length is bound into the KDF info, the
+ *        material differs from \ref edhoc_export_raw() unless the raw
+ *        \p secret_length equals the length implied by \p usage.
+ *
+ *        Permitted labels (RFC 9528: 10.1) are 0 (OSCORE Master Secret), 1
+ *        (OSCORE Master Salt) and the private-use range 32768-65535; any other
+ *        label is rejected with #EDHOC_ERROR_NOT_PERMITTED.
+ *
+ * \note  The returned handle is owned by the caller: this library neither
+ *        tracks it in the EDHOC context nor releases it in
+ *        \ref edhoc_context_deinit(). The caller must destroy it, for example
+ *        through the \c destroy_key entry of the bound \ref edhoc_crypto vtable.
+ *
  * \param[in,out] edhoc_context         EDHOC context.
- * \param label                         PRK exporter label.
+ * \param label                         EDHOC exporter label (RFC 9528: 10.1).
+ * \param[in] context                   Exporter context byte string (may be NULL when \p context_length is 0).
+ * \param context_length                Size of the \p context buffer in bytes.
+ * \param usage                         Intended usage of the derived key; governs its type and length.
+ * \param[out] key_id                   Buffer holding a key handle (\c CONFIG_LIBEDHOC_KEY_ID_LEN bytes) that receives the derived key.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \retval #EDHOC_ERROR_INVALID_ARGUMENT
+ *         One or more input parameters are invalid.
+ * \retval #EDHOC_ERROR_BAD_STATE
+ *         Internal context state is incorrect.
+ * \retval #EDHOC_ERROR_NOT_PERMITTED
+ *         The exporter label is not permitted.
+ * \retval #EDHOC_ERROR_CBOR_FAILURE
+ *         CBOR encoding failure.
+ * \retval #EDHOC_ERROR_CRYPTO_FAILURE
+ *         Cryptographic operation failure.
+ * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
+ *         Pseudorandom key derivation failed.
+ */
+int edhoc_export(struct edhoc_context *edhoc_context, size_t label,
+		 const uint8_t *context, size_t context_length,
+		 enum edhoc_key_usage usage, void *key_id);
+
+/**
+ * \brief Export application keying material as raw bytes.
+ *
+ *        Implements RFC 9528: 4.2.1. EDHOC_Exporter(label, context, length),
+ *        deriving \p secret_length bytes from PRK_exporter and writing them to
+ *        \p secret. Use \ref edhoc_export() when the derived key should remain
+ *        an opaque handle instead of raw bytes. Permitted labels are the same
+ *        as for \ref edhoc_export().
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param label                         EDHOC exporter label (RFC 9528: 10.1).
  * \param[in] context                   Exporter context byte string (may be NULL when \p context_length is 0).
  * \param context_length                Size of the \p context buffer in bytes.
  * \param[out] secret                   Buffer where the generated secret is to be written.
@@ -610,7 +663,7 @@ int edhoc_message_error_process(const uint8_t *message_error,
  * \retval #EDHOC_ERROR_BAD_STATE
  *         Internal context state is incorrect.
  * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
+ *         The exporter label is not permitted.
  * \retval #EDHOC_ERROR_CBOR_FAILURE
  *         CBOR encoding failure.
  * \retval #EDHOC_ERROR_CRYPTO_FAILURE
@@ -618,16 +671,20 @@ int edhoc_message_error_process(const uint8_t *message_error,
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
  *         Pseudorandom key derivation failed.
  */
-int edhoc_export_prk_exporter(struct edhoc_context *edhoc_context, size_t label,
-			      const uint8_t *context, size_t context_length,
-			      uint8_t *secret, size_t secret_length);
+int edhoc_export_raw(struct edhoc_context *edhoc_context, size_t label,
+		     const uint8_t *context, size_t context_length,
+		     uint8_t *secret, size_t secret_length);
 
 /**
  * \brief Perform key update for subsequent OSCORE session exports.
  *
+ *        Implements RFC 9528: 4.4. EDHOC-KeyUpdate(context): rotates PRK_out so
+ *        that later OSCORE exports derive fresh keying material bound to the
+ *        application-supplied \p context byte string.
+ *
  * \param[in,out] edhoc_context         EDHOC context.
- * \param[in] entropy                   Buffer containing the entropy for key update.
- * \param entropy_length                Size of the \p entropy buffer in bytes.
+ * \param[in] context                   Buffer containing the key-update context.
+ * \param context_length                Size of the \p context buffer in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
@@ -645,10 +702,66 @@ int edhoc_export_prk_exporter(struct edhoc_context *edhoc_context, size_t label,
  *         Pseudorandom key derivation failed.
  */
 int edhoc_export_key_update(struct edhoc_context *edhoc_context,
-			    const uint8_t *entropy, size_t entropy_length);
+			    const uint8_t *context, size_t context_length);
 
 /**
- * \brief Export the OSCORE security session.
+ * \brief Export the OSCORE security session with the master secret as a handle.
+ *
+ *        Derives the OSCORE Master Secret (RFC 9528: A.1, exporter label 0) and
+ *        returns it as an opaque key-store handle, while the Master Salt
+ *        (label 1) and the sender / recipient identifiers are returned as raw
+ *        bytes. Use \ref edhoc_export_oscore_session_raw() to obtain the master
+ *        secret as raw bytes instead.
+ *
+ *        The master secret handle is derived with #EDHOC_KEY_USAGE_KDF (a
+ *        derivation key of the cipher suite hash length), suitable as input
+ *        keying material to the OSCORE HKDF.
+ *
+ * \note  The returned handle is owned by the caller (see \ref edhoc_export()).
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param[out] master_secret_key_id     Buffer holding a key handle (\c CONFIG_LIBEDHOC_KEY_ID_LEN bytes) that receives the master secret.
+ * \param[out] master_salt              Buffer where the exported master salt is to be written.
+ * \param master_salt_length            Size of the \p master_salt buffer in bytes.
+ * \param[out] sender_id                Buffer where the exported sender id is to be written.
+ * \param sender_id_size                Size of the \p sender_id buffer in bytes.
+ * \param[out] sender_id_length         On success, the number of bytes that make up the sender id.
+ * \param[out] recipient_id             Buffer where the exported recipient id is to be written.
+ * \param recipient_id_size             Size of the \p recipient_id buffer in bytes.
+ * \param[out] recipient_id_length      On success, the number of bytes that make up the recipient id.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \retval #EDHOC_ERROR_INVALID_ARGUMENT
+ *         One or more input parameters are invalid.
+ * \retval #EDHOC_ERROR_BAD_STATE
+ *         Internal context state is incorrect.
+ * \retval #EDHOC_ERROR_NOT_PERMITTED
+ *         Operation not permitted in the current configuration.
+ * \retval #EDHOC_ERROR_CBOR_FAILURE
+ *         CBOR encoding failure.
+ * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
+ *         Output buffer is too small.
+ * \retval #EDHOC_ERROR_CRYPTO_FAILURE
+ *         Cryptographic operation failure.
+ * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
+ *         Pseudorandom key derivation failed.
+ */
+int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
+				void *master_secret_key_id,
+				uint8_t *master_salt, size_t master_salt_length,
+				uint8_t *sender_id, size_t sender_id_size,
+				size_t *sender_id_length, uint8_t *recipient_id,
+				size_t recipient_id_size,
+				size_t *recipient_id_length);
+
+/**
+ * \brief Export the OSCORE security session as raw bytes.
+ *
+ *        Derives the OSCORE Master Secret and Master Salt (exporter labels 0
+ *        and 1) and copies the sender / recipient identifiers, all as raw
+ *        bytes. Use \ref edhoc_export_oscore_session() to obtain the master
+ *        secret as an opaque handle instead.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] master_secret            Buffer where the exported master secret is to be written.
@@ -679,14 +792,12 @@ int edhoc_export_key_update(struct edhoc_context *edhoc_context,
  * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
  *         Pseudorandom key derivation failed.
  */
-int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
-				uint8_t *master_secret,
-				size_t master_secret_length,
-				uint8_t *master_salt, size_t master_salt_length,
-				uint8_t *sender_id, size_t sender_id_size,
-				size_t *sender_id_length, uint8_t *recipient_id,
-				size_t recipient_id_size,
-				size_t *recipient_id_length);
+int edhoc_export_oscore_session_raw(
+	struct edhoc_context *edhoc_context, uint8_t *master_secret,
+	size_t master_secret_length, uint8_t *master_salt,
+	size_t master_salt_length, uint8_t *sender_id, size_t sender_id_size,
+	size_t *sender_id_length, uint8_t *recipient_id,
+	size_t recipient_id_size, size_t *recipient_id_length);
 
 /**@}*/
 

@@ -111,7 +111,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	 * G_X is written to ctx->pub_eph_key and serialised into message 1. */
 	ctx->pub_eph_key_len = 0;
 	ret = ctx->itf.crypto.generate_key_pair(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 		ctx->pub_eph_key, ARRAY_SIZE(ctx->pub_eph_key),
 		&ctx->pub_eph_key_len);
 
@@ -123,7 +123,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_EPHEMERAL);
 
 	EDHOC_LOG_HEXDUMP_DBG(ctx->pub_eph_key, ctx->pub_eph_key_len, "G_X");
 

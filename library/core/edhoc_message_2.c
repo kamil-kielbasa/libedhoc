@@ -288,8 +288,8 @@ STATIC int comp_encapsulate(struct edhoc_context *ctx)
 	ctx->pub_eph_key_len = 0;
 	const int ret = ctx->itf.crypto.encapsulate(
 		ctx->user_ctx, ctx->peer_pub_eph_key, ctx->peer_pub_eph_key_len,
-		ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
-		ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].key_id,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
 		ctx->pub_eph_key, sizeof(ctx->pub_eph_key),
 		&ctx->pub_eph_key_len);
 
@@ -301,8 +301,8 @@ STATIC int comp_encapsulate(struct edhoc_context *ctx)
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].present = true;
-	ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_EPHEMERAL);
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_SHARED_SECRET);
 	return EDHOC_SUCCESS;
 }
 
@@ -317,16 +317,16 @@ STATIC int comp_decapsulate(struct edhoc_context *ctx)
 	 * key handle from message 1; the shared secret G_XY is stored as a
 	 * handle (the shared-secret slot). */
 	const int ret = ctx->itf.crypto.decapsulate(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 		ctx->peer_pub_eph_key, ctx->peer_pub_eph_key_len,
-		ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].key_id);
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decapsulate: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_SHARED_SECRET);
 	return EDHOC_SUCCESS;
 }
 
@@ -416,15 +416,15 @@ STATIC int comp_prk_2e(struct edhoc_context *ctx)
 	 * shared secret and pseudorandom key are handles, only TH_2 is raw. */
 	const int ret = ctx->itf.crypto.extract(
 		ctx->user_ctx,
-		ctx->key_slots[EDHOC_KEY_SLOT_SHARED_SECRET].key_id, ctx->th,
-		ctx->th_len, ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id);
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET), ctx->th,
+		ctx->th_len, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Extract PRK_2e: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_2E);
 	ctx->prk_state = EDHOC_PRK_STATE_2E;
 	return EDHOC_SUCCESS;
 }
@@ -450,7 +450,7 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		/* PRK_3e2m == PRK_2e: move PRK_2e's slot into PRK_3e2m so the
 		 * shared key is owned by a single handle that lives into message
 		 * 3. KEYSTREAM_2 reads PRK_3e2m for these methods. */
-		edhoc_move_key_slot(ctx, EDHOC_KEY_SLOT_PRK_3E2M,
+		edhoc_key_slot_move(ctx, EDHOC_KEY_SLOT_PRK_3E2M,
 				    EDHOC_KEY_SLOT_PRK_2E);
 		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
@@ -494,9 +494,9 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		 * own dedicated handle. SALT_3e2m is spent afterwards. */
 		ret = ctx->itf.crypto.extract(
 			ctx->user_ctx,
-			ctx->key_slots[EDHOC_KEY_SLOT_G_RX].key_id, salt_3e2m,
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_RX), salt_3e2m,
 			EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
-			ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id);
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M));
 
 		ctx->itf.platform.zeroize(salt_3e2m,
 					  EDHOC_MEM_ALLOC_SIZE(salt_3e2m));
@@ -507,7 +507,7 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 		}
 
-		ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].present = true;
+		edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
 		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
 	}
@@ -716,9 +716,9 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 	 * methods 0/2 PRK_2e was moved into PRK_3e2m, so read whichever handle
 	 * still holds it. */
 	const void *prk_2e_key_id =
-		ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].present ?
-			ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id :
-			ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id;
+		edhoc_key_slot_present(ctx, EDHOC_KEY_SLOT_PRK_2E) ?
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E) :
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
 	ret = ctx->itf.crypto.expand_raw(ctx->user_ctx, prk_2e_key_id, info,
 					 EDHOC_MEM_ALLOC_SIZE(info), keystream,
 					 keystream_len);
@@ -1184,7 +1184,7 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 
 	/* EDHOC_Expand(PRK_2e, info) -> SALT_3e2m (raw). */
 	ret = ctx->itf.crypto.expand_raw(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_2E].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E),
 		info, EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
 	EDHOC_MEM_FREE(info);
 
@@ -1205,7 +1205,7 @@ STATIC int comp_grx(struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	void *grx_key_id = ctx->key_slots[EDHOC_KEY_SLOT_G_RX].key_id;
+	void *grx_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_RX);
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	switch (ctx->role) {
@@ -1214,7 +1214,7 @@ STATIC int comp_grx(struct edhoc_context *ctx,
 		 * key). The shared secret is produced as a handle. */
 		ret = ctx->itf.crypto.key_agreement(
 			ctx->user_ctx,
-			ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 			pub_key, pub_key_len, grx_key_id);
 		break;
 
@@ -1238,7 +1238,7 @@ STATIC int comp_grx(struct edhoc_context *ctx,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_G_RX].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_G_RX);
 	return EDHOC_SUCCESS;
 }
 
@@ -1550,7 +1550,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	EDHOC_LOG_INF("Compose msg2 end");
 
 	/* 14. Release the message-2 scoped secrets (PRK_3e2m lives on). */
-	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
+	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Release message 2 secrets: %d", ret);
@@ -1870,7 +1870,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	EDHOC_LOG_INF("Process msg2 end");
 
 	/* 17. Release the message-2 scoped secrets (PRK_3e2m lives on). */
-	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
+	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Release message 2 secrets: %d", ret);

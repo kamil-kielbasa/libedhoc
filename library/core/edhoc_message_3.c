@@ -275,7 +275,7 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 		/* PRK_4e3m == PRK_3e2m: move PRK_3e2m's slot into PRK_4e3m so
 		 * the key is owned by a single handle that lives on for PRK_out
 		 * (and message 4). */
-		edhoc_move_key_slot(ctx, EDHOC_KEY_SLOT_PRK_4E3M,
+		edhoc_key_slot_move(ctx, EDHOC_KEY_SLOT_PRK_4E3M,
 				    EDHOC_KEY_SLOT_PRK_3E2M);
 		ctx->prk_state = EDHOC_PRK_STATE_4E3M;
 		return EDHOC_SUCCESS;
@@ -319,9 +319,9 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 		 * own dedicated handle. SALT_4e3m is spent afterwards. */
 		ret = ctx->itf.crypto.extract(
 			ctx->user_ctx,
-			ctx->key_slots[EDHOC_KEY_SLOT_G_IY].key_id, salt_4e3m,
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_IY), salt_4e3m,
 			EDHOC_MEM_ALLOC_SIZE(salt_4e3m),
-			ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M].key_id);
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M));
 
 		ctx->itf.platform.zeroize(salt_4e3m,
 					  EDHOC_MEM_ALLOC_SIZE(salt_4e3m));
@@ -332,7 +332,7 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 			return EDHOC_ERROR_CRYPTO_FAILURE;
 		}
 
-		ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M].present = true;
+		edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 		ctx->prk_state = EDHOC_PRK_STATE_4E3M;
 		return EDHOC_SUCCESS;
 	}
@@ -530,9 +530,9 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 
 	/* EDHOC_Expand(PRK_3e2m, info) -> K_3 (AEAD key handle). */
 	ret = ctx->itf.crypto.expand(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M),
 		info, len, EDHOC_KEY_USAGE_AEAD,
-		ctx->key_slots[EDHOC_KEY_SLOT_K_3].key_id);
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand K_3: %d", ret);
@@ -540,7 +540,7 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_K_3].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_K_3);
 
 	/* Generate IV_3 (raw). */
 	input_info = (struct info){
@@ -563,7 +563,7 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 
 	/* EDHOC_Expand(PRK_3e2m, info) -> IV_3 (raw). */
 	ret = ctx->itf.crypto.expand_raw(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M),
 		info, len, iv, iv_len);
 	EDHOC_MEM_FREE(info);
 
@@ -606,7 +606,7 @@ STATIC int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *iv,
 	/* AEAD-encrypt PLAINTEXT_3 under K_3 (its context slot handle), with
 	 * IV_3 as the nonce and AAD_3 as associated data. */
 	const int ret = ctx->itf.crypto.aead_encrypt(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_K_3].key_id, iv,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3), iv,
 		iv_len, aad, aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
 		ctxt_len);
 
@@ -732,7 +732,7 @@ STATIC int decrypt_ciphertext_3(const struct edhoc_context *ctx,
 	 * IV_3 as the nonce and AAD_3 as associated data. */
 	size_t len = 0;
 	const int ret = ctx->itf.crypto.aead_decrypt(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_K_3].key_id, iv,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3), iv,
 		iv_len, aad, aad_len, ctxt, ctxt_len, ptxt, ptxt_len, &len);
 
 	if (EDHOC_SUCCESS != ret || ptxt_len != len) {
@@ -977,7 +977,7 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 
 	/* EDHOC_Expand(PRK_3e2m, info) -> SALT_4e3m (raw). */
 	ret = ctx->itf.crypto.expand_raw(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M),
 		info, EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
 	EDHOC_MEM_FREE(info);
 
@@ -998,7 +998,7 @@ STATIC int comp_giy(struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	void *giy_key_id = ctx->key_slots[EDHOC_KEY_SLOT_G_IY].key_id;
+	void *giy_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_IY);
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	switch (ctx->role) {
@@ -1018,7 +1018,7 @@ STATIC int comp_giy(struct edhoc_context *ctx,
 		 * retained by the KEM encapsulation in message 2. */
 		ret = ctx->itf.crypto.key_agreement(
 			ctx->user_ctx,
-			ctx->key_slots[EDHOC_KEY_SLOT_EPHEMERAL].key_id,
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 			pub_key, pub_key_len, giy_key_id);
 		break;
 
@@ -1032,7 +1032,7 @@ STATIC int comp_giy(struct edhoc_context *ctx,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_G_IY].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_G_IY);
 	return EDHOC_SUCCESS;
 }
 
@@ -1385,7 +1385,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_INF("Compose msg3 end");
 
 	/* 12. Release the message-3 scoped secrets (PRK_4e3m lives on). */
-	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
+	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Release message 3 secrets: %d", ret);
@@ -1686,7 +1686,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	EDHOC_LOG_INF("Process msg3 end");
 
 	/* 12. Release the message-3 scoped secrets (PRK_4e3m lives on). */
-	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
+	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Release message 3 secrets: %d", ret);

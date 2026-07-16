@@ -1342,8 +1342,8 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	 * own handle: PRK_3e2m for message 2, PRK_4e3m for message 3. */
 	const void *prk_key_id =
 		(EDHOC_MSG_2 == ctx->message) ?
-			ctx->key_slots[EDHOC_KEY_SLOT_PRK_3E2M].key_id :
-			ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M].key_id;
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M) :
+			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
 	ret = ctx->itf.crypto.expand_raw(ctx->user_ctx, prk_key_id, info_buf,
 					 len, mac, mac_len);

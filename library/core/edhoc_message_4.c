@@ -318,9 +318,9 @@ STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
 
 	/* EDHOC_Expand(PRK_4e3m, info) -> K_4 (AEAD key handle). */
 	ret = ctx->itf.crypto.expand(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M),
 		info, len, EDHOC_KEY_USAGE_AEAD,
-		ctx->key_slots[EDHOC_KEY_SLOT_K_4].key_id);
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_4));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand K_4: %d", ret);
@@ -328,7 +328,7 @@ STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->key_slots[EDHOC_KEY_SLOT_K_4].present = true;
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_K_4);
 
 	/* Generate IV_4 (raw). */
 	input_info = (struct info){
@@ -351,7 +351,7 @@ STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
 
 	/* EDHOC_Expand(PRK_4e3m, info) -> IV_4 (raw). */
 	ret = ctx->itf.crypto.expand_raw(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_PRK_4E3M].key_id,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M),
 		info, len, iv, iv_len);
 	EDHOC_MEM_FREE(info);
 
@@ -388,7 +388,7 @@ STATIC int compute_ciphertext(const struct edhoc_context *ctx,
 	/* AEAD-encrypt PLAINTEXT_4 under K_4 (its context slot handle), with
 	 * IV_4 as the nonce and AAD_4 as associated data. */
 	const int ret = ctx->itf.crypto.aead_encrypt(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_K_4].key_id, iv,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_4), iv,
 		iv_len, aad, aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
 		ctxt_len);
 
@@ -464,7 +464,7 @@ STATIC int decrypt_ciphertext_4(const struct edhoc_context *ctx,
 	 * IV_4 as the nonce and AAD_4 as associated data. */
 	size_t len = 0;
 	const int ret = ctx->itf.crypto.aead_decrypt(
-		ctx->user_ctx, ctx->key_slots[EDHOC_KEY_SLOT_K_4].key_id, iv,
+		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_4), iv,
 		iv_len, aad, aad_len, ctxt, ctxt_len, ptxt, ptxt_len, &len);
 
 	if (EDHOC_SUCCESS != ret || ptxt_len != len) {
@@ -698,7 +698,7 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	EDHOC_LOG_INF("Compose msg4 end");
 
 	/* 7. Release the message-4 scoped secrets (PRK_4e3m lives on). */
-	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
+	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Release message 4 secrets: %d", ret);
@@ -881,7 +881,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	EDHOC_LOG_INF("Process msg4 end");
 
 	/* 7. Release the message-4 scoped secrets (PRK_4e3m lives on). */
-	ret = edhoc_release_key_slots(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
+	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Release message 4 secrets: %d", ret);
