@@ -370,4 +370,44 @@ static inline void tv_assert_slot_equals_vector(
 	TEST_ASSERT_EQUAL(PSA_SUCCESS, status);
 }
 
+/**
+ * \brief Assert that two caller-owned key handles hold the same key material.
+ *
+ *        A derived key handle is not exportable, so equality is proven by
+ *        running the same EDHOC_Expand over both handles (via \c expand_raw)
+ *        and comparing the derived bytes: they match iff the underlying keys
+ *        match. Used to check that two peers derived the same OSCORE
+ *        master-secret handle from \c edhoc_export_oscore_session.
+ *
+ * \param suite                         Cipher suite whose crypto probes the keys.
+ * \param[in] key_id_a                  First caller-owned key handle buffer.
+ * \param[in] key_id_b                  Second caller-owned key handle buffer.
+ */
+static inline void tv_assert_handles_equal(enum edhoc_cipher_suite_id suite,
+					   const uint8_t *key_id_a,
+					   const uint8_t *key_id_b)
+{
+	TEST_ASSERT_NOT_NULL(key_id_a);
+	TEST_ASSERT_NOT_NULL(key_id_b);
+
+	const struct edhoc_crypto *crypto =
+		edhoc_cipher_suite_get_crypto(suite);
+	static const uint8_t info[] = { 'k', 'e', 'y', '-', 'c',
+					'h', 'e', 'c', 'k' };
+	uint8_t okm_a[TEST_RFC9529_OKM_LEN] = { 0 };
+	uint8_t okm_b[TEST_RFC9529_OKM_LEN] = { 0 };
+
+	TEST_ASSERT_NOT_NULL(crypto);
+
+	int ret = crypto->expand_raw(NULL, key_id_a, info, sizeof(info), okm_a,
+				     sizeof(okm_a));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = crypto->expand_raw(NULL, key_id_b, info, sizeof(info), okm_b,
+				 sizeof(okm_b));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(okm_a, okm_b, sizeof(okm_a));
+}
+
 #endif /* TEST_RFC9529_SUPPORT_H */

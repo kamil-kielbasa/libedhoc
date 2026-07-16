@@ -1564,16 +1564,18 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	uint8_t init_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
+	uint8_t init_master_secret_kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	uint8_t init_master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
 	size_t init_sender_id_len = 0;
 	uint8_t init_sender_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
 	size_t init_recipient_id_len = 0;
 	uint8_t init_recipient_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
 
-	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session_raw(
-		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
-		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
+	/* Initiator derives the OSCORE master secret as a key handle; the
+	 * responder (below) does the same and the two handles are compared. */
+	ret = edhoc_export_oscore_session(
+		init_ctx, init_master_secret_kid, init_master_salt,
+		ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
 		init_recipient_id, ARRAY_SIZE(init_recipient_id),
 		&init_recipient_id_len);
@@ -1583,16 +1585,18 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->prk_state);
 
 	uint8_t resp_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
+	uint8_t resp_master_secret_kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	uint8_t resp_master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
 	size_t resp_sender_id_len = 0;
 	uint8_t resp_sender_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
 	size_t resp_recipient_id_len = 0;
 	uint8_t resp_recipient_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
 
-	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session_raw(
-		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
-		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
+	/* Responder derives the OSCORE master secret as a key handle too; salt
+	 * and IDs stay raw bytes in the handle form. */
+	ret = edhoc_export_oscore_session(
+		resp_ctx, resp_master_secret_kid, resp_master_salt,
+		ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
 		resp_recipient_id, ARRAY_SIZE(resp_recipient_id),
 		&resp_recipient_id_len);
@@ -1601,8 +1605,16 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(false, resp_ctx->is_oscore_export_allowed);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->prk_state);
 
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_secret, resp_master_secret,
-				      ARRAY_SIZE(resp_master_secret));
+	/* Both peers derived the same OSCORE master secret: the two
+	 * non-exportable handles expand to identical bytes. */
+	tv_assert_handles_equal(EDHOC_CIPHER_SUITE_0, init_master_secret_kid,
+				resp_master_secret_kid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_0)
+				  ->destroy_key(NULL, init_master_secret_kid));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_0)
+				  ->destroy_key(NULL, resp_master_secret_kid));
 
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_salt, resp_master_salt,
 				      ARRAY_SIZE(resp_master_salt));
