@@ -59,6 +59,7 @@ set(TEST_INTEGRATION_SOURCES
     integration/test_handshake_x5chain_dh_suite2.c
     integration/test_handshake_x5t_sig_suite2.c
     integration/test_handshake_auth_methods.c
+    integration/test_handshake_handle_balance.c
     integration/test_rfc9528_negotiation.c
     integration/test_rfc9529_chapter2.c
     integration/test_rfc9529_chapter3.c)

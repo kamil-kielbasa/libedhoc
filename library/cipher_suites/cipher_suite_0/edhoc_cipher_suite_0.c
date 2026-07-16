@@ -94,11 +94,17 @@ static int export_public_key(psa_key_id_t key, uint8_t *out, size_t out_size,
 /** \brief Destroy a volatile key handle, logging on failure (best effort). */
 static void destroy_volatile_key(psa_key_id_t key);
 
+/** \brief Load a PSA key handle from a (possibly unaligned) key-store slot. */
+static inline psa_key_id_t load_key_id(const void *key_id);
+
+/** \brief Store a PSA key handle into a (possibly unaligned) key-store slot. */
+static inline void store_key_id(void *key_id, psa_key_id_t kid);
+
 /** \brief X25519 key agreement storing the shared secret as a DERIVE key handle. */
 static int compute_shared_secret(psa_key_id_t private_key,
 				 const uint8_t *peer_public_key,
 				 size_t peer_public_key_length,
-				 psa_key_id_t *shared_secret_key);
+				 void *shared_secret_key_id);
 
 /** \brief Destroy a key handle (\ref edhoc_crypto.destroy_key). */
 static int destroy_key(void *user_context, void *key_id);
@@ -264,15 +270,26 @@ static void destroy_volatile_key(psa_key_id_t key)
 	}
 }
 
+static inline psa_key_id_t load_key_id(const void *key_id)
+{
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	memcpy(&kid, key_id, sizeof(kid));
+	return kid;
+}
+
+static inline void store_key_id(void *key_id, psa_key_id_t kid)
+{
+	memcpy(key_id, &kid, sizeof(kid));
+}
+
 static int compute_shared_secret(psa_key_id_t priv_key,
 				 const uint8_t *peer_pub_key,
-				 size_t peer_pub_key_len,
-				 psa_key_id_t *shr_sec_key)
+				 size_t peer_pub_key_len, void *shr_sec_key_id)
 {
 	EDHOC_ASSERT(PSA_KEY_ID_NULL != priv_key);
 	EDHOC_ASSERT(NULL != peer_pub_key);
 	EDHOC_ASSERT(0 != peer_pub_key_len);
-	EDHOC_ASSERT(NULL != shr_sec_key);
+	EDHOC_ASSERT(NULL != shr_sec_key_id);
 
 	if (EDHOC_CIPHER_SUITE_0_ECC_KEY_LEN != peer_pub_key_len) {
 		EDHOC_LOG_ERR("Invalid peer public key length: %zu",
@@ -280,8 +297,7 @@ static int compute_shared_secret(psa_key_id_t priv_key,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	*shr_sec_key = PSA_KEY_ID_NULL;
-
+	psa_key_id_t psa_shared_secret = PSA_KEY_ID_NULL;
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 
 	set_derive_key_attributes(&attr);
@@ -292,7 +308,7 @@ static int compute_shared_secret(psa_key_id_t priv_key,
 	 * needed (unlike the short-Weierstrass suites). */
 	const psa_status_t status =
 		psa_key_agreement(priv_key, peer_pub_key, peer_pub_key_len,
-				  PSA_ALG_ECDH, &attr, shr_sec_key);
+				  PSA_ALG_ECDH, &attr, &psa_shared_secret);
 
 	psa_reset_key_attributes(&attr);
 
@@ -301,17 +317,8 @@ static int compute_shared_secret(psa_key_id_t priv_key,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
+	store_key_id(shr_sec_key_id, psa_shared_secret);
 	return EDHOC_SUCCESS;
-}
-
-/* Load a PSA key handle from a (possibly unaligned) key-store slot. The slot is
- * a raw uint8_t buffer, so a direct cast to psa_key_id_t* would be a misaligned
- * access (undefined behaviour); copy the bytes into an aligned value instead. */
-static inline psa_key_id_t load_key_id(const void *key_id)
-{
-	psa_key_id_t kid = PSA_KEY_ID_NULL;
-	memcpy(&kid, key_id, sizeof(kid));
-	return kid;
 }
 
 static int destroy_key(void *user_context, void *key_id)
@@ -354,13 +361,11 @@ static int generate_key_pair(void *user_context, void *decaps_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	psa_key_id_t *psa_kid = decaps_key_id;
-	*psa_kid = PSA_KEY_ID_NULL;
-
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	set_x25519_keypair_attributes(&attr);
 
-	psa_status_t status = psa_generate_key(&attr, psa_kid);
+	psa_key_id_t psa_ephemeral = PSA_KEY_ID_NULL;
+	psa_status_t status = psa_generate_key(&attr, &psa_ephemeral);
 
 	psa_reset_key_attributes(&attr);
 
@@ -369,15 +374,16 @@ static int generate_key_pair(void *user_context, void *decaps_key_id,
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
-	const int ret = export_public_key(*psa_kid, encaps_key, encaps_key_size,
-					  encaps_key_len);
+	const int ret = export_public_key(psa_ephemeral, encaps_key,
+					  encaps_key_size, encaps_key_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		destroy_volatile_key(*psa_kid);
-		*psa_kid = PSA_KEY_ID_NULL;
+		EDHOC_LOG_ERR("Export ephemeral public key: %d", ret);
+		destroy_volatile_key(psa_ephemeral);
 		return ret;
 	}
 
+	store_key_id(decaps_key_id, psa_ephemeral);
 	return EDHOC_SUCCESS;
 }
 
@@ -396,19 +402,14 @@ static int encapsulate(void *user_context, const uint8_t *encaps_key,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	psa_key_id_t *decapsulation_kid = decaps_key_id;
-	psa_key_id_t *shared_secret_kid = shr_sec_key_id;
-	*decapsulation_kid = PSA_KEY_ID_NULL;
-	*shared_secret_kid = PSA_KEY_ID_NULL;
-
 	/* NIKE-as-KEM: generate an ephemeral pair; its public key is G_Y and
 	 * its private key is retained (decaps_key_id) for the static-DH G_IY
 	 * agreement in message 3. */
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	set_x25519_keypair_attributes(&attr);
 
-	psa_key_id_t ephemeral_kid = PSA_KEY_ID_NULL;
-	psa_status_t status = psa_generate_key(&attr, &ephemeral_kid);
+	psa_key_id_t psa_ephemeral = PSA_KEY_ID_NULL;
+	psa_status_t status = psa_generate_key(&attr, &psa_ephemeral);
 
 	psa_reset_key_attributes(&attr);
 
@@ -417,23 +418,25 @@ static int encapsulate(void *user_context, const uint8_t *encaps_key,
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
-	int ret = export_public_key(ephemeral_kid, ciphertext, ciphertext_size,
+	int ret = export_public_key(psa_ephemeral, ciphertext, ciphertext_size,
 				    ciphertext_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		destroy_volatile_key(ephemeral_kid);
+		EDHOC_LOG_ERR("Export ephemeral public key: %d", ret);
+		destroy_volatile_key(psa_ephemeral);
 		return ret;
 	}
 
-	ret = compute_shared_secret(ephemeral_kid, encaps_key, encaps_key_len,
-				    shared_secret_kid);
+	ret = compute_shared_secret(psa_ephemeral, encaps_key, encaps_key_len,
+				    shr_sec_key_id);
 
 	if (EDHOC_SUCCESS != ret) {
-		destroy_volatile_key(ephemeral_kid);
+		EDHOC_LOG_ERR("Compute shared secret: %d", ret);
+		destroy_volatile_key(psa_ephemeral);
 		return ret;
 	}
 
-	*decapsulation_kid = ephemeral_kid;
+	store_key_id(decaps_key_id, psa_ephemeral);
 	return EDHOC_SUCCESS;
 }
 
@@ -449,9 +452,9 @@ static int decapsulate(void *user_context, const void *decaps_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t decap_kid = load_key_id(decaps_key_id);
+	const psa_key_id_t psa_decaps = load_key_id(decaps_key_id);
 
-	return compute_shared_secret(decap_kid, ciphertext, ciphertext_len,
+	return compute_shared_secret(psa_decaps, ciphertext, ciphertext_len,
 				     shr_sec_key_id);
 }
 
@@ -467,10 +470,10 @@ static int key_agreement(void *user_context, const void *priv_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t private_kid = load_key_id(priv_key_id);
+	const psa_key_id_t psa_priv = load_key_id(priv_key_id);
 
-	return compute_shared_secret(private_kid, peer_pub_key,
-				     peer_pub_key_len, shr_sec_key_id);
+	return compute_shared_secret(psa_priv, peer_pub_key, peer_pub_key_len,
+				     shr_sec_key_id);
 }
 
 static int sign(void *user_context, const void *priv_key_id,
@@ -490,7 +493,7 @@ static int sign(void *user_context, const void *priv_key_id,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	const psa_key_id_t private_kid = load_key_id(priv_key_id);
+	const psa_key_id_t psa_priv = load_key_id(priv_key_id);
 
 	/* mbedTLS/PSA has no software EdDSA: export the Ed25519 private key
 	 * from its PSA raw-data handle, sign with Compact25519, then wipe the
@@ -499,7 +502,7 @@ static int sign(void *user_context, const void *priv_key_id,
 	size_t priv_key_len = 0;
 
 	const psa_status_t status = psa_export_key(
-		private_kid, priv_key, ARRAY_SIZE(priv_key), &priv_key_len);
+		psa_priv, priv_key, ARRAY_SIZE(priv_key), &priv_key_len);
 
 	if (PSA_SUCCESS != status || ARRAY_SIZE(priv_key) != priv_key_len) {
 		EDHOC_LOG_ERR("Export Ed25519 private key: %d", status);
@@ -562,9 +565,8 @@ static int extract(void *user_context, const void *ikm_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t ikm_kid = load_key_id(ikm_key_id);
-	psa_key_id_t *prk_kid = prk_key_id;
-	*prk_kid = PSA_KEY_ID_NULL;
+	const psa_key_id_t psa_ikm = load_key_id(ikm_key_id);
+	psa_key_id_t psa_prk = PSA_KEY_ID_NULL;
 
 	psa_key_derivation_operation_t op = PSA_KEY_DERIVATION_OPERATION_INIT;
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
@@ -584,7 +586,7 @@ static int extract(void *user_context, const void *ikm_key_id,
 	}
 
 	status = psa_key_derivation_input_key(
-		&op, PSA_KEY_DERIVATION_INPUT_SECRET, ikm_kid);
+		&op, PSA_KEY_DERIVATION_INPUT_SECRET, psa_ikm);
 
 	if (PSA_SUCCESS != status) {
 		goto psa_error;
@@ -594,7 +596,7 @@ static int extract(void *user_context, const void *ikm_key_id,
 	psa_set_key_bits(&attr, (size_t)PSA_BYTES_TO_BITS(
 					EDHOC_CIPHER_SUITE_0_HASH_LEN));
 
-	status = psa_key_derivation_output_key(&attr, &op, prk_kid);
+	status = psa_key_derivation_output_key(&attr, &op, &psa_prk);
 
 	psa_reset_key_attributes(&attr);
 
@@ -602,6 +604,7 @@ static int extract(void *user_context, const void *ikm_key_id,
 		goto psa_error;
 	}
 
+	store_key_id(prk_key_id, psa_prk);
 	psa_key_derivation_abort(&op);
 	return EDHOC_SUCCESS;
 
@@ -623,9 +626,8 @@ static int expand(void *user_context, const void *prk_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t prk_kid = load_key_id(prk_key_id);
-	psa_key_id_t *output_kid = out_key_id;
-	*output_kid = PSA_KEY_ID_NULL;
+	const psa_key_id_t psa_prk = load_key_id(prk_key_id);
+	psa_key_id_t psa_output = PSA_KEY_ID_NULL;
 
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	size_t output_length = 0;
@@ -663,7 +665,7 @@ static int expand(void *user_context, const void *prk_key_id,
 	}
 
 	status = psa_key_derivation_input_key(
-		&op, PSA_KEY_DERIVATION_INPUT_SECRET, prk_kid);
+		&op, PSA_KEY_DERIVATION_INPUT_SECRET, psa_prk);
 
 	if (PSA_SUCCESS != status) {
 		goto psa_error;
@@ -682,12 +684,13 @@ static int expand(void *user_context, const void *prk_key_id,
 		goto psa_error;
 	}
 
-	status = psa_key_derivation_output_key(&attr, &op, output_kid);
+	status = psa_key_derivation_output_key(&attr, &op, &psa_output);
 
 	if (PSA_SUCCESS != status) {
 		goto psa_error;
 	}
 
+	store_key_id(out_key_id, psa_output);
 	psa_reset_key_attributes(&attr);
 	psa_key_derivation_abort(&op);
 	return EDHOC_SUCCESS;
@@ -711,7 +714,7 @@ static int expand_raw(void *user_context, const void *prk_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const psa_key_id_t prk_kid = load_key_id(prk_key_id);
+	const psa_key_id_t psa_prk = load_key_id(prk_key_id);
 	psa_key_derivation_operation_t op = PSA_KEY_DERIVATION_OPERATION_INIT;
 
 	psa_status_t status = psa_key_derivation_setup(
@@ -721,7 +724,7 @@ static int expand_raw(void *user_context, const void *prk_key_id,
 	}
 
 	status = psa_key_derivation_input_key(
-		&op, PSA_KEY_DERIVATION_INPUT_SECRET, prk_kid);
+		&op, PSA_KEY_DERIVATION_INPUT_SECRET, psa_prk);
 	if (PSA_SUCCESS != status) {
 		goto psa_error;
 	}
