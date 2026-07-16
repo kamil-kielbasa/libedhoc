@@ -61,18 +61,19 @@ TEST(internals_api, export_oscore_null)
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
 
-	int ret = edhoc_export_oscore_session(NULL, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_session_raw(NULL, ms, sizeof(ms), salt,
+						  sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+	ret = edhoc_export_oscore_session_raw(&ctx, NULL, sizeof(ms), salt,
 					      sizeof(salt), sid, sizeof(sid),
 					      &sid_len, rid, sizeof(rid),
 					      &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-	ret = edhoc_export_oscore_session(&ctx, NULL, sizeof(ms), salt,
-					  sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), &rid_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-	ret = edhoc_export_oscore_session(&ctx, ms, sizeof(ms), salt,
-					  sizeof(salt), sid, sizeof(sid),
-					  &sid_len, rid, sizeof(rid), NULL);
+	ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+					      sizeof(salt), sid, sizeof(sid),
+					      &sid_len, rid, sizeof(rid), NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
@@ -89,10 +90,10 @@ TEST(internals_api, export_oscore_bad_state)
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
 
-	int ret = edhoc_export_oscore_session(&ctx, ms, sizeof(ms), salt,
-					      sizeof(salt), sid, sizeof(sid),
-					      &sid_len, rid, sizeof(rid),
-					      &rid_len);
+	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+						  sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));

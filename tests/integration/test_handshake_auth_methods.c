@@ -454,7 +454,7 @@ static void run_handshake(enum edhoc_method method)
 	uint8_t init_recipient_id[8] = { 0 };
 	size_t init_recipient_id_len = 0;
 
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		&init_ctx, init_master_secret, sizeof(init_master_secret),
 		init_master_salt, sizeof(init_master_salt), init_sender_id,
 		sizeof(init_sender_id), &init_sender_id_len, init_recipient_id,
@@ -468,7 +468,7 @@ static void run_handshake(enum edhoc_method method)
 	uint8_t resp_recipient_id[8] = { 0 };
 	size_t resp_recipient_id_len = 0;
 
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		&resp_ctx, resp_master_secret, sizeof(resp_master_secret),
 		resp_master_salt, sizeof(resp_master_salt), resp_sender_id,
 		sizeof(resp_sender_id), &resp_sender_id_len, resp_recipient_id,

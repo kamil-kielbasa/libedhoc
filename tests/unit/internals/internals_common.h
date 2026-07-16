@@ -51,8 +51,7 @@ extern int kid_compact_encoding(const struct edhoc_auth_creds *cred,
 extern int compute_prk_out(struct edhoc_context *ctx);
 extern int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len);
-extern int compute_prk_exporter(const struct edhoc_context *ctx,
-				uint8_t *prk_exp, size_t prk_exp_len);
+extern int compute_prk_exporter(struct edhoc_context *ctx);
 extern int comp_th_2(struct edhoc_context *ctx);
 extern int comp_prk_2e(struct edhoc_context *ctx);
 extern int comp_prk_3e2m(struct edhoc_context *ctx,

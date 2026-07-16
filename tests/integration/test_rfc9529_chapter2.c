@@ -1166,7 +1166,7 @@ TEST(rfc9529_chapter2, handshake)
 	uint8_t init_recipient_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -1190,7 +1190,7 @@ TEST(rfc9529_chapter2, handshake)
 	uint8_t resp_recipient_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
@@ -1275,7 +1275,7 @@ TEST(rfc9529_chapter2, handshake)
 	memset(init_recipient_id, 0, sizeof(init_recipient_id));
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -1294,7 +1294,7 @@ TEST(rfc9529_chapter2, handshake)
 	memset(resp_recipient_id, 0, sizeof(resp_recipient_id));
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
@@ -1361,10 +1361,9 @@ TEST(rfc9529_chapter2, prk_exporter)
 	uint8_t master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
 
 	/* EDHOC PRK exporter - OSCORE master secret. */
-	ret = edhoc_export_prk_exporter(init_ctx,
-					OSCORE_EXTRACT_LABEL_MASTER_SECRET,
-					NULL, 0, master_secret,
-					ARRAY_SIZE(master_secret));
+	ret = edhoc_export_raw(init_ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+			       NULL, 0, master_secret,
+			       ARRAY_SIZE(master_secret));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Secret, master_secret,
 				      ARRAY_SIZE(OSCORE_Master_Secret));
@@ -1372,10 +1371,8 @@ TEST(rfc9529_chapter2, prk_exporter)
 	uint8_t master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
 
 	/* EDHOC PRK exporter - OSCORE master salt. */
-	ret = edhoc_export_prk_exporter(init_ctx,
-					OSCORE_EXTRACT_LABEL_MASTER_SALT, NULL,
-					0, master_salt,
-					ARRAY_SIZE(master_salt));
+	ret = edhoc_export_raw(init_ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT, NULL,
+			       0, master_salt, ARRAY_SIZE(master_salt));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Salt, master_salt,
 				      ARRAY_SIZE(OSCORE_Master_Salt));
@@ -1385,19 +1382,19 @@ TEST(rfc9529_chapter2, prk_exporter)
 	uint8_t secret_2[32] = { 0 };
 	uint8_t secret_3[64] = { 0 };
 
-	ret = edhoc_export_prk_exporter(
-		init_ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM, NULL, 0,
-		secret_1, ARRAY_SIZE(secret_1));
+	ret = edhoc_export_raw(init_ctx,
+			       EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM, NULL,
+			       0, secret_1, ARRAY_SIZE(secret_1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export_prk_exporter(
-		init_ctx, EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM, NULL, 0,
-		secret_2, ARRAY_SIZE(secret_2));
+	ret = edhoc_export_raw(init_ctx,
+			       EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM, NULL,
+			       0, secret_2, ARRAY_SIZE(secret_2));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const size_t label = 45737;
-	ret = edhoc_export_prk_exporter(init_ctx, label, NULL, 0, secret_3,
-					ARRAY_SIZE(secret_3));
+	ret = edhoc_export_raw(init_ctx, label, NULL, 0, secret_3,
+			       ARRAY_SIZE(secret_3));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -1574,7 +1571,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	uint8_t init_recipient_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -1593,7 +1590,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	uint8_t resp_recipient_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
@@ -1645,7 +1642,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	memset(init_recipient_id, 0, sizeof(init_recipient_id));
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -1664,7 +1661,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto)
 	memset(resp_recipient_id, 0, sizeof(resp_recipient_id));
 
 	/* Derive OSCORE master secret and master salt. */
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
@@ -1957,7 +1954,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_single)
 	size_t init_recipient_id_len = 0;
 	uint8_t init_recipient_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
 
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -1977,7 +1974,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_single)
 	size_t resp_recipient_id_len = 0;
 	uint8_t resp_recipient_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
 
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
@@ -2311,7 +2308,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_many)
 	size_t init_recipient_id_len = 0;
 	uint8_t init_recipient_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
 
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -2331,7 +2328,7 @@ TEST(rfc9529_chapter2, handshake_real_crypto_ead_many)
 	size_t resp_recipient_id_len = 0;
 	uint8_t resp_recipient_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
 
-	ret = edhoc_export_oscore_session(
+	ret = edhoc_export_oscore_session_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,

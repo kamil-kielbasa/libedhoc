@@ -29,7 +29,7 @@ TEST_TEAR_DOWN(coverage_exporters)
 	mbedtls_psa_crypto_free();
 }
 
-TEST(coverage_exporters, prk_exporter_bad_label)
+TEST(coverage_exporters, export_raw_bad_label)
 {
 	struct edhoc_context ctx = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
@@ -39,14 +39,13 @@ TEST(coverage_exporters, prk_exporter_bad_label)
 
 	uint8_t secret[32] = { 0 };
 	coverage_mock_reset(0);
-	int ret = edhoc_export_prk_exporter(&ctx, 100, NULL, 0, secret,
-					    sizeof(secret));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	int ret = edhoc_export_raw(&ctx, 100, NULL, 0, secret, sizeof(secret));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
-TEST(coverage_exporters, prk_exporter_expand_fail)
+TEST(coverage_exporters, export_raw_expand_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
@@ -57,14 +56,14 @@ TEST(coverage_exporters, prk_exporter_expand_fail)
 
 	uint8_t secret[32] = { 0 };
 	coverage_mock_reset(2);
-	int ret = edhoc_export_prk_exporter(&ctx, 32769, NULL, 0, secret,
-					    sizeof(secret));
+	int ret =
+		edhoc_export_raw(&ctx, 32769, NULL, 0, secret, sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
-TEST(coverage_exporters, oscore_export_wrong_status)
+TEST(coverage_exporters, oscore_export_raw_wrong_status)
 {
 	struct edhoc_context ctx = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
@@ -80,10 +79,10 @@ TEST(coverage_exporters, oscore_export_wrong_status)
 	size_t sid_len, rid_len;
 
 	coverage_mock_reset(0);
-	int ret = edhoc_export_oscore_session(&ctx, ms, sizeof(ms), salt,
-					      sizeof(salt), sid, sizeof(sid),
-					      &sid_len, rid, sizeof(rid),
-					      &rid_len);
+	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+						  sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
@@ -124,7 +123,7 @@ TEST(coverage_exporters, key_update_extract_fail)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
-TEST(coverage_exporters, oscore_export_bstr_cid)
+TEST(coverage_exporters, oscore_export_raw_bstr_cid)
 {
 	struct edhoc_context ctx = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
@@ -142,16 +141,16 @@ TEST(coverage_exporters, oscore_export_bstr_cid)
 	size_t sid_len, rid_len;
 
 	coverage_mock_reset(0);
-	int ret = edhoc_export_oscore_session(&ctx, ms, sizeof(ms), salt,
-					      sizeof(salt), sid, sizeof(sid),
-					      &sid_len, rid, sizeof(rid),
-					      &rid_len);
+	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+						  sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
-TEST(coverage_exporters, prk_exporter_failure_sweep)
+TEST(coverage_exporters, export_raw_failure_sweep)
 {
 	const int mock_fail_pt_first = 1;
 	const int mock_fail_pt_last = 2;
@@ -167,8 +166,8 @@ TEST(coverage_exporters, prk_exporter_failure_sweep)
 
 		uint8_t secret[32] = { 0 };
 		coverage_mock_reset(fail_pt);
-		int ret = edhoc_export_prk_exporter(&ctx, 32769, NULL, 0,
-						    secret, sizeof(secret));
+		int ret = edhoc_export_raw(&ctx, 32769, NULL, 0, secret,
+					   sizeof(secret));
 		if (fail_pt == 1) {
 			TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE,
 					  ret);
@@ -180,7 +179,7 @@ TEST(coverage_exporters, prk_exporter_failure_sweep)
 	}
 }
 
-TEST(coverage_exporters, oscore_export_failure_sweep)
+TEST(coverage_exporters, oscore_export_raw_failure_sweep)
 {
 	const int mock_fail_pt_first = 1;
 	const int mock_fail_pt_last = 4;
@@ -201,7 +200,7 @@ TEST(coverage_exporters, oscore_export_failure_sweep)
 		size_t sid_len, rid_len;
 
 		coverage_mock_reset(fail_pt);
-		int ret = edhoc_export_oscore_session(
+		int ret = edhoc_export_oscore_session_raw(
 			&ctx, ms, sizeof(ms), salt, sizeof(salt), sid,
 			sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
 		TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
@@ -241,7 +240,7 @@ TEST(coverage_exporters, exporter_failure_sweep_extended)
 		uint8_t sender_id[16] = { 0 };
 		uint8_t recipient_id[16] = { 0 };
 		size_t sender_id_len, recipient_id_len;
-		ret = edhoc_export_oscore_session(
+		ret = edhoc_export_oscore_session_raw(
 			&init_ctx, master_secret, sizeof(master_secret),
 			master_salt, sizeof(master_salt), sender_id,
 			sizeof(sender_id), &sender_id_len, recipient_id,
@@ -256,7 +255,7 @@ TEST(coverage_exporters, exporter_failure_sweep_extended)
 	}
 }
 
-TEST(coverage_exporters, oscore_export_after_bstr_cid_handshake)
+TEST(coverage_exporters, oscore_export_raw_after_bstr_cid_handshake)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
@@ -274,19 +273,18 @@ TEST(coverage_exporters, oscore_export_after_bstr_cid_handshake)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
-					  sizeof(master_secret), master_salt,
-					  sizeof(master_salt), sender_id,
-					  sizeof(sender_id), &sender_id_len,
-					  recipient_id, sizeof(recipient_id),
-					  &recipient_id_len);
+	ret = edhoc_export_oscore_session_raw(
+		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
+		sizeof(master_salt), sender_id, sizeof(sender_id),
+		&sender_id_len, recipient_id, sizeof(recipient_id),
+		&recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
-TEST(coverage_exporters, oscore_export_invalid_cid_type)
+TEST(coverage_exporters, oscore_export_raw_invalid_cid_type)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
@@ -306,19 +304,18 @@ TEST(coverage_exporters, oscore_export_invalid_cid_type)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
-					  sizeof(master_secret), master_salt,
-					  sizeof(master_salt), sender_id,
-					  sizeof(sender_id), &sender_id_len,
-					  recipient_id, sizeof(recipient_id),
-					  &recipient_id_len);
+	ret = edhoc_export_oscore_session_raw(
+		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
+		sizeof(master_salt), sender_id, sizeof(sender_id),
+		&sender_id_len, recipient_id, sizeof(recipient_id),
+		&recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
-TEST(coverage_exporters, oscore_export_invalid_own_cid_type)
+TEST(coverage_exporters, oscore_export_raw_invalid_own_cid_type)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
@@ -338,19 +335,18 @@ TEST(coverage_exporters, oscore_export_invalid_own_cid_type)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
-					  sizeof(master_secret), master_salt,
-					  sizeof(master_salt), sender_id,
-					  sizeof(sender_id), &sender_id_len,
-					  recipient_id, sizeof(recipient_id),
-					  &recipient_id_len);
+	ret = edhoc_export_oscore_session_raw(
+		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
+		sizeof(master_salt), sender_id, sizeof(sender_id),
+		&sender_id_len, recipient_id, sizeof(recipient_id),
+		&recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
-TEST(coverage_exporters, oscore_export_bstr_cid_sid_too_small)
+TEST(coverage_exporters, oscore_export_raw_bstr_cid_sid_too_small)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
@@ -368,19 +364,18 @@ TEST(coverage_exporters, oscore_export_bstr_cid_sid_too_small)
 	uint8_t sender_id[1] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
-					  sizeof(master_secret), master_salt,
-					  sizeof(master_salt), sender_id,
-					  sizeof(sender_id), &sender_id_len,
-					  recipient_id, sizeof(recipient_id),
-					  &recipient_id_len);
+	ret = edhoc_export_oscore_session_raw(
+		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
+		sizeof(master_salt), sender_id, sizeof(sender_id),
+		&sender_id_len, recipient_id, sizeof(recipient_id),
+		&recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
-TEST(coverage_exporters, oscore_export_bstr_cid_rid_too_small)
+TEST(coverage_exporters, oscore_export_raw_bstr_cid_rid_too_small)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
@@ -398,12 +393,11 @@ TEST(coverage_exporters, oscore_export_bstr_cid_rid_too_small)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[1] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
-					  sizeof(master_secret), master_salt,
-					  sizeof(master_salt), sender_id,
-					  sizeof(sender_id), &sender_id_len,
-					  recipient_id, sizeof(recipient_id),
-					  &recipient_id_len);
+	ret = edhoc_export_oscore_session_raw(
+		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
+		sizeof(master_salt), sender_id, sizeof(sender_id),
+		&sender_id_len, recipient_id, sizeof(recipient_id),
+		&recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
@@ -466,7 +460,7 @@ TEST(coverage_exporters, key_update_prk_state_4e3m_fail)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
-TEST(coverage_exporters, oscore_export_prk_state_4e3m)
+TEST(coverage_exporters, oscore_export_raw_prk_state_4e3m)
 {
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
@@ -487,19 +481,18 @@ TEST(coverage_exporters, oscore_export_prk_state_4e3m)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session(&resp_ctx, master_secret,
-					  sizeof(master_secret), master_salt,
-					  sizeof(master_salt), sender_id,
-					  sizeof(sender_id), &sender_id_len,
-					  recipient_id, sizeof(recipient_id),
-					  &recipient_id_len);
+	ret = edhoc_export_oscore_session_raw(
+		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
+		sizeof(master_salt), sender_id, sizeof(sender_id),
+		&sender_id_len, recipient_id, sizeof(recipient_id),
+		&recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 }
 
-TEST(coverage_exporters, oscore_export_failure_sweep_4e3m)
+TEST(coverage_exporters, oscore_export_raw_failure_sweep_4e3m)
 {
 	const int mock_fail_pt_first = 1;
 	const int mock_fail_pt_last = 15;
@@ -533,7 +526,7 @@ TEST(coverage_exporters, oscore_export_failure_sweep_4e3m)
 		uint8_t sender_id[16] = { 0 };
 		uint8_t recipient_id[16] = { 0 };
 		size_t sender_id_len, recipient_id_len;
-		ret = edhoc_export_oscore_session(
+		ret = edhoc_export_oscore_session_raw(
 			&resp_ctx, master_secret, sizeof(master_secret),
 			master_salt, sizeof(master_salt), sender_id,
 			sizeof(sender_id), &sender_id_len, recipient_id,
@@ -549,7 +542,7 @@ TEST(coverage_exporters, oscore_export_failure_sweep_4e3m)
 	}
 }
 
-TEST(coverage_exporters, oscore_export_bstr_cid_failure_sweep)
+TEST(coverage_exporters, oscore_export_raw_bstr_cid_failure_sweep)
 {
 	const int mock_fail_pt_first = 1;
 	const int mock_fail_pt_last = 15;
@@ -580,7 +573,7 @@ TEST(coverage_exporters, oscore_export_bstr_cid_failure_sweep)
 		uint8_t sender_id[16] = { 0 };
 		uint8_t recipient_id[16] = { 0 };
 		size_t sender_id_len, recipient_id_len;
-		ret = edhoc_export_oscore_session(
+		ret = edhoc_export_oscore_session_raw(
 			&resp_ctx, master_secret, sizeof(master_secret),
 			master_salt, sizeof(master_salt), sender_id,
 			sizeof(sender_id), &sender_id_len, recipient_id,
@@ -637,25 +630,29 @@ TEST(coverage_exporters, key_update_failure_sweep)
 
 TEST_GROUP_RUNNER(coverage_exporters)
 {
-	RUN_TEST_CASE(coverage_exporters, prk_exporter_bad_label);
-	RUN_TEST_CASE(coverage_exporters, prk_exporter_expand_fail);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_wrong_status);
+	RUN_TEST_CASE(coverage_exporters, export_raw_bad_label);
+	RUN_TEST_CASE(coverage_exporters, export_raw_expand_fail);
+	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_wrong_status);
 	RUN_TEST_CASE(coverage_exporters, key_update_success);
 	RUN_TEST_CASE(coverage_exporters, key_update_extract_fail);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_bstr_cid);
-	RUN_TEST_CASE(coverage_exporters, prk_exporter_failure_sweep);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_failure_sweep);
+	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_bstr_cid);
+	RUN_TEST_CASE(coverage_exporters, export_raw_failure_sweep);
+	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_failure_sweep);
 	RUN_TEST_CASE(coverage_exporters, exporter_failure_sweep_extended);
 	RUN_TEST_CASE(coverage_exporters,
-		      oscore_export_after_bstr_cid_handshake);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_invalid_cid_type);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_invalid_own_cid_type);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_bstr_cid_sid_too_small);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_bstr_cid_rid_too_small);
+		      oscore_export_raw_after_bstr_cid_handshake);
+	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_invalid_cid_type);
+	RUN_TEST_CASE(coverage_exporters,
+		      oscore_export_raw_invalid_own_cid_type);
+	RUN_TEST_CASE(coverage_exporters,
+		      oscore_export_raw_bstr_cid_sid_too_small);
+	RUN_TEST_CASE(coverage_exporters,
+		      oscore_export_raw_bstr_cid_rid_too_small);
 	RUN_TEST_CASE(coverage_exporters, key_update_prk_state_4e3m);
 	RUN_TEST_CASE(coverage_exporters, key_update_prk_state_4e3m_fail);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_prk_state_4e3m);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_failure_sweep_4e3m);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_bstr_cid_failure_sweep);
+	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_prk_state_4e3m);
+	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_failure_sweep_4e3m);
+	RUN_TEST_CASE(coverage_exporters,
+		      oscore_export_raw_bstr_cid_failure_sweep);
 	RUN_TEST_CASE(coverage_exporters, key_update_failure_sweep);
 }

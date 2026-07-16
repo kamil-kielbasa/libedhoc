@@ -503,8 +503,7 @@ TEST(internals_common, compute_prk_exporter_bad_state)
 	internals_setup_crypto_context(&ctx);
 	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
 
-	uint8_t prk_exp[32] = { 0 };
-	int ret = compute_prk_exporter(&ctx, prk_exp, sizeof(prk_exp));
+	int ret = compute_prk_exporter(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
@@ -527,9 +526,10 @@ TEST(internals_common, compute_prk_exporter_success)
 	int ret = compute_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	uint8_t prk_exp[32] = { 0 };
-	ret = compute_prk_exporter(&ctx, prk_exp, sizeof(prk_exp));
+	ret = compute_prk_exporter(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_TRUE(
+		edhoc_key_slot_present(&ctx, EDHOC_KEY_SLOT_PRK_EXPORTER));
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
@@ -886,8 +886,7 @@ TEST(internals_common, comp_salt_4e3m_null)
 
 TEST(internals_common, compute_prk_exporter_null)
 {
-	uint8_t prk_exp[32] = { 0 };
-	int ret = compute_prk_exporter(NULL, prk_exp, sizeof(prk_exp));
+	int ret = compute_prk_exporter(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 

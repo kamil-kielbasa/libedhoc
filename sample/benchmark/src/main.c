@@ -502,14 +502,14 @@ int main(void)
 
 			t0 = clock_now();
 
-			ret = edhoc_export_oscore_session(
+			ret = edhoc_export_oscore_session_raw(
 				init_ctx, init_secret, OSCORE_SECRET_LEN,
 				init_salt, OSCORE_SALT_LEN, init_sid,
 				sizeof(init_sid), &init_sid_len, init_rid,
 				sizeof(init_rid), &init_rid_len);
 
 			if (EDHOC_SUCCESS == ret) {
-				ret = edhoc_export_oscore_session(
+				ret = edhoc_export_oscore_session_raw(
 					resp_ctx, resp_secret,
 					OSCORE_SECRET_LEN, resp_salt,
 					OSCORE_SALT_LEN, resp_sid,

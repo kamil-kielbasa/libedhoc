@@ -329,7 +329,7 @@ int test_mem_custom_drive_handshake(struct edhoc_context *initiator,
 	size_t init_recipient_id_len = 0;
 	uint8_t init_recipient_id[ARRAY_SIZE(C_I)] = { 0 };
 
-	rc = edhoc_export_oscore_session(
+	rc = edhoc_export_oscore_session_raw(
 		initiator, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -345,7 +345,7 @@ int test_mem_custom_drive_handshake(struct edhoc_context *initiator,
 	size_t resp_recipient_id_len = 0;
 	uint8_t resp_recipient_id[ARRAY_SIZE(C_R)] = { 0 };
 
-	rc = edhoc_export_oscore_session(
+	rc = edhoc_export_oscore_session_raw(
 		responder, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,

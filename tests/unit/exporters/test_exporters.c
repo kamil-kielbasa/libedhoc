@@ -219,7 +219,7 @@ TEST(exporters, key_update_bad_state_not_completed)
 
 /* -- edhoc_export_oscore_session error paths -- */
 
-TEST(exporters, oscore_session_not_allowed)
+TEST(exporters, oscore_session_raw_not_allowed)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -230,16 +230,16 @@ TEST(exporters, oscore_session_not_allowed)
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
 
-	int ret = edhoc_export_oscore_session(&ctx, ms, sizeof(ms), salt,
-					      sizeof(salt), sid, sizeof(sid),
-					      &sid_len, rid, sizeof(rid),
-					      &rid_len);
+	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+						  sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, oscore_session_bad_state_not_completed)
+TEST(exporters, oscore_session_raw_bad_state_not_completed)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -250,39 +250,39 @@ TEST(exporters, oscore_session_bad_state_not_completed)
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
 
-	int ret = edhoc_export_oscore_session(&ctx, ms, sizeof(ms), salt,
-					      sizeof(salt), sid, sizeof(sid),
-					      &sid_len, rid, sizeof(rid),
-					      &rid_len);
+	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+						  sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
 }
 
-/* -- edhoc_export_prk_exporter error paths -- */
+/* -- edhoc_export_raw error paths -- */
 
-TEST(exporters, prk_exporter_null_secret)
+TEST(exporters, export_raw_null_secret)
 {
 	struct edhoc_context ctx = { 0 };
 	edhoc_context_init(&ctx);
-	int ret = edhoc_export_prk_exporter(
-		&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0, NULL, 32);
+	int ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+				   NULL, 0, NULL, 32);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, prk_exporter_zero_length)
+TEST(exporters, export_raw_zero_length)
 {
 	struct edhoc_context ctx = { 0 };
 	edhoc_context_init(&ctx);
 	uint8_t secret[32];
-	int ret = edhoc_export_prk_exporter(
-		&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0, secret, 0);
+	int ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+				   NULL, 0, secret, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, prk_exporter_invalid_label)
+TEST(exporters, export_raw_invalid_label)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -290,14 +290,13 @@ TEST(exporters, prk_exporter_invalid_label)
 	ctx.prk_state = EDHOC_PRK_STATE_OUT;
 
 	uint8_t secret[32];
-	int ret = edhoc_export_prk_exporter(&ctx, 100, NULL, 0, secret,
-					    sizeof(secret));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	int ret = edhoc_export_raw(&ctx, 100, NULL, 0, secret, sizeof(secret));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, prk_exporter_bad_state)
+TEST(exporters, export_raw_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -305,15 +304,14 @@ TEST(exporters, prk_exporter_bad_state)
 	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	uint8_t secret[32];
-	int ret = edhoc_export_prk_exporter(&ctx,
-					    OSCORE_EXTRACT_LABEL_MASTER_SECRET,
-					    NULL, 0, secret, sizeof(secret));
+	int ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+				   NULL, 0, secret, sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, oscore_session_sender_id_encode_fail)
+TEST(exporters, oscore_session_raw_sender_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -342,16 +340,16 @@ TEST(exporters, oscore_session_sender_id_encode_fail)
 	uint8_t rid[8] = { 0 };
 	size_t rid_len = 0;
 
-	int ret = edhoc_export_oscore_session(&ctx, secret, sizeof(secret),
-					      salt, sizeof(salt), sid,
-					      sizeof(sid), &sid_len, rid,
-					      sizeof(rid), &rid_len);
+	int ret = edhoc_export_oscore_session_raw(&ctx, secret, sizeof(secret),
+						  salt, sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, oscore_session_recipient_id_encode_fail)
+TEST(exporters, oscore_session_raw_recipient_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -380,10 +378,10 @@ TEST(exporters, oscore_session_recipient_id_encode_fail)
 	uint8_t rid[1] = { 0 };
 	size_t rid_len = 0;
 
-	int ret = edhoc_export_oscore_session(&ctx, secret, sizeof(secret),
-					      salt, sizeof(salt), sid,
-					      sizeof(sid), &sid_len, rid,
-					      sizeof(rid), &rid_len);
+	int ret = edhoc_export_oscore_session_raw(&ctx, secret, sizeof(secret),
+						  salt, sizeof(salt), sid,
+						  sizeof(sid), &sid_len, rid,
+						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	edhoc_context_deinit(&ctx);
@@ -401,14 +399,14 @@ TEST_GROUP_RUNNER(exporters)
 	RUN_TEST_CASE(exporters, key_update_zero_entropy_length);
 	RUN_TEST_CASE(exporters, key_update_bad_state_not_completed);
 
-	RUN_TEST_CASE(exporters, oscore_session_not_allowed);
-	RUN_TEST_CASE(exporters, oscore_session_bad_state_not_completed);
+	RUN_TEST_CASE(exporters, oscore_session_raw_not_allowed);
+	RUN_TEST_CASE(exporters, oscore_session_raw_bad_state_not_completed);
 
-	RUN_TEST_CASE(exporters, prk_exporter_null_secret);
-	RUN_TEST_CASE(exporters, prk_exporter_zero_length);
-	RUN_TEST_CASE(exporters, prk_exporter_invalid_label);
-	RUN_TEST_CASE(exporters, prk_exporter_bad_state);
+	RUN_TEST_CASE(exporters, export_raw_null_secret);
+	RUN_TEST_CASE(exporters, export_raw_zero_length);
+	RUN_TEST_CASE(exporters, export_raw_invalid_label);
+	RUN_TEST_CASE(exporters, export_raw_bad_state);
 	/* OSCORE CID CBOR encode failures */
-	RUN_TEST_CASE(exporters, oscore_session_sender_id_encode_fail);
-	RUN_TEST_CASE(exporters, oscore_session_recipient_id_encode_fail);
+	RUN_TEST_CASE(exporters, oscore_session_raw_sender_id_encode_fail);
+	RUN_TEST_CASE(exporters, oscore_session_raw_recipient_id_encode_fail);
 }
