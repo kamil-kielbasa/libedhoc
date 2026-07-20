@@ -45,6 +45,19 @@ Version 2.0.0
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : New crypto vtable and
   mbedTLS update to v4.1.0 with cipher suite 2 alignments.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Post-quantum cipher
+  suite 1 is now a first-class reference suite:
+
+  * Dropped the ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC`` build flag. The suite is
+    gated on ``CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE`` (default **on**, like
+    suites 0/2/4/24, in both the standalone and Zephyr builds) and plugs into
+    the handle-only ``struct edhoc_crypto`` vtable.
+  * Added a full ML-KEM-512 / ML-DSA-44 EDHOC handshake integration test
+    (``handshake_x5chain_sig_suite_pqc_1``). The standalone build sizes its
+    ephemeral-key buffers for ML-KEM-512 by default, so the handshake runs in
+    every build and memory backend (stack / heap / custom) with no dedicated
+    preset or CI job.
+
 Version 1.15.1
 --------------
 

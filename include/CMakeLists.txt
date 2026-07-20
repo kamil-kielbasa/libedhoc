@@ -14,10 +14,14 @@ set(CONFIG_LIBEDHOC_ENABLE                     1  CACHE STRING "")
 set(CONFIG_LIBEDHOC_KEY_ID_LEN                 4  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES    3  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID         7  CACHE STRING "")
-set(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY  48 CACHE STRING "")
-set(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT  48 CACHE STRING "")
-set(CONFIG_LIBEDHOC_MAX_LEN_OF_NIKE_KEY        48 CACHE STRING "")
-set(CONFIG_LIBEDHOC_MAX_LEN_OF_MAC             48 CACHE STRING "")
+# The ephemeral-key buffers are sized for the largest reference suite — the
+# post-quantum suite 1 (ML-KEM-512: 800-byte public key, 768-byte ciphertext,
+# 64-byte SHAKE256/KMAC MAC). The classic NIKE suites (X25519 / P-256) fit well
+# within these maxima.
+set(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY  800 CACHE STRING "")
+set(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT  768 CACHE STRING "")
+set(CONFIG_LIBEDHOC_MAX_LEN_OF_NIKE_KEY        48  CACHE STRING "")
+set(CONFIG_LIBEDHOC_MAX_LEN_OF_MAC             64  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS       3  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID     1  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG        1  CACHE STRING "")
@@ -26,12 +30,14 @@ set(CONFIG_LIBEDHOC_LOG_LEVEL                  3  CACHE STRING "")  # INF
 set(CONFIG_LIBEDHOC_MEM_BACKEND                0  CACHE STRING "")  # STACK
 
 # Reference cipher suites returned by edhoc_cipher_suite_get_*(). Disabling one
-# drops its source from the build and makes the getters return NULL for it.
+# drops its source from the build and makes the getters return NULL for it. The
+# post-quantum suite additionally gates liboqs / XKCP in externals/, so include/
+# is processed before dependencies.cmake (see the root CMakeLists).
 set(CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE      1  CACHE STRING "")
 set(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE      1  CACHE STRING "")
 set(CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE      1  CACHE STRING "")
 set(CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE     1  CACHE STRING "")
-set(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE  0  CACHE STRING "")
+set(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE  1  CACHE STRING "")
 
 set(LIBEDHOC_GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR}/generated
     CACHE INTERNAL "Directory holding libedhoc generated headers (edhoc_config.h)")

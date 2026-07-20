@@ -12,7 +12,7 @@
  *
  *          The backend is conformant to NIST SP 800-185 (verified against
  *          KMAC256 known-answer tests and the EDHOC_Extract/EDHOC_Expand
- *          vectors in test_cipher_suite_exp_pqc_1.c).
+ *          vectors in test_cipher_suite_pqc_1.c).
  *
  *          RFC 9528 Section 4.1 (SHAKE256 / KMAC256 suite):
  *            EDHOC_Extract(salt, IKM)   = KMAC256(salt, IKM, 8*32 .. , "")

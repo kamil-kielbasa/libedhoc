@@ -27,9 +27,8 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(cipher_suite_4_negative);
 	RUN_TEST_GROUP(cipher_suite_24_positive);
 	RUN_TEST_GROUP(cipher_suite_24_negative);
-#ifdef LIBEDHOC_ENABLE_EXPERIMENTAL_PQC
-	RUN_TEST_GROUP(cipher_suite_exp_pqc_1);
-#endif
+	RUN_TEST_GROUP(cipher_suite_pqc_1_positive);
+	RUN_TEST_GROUP(cipher_suite_pqc_1_negative);
 	RUN_TEST_GROUP(api);
 	RUN_TEST_GROUP(api_negative);
 	RUN_TEST_GROUP(error_message);
@@ -69,6 +68,7 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(handshake_x5t_sig_suite2);
 	RUN_TEST_GROUP(handshake_auth_methods);
 	RUN_TEST_GROUP(handshake_handle_balance);
+	RUN_TEST_GROUP(handshake_x5chain_sig_suite_pqc_1);
 #if CONFIG_LIBEDHOC_MEM_BACKEND == EDHOC_MEM_BACKEND_CUSTOM
 	RUN_TEST_GROUP(mem_custom_handshake);
 #endif

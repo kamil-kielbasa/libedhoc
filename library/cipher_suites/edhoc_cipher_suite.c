@@ -35,6 +35,9 @@
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE
 #include "edhoc_cipher_suite_24.h"
 #endif
+#if CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE
+#include "edhoc_cipher_suite_pqc_1.h"
+#endif
 
 /* Module interface function definitions ----------------------------------- */
 
@@ -58,10 +61,13 @@ edhoc_cipher_suite_get_params(enum edhoc_cipher_suite_id id)
 	case EDHOC_CIPHER_SUITE_24:
 		return edhoc_cipher_suite_24_get_suite();
 #endif
+#if CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE
+	case EDHOC_CIPHER_SUITE_PQC_1:
+		return edhoc_cipher_suite_pqc_1_get_suite();
+#endif
 	default:
-		/* A disabled suite is not compiled in; PQC-1 parameters use a
-		 * distinct struct until the suite struct is generalized; other
-		 * ids are unknown. */
+		/* A disabled suite is not compiled in; unknown ids are
+		 * rejected. */
 		return NULL;
 	}
 }
@@ -86,10 +92,13 @@ edhoc_cipher_suite_get_crypto(enum edhoc_cipher_suite_id id)
 	case EDHOC_CIPHER_SUITE_24:
 		return edhoc_cipher_suite_24_get_crypto();
 #endif
+#if CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE
+	case EDHOC_CIPHER_SUITE_PQC_1:
+		return edhoc_cipher_suite_pqc_1_get_crypto();
+#endif
 	default:
-		/* A disabled suite is not compiled in; the PQC-1 suite uses a
-		 * KEM-shaped vtable that the classic struct edhoc_crypto cannot
-		 * represent yet. */
+		/* A disabled suite is not compiled in; unknown ids are
+		 * rejected. */
 		return NULL;
 	}
 }

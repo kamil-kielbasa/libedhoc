@@ -1,0 +1,31 @@
+sample:
+  name: libedhoc EDHOC handshake benchmark
+  description: >
+    Runs a full EDHOC handshake (cipher suite 2, method 0, x5chain) on Zephyr
+    and prints a per-phase timing report as JSON. Built for native_sim in both
+    the stack (default) and heap libedhoc memory backends; also used to track
+    the real linked flash / RAM footprint of libedhoc. The console harness only
+    asserts that the handshake ran and emitted its report; the CI job performs
+    the flash / timing analysis on the resulting binaries.
+common:
+  tags: libedhoc benchmark
+  harness: console
+  harness_config:
+    type: one_line
+    regex:
+      - '"benchmark": "edhoc_handshake"'
+tests:
+  sample.libedhoc.benchmark.stack:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    timeout: 120
+  sample.libedhoc.benchmark.heap:
+    platform_allow:
+      - native_sim
+    integration_platforms:
+      - native_sim
+    timeout: 120
+    extra_args:
+      - EXTRA_CONF_FILE=overlays/overlay-heap.conf

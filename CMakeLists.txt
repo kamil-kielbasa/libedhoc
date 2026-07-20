@@ -18,20 +18,25 @@ option(LIBEDHOC_BUILD_EXTERNAL_DEPS "Use vendored submodule dependencies"  ON)
 option(LIBEDHOC_ENABLE_COVERAGE     "Code coverage instrumentation (gcov)" OFF)
 option(LIBEDHOC_ENABLE_SANITIZERS   "AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(LIBEDHOC_ENABLE_FUZZING      "libFuzzer fuzz targets (Clang)"       OFF)
-option(LIBEDHOC_ENABLE_EXPERIMENTAL_PQC "Build experimental PQC cipher suite 1 helper (liboqs)" OFF)
 
 # --- Shared CMake helpers ----------------------------------------------------
 # Defined at top scope so libedhoc_target_warnings() is visible in every
 # add_subdirectory() (library, tests, fuzz).
 include(cmake/warnings.cmake)
 
+# --- Targets -----------------------------------------------------------------
+# Order matters:
+#   * include/ sets the CONFIG_* cache defaults (including the per-suite
+#     enables) and configures edhoc_config.h. It runs before dependencies.cmake
+#     so externals/ can gate its optional dependencies (liboqs / XKCP for the
+#     post-quantum suite) on CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE.
+#   * backends/ define backend_* (used by library/cipher_suites).
+add_subdirectory(include)
+
 # --- Dependencies (submodules OR find_package) -------------------------------
 include(cmake/dependencies.cmake)
 
-# --- Targets -----------------------------------------------------------------
-# Order matters: backends define backend_* (used by include/library/cipher_suites).
 add_subdirectory(backends)
-add_subdirectory(include)
 add_subdirectory(library)
 
 if(LIBEDHOC_ENABLE_TESTS)

@@ -17,10 +17,10 @@ KCONFIG_OPTIONS=(
     -DCONFIG_LIBEDHOC_KEY_ID_LEN=4
     -DCONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES=3
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID=7
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY=48
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT=48
+    -DCONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY=800
+    -DCONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT=768
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_NIKE_KEY=48
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_MAC=48
+    -DCONFIG_LIBEDHOC_MAX_LEN_OF_MAC=64
     -DCONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=3
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=1
     -DCONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=1
@@ -90,13 +90,10 @@ cmd_build() {
 
     section "Build (${compiler}${mem_backend:+, mem=${mem_backend}})"
 
-    # Experimental PQC is temporarily OFF in CI until cipher_suite_pqc_1 is
-    # migrated to the handle-only crypto vtable (tracked separately; see
-    # PQC-PLAN.md). Re-enable together with a dedicated PQC job.
-    local experimental_pqc=OFF
-
-    local cmake_args=(-DLIBEDHOC_ENABLE_TESTS=ON
-                      -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC="${experimental_pqc}")
+    # PQC (cipher suite 1) builds and runs by default like the classic suites:
+    # the shared KCONFIG_OPTIONS size the ephemeral-key buffers for ML-KEM-512,
+    # so the full post-quantum handshake runs in every build and backend.
+    local cmake_args=(-DLIBEDHOC_ENABLE_TESTS=ON)
 
     if [[ "$compiler" == "gcc" ]]; then
         cmake_args+=(-DCMAKE_C_COMPILER=gcc)
@@ -122,8 +119,15 @@ cmd_build() {
     fi
 
     if [[ "$fuzz" == true ]]; then
+        # Fuzzing targets the core message parser, not the PQC crypto, so keep
+        # the PQC suite (liboqs / XKCP) out of the fuzz build. The module test
+        # binary is not built or run here (LIBEDHOC_ENABLE_TESTS=OFF): it is not
+        # needed for fuzzing, and its unconditional PQC test sources would not
+        # link against a PQC-disabled library.
         cmake_args=(-DCMAKE_C_COMPILER=clang
-                     -DLIBEDHOC_ENABLE_FUZZING=ON -G Ninja)
+                     -DLIBEDHOC_ENABLE_FUZZING=ON -G Ninja
+                     -DLIBEDHOC_ENABLE_TESTS=OFF
+                     -DCONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE=0)
     fi
 
     cmake_configure "${cmake_args[@]}"
@@ -242,15 +246,16 @@ cmd_valgrind() {
     # Valgrind <= 3.19 does not support DWARF5 (GCC 11+ default).
     rm -rf "${BUILD_DIR}"
     mkdir -p "${BUILD_DIR}"
-    # Experimental PQC is OFF here: liboqs dispatches hand-written AVX2/AVX-512
-    # ML-KEM code at runtime, and Valgrind cannot decode some of those opcodes
-    # (SIGILL / exit 132 on AVX-512-capable runners). It carries no memcheck
-    # value, so exclude it from the Valgrind job (matches the coverage build). 
+    # PQC stays ENABLED here, but liboqs is built as portable C
+    # (OQS_OPT_TARGET=generic) rather than its hand-written AVX2/AVX-512 ML-KEM
+    # code: Valgrind cannot decode some of those SIMD opcodes (SIGILL / exit 132
+    # on AVX-capable runners). Generic liboqs lets memcheck + DRD cover the full
+    # ML-KEM-512 / ML-DSA-44 handshake and primitives as well.
     cmake -B "${BUILD_DIR}" -S "${PROJECT_DIR}" \
         "${KCONFIG_OPTIONS[@]}" \
         "${MBEDTLS_OPTIONS[@]}" \
         -DLIBEDHOC_ENABLE_TESTS=ON \
-        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=OFF \
+        -DOQS_OPT_TARGET=generic \
         -DCMAKE_C_COMPILER=gcc \
         -DCMAKE_BUILD_TYPE=Debug \
         "-DCMAKE_C_FLAGS=-gdwarf-4"
@@ -296,7 +301,6 @@ cmd_clang_tidy() {
         echo "Building with Clang compile_commands.json..."
         cmake_configure \
             -DLIBEDHOC_ENABLE_TESTS=ON \
-        -DLIBEDHOC_ENABLE_EXPERIMENTAL_PQC=OFF \
             -DCMAKE_C_COMPILER=clang \
             -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
             -G Ninja
@@ -317,7 +321,10 @@ cmd_clang_tidy() {
         library/cipher_suites/edhoc_cipher_suite.c \
         library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c \
         library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c \
-        library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c
+        library/cipher_suites/cipher_suite_4/edhoc_cipher_suite_4.c \
+        library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c \
+        library/cipher_suites/cipher_suite_pqc_1/edhoc_cipher_suite_pqc_1.c \
+        library/cipher_suites/common/edhoc_kdf_kmac256_xkcp.c
     ok "Clang-tidy passed."
 }
 

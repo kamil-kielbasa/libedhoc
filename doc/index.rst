@@ -31,8 +31,6 @@ Where to start
      - :doc:`reference/error_codes`, :doc:`reference/values`
    * - Learn a term
      - :doc:`reference/glossary`
-   * - Explore experimental post-quantum cipher suite 1 (internal helper)
-     - :doc:`guide/pqc`
    * - Contribute or run tests
      - :doc:`project/contributing`, :doc:`project/testing`
 
@@ -50,7 +48,6 @@ Where to start
 
    guide/protocol_flow
    guide/configuration
-   guide/pqc
 
 .. toctree::
    :hidden:

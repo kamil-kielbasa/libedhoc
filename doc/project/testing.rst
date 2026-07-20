@@ -78,7 +78,7 @@ Unit tests:
   - ``cipher_suite_2`` — EDHOC cipher suite 2 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
   - ``cipher_suite_4`` — EDHOC cipher suite 4 (EdDSA, ECDH, HKDF, ChaCha20/Poly1305 AEAD, HASH; RFC 8439 KAT)
   - ``cipher_suite_24`` — EDHOC cipher suite 24 (ECDSA via hash-then-sign, ECDH, HKDF, AEAD, HASH)
-  - ``cipher_suite_exp_pqc_1`` — experimental PQC cipher suite 1 (ML-KEM-512, ML-DSA-44, KMAC256, AES-CCM; liboqs, XKCP, PSA); requires ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=ON``
+  - ``cipher_suite_pqc_1`` — post-quantum cipher suite 1 (ML-KEM-512, ML-DSA-44, KMAC256, SHAKE256, AES-CCM; liboqs, XKCP, PSA); default-on, gate ``CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE``
   - ``api`` — EDHOC public API (context init, methods, cipher suites, bindings)
   - ``api_negative`` — Negative API tests (null args, invalid state, error paths)
   - ``error_message`` — EDHOC error message compose/process (success, unspecified, wrong suite, unknown cred)
@@ -98,6 +98,7 @@ Integration tests:
   - ``handshake_x5chain_dh_suite2`` — Full handshake, x5chain, static DH, suite 2
   - ``handshake_x5t_sig_suite2`` — Full handshake, x5t, signatures, suite 2
   - ``handshake_auth_methods`` — Handshake with auth methods 1 and 2
+  - ``handshake_x5chain_sig_suite_pqc_1`` — Full ML-KEM-512 / ML-DSA-44 handshake, x5chain, signatures, post-quantum cipher suite 1
 
 Fuzz targets:
   - ``fuzz_message_1_process`` — EDHOC message 1 processing
@@ -220,9 +221,13 @@ Coverage
 
 Coverage is measured with **gcov** (instrumentation) and **lcov** (report generation).
 The build uses ``-DLIBEDHOC_ENABLE_COVERAGE=ON`` to add ``--coverage`` flags.
-Coverage builds disable ``LIBEDHOC_ENABLE_EXPERIMENTAL_PQC`` so experimental PQC
-helper code does not affect core library metrics; PQC is still tested in the
-other CI jobs (Clang, sanitizers, Valgrind, memory backends).
+Coverage builds include post-quantum cipher suite 1 (default-on), as do the
+standard build/test, memory-backend, Valgrind and Clang-tidy jobs, so the full
+ML-KEM-512 / ML-DSA-44 handshake and primitives are exercised everywhere. The
+Valgrind job builds liboqs as portable C (``-DOQS_OPT_TARGET=generic``) because
+Valgrind cannot decode liboqs's hand-written AVX ML-KEM opcodes. Only the fuzz
+job disables PQC (``-DCONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE=0``): it targets
+the core message parser, not the crypto backends.
 
 To generate coverage:
 
@@ -294,9 +299,9 @@ Unit Tests
    * - :file:`tests/unit/api/test_api_negative.c`
      - ``api_negative``
      - Negative tests: null pointers, invalid state, error paths for all API functions
-   * - :file:`tests/unit/cipher_suites/test_cipher_suite_{0,2,24}.c`
+   * - :file:`tests/unit/cipher_suites/test_cipher_suite_{0,2,4,24}.c`
      - ``cipher_suite_0`` … ``cipher_suite_24``
-     - Cipher suites 0/2/24: signature, ECDH, HKDF, AEAD, HASH (plus experimental ``cipher_suite_exp_pqc_1``)
+     - Cipher suites 0/2/4/24: signature, ECDH, HKDF, AEAD, HASH (plus post-quantum ``cipher_suite_pqc_1``)
    * - :file:`tests/unit/error/test_error_message.c`
      - ``error_message``
      - Error message compose/process: success, unspecified, wrong cipher suite, unknown cred

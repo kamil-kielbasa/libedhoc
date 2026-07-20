@@ -24,4 +24,11 @@ if(CONFIG_LIBEDHOC_ENABLE)
         ${LIBEDHOC_BACKEND_CBOR_INCLUDE_DIR}
         ${LIBEDHOC_BACKEND_MEM_INCLUDE_DIR}
         ${LIBEDHOC_BACKEND_LOG_INCLUDE_DIR})
+
+    # Post-quantum cipher suite 1: build the portable XKCP KMAC256 KDF backend
+    # as a companion library (liboqs ships its own Zephyr module). The suite and
+    # KDF sources are compiled by the application, like the classic suites.
+    if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
+        include(${CMAKE_CURRENT_LIST_DIR}/../cmake/xkcp_zephyr.cmake)
+    endif()
 endif()

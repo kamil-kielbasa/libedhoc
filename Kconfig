@@ -92,13 +92,26 @@ if LIBEDHOC_ENABLE
                 AES-GCM and SHA-384.
 
         config LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE
-            bool "Experimental PQC cipher suite 1 (ML-KEM-512 / ML-DSA-44)."
-            default n
+            bool "Post-quantum cipher suite 1 (ML-KEM-512 / ML-DSA-44)."
+            default y
             help
-                Build the experimental post-quantum reference cipher suite
-                (draft-spm-lake-pqsuites).
-                External libraries: liboqs (ML-KEM / ML-DSA), XKCP (KMAC256 /
-                SHAKE256) and PSA crypto (mbedTLS) for AES-CCM.
+                Build the reference implementation of post-quantum cipher
+                suite 1 (cipher suite TBD1 of draft-ietf-lake-pqsuites-00):
+                ML-KEM-512 key exchange, ML-DSA-44 signatures,
+                AES-CCM-16-128-128, SHAKE256 and the KMAC256 KDF.
+
+                External libraries, enabled by the application exactly as the
+                classic suites enable mbedTLS (no cipher suite selects its own
+                crypto dependencies): liboqs for ML-KEM / ML-DSA and SHAKE256
+                (CONFIG_LIBOQS, CONFIG_LIBOQS_ENABLE_KEM_ML_KEM,
+                CONFIG_LIBOQS_ENABLE_SIG_ML_DSA) and PSA crypto / mbedTLS for
+                AES-CCM and the RAW_DATA key type (CONFIG_MBEDTLS,
+                CONFIG_PSA_WANT_ALG_CCM, CONFIG_PSA_WANT_KEY_TYPE_AES). The
+                KMAC256 KDF (XKCP) is built from source by libedhoc's own
+                Zephyr module and needs no extra symbol.
+
+                liboqs supports ARM, ARM64, x86, RISC-V and native_sim;
+                disable this suite on other architectures.
 
     endmenu
 

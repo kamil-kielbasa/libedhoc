@@ -33,9 +33,9 @@ if (NOT TARGET unity)
     target_include_directories(unity PUBLIC ${LIBEDHOC_UNITY_INCLUDE_DIRS})
 endif()
 
-# --- liboqs (post-quantum primitives for experimental cipher suite 1) --------
+# --- liboqs (post-quantum primitives for cipher suite 1) ---------------------
 
-if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC AND NOT TARGET oqs)
+if (CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE AND NOT TARGET oqs)
     set(OQS_USE_OPENSSL OFF CACHE BOOL "" FORCE)
     set(OQS_BUILD_ONLY_LIB ON CACHE BOOL "" FORCE)
     set(OQS_MINIMAL_BUILD "KEM_ml_kem_512;SIG_ml_dsa_44" CACHE STRING "" FORCE)
@@ -61,7 +61,7 @@ endif()
 #   objcopy --keep-global-symbols=keep.txt combined.o kdf.o
 #   ar rcs libXKCP_kdf.a kdf.o          # link this instead of libXKCP.a
 #
-if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC AND NOT TARGET xkcp)
+if (CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE AND NOT TARGET xkcp)
     include(ExternalProject)
     set(XKCP_SRC ${CMAKE_CURRENT_SOURCE_DIR}/XKCP)
 

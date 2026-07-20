@@ -27,22 +27,16 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol â€
 
 ### Cipher Suites
 
-| Suite | AEAD               | Hash    | ECDH    | Signature |
-|-------|--------------------|---------|---------|-----------|
-| 0     | AES-CCM-16-64-128  | SHA-256 | X25519  | EdDSA     |
-| 2     | AES-CCM-16-64-128  | SHA-256 | P-256   | ES256     |
-| 4     | ChaCha20/Poly1305  | SHA-256 | X25519  | EdDSA     |
-| 24    | A256GCM            | SHA-384 | P-384   | ES384     |
-
-### Experimental Cipher Suites
-
-These helpers live under `library/cipher_suites/` only. **libedhoc does not support them in the core EDHOC library** â€” the underlying specifications are still drafts and there is no full handshake integration.
-
 | Suite | AEAD               | Hash     | Key exchange | Signature |
 |-------|--------------------|----------|--------------|-----------|
-| Exp-PQC-1 (draft TBD1) | AES-CCM-16-128-128 | SHAKE256 | ML-KEM-512 | ML-DSA-44 |
+| 0     | AES-CCM-16-64-128  | SHA-256  | X25519       | EdDSA     |
+| 2     | AES-CCM-16-64-128  | SHA-256  | P-256        | ES256     |
+| 4     | ChaCha20/Poly1305  | SHA-256  | X25519       | EdDSA     |
+| 24    | A256GCM            | SHA-384  | P-384        | ES384     |
+| TBD1  | AES-CCM-16-128-128 | SHAKE256 | ML-KEM-512   | ML-DSA-44 |
 
-See [doc/guide/pqc.rst](doc/guide/pqc.rst) for details on experimental PQC cipher suite 1 ([draft-spm-lake-pqsuites-02](https://datatracker.ietf.org/doc/html/draft-spm-lake-pqsuites-02)).
+Suite TBD1 is post-quantum (ML-KEM-512 / ML-DSA-44, KMAC256 KDF); its value is
+provisional pending IANA assignment ([draft-ietf-lake-pqsuites-00](https://datatracker.ietf.org/doc/html/draft-ietf-lake-pqsuites-00)).
 
 ### Authentication Methods
 

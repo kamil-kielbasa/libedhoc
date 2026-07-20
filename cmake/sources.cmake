@@ -77,9 +77,9 @@ if (CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c)
 endif()
 
-if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
+if (CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
-         ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_pqc_1/edhoc_exp_pqc_cipher_suite_1.c
+         ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_pqc_1/edhoc_cipher_suite_pqc_1.c
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/common/edhoc_kdf_kmac256_xkcp.c)
 endif()
 

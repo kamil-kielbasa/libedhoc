@@ -22,6 +22,7 @@ set(TEST_UNIT_SOURCES
     unit/cipher_suites/test_cipher_suite_2.c
     unit/cipher_suites/test_cipher_suite_4.c
     unit/cipher_suites/test_cipher_suite_24.c
+    unit/cipher_suites/test_cipher_suite_pqc_1.c
     unit/error/test_error_message.c
     unit/exporters/test_exporters.c
     unit/coap/test_coap.c
@@ -47,11 +48,6 @@ set(TEST_UNIT_SOURCES
     unit/internals/test_internals_api.c
     unit/message/test_message_paths.c)
 
-if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
-    list(APPEND TEST_UNIT_SOURCES
-         unit/cipher_suites/test_cipher_suite_exp_pqc_1.c)
-endif()
-
 set(TEST_INTEGRATION_SOURCES
     integration/test_handshake_x5chain_sig_suite0.c
     integration/test_handshake_x5chain_sig_suite2.c
@@ -62,7 +58,8 @@ set(TEST_INTEGRATION_SOURCES
     integration/test_handshake_handle_balance.c
     integration/test_rfc9528_negotiation.c
     integration/test_rfc9529_chapter2.c
-    integration/test_rfc9529_chapter3.c)
+    integration/test_rfc9529_chapter3.c
+    integration/test_handshake_x5chain_sig_suite_pqc_1.c)
 
 # --- Custom memory backend sources -------------------------------------------
 
@@ -100,10 +97,6 @@ if (LIBEDHOC_ENABLE_TESTS_TRACES)
     target_compile_definitions(${PROJECT_NAME} PRIVATE TEST_TRACES)
 endif()
 
-if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE LIBEDHOC_ENABLE_EXPERIMENTAL_PQC=1)
-endif()
-
 # --- Include directories -----------------------------------------------------
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -119,7 +112,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
                       libedhoc::backend_memory
                       unity)
 
-if (LIBEDHOC_ENABLE_EXPERIMENTAL_PQC)
+if (CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
     target_link_libraries(${PROJECT_NAME} PRIVATE oqs)
     target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_BINARY_DIR}/externals/liboqs/include

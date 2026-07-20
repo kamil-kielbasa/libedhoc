@@ -17,7 +17,7 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y lcov"
+          command: "sudo apt-get update && sudo apt-get install -y lcov xsltproc"
 
       - name: Build, test, and generate coverage
         # Use the custom allocator backend: its fault-injecting out-of-memory
@@ -103,9 +103,7 @@ jobs:
           command: "sudo apt-get update && sudo apt-get install -y valgrind xsltproc"
 
       - name: Build and run valgrind
-        run: |
-          bash scripts/ci.sh build --gcc
-          bash scripts/ci.sh valgrind
+        run: bash scripts/ci.sh valgrind
 
   static-analysis:
     name: Static Analysis
