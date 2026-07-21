@@ -15,6 +15,10 @@ if LIBEDHOC_ENABLE
         int "Maximum number of cipher suites in chain for negotiation."
         default 3
 
+    config LIBEDHOC_MAX_NR_OF_METHODS
+        int "Maximum number of authentication methods for negotiation."
+        default 4
+
     config LIBEDHOC_MAX_LEN_OF_CONN_ID
         int "Maximum length of connection identifier in bytes."
         default 1

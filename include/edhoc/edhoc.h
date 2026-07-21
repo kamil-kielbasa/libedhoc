@@ -2,9 +2,9 @@
  * \file    edhoc.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC API.
- * 
+ *
  * \copyright Copyright (c) 2025
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -33,10 +33,13 @@
  */
 
 /** The major version of this implementation of the EDHOC API. */
-#define EDHOC_API_VERSION_MAJOR 1
+#define EDHOC_API_VERSION_MAJOR 2
 
 /** The minor version of this implementation of the EDHOC API. */
-#define EDHOC_API_VERSION_MINOR 6
+#define EDHOC_API_VERSION_MINOR 0
+
+/** The patch version of this implementation of the EDHOC API. */
+#define EDHOC_API_VERSION_PATCH 0
 
 /**@}*/
 
@@ -80,7 +83,7 @@ struct edhoc_context;
  * @{
  */
 
-/** 
+/**
  * \brief Initialize EDHOC context.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -104,7 +107,7 @@ int edhoc_context_init(struct edhoc_context *edhoc_context);
  */
 size_t edhoc_context_size(void);
 
-/** 
+/**
  * \brief Deinitialize EDHOC context.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -118,12 +121,12 @@ size_t edhoc_context_size(void);
  */
 int edhoc_context_deinit(struct edhoc_context *edhoc_context);
 
-/** 
+/**
  * \brief Set EDHOC methods.
  *
  * According to RFC 9528: 3.2. Method. At least one method must be set,
- * but no more than \p EDHOC_METHOD_MAX.
- * 
+ * but no more than \c CONFIG_LIBEDHOC_MAX_NR_OF_METHODS.
+ *
  * Behavior depends on the role:
  * - Initiator always uses the first value (method[0]) when composing message 1.
  * - Responder iterates over all methods to find a match when processing message 1.
@@ -142,7 +145,7 @@ int edhoc_context_deinit(struct edhoc_context *edhoc_context);
 int edhoc_set_methods(struct edhoc_context *edhoc_context,
 		      const enum edhoc_method *method, size_t method_length);
 
-/** 
+/**
  * \brief Set EDHOC cipher suites.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -160,7 +163,7 @@ int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
 			    const struct edhoc_cipher_suite *cipher_suite,
 			    size_t cipher_suite_length);
 
-/** 
+/**
  * \brief Set EDHOC connection identifier.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -176,7 +179,7 @@ int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
 int edhoc_set_connection_id(struct edhoc_context *edhoc_context,
 			    const struct edhoc_connection_id *connection_id);
 
-/** 
+/**
  * \brief Set user context.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -192,7 +195,7 @@ int edhoc_set_connection_id(struct edhoc_context *edhoc_context,
 int edhoc_set_user_context(struct edhoc_context *edhoc_context,
 			   void *user_context);
 
-/** 
+/**
  * \brief Bind EDHOC external authorization data (EAD) callbacks.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -208,7 +211,7 @@ int edhoc_set_user_context(struct edhoc_context *edhoc_context,
 int edhoc_bind_ead(struct edhoc_context *edhoc_context,
 		   const struct edhoc_ead *ead);
 
-/** 
+/**
  * \brief Bind EDHOC cryptographic operations callbacks.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -224,7 +227,7 @@ int edhoc_bind_ead(struct edhoc_context *edhoc_context,
 int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
 		      const struct edhoc_crypto *crypto);
 
-/** 
+/**
  * \brief Bind EDHOC authentication credentials callbacks.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -240,7 +243,7 @@ int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
 int edhoc_bind_credentials(struct edhoc_context *edhoc_context,
 			   const struct edhoc_credentials *credentials);
 
-/** 
+/**
  * \brief Bind EDHOC platform services callbacks.
  *
  * Mandatory. The message-processing API refuses to run until a platform with a
@@ -265,7 +268,7 @@ int edhoc_bind_platform(struct edhoc_context *edhoc_context,
  * @{
  */
 
-/** 
+/**
  * \brief Compose EDHOC message 1.
  *
  * \param[in,out] edhoc_context         EDHOC context.
@@ -806,8 +809,8 @@ int edhoc_export_oscore_session_raw(
 
 /**
  * \brief EDHOC error getter.
- * 
- * \param[in] edhoc_context             EDHOC context. 
+ *
+ * \param[in] edhoc_context             EDHOC context.
  * \param[out] error_code               EDHOC error code.
  *
  * \retval #EDHOC_SUCCESS
@@ -822,8 +825,8 @@ int edhoc_error_get_code(const struct edhoc_context *edhoc_context,
 
 /**
  * \brief Retrieve own and peer cipher suites after \p EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE.
- * 
- * \param[in] edhoc_context             	EDHOC context. 
+ *
+ * \param[in] edhoc_context             	EDHOC context.
  * \param[out] cipher_suites			Buffer where the own cipher suite values are written.
  * \param cipher_suites_size            	Size of the \p cipher_suites buffer in entries.
  * \param[out] cipher_suites_length     	On success, the number of entries written to \p cipher_suites.

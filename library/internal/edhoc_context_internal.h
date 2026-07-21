@@ -8,9 +8,9 @@
  *          it and exposes \ref edhoc_context_size. The full layout lives here
  *          and is visible to the library core and to white-box tests that add
  *          \c library/internal to their private include path.
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -225,7 +225,7 @@ struct edhoc_context {
 	enum edhoc_method chosen_method;
 
 	/** EDHOC supported methods. */
-	enum edhoc_method method[EDHOC_METHOD_MAX];
+	enum edhoc_method method[CONFIG_LIBEDHOC_MAX_NR_OF_METHODS];
 	/** Length of the \p method buffer. */
 	size_t method_len;
 

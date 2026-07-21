@@ -13,6 +13,7 @@ add_library(libedhoc::api ALIAS libedhoc_api)
 set(CONFIG_LIBEDHOC_ENABLE                     1  CACHE STRING "")
 set(CONFIG_LIBEDHOC_KEY_ID_LEN                 4  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES    3  CACHE STRING "")
+set(CONFIG_LIBEDHOC_MAX_NR_OF_METHODS          4  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID         7  CACHE STRING "")
 # The ephemeral-key buffers are sized for the largest reference suite — the
 # post-quantum suite 1 (ML-KEM-512: 800-byte public key, 768-byte ciphertext,

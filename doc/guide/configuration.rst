@@ -18,6 +18,9 @@ Kconfig library configuration
     | Maximum number of cipher suites in chain for negotiation.
     | Values greater than ``3`` require regeneration of the CBOR backend.
 
+:C:`LIBEDHOC_MAX_NR_OF_METHODS`
+    | Maximum number of authentication methods for negotiation.
+
 :C:`LIBEDHOC_MAX_LEN_OF_CONN_ID`
     | Maximum length of connection identifier in bytes.
 

@@ -10,21 +10,24 @@ Version 2.0.0
 
   * All public headers now live under ``include/edhoc/``. Include the library
     through the umbrella ``<edhoc/edhoc.h>``, or pick individual headers such as
-    ``<edhoc/edhoc_crypto.h>``. Replace any ``#include <edhoc.h>`` (or
-    ``"edhoc_*.h"``) with the ``<edhoc/...>`` form.
-  * New header ``<edhoc/edhoc_cipher_suite.h>`` holds ``struct
+    ``<edhoc/crypto.h>``. Every per-topic header dropped its ``edhoc_`` prefix
+    (only the umbrella keeps the ``edhoc`` name) — for example ``edhoc_crypto.h``
+    is now ``crypto.h`` and ``edhoc_values.h`` is now ``values.h`` (full mapping
+    below). Replace any ``#include <edhoc.h>`` (or ``"edhoc_*.h"``) with the
+    ``<edhoc/...>`` form.
+  * New header ``<edhoc/cipher_suite.h>`` holds ``struct
     edhoc_cipher_suite``, the new ``enum edhoc_cipher_suite_id`` and the
     recommended getters ``edhoc_cipher_suite_get_params(id)`` /
     ``edhoc_cipher_suite_get_crypto(id)`` (keyed by suite id; the per-suite
     ``edhoc_cipher_suite_N_get_*()`` getters remain available).
   * The connection-id and message-framing helpers move to
-    ``<edhoc/edhoc_coap.h>`` and gain an ``edhoc_coap_`` prefix — for example
+    ``<edhoc/coap.h>`` and gain an ``edhoc_coap_`` prefix — for example
     ``edhoc_prepend_flow()`` becomes ``edhoc_coap_prepend_flow()`` and
     ``edhoc_extract_connection_id()`` becomes
     ``edhoc_coap_extract_connection_id()``. They are now part of the core
     library, so there is no separate helper source to compile.
   * Each reference cipher suite has a Kconfig gate
-    ``CONFIG_LIBEDHOC_CIPHER_SUITE_{0,2,24,PQC_1}_ENABLE``. Disabling a suite
+    ``CONFIG_LIBEDHOC_CIPHER_SUITE_{0,2,4,24,PQC_1}_ENABLE``. Disabling a suite
     drops it from the build and makes ``edhoc_cipher_suite_get_*()`` return
     ``NULL`` for that suite.
 
@@ -57,6 +60,56 @@ Version 2.0.0
     ephemeral-key buffers for ML-KEM-512 by default, so the handshake runs in
     every build and memory backend (stack / heap / custom) with no dedicated
     preset or CI job.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Versioning and
+  cleanup (breaking):
+
+  * API version bumped to ``2.0.0``: ``EDHOC_API_VERSION_MAJOR`` is now ``2``,
+    ``EDHOC_API_VERSION_MINOR`` is ``0`` and a new ``EDHOC_API_VERSION_PATCH``
+    (``0``) completes the version triplet.
+  * Removed the misspelled ``EDHOC_SM_RECEVIED_M4`` state alias and the
+    deprecated ``EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2`` label alias; use
+    ``EDHOC_SM_RECEIVED_M4`` and ``EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2``
+    instead.
+  * The context method list is now sized by a dedicated
+    ``CONFIG_LIBEDHOC_MAX_NR_OF_METHODS`` (default ``4``) rather than the
+    ``EDHOC_METHOD_MAX`` enum sentinel, decoupling the buffer size from the
+    method enumeration.
+  * The ``edhoc_macros.h`` helper macros are no longer public; they moved to the
+    private ``library/internal/edhoc_macros_internal.h``.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Repository hygiene:
+  added a ``.gitattributes`` that normalises all tracked text to LF line
+  endings, and an ``.editorconfig`` capturing the project's tab-indented C
+  style. Existing CRLF headers/sources were renormalised to LF.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Header relocation
+  (``1.x`` flat ``include/`` to ``2.0.0`` ``include/edhoc/``):
+
+  .. list-table::
+     :header-rows: 1
+
+     * - ``1.x`` (``include/``)
+       - ``2.0.0``
+     * - ``edhoc.h``
+       - ``edhoc/edhoc.h`` (umbrella)
+     * - ``edhoc_credentials.h``
+       - ``edhoc/credentials.h``
+     * - ``edhoc_crypto.h``
+       - ``edhoc/crypto.h``
+     * - ``edhoc_ead.h``
+       - ``edhoc/ead.h``
+     * - ``edhoc_values.h``
+       - ``edhoc/values.h``
+     * - ``edhoc_context.h``
+       - removed (context is opaque; forward-declared in ``edhoc/edhoc.h``)
+     * - ``edhoc_common.h``
+       - ``library/internal/edhoc_common_internal.h`` (private, not installed)
+     * - ``edhoc_macros.h``
+       - ``library/internal/edhoc_macros_internal.h`` (private, not installed)
+     * - *(new in 2.0.0)*
+       - ``edhoc/cipher_suite.h``, ``edhoc/coap.h``, ``edhoc/platform.h``,
+         ``edhoc/types.h``
 
 Version 1.15.1
 --------------
@@ -605,7 +658,7 @@ Version 1.3.0
 
 :Date: January 27, 2026
 
-* `@magdalena-szumny <https://github.com/magdalenaszumny>`__ : 
+* `@magdalena-szumny <https://github.com/magdalenaszumny>`__ :
 
   * Added EDHOC helpers module with connection ID and buffer utilities.
   * Renamed cipher suite files and functions to edhoc_cipher_suite_X for consistency.
@@ -712,7 +765,7 @@ Version 0.4.0
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added EDHOC error message compose & process with unit tests.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added EDHOC PRK exporter with unit test.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed CDDL models for COSE X.509 chain and COSE X.509 hash.
-  
+
   * added unit test with two certificates for X.509 chain for cipher suite 0.
   * added unit test with one certificate for X.509 chain for cipher suite 2 with multiple EAD tokens.
   * added unit test for X.509 hash for cipher suite 2 with single EAD token.

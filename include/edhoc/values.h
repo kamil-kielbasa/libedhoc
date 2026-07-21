@@ -2,9 +2,9 @@
  * \file    values.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC values and error codes.
- * 
+ *
  * \copyright Copyright (c) 2025
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -129,10 +129,6 @@
 
 /** KEYSTREAM_2 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
 #define EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2 ((size_t)0)
-
-/** \deprecated Use #EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2 instead. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTERAM_2 \
-	EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2
 
 /** SALT_3e2m from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
 #define EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M ((size_t)1)

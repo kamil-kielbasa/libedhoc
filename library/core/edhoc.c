@@ -2,9 +2,9 @@
  * \file    edhoc.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC context.
- * 
+ *
  * \copyright Copyright (c) 2025
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -93,7 +93,7 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 		      const enum edhoc_method *method, size_t method_len)
 {
 	if (NULL == ctx || NULL == method || 0 == method_len ||
-	    EDHOC_METHOD_MAX < method_len) {
+	    CONFIG_LIBEDHOC_MAX_NR_OF_METHODS < method_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}

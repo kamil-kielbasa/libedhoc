@@ -2,9 +2,9 @@
  * \file    test_api_negative.c
  * \author  Kamil Kielbasa
  * \brief   Negative tests for EDHOC public API error paths.
- * 
+ *
  * \copyright Copyright (c) 2025
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -106,7 +106,8 @@ TEST(api_negative, set_methods_too_many)
 	struct edhoc_context ctx = { 0 };
 	edhoc_context_init(&ctx);
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
-	int ret = edhoc_set_methods(&ctx, method, EDHOC_METHOD_MAX + 1);
+	int ret = edhoc_set_methods(&ctx, method,
+				    CONFIG_LIBEDHOC_MAX_NR_OF_METHODS + 1);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 	edhoc_context_deinit(&ctx);
 }
