@@ -28,22 +28,10 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <string.h>
 #include <stdbool.h>
 
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wreserved-identifier"
-#pragma clang diagnostic ignored "-Wpadded"
-#pragma clang diagnostic ignored "-Wdocumentation"
-#endif
-
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_message_1_encode.h>
 #include <backend_cbor_message_1_decode.h>
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */

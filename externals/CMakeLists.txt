@@ -15,7 +15,7 @@ endif()
 if (NOT TARGET zcbor)
     add_library(zcbor STATIC ${LIBEDHOC_ZCBOR_SOURCES})
     target_compile_definitions(zcbor PRIVATE ${LIBEDHOC_ZCBOR_COMPILE_DEFINITIONS})
-    target_include_directories(zcbor PUBLIC ${LIBEDHOC_ZCBOR_INCLUDE_DIR})
+    target_include_directories(zcbor SYSTEM PUBLIC ${LIBEDHOC_ZCBOR_INCLUDE_DIR})
 endif()
 
 # --- compact25519 ------------------------------------------------------------

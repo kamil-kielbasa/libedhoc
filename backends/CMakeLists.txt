@@ -11,7 +11,7 @@ add_library(libedhoc::backend_cbor ALIAS backend_cbor)
 # zcbor types appear in the CBOR backend's public headers, so it is propagated
 # as a PUBLIC dependency: anyone including those headers needs zcbor's headers.
 target_link_libraries(backend_cbor PUBLIC zcbor)
-target_include_directories(backend_cbor PUBLIC
+target_include_directories(backend_cbor SYSTEM PUBLIC
     $<BUILD_INTERFACE:${LIBEDHOC_BACKEND_CBOR_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
