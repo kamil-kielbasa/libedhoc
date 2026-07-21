@@ -550,7 +550,7 @@ TEST(coverage_msg3, msg3_compose_corrupted_method)
 	ret = edhoc_message_2_process(&init_ctx, msg2, msg2_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	init_ctx.chosen_method = (enum edhoc_method)99;
+	init_ctx.negotiation.selected_method = (enum edhoc_method)99;
 
 	coverage_mock_reset(0);
 	uint8_t msg3[512] = { 0 };
@@ -606,7 +606,7 @@ TEST(coverage_msg3, msg3_process_corrupted_method)
 						sizeof(msg3), &msg3_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	resp_ctx.chosen_method = (enum edhoc_method)99;
+	resp_ctx.negotiation.selected_method = (enum edhoc_method)99;
 
 	coverage_mock_reset(0);
 	ret = edhoc_message_3_process(&resp_ctx, msg3, msg3_len);
@@ -668,7 +668,7 @@ TEST(coverage_msg3, msg3_compose_corrupted_state)
 	int ret = coverage_do_mock_msg2_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	init_ctx.status = EDHOC_SM_START;
+	init_ctx.state.machine = EDHOC_SM_START;
 
 	uint8_t msg3[256] = { 0 };
 	size_t msg3_len = 0;

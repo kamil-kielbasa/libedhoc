@@ -34,8 +34,8 @@ TEST(internals_message1, msg1_compose_invalid_cid_type)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.cid.encode_type = 99;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.negotiation.connection_id.encode_type = 99;
 
 	uint8_t msg1[256];
 	size_t msg1_len;
@@ -49,8 +49,8 @@ TEST(internals_message1, msg1_compose_zero_csuites)
 {
 	struct edhoc_context ctx = { 0 };
 	edhoc_context_init(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.status = EDHOC_SM_START;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.machine = EDHOC_SM_START;
 
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
 	edhoc_set_methods(&ctx, method, 1);
@@ -75,8 +75,8 @@ TEST(internals_message1, msg1_compose_tiny_buffer)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.status = EDHOC_SM_START;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.machine = EDHOC_SM_START;
 
 	uint8_t msg1[2];
 	size_t msg1_len;
@@ -90,8 +90,8 @@ TEST(internals_message1, msg1_process_malformed)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.status = EDHOC_SM_START;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.machine = EDHOC_SM_START;
 
 	uint8_t garbage[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	int ret = edhoc_message_1_process(&ctx, garbage, sizeof(garbage));
@@ -104,8 +104,8 @@ TEST(internals_message1, msg1_process_truncated)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.status = EDHOC_SM_START;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.machine = EDHOC_SM_START;
 
 	uint8_t tiny[1] = { 0x00 };
 	int ret = edhoc_message_1_process(&ctx, tiny, sizeof(tiny));

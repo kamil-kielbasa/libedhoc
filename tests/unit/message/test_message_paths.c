@@ -272,10 +272,12 @@ TEST(message_paths, msg1_process_bstr_cid)
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
-			  resp_ctx.peer_cid.encode_type);
-	TEST_ASSERT_EQUAL(3, resp_ctx.peer_cid.bstr_length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(bstr_cid.bstr_value,
-				      resp_ctx.peer_cid.bstr_value, 3);
+			  resp_ctx.negotiation.peer_connection_id.encode_type);
+	TEST_ASSERT_EQUAL(3,
+			  resp_ctx.negotiation.peer_connection_id.bstr_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		bstr_cid.bstr_value,
+		resp_ctx.negotiation.peer_connection_id.bstr_value, 3);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
@@ -343,13 +345,13 @@ TEST(message_paths, msg4_compose_with_ead)
 	};
 	edhoc_bind_ead(&ctx, &ead);
 
-	ctx.status = EDHOC_SM_COMPLETED;
-	ctx.role = EDHOC_RESPONDER;
-	ctx.th_state = EDHOC_TH_STATE_4;
-	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	ctx.th_len = 32;
-	ctx.chosen_csuite_idx = 0;
-	memset(ctx.th, 0xAA, 32);
+	ctx.state.machine = EDHOC_SM_COMPLETED;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.th.stage = EDHOC_TH_STATE_4;
+	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	ctx.state.th.length = 32;
+	ctx.negotiation.selected_cipher_suite_index = 0;
+	memset(ctx.state.th.value, 0xAA, 32);
 
 	uint8_t prk[32];
 	memset(prk, 0xBB, sizeof(prk));
@@ -361,7 +363,7 @@ TEST(message_paths, msg4_compose_with_ead)
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, ctx.status);
+	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, ctx.state.machine);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
@@ -378,13 +380,13 @@ TEST(message_paths, msg4_compose_process_roundtrip)
 	setup_responder_suite0(&resp_ctx);
 	setup_initiator_suite0(&init_ctx);
 
-	resp_ctx.status = EDHOC_SM_COMPLETED;
-	resp_ctx.role = EDHOC_RESPONDER;
-	resp_ctx.th_state = EDHOC_TH_STATE_4;
-	resp_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	resp_ctx.th_len = sizeof(th);
-	resp_ctx.chosen_csuite_idx = 0;
-	memcpy(resp_ctx.th, th, sizeof(th));
+	resp_ctx.state.machine = EDHOC_SM_COMPLETED;
+	resp_ctx.state.role = EDHOC_ROLE_RESPONDER;
+	resp_ctx.state.th.stage = EDHOC_TH_STATE_4;
+	resp_ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	resp_ctx.state.th.length = sizeof(th);
+	resp_ctx.negotiation.selected_cipher_suite_index = 0;
+	memcpy(resp_ctx.state.th.value, th, sizeof(th));
 	inject_prk_4e3m(&resp_ctx, prk, sizeof(prk));
 
 	uint8_t msg[256] = { 0 };
@@ -393,18 +395,18 @@ TEST(message_paths, msg4_compose_process_roundtrip)
 		edhoc_message_4_compose(&resp_ctx, msg, sizeof(msg), &msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	init_ctx.status = EDHOC_SM_COMPLETED;
-	init_ctx.role = EDHOC_INITIATOR;
-	init_ctx.th_state = EDHOC_TH_STATE_4;
-	init_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	init_ctx.th_len = sizeof(th);
-	init_ctx.chosen_csuite_idx = 0;
-	memcpy(init_ctx.th, th, sizeof(th));
+	init_ctx.state.machine = EDHOC_SM_COMPLETED;
+	init_ctx.state.role = EDHOC_ROLE_INITIATOR;
+	init_ctx.state.th.stage = EDHOC_TH_STATE_4;
+	init_ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	init_ctx.state.th.length = sizeof(th);
+	init_ctx.negotiation.selected_cipher_suite_index = 0;
+	memcpy(init_ctx.state.th.value, th, sizeof(th));
 	inject_prk_4e3m(&init_ctx, prk, sizeof(prk));
 
 	ret = edhoc_message_4_process(&init_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx.status);
+	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx.state.machine);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
@@ -436,13 +438,13 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 	edhoc_bind_ead(&init_ctx, &ead_init);
 	edhoc_set_user_context(&init_ctx, &ead_ctx);
 
-	resp_ctx.status = EDHOC_SM_COMPLETED;
-	resp_ctx.role = EDHOC_RESPONDER;
-	resp_ctx.th_state = EDHOC_TH_STATE_4;
-	resp_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	resp_ctx.th_len = sizeof(th);
-	resp_ctx.chosen_csuite_idx = 0;
-	memcpy(resp_ctx.th, th, sizeof(th));
+	resp_ctx.state.machine = EDHOC_SM_COMPLETED;
+	resp_ctx.state.role = EDHOC_ROLE_RESPONDER;
+	resp_ctx.state.th.stage = EDHOC_TH_STATE_4;
+	resp_ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	resp_ctx.state.th.length = sizeof(th);
+	resp_ctx.negotiation.selected_cipher_suite_index = 0;
+	memcpy(resp_ctx.state.th.value, th, sizeof(th));
 	inject_prk_4e3m(&resp_ctx, prk, sizeof(prk));
 
 	uint8_t msg[256] = { 0 };
@@ -451,18 +453,18 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 		edhoc_message_4_compose(&resp_ctx, msg, sizeof(msg), &msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	init_ctx.status = EDHOC_SM_COMPLETED;
-	init_ctx.role = EDHOC_INITIATOR;
-	init_ctx.th_state = EDHOC_TH_STATE_4;
-	init_ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	init_ctx.th_len = sizeof(th);
-	init_ctx.chosen_csuite_idx = 0;
-	memcpy(init_ctx.th, th, sizeof(th));
+	init_ctx.state.machine = EDHOC_SM_COMPLETED;
+	init_ctx.state.role = EDHOC_ROLE_INITIATOR;
+	init_ctx.state.th.stage = EDHOC_TH_STATE_4;
+	init_ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	init_ctx.state.th.length = sizeof(th);
+	init_ctx.negotiation.selected_cipher_suite_index = 0;
+	memcpy(init_ctx.state.th.value, th, sizeof(th));
 	inject_prk_4e3m(&init_ctx, prk, sizeof(prk));
 
 	ret = edhoc_message_4_process(&init_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx.status);
+	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx.state.machine);
 	TEST_ASSERT_EQUAL(EDHOC_MSG_4, ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(200, ead_ctx.token[0].label);
@@ -518,10 +520,12 @@ TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
-			  resp_ctx.peer_cid.encode_type);
-	TEST_ASSERT_EQUAL(3, resp_ctx.peer_cid.bstr_length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(bstr_cid.bstr_value,
-				      resp_ctx.peer_cid.bstr_value, 3);
+			  resp_ctx.negotiation.peer_connection_id.encode_type);
+	TEST_ASSERT_EQUAL(3,
+			  resp_ctx.negotiation.peer_connection_id.bstr_length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		bstr_cid.bstr_value,
+		resp_ctx.negotiation.peer_connection_id.bstr_value, 3);
 	TEST_ASSERT_EQUAL(EDHOC_MSG_1, ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(100, ead_ctx.token[0].label);
@@ -548,7 +552,7 @@ TEST(message_paths, msg1_process_bad_state)
 
 	struct edhoc_context resp_ctx;
 	setup_responder_suite0(&resp_ctx);
-	resp_ctx.status = EDHOC_SM_COMPLETED;
+	resp_ctx.state.machine = EDHOC_SM_COMPLETED;
 
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
@@ -592,7 +596,7 @@ TEST(message_paths, msg1_process_no_cipher_suites)
 
 	struct edhoc_context resp_ctx;
 	setup_responder_suite0(&resp_ctx);
-	resp_ctx.csuite_len = 0;
+	resp_ctx.negotiation.cipher_suite.count = 0;
 
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);

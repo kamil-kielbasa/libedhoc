@@ -116,22 +116,24 @@ static void setup_basic_context(struct edhoc_context *ctx)
 static void setup_export_ready(struct edhoc_context *ctx)
 {
 	setup_basic_context(ctx);
-	ctx->role = EDHOC_RESPONDER;
-	ctx->status = EDHOC_SM_COMPLETED;
+	ctx->state.role = EDHOC_ROLE_RESPONDER;
+	ctx->state.machine = EDHOC_SM_COMPLETED;
 	ctx->is_oscore_export_allowed = true;
-	ctx->th_state = EDHOC_TH_STATE_4;
-	ctx->prk_state = EDHOC_PRK_STATE_4E3M;
-	memset(ctx->th, 0xAB, 32);
-	ctx->th_len = 32;
+	ctx->state.th.stage = EDHOC_TH_STATE_4;
+	ctx->state.prk_state = EDHOC_PRK_STATE_4E3M;
+	memset(ctx->state.th.value, 0xAB, 32);
+	ctx->state.th.length = 32;
 
 	uint8_t prk[32];
 	memset(prk, 0xCD, sizeof(prk));
 	inject_prk_4e3m(ctx, prk, sizeof(prk));
 
-	ctx->peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx->peer_cid.int_value = 1;
-	ctx->cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx->cid.int_value = 2;
+	ctx->negotiation.peer_connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx->negotiation.peer_connection_id.int_value = 1;
+	ctx->negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx->negotiation.connection_id.int_value = 2;
 }
 
 /* Module interface function definitions ----------------------------------- */
@@ -186,11 +188,11 @@ TEST(exporters, error_get_cipher_suites_success)
 	edhoc_context_init(&ctx);
 
 	ctx.error_code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
-	ctx.csuite_len = 2;
-	ctx.csuite[0].value = 0;
-	ctx.csuite[1].value = 2;
-	ctx.peer_csuite_len = 1;
-	ctx.peer_csuite[0].value = 3;
+	ctx.negotiation.cipher_suite.count = 2;
+	ctx.negotiation.cipher_suite.entry[0].value = 0;
+	ctx.negotiation.cipher_suite.entry[1].value = 2;
+	ctx.negotiation.peer_cipher_suite.count = 1;
+	ctx.negotiation.peer_cipher_suite.entry[0].value = 3;
 
 	int32_t cs[3] = { -1, -1, -1 };
 	int32_t peer_cs[3] = { -1, -1, -1 };
@@ -215,9 +217,9 @@ TEST(exporters, error_get_cipher_suites_peer_buffer_too_small)
 	edhoc_context_init(&ctx);
 
 	ctx.error_code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
-	ctx.csuite_len = 1;
-	ctx.csuite[0].value = 0;
-	ctx.peer_csuite_len = 3;
+	ctx.negotiation.cipher_suite.count = 1;
+	ctx.negotiation.cipher_suite.entry[0].value = 0;
+	ctx.negotiation.peer_cipher_suite.count = 3;
 
 	int32_t cs[3];
 	int32_t peer_cs[1];
@@ -256,8 +258,8 @@ TEST(exporters, key_update_bad_state_not_completed)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_START;
-	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
+	ctx.state.machine = EDHOC_SM_START;
+	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
 
 	const uint8_t entropy[32] = { 0xAA };
 	int ret = edhoc_export_key_update(&ctx, entropy, sizeof(entropy));
@@ -272,8 +274,8 @@ TEST(exporters, oscore_session_raw_not_allowed)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_COMPLETED;
-	ctx.prk_state = EDHOC_PRK_STATE_OUT;
+	ctx.state.machine = EDHOC_SM_COMPLETED;
+	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.is_oscore_export_allowed = false;
 
 	uint8_t ms[16], salt[8], sid[8], rid[8];
@@ -292,8 +294,8 @@ TEST(exporters, oscore_session_raw_bad_state_not_completed)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_WAIT_M2;
-	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
+	ctx.state.machine = EDHOC_SM_WAIT_M2;
+	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
 	ctx.is_oscore_export_allowed = true;
 
 	uint8_t ms[16], salt[8], sid[8], rid[8];
@@ -335,8 +337,8 @@ TEST(exporters, export_raw_invalid_label)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_COMPLETED;
-	ctx.prk_state = EDHOC_PRK_STATE_OUT;
+	ctx.state.machine = EDHOC_SM_COMPLETED;
+	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 
 	uint8_t secret[32];
 	int ret = edhoc_export_raw(&ctx, 100, NULL, 0, secret, sizeof(secret));
@@ -349,8 +351,8 @@ TEST(exporters, export_raw_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_START;
-	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
+	ctx.state.machine = EDHOC_SM_START;
+	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	uint8_t secret[32];
 	int ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
@@ -364,23 +366,25 @@ TEST(exporters, oscore_session_raw_sender_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.status = EDHOC_SM_COMPLETED;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.machine = EDHOC_SM_COMPLETED;
 	ctx.is_oscore_export_allowed = true;
-	ctx.th_state = EDHOC_TH_STATE_4;
-	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	memset(ctx.th, 0xAB, 32);
-	ctx.th_len = 32;
+	ctx.state.th.stage = EDHOC_TH_STATE_4;
+	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	memset(ctx.state.th.value, 0xAB, 32);
+	ctx.state.th.length = 32;
 
 	uint8_t prk[32] = { 0 };
 	memset(prk, 0xCD, sizeof(prk));
 	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
-	ctx.peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.peer_cid.int_value = 24;
+	ctx.negotiation.peer_connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.peer_connection_id.int_value = 24;
 
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 1;
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 1;
 
 	uint8_t secret[16] = { 0 };
 	uint8_t salt[8] = { 0 };
@@ -402,23 +406,25 @@ TEST(exporters, oscore_session_raw_recipient_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.status = EDHOC_SM_COMPLETED;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.machine = EDHOC_SM_COMPLETED;
 	ctx.is_oscore_export_allowed = true;
-	ctx.th_state = EDHOC_TH_STATE_4;
-	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	memset(ctx.th, 0xAB, 32);
-	ctx.th_len = 32;
+	ctx.state.th.stage = EDHOC_TH_STATE_4;
+	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	memset(ctx.state.th.value, 0xAB, 32);
+	ctx.state.th.length = 32;
 
 	uint8_t prk[32] = { 0 };
 	memset(prk, 0xCD, sizeof(prk));
 	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
-	ctx.peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.peer_cid.int_value = 1;
+	ctx.negotiation.peer_connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.peer_connection_id.int_value = 1;
 
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 24;
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 24;
 
 	uint8_t secret[16] = { 0 };
 	uint8_t salt[8] = { 0 };
@@ -471,8 +477,8 @@ TEST(exporters, export_invalid_label)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_COMPLETED;
-	ctx.prk_state = EDHOC_PRK_STATE_OUT;
+	ctx.state.machine = EDHOC_SM_COMPLETED;
+	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	int ret = edhoc_export(&ctx, 100, NULL, 0, EDHOC_KEY_USAGE_KDF, key_id);
@@ -485,8 +491,8 @@ TEST(exporters, export_invalid_usage)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_COMPLETED;
-	ctx.prk_state = EDHOC_PRK_STATE_OUT;
+	ctx.state.machine = EDHOC_SM_COMPLETED;
+	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	int ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,
@@ -500,8 +506,8 @@ TEST(exporters, export_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
-	ctx.status = EDHOC_SM_START;
-	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
+	ctx.state.machine = EDHOC_SM_START;
+	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	int ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,

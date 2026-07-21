@@ -483,7 +483,7 @@ TEST(api_negative, error_get_cipher_suites_buffer_too_small)
 	struct edhoc_context ctx = { 0 };
 	edhoc_context_init(&ctx);
 	ctx.error_code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
-	ctx.csuite_len = 3;
+	ctx.negotiation.cipher_suite.count = 3;
 	int32_t cs[1], peer_cs[3];
 	size_t cs_len, peer_cs_len;
 	int ret = edhoc_error_get_cipher_suites(&ctx, cs, 1, &cs_len, peer_cs,

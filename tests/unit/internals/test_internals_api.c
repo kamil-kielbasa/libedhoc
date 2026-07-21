@@ -83,8 +83,8 @@ TEST(internals_api, export_oscore_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.status = 0; /* Not completed */
-	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
+	ctx.state.machine = 0; /* Not completed */
+	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 	ctx.is_oscore_export_allowed = true;
 
 	uint8_t ms[16], salt[8], sid[8], rid[8];

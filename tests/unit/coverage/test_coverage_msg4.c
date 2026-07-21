@@ -537,7 +537,7 @@ TEST(coverage_msg4, msg4_process_bad_state)
 	ret = edhoc_message_4_compose(&resp_ctx, msg4, sizeof(msg4), &msg4_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	init_ctx.status = EDHOC_SM_START;
+	init_ctx.state.machine = EDHOC_SM_START;
 	ret = edhoc_message_4_process(&init_ctx, msg4, msg4_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
@@ -557,7 +557,7 @@ TEST(coverage_msg4, msg4_compose_corrupted_state)
 	int ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	resp_ctx.status = EDHOC_SM_START;
+	resp_ctx.state.machine = EDHOC_SM_START;
 
 	uint8_t msg4[256] = { 0 };
 	size_t msg4_len = 0;

@@ -872,7 +872,8 @@ TEST(coverage_msg2, msg2_compose_corrupted_cid_type)
 					sizeof(msg1), &msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	resp_ctx.cid.encode_type = (enum edhoc_connection_id_type)99;
+	resp_ctx.negotiation.connection_id.encode_type =
+		(enum edhoc_connection_id_type)99;
 
 	coverage_mock_reset(0);
 	uint8_t msg2[512] = { 0 };
@@ -900,7 +901,7 @@ TEST(coverage_msg2, msg2_compose_corrupted_method)
 					sizeof(msg1), &msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	resp_ctx.chosen_method = (enum edhoc_method)99;
+	resp_ctx.negotiation.selected_method = (enum edhoc_method)99;
 
 	coverage_mock_reset(0);
 	uint8_t msg2[512] = { 0 };
@@ -953,7 +954,7 @@ TEST(coverage_msg2, msg2_process_corrupted_method)
 					     sizeof(msg2), &msg2_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	init_ctx.chosen_method = (enum edhoc_method)99;
+	init_ctx.negotiation.selected_method = (enum edhoc_method)99;
 
 	coverage_mock_reset(0);
 	ret = edhoc_message_2_process(&init_ctx, msg2, msg2_len);
@@ -1074,7 +1075,7 @@ TEST(coverage_msg2, msg2_compose_corrupted_state)
 					sizeof(msg1), &msg1_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	resp_ctx.status = EDHOC_SM_START;
+	resp_ctx.state.machine = EDHOC_SM_START;
 
 	uint8_t msg2[256] = { 0 };
 	size_t msg2_len = 0;
@@ -1110,7 +1111,7 @@ TEST(coverage_msg2, msg2_process_corrupted_state)
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	init_ctx.status = EDHOC_SM_COMPLETED;
+	init_ctx.state.machine = EDHOC_SM_COMPLETED;
 	ret = edhoc_message_2_process(&init_ctx, msg2, msg2_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 

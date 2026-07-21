@@ -265,12 +265,12 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_PRK_STATE_3E2M != ctx->prk_state) {
-		EDHOC_LOG_ERR("Bad PRK state: %d", ctx->prk_state);
+	if (EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad PRK state: %d", ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	switch (ctx->chosen_method) {
+	switch (ctx->negotiation.selected_method) {
 	case EDHOC_METHOD_0:
 	case EDHOC_METHOD_1:
 		/* PRK_4e3m == PRK_3e2m: move PRK_3e2m's slot into PRK_4e3m so
@@ -278,13 +278,13 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 		 * (and message 4). */
 		edhoc_key_slot_move(ctx, EDHOC_KEY_SLOT_PRK_4E3M,
 				    EDHOC_KEY_SLOT_PRK_3E2M);
-		ctx->prk_state = EDHOC_PRK_STATE_4E3M;
+		ctx->state.prk_state = EDHOC_PRK_STATE_4E3M;
 		return EDHOC_SUCCESS;
 
 	case EDHOC_METHOD_2:
 	case EDHOC_METHOD_3: {
 		const size_t hash_len =
-			ctx->csuite[ctx->chosen_csuite_idx].hash_length;
+			edhoc_selected_cipher_suite(ctx)->hash_length;
 
 		EDHOC_MEM_ALLOC(uint8_t, salt_4e3m, hash_len);
 		if (NULL == salt_4e3m) {
@@ -318,14 +318,13 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 
 		/* EDHOC_Extract(salt = SALT_4e3m, IKM = G_IY) -> PRK_4e3m in its
 		 * own dedicated handle. SALT_4e3m is spent afterwards. */
-		ret = ctx->itf.crypto.extract(
-			ctx->user_ctx,
+		ret = edhoc_crypto(ctx)->extract(
+			ctx->user_context,
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_IY), salt_4e3m,
 			EDHOC_MEM_ALLOC_SIZE(salt_4e3m),
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M));
 
-		ctx->itf.platform.zeroize(salt_4e3m,
-					  EDHOC_MEM_ALLOC_SIZE(salt_4e3m));
+		edhoc_zeroize(ctx, salt_4e3m, EDHOC_MEM_ALLOC_SIZE(salt_4e3m));
 		EDHOC_MEM_FREE(salt_4e3m);
 
 		if (EDHOC_SUCCESS != ret) {
@@ -334,7 +333,7 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 		}
 
 		edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
-		ctx->prk_state = EDHOC_PRK_STATE_4E3M;
+		ctx->state.prk_state = EDHOC_PRK_STATE_4E3M;
 		return EDHOC_SUCCESS;
 	}
 	case EDHOC_METHOD_MAX:
@@ -342,7 +341,8 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	EDHOC_LOG_ERR("Unsupported method: %d", ctx->chosen_method);
+	EDHOC_LOG_ERR("Unsupported method: %d",
+		      ctx->negotiation.selected_method);
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
@@ -358,13 +358,15 @@ STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 
-	switch (ctx->cid.encode_type) {
+	switch (ctx->negotiation.connection_id.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		len += edhoc_cbor_int_mem_req(ctx->cid.int_value);
+		len += edhoc_cbor_int_mem_req(
+			ctx->negotiation.connection_id.int_value);
 		break;
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		len += ctx->cid.bstr_length;
-		len += edhoc_cbor_bstr_oh(ctx->cid.bstr_length);
+		len += ctx->negotiation.connection_id.bstr_length;
+		len += edhoc_cbor_bstr_oh(
+			ctx->negotiation.connection_id.bstr_length);
 		break;
 	}
 
@@ -471,7 +473,7 @@ STATIC int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len)
 
 	len += sizeof("Encrypt0") + edhoc_cbor_tstr_oh(sizeof("Encrypt0"));
 	len += 1; /* One byte for cbor bstr with 0 value. */
-	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
+	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
 
 	*aad_3_len = len;
 	return EDHOC_SUCCESS;
@@ -486,24 +488,24 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_3 != ctx->th_state) {
-		EDHOC_LOG_ERR("Invalid TH state: %d, %d", ctx->th_state,
+	if (EDHOC_TH_STATE_3 != ctx->state.th.stage) {
+		EDHOC_LOG_ERR("Invalid TH state: %d, %d", ctx->state.th.stage,
 			      EDHOC_TH_STATE_3);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
 
 	struct info input_info = { 0 };
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
-	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
-	len += edhoc_cbor_int_mem_req((int32_t)csuite.aead_key_length);
+	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
+	len += edhoc_cbor_int_mem_req((int32_t)csuite->aead_key_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -514,9 +516,9 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 	/* Generate K_3 as an AEAD key handle (its own context slot). */
 	input_info = (struct info){
 		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_K_3,
-		.info_context.value = ctx->th,
-		.info_context.len = ctx->th_len,
-		.info_length = (uint32_t)csuite.aead_key_length,
+		.info_context.value = ctx->state.th.value,
+		.info_context.len = ctx->state.th.length,
+		.info_length = (uint32_t)csuite->aead_key_length,
 	};
 
 	len = 0;
@@ -530,9 +532,10 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 	}
 
 	/* EDHOC_Expand(PRK_3e2m, info) -> K_3 (AEAD key handle). */
-	ret = ctx->itf.crypto.expand(
-		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M),
-		info, len, EDHOC_KEY_USAGE_AEAD,
+	ret = edhoc_crypto(ctx)->expand(
+		ctx->user_context,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M), info, len,
+		EDHOC_KEY_USAGE_AEAD,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3));
 
 	if (EDHOC_SUCCESS != ret) {
@@ -546,9 +549,9 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 	/* Generate IV_3 (raw). */
 	input_info = (struct info){
 		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3,
-		.info_context.value = ctx->th,
-		.info_context.len = ctx->th_len,
-		.info_length = (uint32_t)csuite.aead_iv_length,
+		.info_context.value = ctx->state.th.value,
+		.info_context.len = ctx->state.th.length,
+		.info_length = (uint32_t)csuite->aead_iv_length,
 	};
 
 	memset(info, 0, EDHOC_MEM_ALLOC_SIZEOF(info));
@@ -563,9 +566,10 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 	}
 
 	/* EDHOC_Expand(PRK_3e2m, info) -> IV_3 (raw). */
-	ret = ctx->itf.crypto.expand_raw(
-		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M),
-		info, len, iv, iv_len);
+	ret = edhoc_crypto(ctx)->expand_raw(
+		ctx->user_context,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M), info, len, iv,
+		iv_len);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -577,8 +581,8 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 	struct enc_structure cose_enc_0 = {
 		.enc_structure_protected.value = NULL,
 		.enc_structure_protected.len = 0,
-		.enc_structure_external_aad.value = ctx->th,
-		.enc_structure_external_aad.len = ctx->th_len,
+		.enc_structure_external_aad.value = ctx->state.th.value,
+		.enc_structure_external_aad.len = ctx->state.th.length,
 	};
 
 	len = 0;
@@ -606,9 +610,9 @@ STATIC int comp_ciphertext(const struct edhoc_context *ctx, const uint8_t *iv,
 
 	/* AEAD-encrypt PLAINTEXT_3 under K_3 (its context slot handle), with
 	 * IV_3 as the nonce and AAD_3 as associated data. */
-	const int ret = ctx->itf.crypto.aead_encrypt(
-		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3), iv,
-		iv_len, aad, aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
+	const int ret = edhoc_crypto(ctx)->aead_encrypt(
+		ctx->user_context, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3),
+		iv, iv_len, aad, aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
 		ctxt_len);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -628,38 +632,39 @@ STATIC int comp_th_4(struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_3 != ctx->th_state) {
-		EDHOC_LOG_ERR("Invalid TH state: %d", ctx->th_state);
+	if (EDHOC_TH_STATE_3 != ctx->state.th.stage) {
+		EDHOC_LOG_ERR("Invalid TH state: %d", ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	/* TH_4 = H(TH_3, PLAINTEXT_3, CRED_I) streamed as:
-	 * bstr(TH_3) || PLAINTEXT_3 || CRED_I. ctx->th holds TH_3 on input and
+	 * bstr(TH_3) || PLAINTEXT_3 || CRED_I. ctx->state.th.value holds TH_3 on input and
 	 * receives TH_4 on output; the multipart update consumes it before
 	 * hash_finish overwrites it. */
-	const size_t th_3_len = ctx->th_len;
+	const size_t th_3_len = ctx->state.th.length;
 
 	uint8_t th_3_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
 
 	const struct hash_segment segments[] = {
 		{ th_3_hdr, edhoc_cbor_bstr_header(th_3_hdr, th_3_len) },
-		{ ctx->th, th_3_len },
+		{ ctx->state.th.value, th_3_len },
 		{ ptxt, ptxt_len },
 		{ mac_ctx->cred, mac_ctx->cred_len },
 	};
 
-	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
+	ctx->state.th.length = edhoc_selected_cipher_suite(ctx)->hash_length;
 
 	size_t hash_len = 0;
 	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-					ctx->th, ctx->th_len, &hash_len);
+					ctx->state.th.value,
+					ctx->state.th.length, &hash_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Hash TH_4: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->th_state = EDHOC_TH_STATE_4;
+	ctx->state.th.stage = EDHOC_TH_STATE_4;
 	return EDHOC_SUCCESS;
 }
 
@@ -732,9 +737,9 @@ STATIC int decrypt_ciphertext_3(const struct edhoc_context *ctx,
 	/* AEAD-decrypt CIPHERTEXT_3 under K_3 (its context slot handle), with
 	 * IV_3 as the nonce and AAD_3 as associated data. */
 	size_t len = 0;
-	const int ret = ctx->itf.crypto.aead_decrypt(
-		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3), iv,
-		iv_len, aad, aad_len, ctxt, ctxt_len, ptxt, ptxt_len, &len);
+	const int ret = edhoc_crypto(ctx)->aead_decrypt(
+		ctx->user_context, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3),
+		iv, iv_len, aad, aad_len, ctxt, ctxt_len, ptxt, ptxt_len, &len);
 
 	if (EDHOC_SUCCESS != ret || ptxt_len != len) {
 		EDHOC_LOG_ERR("Decrypt ciphertext_3: %d, %zu, %zu", ret,
@@ -910,17 +915,16 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	/* EAD_3 if present */
 	if (cbor_ptxt_3.plaintext_3_EAD_3_m_present) {
-		ctx->nr_of_ead_tokens =
-			cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count;
+		ctx->ead.count = cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count;
 
-		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			ctx->ead_token[i].label =
+		for (size_t i = 0; i < ctx->ead.count; ++i) {
+			ctx->ead.token[i].label =
 				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3[i]
 					.ead_y_ead_label;
-			ctx->ead_token[i].value =
+			ctx->ead.token[i].value =
 				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3[i]
 					.ead_y_ead_value.value;
-			ctx->ead_token[i].value_len =
+			ctx->ead.token[i].value_len =
 				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3[i]
 					.ead_y_ead_value.len;
 		}
@@ -937,26 +941,26 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_3 != ctx->th_state ||
-	    EDHOC_PRK_STATE_3E2M != ctx->prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->th_state,
-			      ctx->prk_state);
+	if (EDHOC_TH_STATE_3 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.th.stage,
+			      ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	const size_t hash_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
+	const size_t hash_len = edhoc_selected_cipher_suite(ctx)->hash_length;
 
 	const struct info input_info = {
 		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M,
-		.info_context.value = ctx->th,
-		.info_context.len = ctx->th_len,
+		.info_context.value = ctx->state.th.value,
+		.info_context.len = ctx->state.th.length,
 		.info_length = (uint32_t)hash_len,
 	};
 
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M);
-	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
+	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
 	len += edhoc_cbor_int_mem_req((int32_t)hash_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
@@ -977,9 +981,10 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 	}
 
 	/* EDHOC_Expand(PRK_3e2m, info) -> SALT_4e3m (raw). */
-	ret = ctx->itf.crypto.expand_raw(
-		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M),
-		info, EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
+	ret = edhoc_crypto(ctx)->expand_raw(
+		ctx->user_context,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M), info,
+		EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1002,29 +1007,28 @@ STATIC int comp_giy(struct edhoc_context *ctx,
 	void *giy_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_IY);
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	switch (ctx->role) {
-	case EDHOC_INITIATOR:
+	switch (ctx->state.role) {
+	case EDHOC_ROLE_INITIATOR:
 		/* G_IY = key_agreement(I's static private key, R's ephemeral
 		 * public key G_Y). The shared secret is produced as a handle. */
-		ret = ctx->itf.crypto.key_agreement(ctx->user_ctx,
-						    auth_cred->priv_key_id,
-						    ctx->peer_pub_eph_key,
-						    ctx->peer_pub_eph_key_len,
-						    giy_key_id);
+		ret = edhoc_crypto(ctx)->key_agreement(
+			ctx->user_context, auth_cred->priv_key_id,
+			ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
+			giy_key_id);
 		break;
 
-	case EDHOC_RESPONDER:
+	case EDHOC_ROLE_RESPONDER:
 		/* G_IY = key_agreement(R's ephemeral private key, I's static
 		 * public key). The Responder's ephemeral private key was
 		 * retained by the KEM encapsulation in message 2. */
-		ret = ctx->itf.crypto.key_agreement(
-			ctx->user_ctx,
+		ret = edhoc_crypto(ctx)->key_agreement(
+			ctx->user_context,
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 			pub_key, pub_key_len, giy_key_id);
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -1073,51 +1077,50 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_SM_VERIFIED_M2 != ctx->status ||
-	    EDHOC_TH_STATE_3 != ctx->th_state ||
-	    EDHOC_PRK_STATE_3E2M != ctx->prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->status,
-			      ctx->th_state, ctx->prk_state);
+	if (EDHOC_SM_VERIFIED_M2 != ctx->state.machine ||
+	    EDHOC_TH_STATE_3 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
+			      ctx->state.th.stage, ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->status = EDHOC_SM_ABORTED;
+	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->message = EDHOC_MSG_3;
-	ctx->role = EDHOC_INITIATOR;
+	ctx->state.message = EDHOC_MSG_3;
+	ctx->state.role = EDHOC_ROLE_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	/* 1. Choose most preferred cipher suite. */
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
 
 	/* 2. Compose EAD_3 if present. */
-	if (NULL != ctx->itf.ead.compose &&
-	    0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->itf.ead.compose(ctx->user_ctx, ctx->message,
-					   ctx->ead_token,
-					   ARRAY_SIZE(ctx->ead_token) - 1,
-					   &ctx->nr_of_ead_tokens);
+	if (NULL != ctx->interfaces.ead.compose &&
+	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
+		ret = ctx->interfaces.ead.compose(
+			ctx->user_context, ctx->state.message, ctx->ead.token,
+			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret ||
-		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens) {
+		    ARRAY_SIZE(ctx->ead.token) - 1 < ctx->ead.count) {
 			EDHOC_LOG_ERR("Compose EAD_3: %d, %zu, %zu", ret,
-				      ARRAY_SIZE(ctx->ead_token) - 1,
-				      ctx->nr_of_ead_tokens);
+				      ARRAY_SIZE(ctx->ead.token) - 1,
+				      ctx->ead.count);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
-		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+		for (size_t i = 0; i < ctx->ead.count; ++i) {
 			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead_token[i].label,
-				sizeof(ctx->ead_token[i].label),
+				(const uint8_t *)&ctx->ead.token[i].label,
+				sizeof(ctx->ead.token[i].label),
 				"EAD_3 token label:");
 
-			if (0 != ctx->ead_token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_len) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead_token[i].value,
-					ctx->ead_token[i].value_len,
+					ctx->ead.token[i].value,
+					ctx->ead.token[i].value_len,
 					"EAD_3 token value:");
 			}
 		}
@@ -1125,7 +1128,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	/* 3. Fetch authentication credentials. */
 	struct edhoc_auth_creds auth_creds = { 0 };
-	ret = ctx->itf.cred.fetch(ctx->user_ctx, &auth_creds);
+	ret = ctx->interfaces.cred.fetch(ctx->user_context, &auth_creds);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Fetch credentials: %d", ret);
@@ -1133,7 +1136,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	/* 4. Compute IV_3 and AAD_3 (K_3 is produced into its context slot). */
-	EDHOC_MEM_ALLOC(uint8_t, iv, csuite.aead_iv_length);
+	EDHOC_MEM_ALLOC(uint8_t, iv, csuite->aead_iv_length);
 	if (NULL == iv) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
@@ -1331,7 +1334,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	/* 9. Compute ciphertext. */
 	size_t ciphertext_len = 0;
 	EDHOC_MEM_ALLOC(uint8_t, ciphertext,
-			plaintext_len + csuite.aead_tag_length);
+			plaintext_len + csuite->aead_tag_length);
 	if (NULL == ciphertext) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(plaintext);
@@ -1370,7 +1373,8 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_4");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->state.th.value, ctx->state.th.length,
+			      "TH_4");
 
 	/* 11. Generate edhoc message 3. */
 	ret = gen_msg_3(ciphertext, ciphertext_len, msg_3, msg_3_size,
@@ -1394,11 +1398,10 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	/* 13. Clean-up EAD tokens. */
-	ctx->nr_of_ead_tokens = 0;
-	ctx->itf.platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+	edhoc_ead_reset(ctx);
 
 	ctx->is_oscore_export_allowed = true;
-	ctx->status = EDHOC_SM_COMPLETED;
+	ctx->state.machine = EDHOC_SM_COMPLETED;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
@@ -1436,24 +1439,24 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_SM_WAIT_M3 != ctx->status ||
-	    EDHOC_TH_STATE_3 != ctx->th_state ||
-	    EDHOC_PRK_STATE_3E2M != ctx->prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->status,
-			      ctx->th_state, ctx->prk_state);
+	if (EDHOC_SM_WAIT_M3 != ctx->state.machine ||
+	    EDHOC_TH_STATE_3 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
+			      ctx->state.th.stage, ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->status = EDHOC_SM_ABORTED;
+	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->message = EDHOC_MSG_3;
-	ctx->role = EDHOC_RESPONDER;
+	ctx->state.message = EDHOC_MSG_3;
+	ctx->state.role = EDHOC_ROLE_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	/* 1. Choose most preferred cipher suite. */
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
 
 	/* 2. CBOR decode message 3. */
 	const uint8_t *ctxt = NULL;
@@ -1466,14 +1469,14 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 	}
 
-	if (ctxt_len < csuite.aead_tag_length) {
+	if (ctxt_len < csuite->aead_tag_length) {
 		EDHOC_LOG_ERR("CIPHERTEXT_3 shorter than the AEAD tag: %zu",
 			      ctxt_len);
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 	}
 
 	/* 3. Compute IV_3 and AAD_3 (K_3 is produced into its context slot). */
-	EDHOC_MEM_ALLOC(uint8_t, iv, csuite.aead_iv_length);
+	EDHOC_MEM_ALLOC(uint8_t, iv, csuite->aead_iv_length);
 	if (NULL == iv) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
@@ -1509,7 +1512,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(aad, EDHOC_MEM_ALLOC_SIZE(aad), "AAD_3");
 
 	/* 4. Decrypt ciphertext. */
-	EDHOC_MEM_ALLOC(uint8_t, ptxt, ctxt_len - csuite.aead_tag_length);
+	EDHOC_MEM_ALLOC(uint8_t, ptxt, ctxt_len - csuite->aead_tag_length);
 	if (NULL == ptxt) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(aad);
@@ -1543,11 +1546,12 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 6. Process EAD_3 if present. */
-	if (NULL != ctx->itf.ead.process &&
-	    0 != ARRAY_SIZE(ctx->ead_token) - 1 && 0 != ctx->nr_of_ead_tokens) {
-		ret = ctx->itf.ead.process(ctx->user_ctx, ctx->message,
-					   ctx->ead_token,
-					   ctx->nr_of_ead_tokens);
+	if (NULL != ctx->interfaces.ead.process &&
+	    0 != ARRAY_SIZE(ctx->ead.token) - 1 && 0 != ctx->ead.count) {
+		ret = ctx->interfaces.ead.process(ctx->user_context,
+						  ctx->state.message,
+						  ctx->ead.token,
+						  ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Process EAD_3: %d", ret);
@@ -1555,16 +1559,16 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 		}
 
-		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+		for (size_t i = 0; i < ctx->ead.count; ++i) {
 			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead_token[i].label,
-				sizeof(ctx->ead_token[i].label),
+				(const uint8_t *)&ctx->ead.token[i].label,
+				sizeof(ctx->ead.token[i].label),
 				"EAD_3 process label");
 
-			if (0 != ctx->ead_token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_len) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead_token[i].value,
-					ctx->ead_token[i].value_len,
+					ctx->ead.token[i].value,
+					ctx->ead.token[i].value_len,
 					"EAD_3 process value");
 			}
 		}
@@ -1573,8 +1577,9 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	/* 7. Verify if credentials from peer are trusted. */
 	const uint8_t *pub_key = NULL;
 	size_t pub_key_len = 0;
-	ret = ctx->itf.cred.verify(ctx->user_ctx, &parsed_ptxt.auth_cred,
-				   &pub_key, &pub_key_len);
+	ret = ctx->interfaces.cred.verify(ctx->user_context,
+					  &parsed_ptxt.auth_cred, &pub_key,
+					  &pub_key_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Verify peer credentials: %d", ret);
@@ -1695,11 +1700,10 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 13. Clean-up EAD tokens. */
-	ctx->nr_of_ead_tokens = 0;
-	ctx->itf.platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+	edhoc_ead_reset(ctx);
 
 	ctx->is_oscore_export_allowed = true;
-	ctx->status = EDHOC_SM_COMPLETED;
+	ctx->state.machine = EDHOC_SM_COMPLETED;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }

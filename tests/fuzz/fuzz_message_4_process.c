@@ -71,14 +71,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_bind_platform(&ctx, test_get_platform());
 
 	/* Pre-seed context state as if message_3 was already composed. */
-	ctx.role = EDHOC_INITIATOR;
-	ctx.status = EDHOC_SM_VERIFIED_M2;
-	ctx.chosen_method = EDHOC_METHOD_0;
-	ctx.chosen_csuite_idx = 0;
-	ctx.th_state = EDHOC_TH_STATE_4;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, ctx.th_len);
-	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.machine = EDHOC_SM_VERIFIED_M2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
+	ctx.negotiation.selected_cipher_suite_index = 0;
+	ctx.state.th.stage = EDHOC_TH_STATE_4;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, ctx.state.th.length);
+	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
 
 	/* Seed PRK_4e3m as a live derive key-store handle; message_4 processing
 	 * derives its MAC / decrypt key from it. */

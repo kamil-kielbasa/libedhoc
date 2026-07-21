@@ -39,8 +39,8 @@ TEST(internals_message2, comp_th_2_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.th_state = EDHOC_TH_STATE_2;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
 
 	int ret = comp_th_2(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
@@ -71,8 +71,8 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.th_state = EDHOC_TH_STATE_1;
-	ctx.prk_state = EDHOC_PRK_STATE_2E;
+	ctx.state.th.stage = EDHOC_TH_STATE_1;
+	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 
 	uint8_t ks[64];
 	int ret = comp_keystream(&ctx, ks, sizeof(ks));
@@ -92,10 +92,10 @@ TEST(internals_message2, comp_grx_invalid_role)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = 99;
-	ctx.chosen_method = EDHOC_METHOD_1;
-	ctx.prk_state = EDHOC_PRK_STATE_2E;
-	ctx.th_state = EDHOC_TH_STATE_2;
+	ctx.state.role = 99;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
+	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
 
 	struct edhoc_auth_creds ac = { 0 };
 	int ret = comp_grx(&ctx, &ac, NULL, 0);
@@ -197,7 +197,7 @@ TEST(internals_message2, prepare_plaintext_2_invalid_cid)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.cid.encode_type = 99;
+	ctx.negotiation.connection_id.encode_type = 99;
 
 	uint8_t buf[256] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;

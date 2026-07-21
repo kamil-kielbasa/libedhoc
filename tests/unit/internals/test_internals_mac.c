@@ -33,13 +33,14 @@ TEST(internals_mac, mac_ctx_x509_chain_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -60,13 +61,14 @@ TEST(internals_mac, mac_ctx_x509_chain_multi_cert)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t cert0[50] = { 0 };
 	static const uint8_t cert1[60] = { 0 };
@@ -90,13 +92,14 @@ TEST(internals_mac, mac_ctx_x509_hash_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	static const uint8_t dummy_fp[32] = { 0 };
@@ -121,13 +124,14 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr_alg)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	static const uint8_t dummy_fp[32] = { 0 };
@@ -154,11 +158,11 @@ TEST(internals_mac, mac_ctx_kid_int_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
 
 	static const uint8_t dummy_cred[50] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -181,13 +185,14 @@ TEST(internals_mac, mac_ctx_kid_bstr_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cred[50] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -211,15 +216,15 @@ TEST(internals_mac, mac_ctx_bstr_cid_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
-	ctx.cid.bstr_value[0] = 0x01;
-	ctx.cid.bstr_value[1] = 0x02;
-	ctx.cid.bstr_length = 2;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
+	ctx.negotiation.connection_id.bstr_value[0] = 0x01;
+	ctx.negotiation.connection_id.bstr_value[1] = 0x02;
+	ctx.negotiation.connection_id.bstr_length = 2;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -240,18 +245,19 @@ TEST(internals_mac, mac_ctx_with_ead)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
-	ctx.nr_of_ead_tokens = 1;
-	ctx.ead_token[0].label = 100;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
+	ctx.ead.count = 1;
+	ctx.ead.token[0].label = 100;
 	static const uint8_t ead_val[4] = { 1, 2, 3, 4 };
-	ctx.ead_token[0].value = ead_val;
-	ctx.ead_token[0].value_len = 4;
+	ctx.ead.token[0].value = ead_val;
+	ctx.ead.token[0].value_len = 4;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -272,13 +278,14 @@ TEST(internals_mac, mac_ctx_any_cred)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t any_id_cred[10] = { 0xA1, 0x04, 0x42, 0x11, 0x22 };
 	static const uint8_t any_cred[20] = { 0 };
@@ -301,9 +308,9 @@ TEST(internals_mac, mac_length_method_1_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -317,9 +324,9 @@ TEST(internals_mac, mac_length_method_2_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_2;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_2;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -333,9 +340,9 @@ TEST(internals_mac, sign_or_mac_length_method_1_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	size_t sign_or_mac_len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &sign_or_mac_len);
@@ -349,9 +356,9 @@ TEST(internals_mac, sign_or_mac_length_method_3_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_3;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_3;
 
 	size_t sign_or_mac_len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &sign_or_mac_len);
@@ -365,9 +372,9 @@ TEST(internals_mac, mac_length_method_max_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -380,13 +387,14 @@ TEST(internals_mac, full_mac_ctx_x509_chain)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -415,13 +423,14 @@ TEST(internals_mac, full_mac_ctx_x509_hash_int)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	static const uint8_t dummy_fp[32] = { 0 };
@@ -454,11 +463,11 @@ TEST(internals_mac, full_mac_ctx_kid_int_cbor)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
 
 	static const uint8_t dummy_cred[50] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -489,13 +498,14 @@ TEST(internals_mac, full_mac_ctx_kid_bstr)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cred[50] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -528,15 +538,15 @@ TEST(internals_mac, full_mac_ctx_bstr_cid)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
-	ctx.cid.bstr_value[0] = 0x01;
-	ctx.cid.bstr_value[1] = 0x02;
-	ctx.cid.bstr_length = 2;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
+	ctx.negotiation.connection_id.bstr_value[0] = 0x01;
+	ctx.negotiation.connection_id.bstr_value[1] = 0x02;
+	ctx.negotiation.connection_id.bstr_length = 2;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -565,18 +575,19 @@ TEST(internals_mac, full_mac_ctx_with_ead)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
-	ctx.nr_of_ead_tokens = 1;
-	ctx.ead_token[0].label = 100;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
+	ctx.ead.count = 1;
+	ctx.ead.token[0].label = 100;
 	static const uint8_t ead_val[4] = { 1, 2, 3, 4 };
-	ctx.ead_token[0].value = ead_val;
-	ctx.ead_token[0].value_len = 4;
+	ctx.ead.token[0].value = ead_val;
+	ctx.ead.token[0].value_len = 4;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -605,13 +616,14 @@ TEST(internals_mac, full_mac_ctx_any)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t any_id_cred[10] = { 0xA1, 0x04, 0x42, 0x11, 0x22 };
 	static const uint8_t any_cred[20] = { 0 };
@@ -642,15 +654,16 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_1;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -685,9 +698,9 @@ TEST(internals_mac, verify_sign_or_mac_method1_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
@@ -707,9 +720,9 @@ TEST(internals_mac, verify_sign_or_mac_method1_msg2_mismatch)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
@@ -730,13 +743,13 @@ TEST(internals_mac, comp_sign_or_mac_method2_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_2;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 32;
-	ctx.prk_state = EDHOC_PRK_STATE_4E3M;
-	memset(ctx.th, 0xAA, 32);
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 32;
+	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
+	memset(ctx.state.th.value, 0xAA, 32);
 
 	static const uint8_t dummy_cred[50] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -772,9 +785,9 @@ TEST(internals_mac, verify_sign_or_mac_method3_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_3;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_3;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
@@ -811,8 +824,8 @@ TEST(internals_mac, mac_ctx_len_invalid_role)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = 99;
-	ctx.message = EDHOC_MSG_2;
+	ctx.state.role = 99;
+	ctx.state.message = EDHOC_MSG_2;
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	size_t len = 0;
@@ -827,8 +840,8 @@ TEST(internals_mac, mac_ctx_len_invalid_message)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_4;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_4;
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	size_t len = 0;
@@ -843,13 +856,14 @@ TEST(internals_mac, mac_ctx_small_buffer)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -871,12 +885,13 @@ TEST(internals_mac, mac_ctx_len_unsupported_cred)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = 99;
@@ -892,11 +907,11 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	static const uint8_t dummy_fp[32] = { 0 };
@@ -928,13 +943,14 @@ TEST(internals_mac, full_mac_ctx_x509_hash_bstr)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	static const uint8_t dummy_fp[32] = { 0 };
@@ -968,12 +984,12 @@ TEST(internals_mac, mac_ctx_invalid_cid_type)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = 99;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type = 99;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -1012,8 +1028,8 @@ TEST(internals_mac, mac_ctx_invalid_role)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = 99;
-	ctx.message = EDHOC_MSG_2;
+	ctx.state.role = 99;
+	ctx.state.message = EDHOC_MSG_2;
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	uint8_t buf[2048] = { 0 };
@@ -1030,8 +1046,8 @@ TEST(internals_mac, mac_ctx_invalid_message)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_4;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_4;
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	uint8_t buf[2048] = { 0 };
@@ -1048,13 +1064,14 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
@@ -1072,11 +1089,11 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
@@ -1094,13 +1111,14 @@ TEST(internals_mac, mac_ctx_unsupported_cred_label)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = 99;
@@ -1118,12 +1136,12 @@ TEST(internals_mac, mac_ctx_invalid_cid_type_compose)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = 99;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type = 99;
 
 	static const uint8_t dummy_cert[100] = { 0 };
 	struct edhoc_auth_creds cred = { 0 };
@@ -1146,13 +1164,14 @@ TEST(internals_mac, mac_ctx_invalid_kid_encode_in_length)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, 32);
-	ctx.cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-	ctx.cid.int_value = 5;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, 32);
+	ctx.negotiation.connection_id.encode_type =
+		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+	ctx.negotiation.connection_id.int_value = 5;
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
@@ -1183,9 +1202,9 @@ TEST(internals_mac, mac_length_invalid_role)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = 99;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = 99;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1198,9 +1217,9 @@ TEST(internals_mac, mac_length_invalid_message)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_4;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_4;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1213,9 +1232,9 @@ TEST(internals_mac, mac_length_method_max_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1228,11 +1247,11 @@ TEST(internals_mac, comp_mac_invalid_message)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_4;
-	ctx.chosen_method = EDHOC_METHOD_0;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_4;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1249,11 +1268,11 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_0;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.prk_state = EDHOC_PRK_STATE_2E;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1270,11 +1289,11 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_0;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.prk_state = EDHOC_PRK_STATE_2E;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1291,9 +1310,9 @@ TEST(internals_mac, sign_or_mac_length_invalid_role)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = 99;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = 99;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1306,9 +1325,9 @@ TEST(internals_mac, sign_or_mac_length_method_max)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1321,9 +1340,9 @@ TEST(internals_mac, sign_or_mac_length_invalid_msg)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_4;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_4;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1336,9 +1355,9 @@ TEST(internals_mac, comp_sign_or_mac_invalid_msg)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_4;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_4;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	struct edhoc_auth_creds cred = { 0 };
 	uint8_t buf[2048] = { 0 };
@@ -1359,9 +1378,9 @@ TEST(internals_mac, comp_sign_or_mac_method_max)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	struct edhoc_auth_creds cred = { 0 };
 	uint8_t buf[2048] = { 0 };
@@ -1382,9 +1401,9 @@ TEST(internals_mac, verify_sign_or_mac_null_mac)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1402,9 +1421,9 @@ TEST(internals_mac, verify_sign_or_mac_invalid_msg)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_4;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_4;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1422,9 +1441,9 @@ TEST(internals_mac, verify_sign_or_mac_method_max)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1442,9 +1461,9 @@ TEST(internals_mac, sign_or_mac_length_method0_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1458,9 +1477,9 @@ TEST(internals_mac, sign_or_mac_length_method0_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1474,9 +1493,9 @@ TEST(internals_mac, mac_length_method0_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1490,9 +1509,9 @@ TEST(internals_mac, mac_length_method0_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1506,9 +1525,9 @@ TEST(internals_mac, mac_length_method3_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_3;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_3;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1522,9 +1541,9 @@ TEST(internals_mac, mac_length_method3_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_3;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_3;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1538,9 +1557,9 @@ TEST(internals_mac, sign_or_mac_length_method2_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_2;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_2;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1554,9 +1573,9 @@ TEST(internals_mac, mac_length_method1_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1570,9 +1589,9 @@ TEST(internals_mac, mac_length_method2_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_2;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_2;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1586,9 +1605,9 @@ TEST(internals_mac, sign_or_mac_length_method3_msg2)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_3;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_3;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1602,9 +1621,9 @@ TEST(internals_mac, sign_or_mac_length_method1_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_1;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1618,9 +1637,9 @@ TEST(internals_mac, sign_or_mac_length_method2_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_2;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_2;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1634,11 +1653,11 @@ TEST(internals_mac, mac_ctx_x509chain_zero_certs)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_3;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 32;
-	memset(ctx.th, 0x11, 32);
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0x11, 32);
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_CHAIN;
@@ -1659,10 +1678,10 @@ TEST(internals_mac, mac_ctx_length_th_zero)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_3;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 0;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 0;
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_CHAIN;
@@ -1682,11 +1701,11 @@ TEST(internals_mac, mac_ctx_kid_bad_cbor_compact)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_3;
-	ctx.th_state = EDHOC_TH_STATE_3;
-	ctx.th_len = 32;
-	memset(ctx.th, 0x11, 32);
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0x11, 32);
 
 	struct edhoc_auth_creds cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
@@ -1713,9 +1732,9 @@ TEST(internals_mac, comp_mac_null_args)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1738,11 +1757,11 @@ TEST(internals_mac, comp_mac_msg1)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_0;
-	ctx.th_state = EDHOC_TH_STATE_2;
-	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
+	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1751,7 +1770,7 @@ TEST(internals_mac, comp_mac_msg1)
 	mc->buf_len = 1;
 
 	uint8_t mac[8];
-	ctx.message = EDHOC_MSG_1;
+	ctx.state.message = EDHOC_MSG_1;
 	int ret = edhoc_comp_mac(&ctx, mc, mac, sizeof(mac));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
@@ -1776,9 +1795,9 @@ TEST(internals_mac, sign_or_mac_length_method_max_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1791,9 +1810,9 @@ TEST(internals_mac, comp_sign_or_mac_null_args)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_RESPONDER;
-	ctx.message = EDHOC_MSG_2;
-	ctx.chosen_method = EDHOC_METHOD_0;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.message = EDHOC_MSG_2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 
 	struct edhoc_auth_creds cred = { 0 };
 	uint8_t buf[2048] = { 0 };
@@ -1824,9 +1843,9 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	struct edhoc_auth_creds cred = { 0 };
 	uint8_t buf[2048] = { 0 };
@@ -1847,9 +1866,9 @@ TEST(internals_mac, verify_sign_or_mac_mismatch_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_2;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_2;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -1872,9 +1891,9 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg3)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = EDHOC_INITIATOR;
-	ctx.message = EDHOC_MSG_3;
-	ctx.chosen_method = EDHOC_METHOD_MAX;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.message = EDHOC_MSG_3;
+	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
 
 	uint8_t buf[2048] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;

@@ -3,11 +3,10 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC context definition (library-internal).
  *
- *          The \ref edhoc_context structure is opaque to library consumers:
- *          the public header \c <edhoc/edhoc_context.h> only forward-declares
- *          it and exposes \ref edhoc_context_size. The full layout lives here
- *          and is visible to the library core and to white-box tests that add
- *          \c library/internal to their private include path.
+ *          \ref edhoc_context is opaque to consumers: \c <edhoc/edhoc.h> only
+ *          forward-declares it and exposes \ref edhoc_context_size. The full
+ *          layout lives here, visible to the library core and to white-box
+ *          tests that add \c library/internal to their private include path.
  *
  * \copyright Copyright (c) 2026
  *
@@ -61,52 +60,52 @@
  * \brief RFC 9528: 2. EDHOC Outline.
  */
 enum edhoc_role {
-	/** EDHOC role - initiator. */
-	EDHOC_INITIATOR,
-	/** EDHOC role - responder. */
-	EDHOC_RESPONDER,
+	/** Initiator. */
+	EDHOC_ROLE_INITIATOR,
+	/** Responder. */
+	EDHOC_ROLE_RESPONDER,
 };
 
 /**
  * \brief RFC 9528: Appendix I. Example Protocol State Machine.
  */
 enum edhoc_state_machine {
-	/** State machine - start. */
+	/** Start. */
 	EDHOC_SM_START,
-	/** State machine - aborted. */
+	/** Aborted. */
 	EDHOC_SM_ABORTED,
 
 	/* Responder: */
 
-	/** State machine - received message 1. */
+	/** Received message 1. */
 	EDHOC_SM_RECEIVED_M1,
-	/** State machine - verified message 1. */
+	/** Verified message 1. */
 	EDHOC_SM_VERIFIED_M1,
 
 	/* Initiator: */
 
-	/** State machine - waiting for message 2. */
+	/** Waiting for message 2. */
 	EDHOC_SM_WAIT_M2,
-	/** State machine - received message 2. */
+	/** Received message 2. */
 	EDHOC_SM_RECEIVED_M2,
-	/** State machine - verified message 2. */
+	/** Verified message 2. */
 	EDHOC_SM_VERIFIED_M2,
 
 	/* Responder: */
 
-	/** State machine - waiting for message 3. */
+	/** Waiting for message 3. */
 	EDHOC_SM_WAIT_M3,
-	/** State machine - received message 3. */
+	/** Received message 3. */
 	EDHOC_SM_RECEIVED_M3,
 
 	/* Initiator: */
 
-	/** State machine - received message 4. */
+	/** Received message 4. */
 	EDHOC_SM_RECEIVED_M4,
 
-	/** State machine - completed. */
+	/** Completed. */
 	EDHOC_SM_COMPLETED,
-	/** State machine - persisted. */
+	/** Persisted. */
 	EDHOC_SM_PERSISTED,
 };
 
@@ -114,15 +113,15 @@ enum edhoc_state_machine {
  * \brief EDHOC transcript hashes states.
  */
 enum edhoc_th_state {
-	/** Transcript hash invalid. */
+	/** Invalid. */
 	EDHOC_TH_STATE_INVALID,
-	/** Transcript hash 1. */
+	/** TH_1. */
 	EDHOC_TH_STATE_1,
-	/** Transcript hash 2. */
+	/** TH_2. */
 	EDHOC_TH_STATE_2,
-	/** Transcript hash 3. */
+	/** TH_3. */
 	EDHOC_TH_STATE_3,
-	/** Transcript hash 4. */
+	/** TH_4. */
 	EDHOC_TH_STATE_4,
 };
 
@@ -130,17 +129,17 @@ enum edhoc_th_state {
  * \brief EDHOC pseudorandom keys states.
  */
 enum edhoc_prk_state {
-	/** Pseudorandom key invalid. */
+	/** Invalid. */
 	EDHOC_PRK_STATE_INVALID,
-	/** Pseudorandom key RFC 9528: 4.1.1.1. PRK_2e. */
+	/** PRK_2e (RFC 9528: 4.1.1.1). */
 	EDHOC_PRK_STATE_2E,
-	/** Pseudorandom key RFC 9528: 4.1.1.2. PRK_3e2m. */
+	/** PRK_3e2m (RFC 9528: 4.1.1.2). */
 	EDHOC_PRK_STATE_3E2M,
-	/** Pseudorandom key RFC 9528: 4.1.1.3. PRK_4e3m. */
+	/** PRK_4e3m (RFC 9528: 4.1.1.3). */
 	EDHOC_PRK_STATE_4E3M,
-	/** Pseudorandom key RFC 9528: 4.1.3. PRK_out. */
+	/** PRK_out (RFC 9528: 4.1.3). */
 	EDHOC_PRK_STATE_OUT,
-	/** Pseudorandom key RFC 9528: 4.2.1. EDHOC_Exporter. */
+	/** PRK_exporter (RFC 9528: 4.2.1). */
 	EDHOC_PRK_STATE_EXPORTER,
 };
 
@@ -155,14 +154,12 @@ enum edhoc_key_slot_id {
 	EDHOC_KEY_SLOT_SHARED_SECRET,
 	/** Static-DH shared secret \c G_RX (IKM for PRK_3e2m, message 2). */
 	EDHOC_KEY_SLOT_G_RX,
-	/** RFC 9528: 4.1.1.1. PRK_2e. */
+	/** PRK_2e (RFC 9528: 4.1.1.1). */
 	EDHOC_KEY_SLOT_PRK_2E,
-	/** RFC 9528: 4.1.1.2. PRK_3e2m. */
+	/** PRK_3e2m (RFC 9528: 4.1.1.2). */
 	EDHOC_KEY_SLOT_PRK_3E2M,
-	/** Local ephemeral (decapsulation) private key: the Initiator's from
-	 *  \ref edhoc_crypto.generate_key_pair (message 1) or the Responder's from
-	 *  \ref edhoc_crypto.encapsulate (message 2). Retained past message 2 so the
-	 *  Responder can compute \c G_IY (message 3 static-DH, methods 2/3). */
+	/** Own ephemeral private (KEM decapsulation) key; kept until message 3
+	 *  for the static-DH methods (2/3). */
 	EDHOC_KEY_SLOT_EPHEMERAL,
 	/** Static-DH shared secret \c G_IY (IKM for PRK_4e3m, message 3). */
 	EDHOC_KEY_SLOT_G_IY,
@@ -170,32 +167,28 @@ enum edhoc_key_slot_id {
 	EDHOC_KEY_SLOT_K_3,
 	/** Message 4 content-encryption key \c K_4 (AEAD, derived from PRK_4e3m). */
 	EDHOC_KEY_SLOT_K_4,
-	/** RFC 9528: 4.1.1.3. PRK_4e3m. */
+	/** PRK_4e3m (RFC 9528: 4.1.1.3). */
 	EDHOC_KEY_SLOT_PRK_4E3M,
-	/** RFC 9528: 4.1.3. PRK_out. */
+	/** PRK_out (RFC 9528: 4.1.3). */
 	EDHOC_KEY_SLOT_PRK_OUT,
-	/** RFC 9528: 4.2.1. PRK_exporter. */
+	/** PRK_exporter (RFC 9528: 4.2.1). */
 	EDHOC_KEY_SLOT_PRK_EXPORTER,
 	/** Number of key slots (sentinel, not a slot). */
 	EDHOC_KEY_SLOT_COUNT,
 };
 
 /**
- * \brief A key-store handle slot: the backend key identifier paired with the
- *        liveness flag that says whether the slot currently owns a live key.
+ * \brief A key-store handle slot.
  */
 struct edhoc_key_slot {
 	/** Backend key-store handle. */
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN];
-	/** Set while \p key_id holds a live key-store slot. */
+	/** Set while \p key_id holds a live key-store handle. */
 	bool present;
 };
 
 /**
  * \brief The bound EDHOC interfaces together with their "present" flags.
- *
- *        Grouping each interface with the flag its \c edhoc_bind_* setter
- *        raises keeps all binding state in one place.
  */
 struct edhoc_interfaces {
 	/** EDHOC interface for cryptographic function operations. */
@@ -218,34 +211,47 @@ struct edhoc_interfaces {
 };
 
 /**
- * \brief EDHOC context.
+ * \brief A list of authentication methods.
  */
-struct edhoc_context {
-	/** EDHOC chosen method. */
-	enum edhoc_method chosen_method;
+struct edhoc_method_list {
+	/** Method entries. */
+	enum edhoc_method entry[CONFIG_LIBEDHOC_MAX_NR_OF_METHODS];
+	/** Number of live entries in \p entry. */
+	size_t count;
+};
 
-	/** EDHOC supported methods. */
-	enum edhoc_method method[CONFIG_LIBEDHOC_MAX_NR_OF_METHODS];
-	/** Length of the \p method buffer. */
-	size_t method_len;
+/**
+ * \brief A list of cipher suites.
+ */
+struct edhoc_cipher_suite_list {
+	/** Cipher suite entries. */
+	struct edhoc_cipher_suite entry[CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES];
+	/** Number of live entries in \p entry. */
+	size_t count;
+};
 
-	/** EDHOC cipher suite chosen index. */
-	size_t chosen_csuite_idx;
-	/** EDHOC cipher suite buffer. */
-	struct edhoc_cipher_suite
-		csuite[CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES];
-	/** Length of the \p csuite buffer. */
-	size_t csuite_len;
-	/** EDHOC peer cipher suite buffer. */
-	struct edhoc_cipher_suite
-		peer_csuite[CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES];
-	/** Length of the \p peer_csuite buffer. */
-	size_t peer_csuite_len;
+/**
+ * \brief Negotiated session parameters: method, cipher suite and connection
+ *        identifier (local + peer), each paired with the "present" flag its
+ *        \c edhoc_set_* setter raises.
+ */
+struct edhoc_negotiation {
+	/** Selected authentication method. */
+	enum edhoc_method selected_method;
+	/** Locally supported methods. */
+	struct edhoc_method_list method;
 
-	/** EDHOC connection identifier. */
-	struct edhoc_connection_id cid;
-	/** EDHOC peer connection identifier. */
-	struct edhoc_connection_id peer_cid;
+	/** Index of the selected suite in \p cipher_suite. */
+	size_t selected_cipher_suite_index;
+	/** Locally supported cipher suites. */
+	struct edhoc_cipher_suite_list cipher_suite;
+	/** Peer's advertised cipher suites. */
+	struct edhoc_cipher_suite_list peer_cipher_suite;
+
+	/** Own connection identifier. */
+	struct edhoc_connection_id connection_id;
+	/** Peer connection identifier. */
+	struct edhoc_connection_id peer_connection_id;
 
 	/** Set once \ref edhoc_set_methods succeeds. */
 	bool methods_present : 1;
@@ -253,52 +259,96 @@ struct edhoc_context {
 	bool cipher_suites_present : 1;
 	/** Set once \ref edhoc_set_connection_id succeeds. */
 	bool connection_id_present : 1;
+};
 
-	/** EDHOC peer ephemeral public value (peer's \c G_X / \c G_Y). Public. */
-	uint8_t peer_pub_eph_key[EDHOC_MAX_LEN_OF_EPHEMERAL_KEY];
-	/** Size of the \p peer_pub_eph_key buffer in bytes. */
-	size_t peer_pub_eph_key_len;
+/**
+ * \brief EDHOC transcript hash: the running value paired with the schedule
+ *        stage it currently represents (parallels \ref edhoc_key_slot).
+ */
+struct edhoc_transcript_hash {
+	/** Which transcript hash the buffer currently holds. */
+	enum edhoc_th_state stage;
+	/** Transcript-hash bytes. */
+	uint8_t value[CONFIG_LIBEDHOC_MAX_LEN_OF_MAC];
+	/** Size of \p value in bytes. */
+	size_t length;
+};
 
-	/** EDHOC own ephemeral public value (own \c G_X / \c G_Y). Public. */
-	uint8_t pub_eph_key[EDHOC_MAX_LEN_OF_EPHEMERAL_KEY];
-	/** Size of the \p pub_eph_key buffer in bytes. */
-	size_t pub_eph_key_len;
-
-	/** Is context initialized? */
-	bool is_init;
-	/** Is OSCORE security session export allowed? */
-	bool is_oscore_export_allowed;
-	/** EDHOC context state machine. */
-	enum edhoc_state_machine status;
-	/** Current processing EDHOC message. */
+/**
+ * \brief Runtime protocol state: where the handshake currently is.
+ */
+struct edhoc_protocol_state {
+	/** State machine position (RFC 9528 Appendix I). */
+	enum edhoc_state_machine machine;
+	/** Message currently being processed. */
 	enum edhoc_message message;
-	/** EDHOC role. */
+	/** Local role (fixed for the session). */
 	enum edhoc_role role;
-
-	/** EDHOC context transcript hash state. */
-	enum edhoc_th_state th_state;
-	/** EDHOC context transcript hash buffer. */
-	uint8_t th[CONFIG_LIBEDHOC_MAX_LEN_OF_MAC];
-	/** Size of the \p th buffer in bytes. */
-	size_t th_len;
-
-	/** EDHOC context pseudorandom key state. */
+	/** Transcript hash (value + stage). */
+	struct edhoc_transcript_hash th;
+	/** Pseudorandom-key schedule stage. */
 	enum edhoc_prk_state prk_state;
+};
+
+/**
+ * \brief A public ephemeral value (G_X or G_Y).
+ */
+struct edhoc_ephemeral_public {
+	/** Ephemeral public value bytes. */
+	uint8_t value[EDHOC_MAX_LEN_OF_EPHEMERAL_KEY];
+	/** Size of \p value in bytes. */
+	size_t length;
+};
+
+/**
+ * \brief The two public ephemeral values exchanged in messages 1 and 2.
+ */
+struct edhoc_ephemeral_keys {
+	/** Own public ephemeral value. */
+	struct edhoc_ephemeral_public own;
+	/** Peer public ephemeral value. */
+	struct edhoc_ephemeral_public peer;
+};
+
+/**
+ * \brief External authorization data tokens carried across a message.
+ */
+struct edhoc_ead_tokens {
+	/** Token storage. The \c +1 keeps the array non-empty when the Kconfig
+	 *  count is 0 (a valid "no EAD" build); usable capacity is
+	 *  \c ARRAY_SIZE(token)-1. */
+	struct edhoc_ead_token token[CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS + 1];
+	/** Number of live tokens in \p token. */
+	size_t count;
+};
+
+/**
+ * \brief EDHOC context.
+ */
+struct edhoc_context {
+	/** Negotiated parameters: method / cipher suite / connection id. */
+	struct edhoc_negotiation negotiation;
+	/** Runtime protocol state (state machine, role, message, TH, PRK). */
+	struct edhoc_protocol_state state;
+	/** Public ephemeral values (own + peer). */
+	struct edhoc_ephemeral_keys ephemeral;
 
 	/** Key-store handle slots, indexed by \ref edhoc_key_slot_id. */
 	struct edhoc_key_slot key_slots[EDHOC_KEY_SLOT_COUNT];
 
 	/** Bound EDHOC interfaces and their "present" flags. */
-	struct edhoc_interfaces itf;
+	struct edhoc_interfaces interfaces;
 
-	/** EDHOC EAD tokens buffer. */
-	struct edhoc_ead_token
-		ead_token[CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS + 1];
-	/** Length of the \p ead_token buffer. */
-	size_t nr_of_ead_tokens;
+	/** External authorization data tokens. */
+	struct edhoc_ead_tokens ead;
 
-	/** User context. */
-	void *user_ctx;
+	/** Is context initialized? */
+	bool is_init : 1;
+	/** Is OSCORE security session export allowed? */
+	bool is_oscore_export_allowed : 1;
+
+	/** User context passed to backend callbacks. */
+	void *user_context;
 
 	/** EDHOC error code. */
 	enum edhoc_error_code error_code;
@@ -323,9 +373,88 @@ struct edhoc_context {
  */
 static inline bool edhoc_context_configured(const struct edhoc_context *ctx)
 {
-	return ctx->methods_present && ctx->cipher_suites_present &&
-	       ctx->connection_id_present && ctx->itf.crypto_present &&
-	       ctx->itf.credentials_present && ctx->itf.platform_present;
+	return ctx->negotiation.methods_present &&
+	       ctx->negotiation.cipher_suites_present &&
+	       ctx->negotiation.connection_id_present &&
+	       ctx->interfaces.crypto_present &&
+	       ctx->interfaces.credentials_present &&
+	       ctx->interfaces.platform_present;
+}
+
+/**
+ * \brief The bound cryptographic backend interface.
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return Pointer to the crypto vtable.
+ */
+static inline const struct edhoc_crypto *
+edhoc_crypto(const struct edhoc_context *ctx)
+{
+	return &ctx->interfaces.crypto;
+}
+
+/**
+ * \brief Wipe a buffer through the bound platform \c zeroize hook.
+ *
+ * \param[in] ctx                       EDHOC context.
+ * \param[out] buffer                   Buffer to wipe.
+ * \param length                        Number of bytes to wipe.
+ */
+static inline void edhoc_zeroize(const struct edhoc_context *ctx, void *buffer,
+				 size_t length)
+{
+	ctx->interfaces.platform.zeroize(buffer, length);
+}
+
+/**
+ * \brief The cipher suite selected for this session.
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return Pointer to the selected \ref edhoc_cipher_suite.
+ */
+static inline const struct edhoc_cipher_suite *
+edhoc_selected_cipher_suite(const struct edhoc_context *ctx)
+{
+	const struct edhoc_cipher_suite_list *suites =
+		&ctx->negotiation.cipher_suite;
+
+	return &suites->entry[ctx->negotiation.selected_cipher_suite_index];
+}
+
+/**
+ * \brief Is the local role the Initiator?
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return \c true when the local role is \ref EDHOC_ROLE_INITIATOR.
+ */
+static inline bool edhoc_is_initiator(const struct edhoc_context *ctx)
+{
+	return EDHOC_ROLE_INITIATOR == ctx->state.role;
+}
+
+/**
+ * \brief Is the local role the Responder?
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return \c true when the local role is \ref EDHOC_ROLE_RESPONDER.
+ */
+static inline bool edhoc_is_responder(const struct edhoc_context *ctx)
+{
+	return EDHOC_ROLE_RESPONDER == ctx->state.role;
+}
+
+/**
+ * \brief Wipe all external authorization data tokens.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ */
+static inline void edhoc_ead_reset(struct edhoc_context *ctx)
+{
+	edhoc_zeroize(ctx, &ctx->ead, sizeof(ctx->ead));
 }
 
 /**
@@ -424,7 +553,7 @@ static inline void edhoc_key_slot_move(struct edhoc_context *ctx,
 	memcpy(dst->key_id, src->key_id, sizeof(dst->key_id));
 	dst->present = true;
 
-	ctx->itf.platform.zeroize(src->key_id, sizeof(src->key_id));
+	ctx->interfaces.platform.zeroize(src->key_id, sizeof(src->key_id));
 	src->present = false;
 }
 
@@ -494,18 +623,19 @@ static inline int edhoc_key_slot_release(struct edhoc_context *ctx,
 {
 	struct edhoc_key_slot *key_slot = &ctx->key_slots[slot];
 
-	if (!key_slot->present || NULL == ctx->itf.crypto.destroy_key) {
+	if (!key_slot->present || NULL == ctx->interfaces.crypto.destroy_key) {
 		return EDHOC_SUCCESS;
 	}
 
-	const int ret =
-		ctx->itf.crypto.destroy_key(ctx->user_ctx, key_slot->key_id);
+	const int ret = ctx->interfaces.crypto.destroy_key(ctx->user_context,
+							   key_slot->key_id);
 
 	if (EDHOC_SUCCESS != ret) {
 		return ret;
 	}
 
-	ctx->itf.platform.zeroize(key_slot->key_id, sizeof(key_slot->key_id));
+	ctx->interfaces.platform.zeroize(key_slot->key_id,
+					 sizeof(key_slot->key_id));
 	key_slot->present = false;
 
 	return EDHOC_SUCCESS;
@@ -559,11 +689,12 @@ static inline int edhoc_key_destroy(struct edhoc_context *ctx, void *key_id)
 {
 	int ret = EDHOC_SUCCESS;
 
-	if (NULL != ctx->itf.crypto.destroy_key) {
-		ret = ctx->itf.crypto.destroy_key(ctx->user_ctx, key_id);
+	if (NULL != ctx->interfaces.crypto.destroy_key) {
+		ret = ctx->interfaces.crypto.destroy_key(ctx->user_context,
+							 key_id);
 	}
 
-	ctx->itf.platform.zeroize(key_id, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	ctx->interfaces.platform.zeroize(key_id, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return ret;
 }

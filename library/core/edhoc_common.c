@@ -341,10 +341,10 @@ STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-		*len += edhoc_cbor_int_mem_req(ctx->ead_token[i].label);
-		*len += ctx->ead_token[i].value_len;
-		*len += edhoc_cbor_bstr_oh(ctx->ead_token[i].value_len);
+	for (size_t i = 0; i < ctx->ead.count; ++i) {
+		*len += edhoc_cbor_int_mem_req(ctx->ead.token[i].label);
+		*len += ctx->ead.token[i].value_len;
+		*len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value_len);
 	}
 
 	return EDHOC_SUCCESS;
@@ -485,9 +485,9 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	ret = ctx->itf.crypto.sign(ctx->user_ctx, cred->priv_key_id,
-				   cose_sign_1_buf, cose_sign_1_buf_len, sign,
-				   sign_size, sign_len);
+	ret = edhoc_crypto(ctx)->sign(ctx->user_context, cred->priv_key_id,
+				      cose_sign_1_buf, cose_sign_1_buf_len,
+				      sign, sign_size, sign_len);
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -546,9 +546,9 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 	/* The crypto interface verifies against the peer's raw public key
 	 * directly, so no key-store import is required. */
-	ret = ctx->itf.crypto.verify(ctx->user_ctx, pub_key, pub_key_len,
-				     cose_sign_1_buf, cose_sign_1_buf_len, sign,
-				     sign_len);
+	ret = edhoc_crypto(ctx)->verify(ctx->user_context, pub_key, pub_key_len,
+					cose_sign_1_buf, cose_sign_1_buf_len,
+					sign, sign_len);
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -663,7 +663,7 @@ int edhoc_comp_hash(const struct edhoc_context *ctx,
 {
 	void *op = NULL;
 	int rc = EDHOC_SUCCESS;
-	int ret = ctx->itf.crypto.hash_init(ctx->user_ctx, &op);
+	int ret = edhoc_crypto(ctx)->hash_init(ctx->user_context, &op);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Hash init: %d", ret);
@@ -671,8 +671,9 @@ int edhoc_comp_hash(const struct edhoc_context *ctx,
 	}
 
 	for (size_t i = 0; i < nr_of_segments; ++i) {
-		ret = ctx->itf.crypto.hash_update(
-			ctx->user_ctx, op, segments[i].ptr, segments[i].len);
+		ret = edhoc_crypto(ctx)->hash_update(ctx->user_context, op,
+						     segments[i].ptr,
+						     segments[i].len);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Hash update: %d", ret);
@@ -680,8 +681,8 @@ int edhoc_comp_hash(const struct edhoc_context *ctx,
 		}
 	}
 
-	ret = ctx->itf.crypto.hash_finish(ctx->user_ctx, op, hash, hash_size,
-					  hash_len);
+	ret = edhoc_crypto(ctx)->hash_finish(ctx->user_context, op, hash,
+					     hash_size, hash_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Hash finish: %d", ret);
@@ -691,7 +692,7 @@ int edhoc_comp_hash(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 
 abort:
-	rc = ctx->itf.crypto.hash_abort(ctx->user_ctx, op);
+	rc = edhoc_crypto(ctx)->hash_abort(ctx->user_context, op);
 	if (EDHOC_SUCCESS != rc) {
 		EDHOC_LOG_ERR("Hash abort: %d", rc);
 	}
@@ -708,13 +709,14 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message) {
-		EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
+	if (EDHOC_MSG_1 > ctx->state.message ||
+	    EDHOC_MSG_3 < ctx->state.message) {
+		EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -724,18 +726,18 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 	size_t len = 0;
 
 	/* C_R length. */
-	if (EDHOC_MSG_2 == ctx->message) {
+	if (EDHOC_MSG_2 == ctx->state.message) {
 		const struct edhoc_connection_id *cid = NULL;
 
-		switch (ctx->role) {
-		case EDHOC_INITIATOR:
-			cid = &ctx->peer_cid;
+		switch (ctx->state.role) {
+		case EDHOC_ROLE_INITIATOR:
+			cid = &ctx->negotiation.peer_connection_id;
 			break;
-		case EDHOC_RESPONDER:
-			cid = &ctx->cid;
+		case EDHOC_ROLE_RESPONDER:
+			cid = &ctx->negotiation.connection_id;
 			break;
 		default:
-			EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+			EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
@@ -759,7 +761,7 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *ctx,
 
 	/* TH length. */
 	len = 0;
-	ret = comp_th_len(ctx->th_len, &len);
+	ret = comp_th_len(ctx->state.th.length, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -796,23 +798,28 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message) {
-		EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
+	if (EDHOC_MSG_1 > ctx->state.message ||
+	    EDHOC_MSG_3 < ctx->state.message) {
+		EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_MSG_2 == ctx->message && EDHOC_TH_STATE_2 != ctx->th_state) {
-		EDHOC_LOG_ERR("Invalid TH state for msg2: %d", ctx->th_state);
+	if (EDHOC_MSG_2 == ctx->state.message &&
+	    EDHOC_TH_STATE_2 != ctx->state.th.stage) {
+		EDHOC_LOG_ERR("Invalid TH state for msg2: %d",
+			      ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_MSG_3 == ctx->message && EDHOC_TH_STATE_3 != ctx->th_state) {
-		EDHOC_LOG_ERR("Invalid TH state for msg3: %d", ctx->th_state);
+	if (EDHOC_MSG_3 == ctx->state.message &&
+	    EDHOC_TH_STATE_3 != ctx->state.th.stage) {
+		EDHOC_LOG_ERR("Invalid TH state for msg3: %d",
+			      ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -820,18 +827,18 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	size_t len = 0;
 
 	/* C_R length. */
-	if (EDHOC_MSG_2 == ctx->message) {
+	if (EDHOC_MSG_2 == ctx->state.message) {
 		const struct edhoc_connection_id *cid = NULL;
 
-		switch (ctx->role) {
-		case EDHOC_INITIATOR:
-			cid = &ctx->peer_cid;
+		switch (ctx->state.role) {
+		case EDHOC_ROLE_INITIATOR:
+			cid = &ctx->negotiation.peer_connection_id;
 			break;
-		case EDHOC_RESPONDER:
-			cid = &ctx->cid;
+		case EDHOC_ROLE_RESPONDER:
+			cid = &ctx->negotiation.connection_id;
 			break;
 		default:
-			EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+			EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
@@ -1061,7 +1068,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	mac_ctx->th = &mac_ctx->id_cred[mac_ctx->id_cred_len];
 
 	len = 0;
-	ret = comp_th_len(ctx->th_len, &len);
+	ret = comp_th_len(ctx->state.th.length, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -1070,8 +1077,8 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 
 	/* TH cborising. */
 	const struct zcbor_string th = {
-		.value = ctx->th,
-		.len = ctx->th_len,
+		.value = ctx->state.th.value,
+		.len = ctx->state.th.length,
 	};
 
 	len = 0;
@@ -1146,7 +1153,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	}
 
 	/* EAD length. */
-	if (0 != ctx->nr_of_ead_tokens) {
+	if (0 != ctx->ead.count) {
 		len = 0;
 		ret = comp_ead_len(ctx, &len);
 
@@ -1164,17 +1171,17 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 
 	/* EAD cborising. */
 	if (true == mac_ctx->is_ead) {
-		struct ead tmp_ead = { .ead_count = ctx->nr_of_ead_tokens };
+		struct ead tmp_ead = { .ead_count = ctx->ead.count };
 
-		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+		for (size_t i = 0; i < ctx->ead.count; ++i) {
 			tmp_ead.ead[i].ead_x_ead_label =
-				ctx->ead_token[i].label;
+				ctx->ead.token[i].label;
 			tmp_ead.ead[i].ead_x_ead_value_present =
-				(NULL != ctx->ead_token[i].value);
+				(NULL != ctx->ead.token[i].value);
 			tmp_ead.ead[i].ead_x_ead_value.value =
-				ctx->ead_token[i].value;
+				ctx->ead.token[i].value;
 			tmp_ead.ead[i].ead_x_ead_value.len =
-				ctx->ead_token[i].value_len;
+				ctx->ead.token[i].value_len;
 		}
 
 		len = 0;
@@ -1210,53 +1217,53 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
 
-	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_2 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
-			*mac_len = csuite.hash_length;
+			*mac_len = csuite->hash_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_3:
-			*mac_len = csuite.mac_length;
+			*mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_3 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
-			*mac_len = csuite.hash_length;
+			*mac_len = csuite->hash_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_2:
 		case EDHOC_METHOD_3:
-			*mac_len = csuite.mac_length;
+			*mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
+	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
@@ -1269,20 +1276,23 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_MSG_1 > ctx->message || EDHOC_MSG_3 < ctx->message) {
-		EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
+	if (EDHOC_MSG_1 > ctx->state.message ||
+	    EDHOC_MSG_3 < ctx->state.message) {
+		EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_MSG_2 == ctx->message &&
-	    EDHOC_PRK_STATE_3E2M != ctx->prk_state) {
-		EDHOC_LOG_ERR("Invalid PRK state for msg2: %d", ctx->prk_state);
+	if (EDHOC_MSG_2 == ctx->state.message &&
+	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Invalid PRK state for msg2: %d",
+			      ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_MSG_3 == ctx->message &&
-	    EDHOC_PRK_STATE_4E3M != ctx->prk_state) {
-		EDHOC_LOG_ERR("Invalid PRK state for msg3: %d", ctx->prk_state);
+	if (EDHOC_MSG_3 == ctx->state.message &&
+	    EDHOC_PRK_STATE_4E3M != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Invalid PRK state for msg3: %d",
+			      ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -1294,10 +1304,10 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 		.info_length = (uint32_t)mac_len,
 	};
 
-	if (EDHOC_MSG_2 == ctx->message)
+	if (EDHOC_MSG_2 == ctx->state.message)
 		info.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2;
 
-	if (EDHOC_MSG_3 == ctx->message)
+	if (EDHOC_MSG_3 == ctx->state.message)
 		info.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3;
 
 	/* Calculate struct info cbor overhead. */
@@ -1322,7 +1332,7 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	switch (ctx->message) {
+	switch (ctx->state.message) {
 	case EDHOC_MSG_2:
 		EDHOC_LOG_HEXDUMP_DBG(info_buf, len, "MAC_2 info");
 		break;
@@ -1334,7 +1344,7 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	case EDHOC_MSG_4:
 	default:
 		EDHOC_LOG_ERR("Invalid message for MAC logging: %d",
-			      ctx->message);
+			      ctx->state.message);
 		EDHOC_MEM_FREE(info_buf);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
@@ -1342,12 +1352,12 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	/* MAC = EDHOC_Expand(PRK, info) as raw output. The PRK is the message's
 	 * own handle: PRK_3e2m for message 2, PRK_4e3m for message 3. */
 	const void *prk_key_id =
-		(EDHOC_MSG_2 == ctx->message) ?
+		(EDHOC_MSG_2 == ctx->state.message) ?
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M) :
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
-	ret = ctx->itf.crypto.expand_raw(ctx->user_ctx, prk_key_id, info_buf,
-					 len, mac, mac_len);
+	ret = edhoc_crypto(ctx)->expand_raw(ctx->user_context, prk_key_id,
+					    info_buf, len, mac, mac_len);
 	EDHOC_MEM_FREE(info_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1366,53 +1376,53 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_INITIATOR != ctx->role && EDHOC_RESPONDER != ctx->role) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
 
-	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_2 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
-			*sign_or_mac_len = csuite.sign_length;
+			*sign_or_mac_len = csuite->sign_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_3:
-			*sign_or_mac_len = csuite.mac_length;
+			*sign_or_mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_3 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
-			*sign_or_mac_len = csuite.sign_length;
+			*sign_or_mac_len = csuite->sign_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_2:
 		case EDHOC_METHOD_3:
-			*sign_or_mac_len = csuite.mac_length;
+			*sign_or_mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
+	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
@@ -1429,8 +1439,8 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_2 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
 			return sign_cose_sign_1(ctx, cred, mac_ctx, mac,
@@ -1445,13 +1455,13 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_3 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
 			return sign_cose_sign_1(ctx, cred, mac_ctx, mac,
@@ -1466,12 +1476,12 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
+	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
 	return EDHOC_ERROR_BAD_STATE;
 }
 
@@ -1488,8 +1498,8 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_MSG_2 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_2 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
 			return verify_cose_sign_1(ctx, mac_ctx, pub_key,
@@ -1509,13 +1519,13 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	if (EDHOC_MSG_3 == ctx->message) {
-		switch (ctx->chosen_method) {
+	if (EDHOC_MSG_3 == ctx->state.message) {
+		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
 			return verify_cose_sign_1(ctx, mac_ctx, pub_key,
@@ -1535,11 +1545,11 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 		case EDHOC_METHOD_MAX:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->chosen_method);
+				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 	}
 
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->message);
+	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
 	return EDHOC_ERROR_BAD_STATE;
 }

@@ -63,7 +63,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /** 
  * \brief KEM encapsulate to the peer's G_X (Responder): produce the KEM
- *        ciphertext G_Y (into \p ctx->pub_eph_key) and the ephemeral
+ *        ciphertext G_Y (into \p ctx->ephemeral.own.value) and the ephemeral
  *        shared-secret handle.
  *
  * \param[in,out] ctx		EDHOC context.
@@ -277,28 +277,29 @@ STATIC int comp_encapsulate(struct edhoc_context *ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
 
 	/* KEM encapsulate to the peer's encapsulation key G_X: the backend
-	 * produces the KEM ciphertext G_Y (ctx->pub_eph_key), stores the shared
+	 * produces the KEM ciphertext G_Y (ctx->ephemeral.own.value), stores the shared
 	 * secret G_XY as a handle (the shared-secret slot) and retains its
 	 * ephemeral private key (the ephemeral slot) for the later static-DH
 	 * G_IY agreement in message 3. For classical NIKE-as-KEM suites this
 	 * wraps an ephemeral key generation plus a Diffie-Hellman agreement. */
-	ctx->pub_eph_key_len = 0;
-	const int ret = ctx->itf.crypto.encapsulate(
-		ctx->user_ctx, ctx->peer_pub_eph_key, ctx->peer_pub_eph_key_len,
+	ctx->ephemeral.own.length = 0;
+	const int ret = edhoc_crypto(ctx)->encapsulate(
+		ctx->user_context, ctx->ephemeral.peer.value,
+		ctx->ephemeral.peer.length,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
-		ctx->pub_eph_key, sizeof(ctx->pub_eph_key),
-		&ctx->pub_eph_key_len);
+		ctx->ephemeral.own.value, sizeof(ctx->ephemeral.own.value),
+		&ctx->ephemeral.own.length);
 
 	if (EDHOC_SUCCESS != ret ||
-	    csuite.kem_ciphertext_length != ctx->pub_eph_key_len) {
+	    csuite->kem_ciphertext_length != ctx->ephemeral.own.length) {
 		EDHOC_LOG_ERR("Encapsulate: %d, %zu, %zu", ret,
-			      csuite.kem_ciphertext_length,
-			      ctx->pub_eph_key_len);
+			      csuite->kem_ciphertext_length,
+			      ctx->ephemeral.own.length);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -317,9 +318,10 @@ STATIC int comp_decapsulate(struct edhoc_context *ctx)
 	/* KEM decapsulate the peer's ciphertext G_Y with the ephemeral private
 	 * key handle from message 1; the shared secret G_XY is stored as a
 	 * handle (the shared-secret slot). */
-	const int ret = ctx->itf.crypto.decapsulate(
-		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
-		ctx->peer_pub_eph_key, ctx->peer_pub_eph_key_len,
+	const int ret = edhoc_crypto(ctx)->decapsulate(
+		ctx->user_context,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
+		ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET));
 
 	if (EDHOC_SUCCESS != ret) {
@@ -338,9 +340,9 @@ STATIC int comp_th_2(struct edhoc_context *ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_1 != ctx->th_state) {
+	if (EDHOC_TH_STATE_1 != ctx->state.th.stage) {
 		EDHOC_LOG_ERR("Invalid TH state: %d, %d", EDHOC_TH_STATE_1,
-			      ctx->th_state);
+			      ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -348,28 +350,28 @@ STATIC int comp_th_2(struct edhoc_context *ctx)
 	const uint8_t *g_y = NULL;
 	size_t g_y_len = 0;
 
-	switch (ctx->role) {
-	case EDHOC_INITIATOR:
-		g_y = ctx->peer_pub_eph_key;
-		g_y_len = ctx->peer_pub_eph_key_len;
+	switch (ctx->state.role) {
+	case EDHOC_ROLE_INITIATOR:
+		g_y = ctx->ephemeral.peer.value;
+		g_y_len = ctx->ephemeral.peer.length;
 		break;
-	case EDHOC_RESPONDER:
-		g_y = ctx->pub_eph_key;
-		g_y_len = ctx->pub_eph_key_len;
+	case EDHOC_ROLE_RESPONDER:
+		g_y = ctx->ephemeral.own.value;
+		g_y_len = ctx->ephemeral.own.length;
 		break;
 	default:
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
 
 	/* TH_2 = H(G_Y, H(message_1)) streamed as CBOR byte-string segments:
-	 * bstr(G_Y) || bstr(H(message_1)). ctx->th holds H(message_1) on input
+	 * bstr(G_Y) || bstr(H(message_1)). ctx->state.th.value holds H(message_1) on input
 	 * and receives TH_2 on output; the multipart update consumes it before
 	 * hash_finish overwrites it. */
-	const size_t h_msg_1_len = ctx->th_len;
+	const size_t h_msg_1_len = ctx->state.th.length;
 
 	uint8_t g_y_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
 	uint8_t h_msg_1_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
@@ -379,22 +381,23 @@ STATIC int comp_th_2(struct edhoc_context *ctx)
 		{ g_y, g_y_len },
 		{ h_msg_1_hdr,
 		  edhoc_cbor_bstr_header(h_msg_1_hdr, h_msg_1_len) },
-		{ ctx->th, h_msg_1_len },
+		{ ctx->state.th.value, h_msg_1_len },
 	};
 
-	ctx->th_len = csuite.hash_length;
+	ctx->state.th.length = csuite->hash_length;
 
 	size_t hash_length = 0;
 	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-					ctx->th, ctx->th_len, &hash_length);
+					ctx->state.th.value,
+					ctx->state.th.length, &hash_length);
 
-	if (EDHOC_SUCCESS != ret || csuite.hash_length != hash_length) {
+	if (EDHOC_SUCCESS != ret || csuite->hash_length != hash_length) {
 		EDHOC_LOG_ERR("TH_2 hash: %d, %zu, %zu", ret,
-			      csuite.hash_length, hash_length);
+			      csuite->hash_length, hash_length);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->th_state = EDHOC_TH_STATE_2;
+	ctx->state.th.stage = EDHOC_TH_STATE_2;
 	return EDHOC_SUCCESS;
 }
 
@@ -405,20 +408,21 @@ STATIC int comp_prk_2e(struct edhoc_context *ctx)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_2 != ctx->th_state ||
-	    EDHOC_PRK_STATE_INVALID != ctx->prk_state) {
-		EDHOC_LOG_ERR("Invalid state for PRK_2e: %d, %d", ctx->th_state,
-			      ctx->prk_state);
+	if (EDHOC_TH_STATE_2 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_INVALID != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Invalid state for PRK_2e: %d, %d",
+			      ctx->state.th.stage, ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	/* EDHOC_Extract(salt = TH_2, IKM = G_XY) -> PRK_2e. PRK_2e has its own
 	 * dedicated handle because it must outlive PRK_3e2m for KEYSTREAM_2; the
 	 * shared secret and pseudorandom key are handles, only TH_2 is raw. */
-	const int ret = ctx->itf.crypto.extract(
-		ctx->user_ctx,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET), ctx->th,
-		ctx->th_len, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E));
+	const int ret = edhoc_crypto(ctx)->extract(
+		ctx->user_context,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
+		ctx->state.th.value, ctx->state.th.length,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Extract PRK_2e: %d", ret);
@@ -426,7 +430,7 @@ STATIC int comp_prk_2e(struct edhoc_context *ctx)
 	}
 
 	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_2E);
-	ctx->prk_state = EDHOC_PRK_STATE_2E;
+	ctx->state.prk_state = EDHOC_PRK_STATE_2E;
 	return EDHOC_SUCCESS;
 }
 
@@ -439,13 +443,13 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_PRK_STATE_2E != ctx->prk_state) {
+	if (EDHOC_PRK_STATE_2E != ctx->state.prk_state) {
 		EDHOC_LOG_ERR("Invalid PRK state for PRK_3e2m: %d",
-			      ctx->prk_state);
+			      ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	switch (ctx->chosen_method) {
+	switch (ctx->negotiation.selected_method) {
 	case EDHOC_METHOD_0:
 	case EDHOC_METHOD_2:
 		/* PRK_3e2m == PRK_2e: move PRK_2e's slot into PRK_3e2m so the
@@ -453,13 +457,13 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		 * 3. KEYSTREAM_2 reads PRK_3e2m for these methods. */
 		edhoc_key_slot_move(ctx, EDHOC_KEY_SLOT_PRK_3E2M,
 				    EDHOC_KEY_SLOT_PRK_2E);
-		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
+		ctx->state.prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
 
 	case EDHOC_METHOD_1:
 	case EDHOC_METHOD_3: {
 		const size_t hash_len =
-			ctx->csuite[ctx->chosen_csuite_idx].hash_length;
+			edhoc_selected_cipher_suite(ctx)->hash_length;
 
 		EDHOC_MEM_ALLOC(uint8_t, salt_3e2m, hash_len);
 		if (NULL == salt_3e2m) {
@@ -493,14 +497,13 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 
 		/* EDHOC_Extract(salt = SALT_3e2m, IKM = G_RX) -> PRK_3e2m in its
 		 * own dedicated handle. SALT_3e2m is spent afterwards. */
-		ret = ctx->itf.crypto.extract(
-			ctx->user_ctx,
+		ret = edhoc_crypto(ctx)->extract(
+			ctx->user_context,
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_RX), salt_3e2m,
 			EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M));
 
-		ctx->itf.platform.zeroize(salt_3e2m,
-					  EDHOC_MEM_ALLOC_SIZE(salt_3e2m));
+		edhoc_zeroize(ctx, salt_3e2m, EDHOC_MEM_ALLOC_SIZE(salt_3e2m));
 		EDHOC_MEM_FREE(salt_3e2m);
 
 		if (EDHOC_SUCCESS != ret) {
@@ -509,7 +512,7 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		}
 
 		edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
-		ctx->prk_state = EDHOC_PRK_STATE_3E2M;
+		ctx->state.prk_state = EDHOC_PRK_STATE_3E2M;
 		return EDHOC_SUCCESS;
 	}
 
@@ -518,7 +521,8 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	EDHOC_LOG_ERR("Unsupported method: %d", ctx->chosen_method);
+	EDHOC_LOG_ERR("Unsupported method: %d",
+		      ctx->negotiation.selected_method);
 	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
@@ -534,13 +538,15 @@ STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 
-	switch (ctx->cid.encode_type) {
+	switch (ctx->negotiation.connection_id.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		len += edhoc_cbor_int_mem_req(ctx->cid.int_value);
+		len += edhoc_cbor_int_mem_req(
+			ctx->negotiation.connection_id.int_value);
 		break;
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		len += ctx->cid.bstr_length;
-		len += edhoc_cbor_bstr_oh(ctx->cid.bstr_length);
+		len += ctx->negotiation.connection_id.bstr_length;
+		len += edhoc_cbor_bstr_oh(
+			ctx->negotiation.connection_id.bstr_length);
 		break;
 	}
 
@@ -576,11 +582,11 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 
 	size_t offset = 0;
 
-	switch (ctx->cid.encode_type) {
+	switch (ctx->negotiation.connection_id.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
 		size_t len = 0;
 		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
-		const int32_t value = ctx->cid.int_value;
+		const int32_t value = ctx->negotiation.connection_id.int_value;
 		ret = cbor_encode_integer_type_int_type(
 			ptxt, ptxt_size - offset, &value, &len);
 
@@ -595,8 +601,8 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 	case EDHOC_CID_TYPE_BYTE_STRING: {
 		size_t len = 0;
 		const struct zcbor_string input = {
-			.value = ctx->cid.bstr_value,
-			.len = ctx->cid.bstr_length,
+			.value = ctx->negotiation.connection_id.bstr_value,
+			.len = ctx->negotiation.connection_id.bstr_length,
 		};
 		ret = cbor_encode_byte_string_type_bstr_type(
 			ptxt, ptxt_size - offset, &input, &len);
@@ -610,7 +616,8 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 		break;
 	}
 	default:
-		EDHOC_LOG_ERR("Invalid C_I enc type: %d", ctx->cid.encode_type);
+		EDHOC_LOG_ERR("Invalid C_I enc type: %d",
+			      ctx->negotiation.connection_id.encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -676,9 +683,9 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_2 != ctx->th_state) {
+	if (EDHOC_TH_STATE_2 != ctx->state.th.stage) {
 		EDHOC_LOG_ERR("Invalid TH state for keystream_2: %d",
-			      ctx->th_state);
+			      ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -686,14 +693,14 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 
 	const struct info input_info = {
 		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2,
-		.info_context.value = ctx->th,
-		.info_context.len = ctx->th_len,
+		.info_context.value = ctx->state.th.value,
+		.info_context.len = ctx->state.th.length,
 		.info_length = (uint32_t)keystream_len,
 	};
 
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2);
-	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
+	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
 	len += edhoc_cbor_int_mem_req((int32_t)keystream_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
@@ -720,9 +727,9 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 		edhoc_key_slot_present(ctx, EDHOC_KEY_SLOT_PRK_2E) ?
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E) :
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
-	ret = ctx->itf.crypto.expand_raw(ctx->user_ctx, prk_2e_key_id, info,
-					 EDHOC_MEM_ALLOC_SIZE(info), keystream,
-					 keystream_len);
+	ret = edhoc_crypto(ctx)->expand_raw(ctx->user_context, prk_2e_key_id,
+					    info, EDHOC_MEM_ALLOC_SIZE(info),
+					    keystream, keystream_len);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -755,7 +762,7 @@ STATIC int prepare_message_2(const struct edhoc_context *ctx,
 	size_t offset = 0;
 
 	size_t len = 0;
-	len += ctx->pub_eph_key_len;
+	len += ctx->ephemeral.own.length;
 	len += ctxt_len;
 
 	EDHOC_MEM_ALLOC(uint8_t, buffer, len);
@@ -764,8 +771,9 @@ STATIC int prepare_message_2(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	memcpy(&buffer[offset], ctx->pub_eph_key, ctx->pub_eph_key_len);
-	offset += ctx->pub_eph_key_len;
+	memcpy(&buffer[offset], ctx->ephemeral.own.value,
+	       ctx->ephemeral.own.length);
+	offset += ctx->ephemeral.own.length;
 
 	memcpy(&buffer[offset], ctxt, ctxt_len);
 	offset += ctxt_len;
@@ -817,7 +825,7 @@ STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 	}
 
 	const size_t g_y_len =
-		ctx->csuite[ctx->chosen_csuite_idx].kem_ciphertext_length;
+		edhoc_selected_cipher_suite(ctx)->kem_ciphertext_length;
 
 	if (dec_msg_2.len <= g_y_len) {
 		EDHOC_LOG_ERR("Decoded message_2 too short for G_Y: %zu, %zu",
@@ -853,14 +861,14 @@ STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 	}
 
 	/* Get Diffie-Hellmann peer public key (G_Y). */
-	const struct edhoc_cipher_suite csuite =
-		ctx->csuite[ctx->chosen_csuite_idx];
-	ctx->peer_pub_eph_key_len = csuite.kem_ciphertext_length;
-	memcpy(ctx->peer_pub_eph_key, dec_msg_2.value,
-	       ctx->peer_pub_eph_key_len);
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
+	ctx->ephemeral.peer.length = csuite->kem_ciphertext_length;
+	memcpy(ctx->ephemeral.peer.value, dec_msg_2.value,
+	       ctx->ephemeral.peer.length);
 
 	/* Get CIPHERTEXT_2. */
-	const size_t offset = ctx->peer_pub_eph_key_len;
+	const size_t offset = ctx->ephemeral.peer.length;
 	memcpy(ctxt_2, &dec_msg_2.value[offset], ctxt_2_len);
 
 	return EDHOC_SUCCESS;
@@ -898,23 +906,25 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
-		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
-		ctx->peer_cid.int_value =
+		ctx->negotiation.peer_connection_id.encode_type =
+			EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		ctx->negotiation.peer_connection_id.int_value =
 			(int8_t)cbor_ptxt_2.plaintext_2_C_R_int;
 		break;
 
 	case plaintext_2_C_R_bstr_c:
-		if (ARRAY_SIZE(ctx->peer_cid.bstr_value) <
+		if (ARRAY_SIZE(ctx->negotiation.peer_connection_id.bstr_value) <
 		    cbor_ptxt_2.plaintext_2_C_R_bstr.len) {
 			EDHOC_LOG_ERR("C_R bstr too large: %zu",
 				      cbor_ptxt_2.plaintext_2_C_R_bstr.len);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
-		ctx->peer_cid.encode_type = EDHOC_CID_TYPE_BYTE_STRING;
-		ctx->peer_cid.bstr_length =
+		ctx->negotiation.peer_connection_id.encode_type =
+			EDHOC_CID_TYPE_BYTE_STRING;
+		ctx->negotiation.peer_connection_id.bstr_length =
 			cbor_ptxt_2.plaintext_2_C_R_bstr.len;
-		memcpy(ctx->peer_cid.bstr_value,
+		memcpy(ctx->negotiation.peer_connection_id.bstr_value,
 		       cbor_ptxt_2.plaintext_2_C_R_bstr.value,
 		       cbor_ptxt_2.plaintext_2_C_R_bstr.len);
 		break;
@@ -1073,17 +1083,16 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	/* EAD_2 if present */
 	if (cbor_ptxt_2.plaintext_2_EAD_2_m_present) {
-		ctx->nr_of_ead_tokens =
-			cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2_count;
+		ctx->ead.count = cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2_count;
 
-		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
-			ctx->ead_token[i].label =
+		for (size_t i = 0; i < ctx->ead.count; ++i) {
+			ctx->ead.token[i].label =
 				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
 					.ead_y_ead_label;
-			ctx->ead_token[i].value =
+			ctx->ead.token[i].value =
 				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
 					.ead_y_ead_value.value;
-			ctx->ead_token[i].value_len =
+			ctx->ead.token[i].value_len =
 				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
 					.ead_y_ead_value.len;
 		}
@@ -1101,38 +1110,39 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_2 != ctx->th_state) {
-		EDHOC_LOG_ERR("Invalid TH state: %d", ctx->th_state);
+	if (EDHOC_TH_STATE_2 != ctx->state.th.stage) {
+		EDHOC_LOG_ERR("Invalid TH state: %d", ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	/* TH_3 = H(TH_2, PLAINTEXT_2, CRED_R) streamed as:
-	 * bstr(TH_2) || PLAINTEXT_2 || CRED_R. ctx->th holds TH_2 on input and
+	 * bstr(TH_2) || PLAINTEXT_2 || CRED_R. ctx->state.th.value holds TH_2 on input and
 	 * receives TH_3 on output; the multipart update consumes it before
 	 * hash_finish overwrites it. */
-	const size_t th_2_len = ctx->th_len;
+	const size_t th_2_len = ctx->state.th.length;
 
 	uint8_t th_2_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
 
 	const struct hash_segment segments[] = {
 		{ th_2_hdr, edhoc_cbor_bstr_header(th_2_hdr, th_2_len) },
-		{ ctx->th, th_2_len },
+		{ ctx->state.th.value, th_2_len },
 		{ ptxt, ptxt_len },
 		{ mac_ctx->cred, mac_ctx->cred_len },
 	};
 
-	ctx->th_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
+	ctx->state.th.length = edhoc_selected_cipher_suite(ctx)->hash_length;
 
 	size_t hash_len = 0;
 	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-					ctx->th, ctx->th_len, &hash_len);
+					ctx->state.th.value,
+					ctx->state.th.length, &hash_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Hash TH_3: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	ctx->th_state = EDHOC_TH_STATE_3;
+	ctx->state.th.stage = EDHOC_TH_STATE_3;
 	return EDHOC_SUCCESS;
 }
 
@@ -1144,26 +1154,26 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_2 != ctx->th_state ||
-	    EDHOC_PRK_STATE_2E != ctx->prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->th_state,
-			      ctx->prk_state);
+	if (EDHOC_TH_STATE_2 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_2E != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.th.stage,
+			      ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	const size_t hash_len = ctx->csuite[ctx->chosen_csuite_idx].hash_length;
+	const size_t hash_len = edhoc_selected_cipher_suite(ctx)->hash_length;
 
 	const struct info input_info = {
 		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M,
-		.info_context.value = ctx->th,
-		.info_context.len = ctx->th_len,
+		.info_context.value = ctx->state.th.value,
+		.info_context.len = ctx->state.th.length,
 		.info_length = (uint32_t)hash_len,
 	};
 
 	size_t len = 0;
 	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M);
-	len += ctx->th_len + edhoc_cbor_bstr_oh(ctx->th_len);
+	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
 	len += edhoc_cbor_int_mem_req((int32_t)hash_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
@@ -1184,9 +1194,10 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	}
 
 	/* EDHOC_Expand(PRK_2e, info) -> SALT_3e2m (raw). */
-	ret = ctx->itf.crypto.expand_raw(
-		ctx->user_ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E),
-		info, EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
+	ret = edhoc_crypto(ctx)->expand_raw(
+		ctx->user_context,
+		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E), info,
+		EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1209,28 +1220,27 @@ STATIC int comp_grx(struct edhoc_context *ctx,
 	void *grx_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_RX);
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	switch (ctx->role) {
-	case EDHOC_INITIATOR:
+	switch (ctx->state.role) {
+	case EDHOC_ROLE_INITIATOR:
 		/* G_RX = key_agreement(ephemeral private key, R's static public
 		 * key). The shared secret is produced as a handle. */
-		ret = ctx->itf.crypto.key_agreement(
-			ctx->user_ctx,
+		ret = edhoc_crypto(ctx)->key_agreement(
+			ctx->user_context,
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 			pub_key, pub_key_len, grx_key_id);
 		break;
 
-	case EDHOC_RESPONDER:
+	case EDHOC_ROLE_RESPONDER:
 		/* G_RX = key_agreement(R's static private key, peer's ephemeral
 		 * public key G_X). */
-		ret = ctx->itf.crypto.key_agreement(ctx->user_ctx,
-						    auth_cred->priv_key_id,
-						    ctx->peer_pub_eph_key,
-						    ctx->peer_pub_eph_key_len,
-						    grx_key_id);
+		ret = edhoc_crypto(ctx)->key_agreement(
+			ctx->user_context, auth_cred->priv_key_id,
+			ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
+			grx_key_id);
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->role);
+		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -1281,18 +1291,18 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_SM_RECEIVED_M1 != ctx->status ||
-	    EDHOC_TH_STATE_1 != ctx->th_state ||
-	    EDHOC_PRK_STATE_INVALID != ctx->prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->status,
-			      ctx->th_state, ctx->prk_state);
+	if (EDHOC_SM_RECEIVED_M1 != ctx->state.machine ||
+	    EDHOC_TH_STATE_1 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_INVALID != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
+			      ctx->state.th.stage, ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->status = EDHOC_SM_ABORTED;
+	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->message = EDHOC_MSG_2;
-	ctx->role = EDHOC_RESPONDER;
+	ctx->state.message = EDHOC_MSG_2;
+	ctx->state.role = EDHOC_ROLE_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
@@ -1305,7 +1315,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->pub_eph_key, ctx->pub_eph_key_len, "G_Y");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->ephemeral.own.value,
+			      ctx->ephemeral.own.length, "G_Y");
 
 	/* 2. Compute Transcript Hash 2 (TH_2). */
 	ret = comp_th_2(ctx);
@@ -1315,7 +1326,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_2");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->state.th.value, ctx->state.th.length,
+			      "TH_2");
 
 	/* 3. Compute Pseudo Random Key 2 (PRK_2e). */
 	ret = comp_prk_2e(ctx);
@@ -1327,7 +1339,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	/* 4. Fetch authentication credentials. */
 	struct edhoc_auth_creds auth_cred = { 0 };
-	ret = ctx->itf.cred.fetch(ctx->user_ctx, &auth_cred);
+	ret = ctx->interfaces.cred.fetch(ctx->user_context, &auth_cred);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Fetch credentials: %d", ret);
@@ -1335,31 +1347,30 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 5. Compose EAD_2 if present. */
-	if (NULL != ctx->itf.ead.compose &&
-	    0 != ARRAY_SIZE(ctx->ead_token) - 1) {
-		ret = ctx->itf.ead.compose(ctx->user_ctx, ctx->message,
-					   ctx->ead_token,
-					   ARRAY_SIZE(ctx->ead_token) - 1,
-					   &ctx->nr_of_ead_tokens);
+	if (NULL != ctx->interfaces.ead.compose &&
+	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
+		ret = ctx->interfaces.ead.compose(
+			ctx->user_context, ctx->state.message, ctx->ead.token,
+			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret ||
-		    ARRAY_SIZE(ctx->ead_token) - 1 < ctx->nr_of_ead_tokens) {
+		    ARRAY_SIZE(ctx->ead.token) - 1 < ctx->ead.count) {
 			EDHOC_LOG_ERR("EAD_2 compose failure: %d, %zu, %zu",
-				      ret, ctx->nr_of_ead_tokens,
-				      ARRAY_SIZE(ctx->ead_token) - 1);
+				      ret, ctx->ead.count,
+				      ARRAY_SIZE(ctx->ead.token) - 1);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
-		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+		for (size_t i = 0; i < ctx->ead.count; ++i) {
 			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead_token[i].label,
-				sizeof(ctx->ead_token[i].label),
+				(const uint8_t *)&ctx->ead.token[i].label,
+				sizeof(ctx->ead.token[i].label),
 				"EAD_2 compose label");
 
-			if (0 != ctx->ead_token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_len) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead_token[i].value,
-					ctx->ead_token[i].value_len,
+					ctx->ead.token[i].value,
+					ctx->ead.token[i].value_len,
 					"EAD_2 compose value");
 			}
 		}
@@ -1525,7 +1536,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_3");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->state.th.value, ctx->state.th.length,
+			      "TH_3");
 
 	/* 12. Compute ciphertext (CIPHERTEXT_2). */
 	xor_arrays(plaintext, keystream, plaintext_len);
@@ -1559,10 +1571,9 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 15. Clean-up EAD tokens. */
-	ctx->nr_of_ead_tokens = 0;
-	ctx->itf.platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+	edhoc_ead_reset(ctx);
 
-	ctx->status = EDHOC_SM_WAIT_M3;
+	ctx->state.machine = EDHOC_SM_WAIT_M3;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }
@@ -1603,18 +1614,18 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (EDHOC_SM_WAIT_M2 != ctx->status ||
-	    EDHOC_TH_STATE_1 != ctx->th_state ||
-	    EDHOC_PRK_STATE_INVALID != ctx->prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->status,
-			      ctx->th_state, ctx->prk_state);
+	if (EDHOC_SM_WAIT_M2 != ctx->state.machine ||
+	    EDHOC_TH_STATE_1 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_INVALID != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
+			      ctx->state.th.stage, ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->status = EDHOC_SM_ABORTED;
+	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->message = EDHOC_MSG_2;
-	ctx->role = EDHOC_INITIATOR;
+	ctx->state.message = EDHOC_MSG_2;
+	ctx->state.role = EDHOC_ROLE_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	size_t len = 0;
@@ -1664,7 +1675,8 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_2");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->state.th.value, ctx->state.th.length,
+			      "TH_2");
 
 	/* 5. Compute Pseudo Random Key 2 (PRK_2e). */
 	ret = comp_prk_2e(ctx);
@@ -1713,29 +1725,34 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	switch (ctx->peer_cid.encode_type) {
+	switch (ctx->negotiation.peer_connection_id.encode_type) {
 	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
-		EDHOC_LOG_HEXDUMP_DBG((const uint8_t *)&ctx->peer_cid.int_value,
-				      sizeof(ctx->peer_cid.int_value), "C_R");
+		EDHOC_LOG_HEXDUMP_DBG(
+			(const uint8_t *)&ctx->negotiation.peer_connection_id
+				.int_value,
+			sizeof(ctx->negotiation.peer_connection_id.int_value),
+			"C_R");
 		break;
 	case EDHOC_CID_TYPE_BYTE_STRING:
-		EDHOC_LOG_HEXDUMP_DBG(ctx->peer_cid.bstr_value,
-				      ctx->peer_cid.bstr_length, "C_R");
+		EDHOC_LOG_HEXDUMP_DBG(
+			ctx->negotiation.peer_connection_id.bstr_value,
+			ctx->negotiation.peer_connection_id.bstr_length, "C_R");
 		break;
 
 	default:
 		EDHOC_LOG_ERR("Invalid peer CID type: %d",
-			      ctx->peer_cid.encode_type);
+			      ctx->negotiation.peer_connection_id.encode_type);
 		EDHOC_MEM_FREE(ciphertext_2);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	/* 9. Process EAD if present. */
-	if (NULL != ctx->itf.ead.process &&
-	    0 != ARRAY_SIZE(ctx->ead_token) - 1 && 0 != ctx->nr_of_ead_tokens) {
-		ret = ctx->itf.ead.process(ctx->user_ctx, ctx->message,
-					   ctx->ead_token,
-					   ctx->nr_of_ead_tokens);
+	if (NULL != ctx->interfaces.ead.process &&
+	    0 != ARRAY_SIZE(ctx->ead.token) - 1 && 0 != ctx->ead.count) {
+		ret = ctx->interfaces.ead.process(ctx->user_context,
+						  ctx->state.message,
+						  ctx->ead.token,
+						  ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("EAD_2 process: %d", ret);
@@ -1743,16 +1760,16 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 		}
 
-		for (size_t i = 0; i < ctx->nr_of_ead_tokens; ++i) {
+		for (size_t i = 0; i < ctx->ead.count; ++i) {
 			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead_token[i].label,
-				sizeof(ctx->ead_token[i].label),
+				(const uint8_t *)&ctx->ead.token[i].label,
+				sizeof(ctx->ead.token[i].label),
 				"EAD_2 process label");
 
-			if (0 != ctx->ead_token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_len) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead_token[i].value,
-					ctx->ead_token[i].value_len,
+					ctx->ead.token[i].value,
+					ctx->ead.token[i].value_len,
 					"EAD_2 process value");
 			}
 		}
@@ -1762,8 +1779,9 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	const uint8_t *pub_key = NULL;
 	size_t pub_key_len = 0;
 
-	ret = ctx->itf.cred.verify(ctx->user_ctx, &parsed_ptxt.auth_cred,
-				   &pub_key, &pub_key_len);
+	ret = ctx->interfaces.cred.verify(ctx->user_context,
+					  &parsed_ptxt.auth_cred, &pub_key,
+					  &pub_key_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Credentials verification: %d", ret);
@@ -1867,7 +1885,8 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(ctx->th, ctx->th_len, "TH_3");
+	EDHOC_LOG_HEXDUMP_DBG(ctx->state.th.value, ctx->state.th.length,
+			      "TH_3");
 	EDHOC_LOG_INF("Process msg2 end");
 
 	/* 17. Release the message-2 scoped secrets (PRK_3e2m lives on). */
@@ -1879,10 +1898,9 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	}
 
 	/* 18. Clean-up EAD tokens. */
-	ctx->nr_of_ead_tokens = 0;
-	ctx->itf.platform.zeroize(ctx->ead_token, sizeof(ctx->ead_token));
+	edhoc_ead_reset(ctx);
 
-	ctx->status = EDHOC_SM_VERIFIED_M2;
+	ctx->state.machine = EDHOC_SM_VERIFIED_M2;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
 }

@@ -39,7 +39,7 @@ TEST(internals_message3, comp_th_3_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.th_state = EDHOC_TH_STATE_1;
+	ctx.state.th.stage = EDHOC_TH_STATE_1;
 
 	uint8_t buf[512] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -64,8 +64,8 @@ TEST(internals_message3, comp_key_iv_aad_3_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.th_state = EDHOC_TH_STATE_1;
-	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
+	ctx.state.th.stage = EDHOC_TH_STATE_1;
+	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	uint8_t key[16], iv[13], aad[256];
 	int ret = comp_key_iv_aad_3(&ctx, key, 16, iv, 13, aad, 256);

@@ -76,9 +76,9 @@ int edhoc_context_deinit(struct edhoc_context *ctx)
 	/* End-of-life erasure: use the non-elidable platform hook when a
 	 * platform is bound (any secret material only ever exists after
 	 * binding); otherwise a plain wipe is sufficient (no secrets yet).
-	 * Latch the callback first - the wipe also clears ctx->itf.platform. */
+	 * Latch the callback first - the wipe also clears ctx->interfaces.platform. */
 	void (*const zeroize)(void *buffer, size_t length) =
-		ctx->itf.platform.zeroize;
+		ctx->interfaces.platform.zeroize;
 
 	if (NULL != zeroize) {
 		zeroize(ctx, sizeof(*ctx));
@@ -103,9 +103,10 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->method_len = method_len;
-	memcpy(ctx->method, method, sizeof(*method) * method_len);
-	ctx->methods_present = true;
+	ctx->negotiation.method.count = method_len;
+	memcpy(ctx->negotiation.method.entry, method,
+	       sizeof(*method) * method_len);
+	ctx->negotiation.methods_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -124,14 +125,15 @@ int edhoc_set_cipher_suites(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (ARRAY_SIZE(ctx->csuite) < csuite_len) {
+	if (ARRAY_SIZE(ctx->negotiation.cipher_suite.entry) < csuite_len) {
 		EDHOC_LOG_ERR("Bad state");
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->csuite_len = csuite_len;
-	memcpy(ctx->csuite, csuite, sizeof(*csuite) * csuite_len);
-	ctx->cipher_suites_present = true;
+	ctx->negotiation.cipher_suite.count = csuite_len;
+	memcpy(ctx->negotiation.cipher_suite.entry, csuite,
+	       sizeof(*csuite) * csuite_len);
+	ctx->negotiation.cipher_suites_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -175,8 +177,8 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->cid = *cid;
-	ctx->connection_id_present = true;
+	ctx->negotiation.connection_id = *cid;
+	ctx->negotiation.connection_id_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -193,7 +195,7 @@ int edhoc_set_user_context(struct edhoc_context *ctx, void *user_ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->user_ctx = user_ctx;
+	ctx->user_context = user_ctx;
 
 	return EDHOC_SUCCESS;
 }
@@ -215,8 +217,8 @@ int edhoc_bind_ead(struct edhoc_context *ctx, const struct edhoc_ead *ead)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->itf.ead = *ead;
-	ctx->itf.ead_present = true;
+	ctx->interfaces.ead = *ead;
+	ctx->interfaces.ead_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -246,8 +248,8 @@ int edhoc_bind_crypto(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->itf.crypto = *crypto;
-	ctx->itf.crypto_present = true;
+	ctx->interfaces.crypto = *crypto;
+	ctx->interfaces.crypto_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -270,8 +272,8 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->itf.cred = *cred;
-	ctx->itf.credentials_present = true;
+	ctx->interfaces.cred = *cred;
+	ctx->interfaces.credentials_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -294,8 +296,8 @@ int edhoc_bind_platform(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	ctx->itf.platform = *platform;
-	ctx->itf.platform_present = true;
+	ctx->interfaces.platform = *platform;
+	ctx->interfaces.platform_present = true;
 
 	return EDHOC_SUCCESS;
 }
@@ -340,25 +342,26 @@ int edhoc_error_get_cipher_suites(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (csuites_size < ctx->csuite_len) {
+	if (csuites_size < ctx->negotiation.cipher_suite.count) {
 		EDHOC_LOG_ERR("Cipher suites length too small");
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	*csuites_len = ctx->csuite_len;
+	*csuites_len = ctx->negotiation.cipher_suite.count;
 
-	for (size_t i = 0; i < ctx->csuite_len; ++i)
-		csuites[i] = ctx->csuite[i].value;
+	for (size_t i = 0; i < ctx->negotiation.cipher_suite.count; ++i)
+		csuites[i] = ctx->negotiation.cipher_suite.entry[i].value;
 
-	if (peer_csuites_size < ctx->peer_csuite_len) {
+	if (peer_csuites_size < ctx->negotiation.peer_cipher_suite.count) {
 		EDHOC_LOG_ERR("Peer cipher suites length too small");
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	*peer_csuites_len = ctx->peer_csuite_len;
+	*peer_csuites_len = ctx->negotiation.peer_cipher_suite.count;
 
-	for (size_t i = 0; i < ctx->peer_csuite_len; ++i)
-		peer_csuites[i] = ctx->peer_csuite[i].value;
+	for (size_t i = 0; i < ctx->negotiation.peer_cipher_suite.count; ++i)
+		peer_csuites[i] =
+			ctx->negotiation.peer_cipher_suite.entry[i].value;
 
 	return EDHOC_SUCCESS;
 }

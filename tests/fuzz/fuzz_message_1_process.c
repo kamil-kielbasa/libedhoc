@@ -154,8 +154,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_bind_credentials(&ctx, &cred);
 	edhoc_bind_platform(&ctx, test_get_platform());
 
-	ctx.role = EDHOC_RESPONDER;
-	ctx.status = EDHOC_SM_START;
+	ctx.state.role = EDHOC_ROLE_RESPONDER;
+	ctx.state.machine = EDHOC_SM_START;
 
 	edhoc_message_1_process(&ctx, data, size);
 

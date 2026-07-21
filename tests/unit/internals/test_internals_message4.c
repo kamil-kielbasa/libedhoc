@@ -39,7 +39,7 @@ TEST(internals_message4, comp_th_4_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.th_state = EDHOC_TH_STATE_1;
+	ctx.state.th.stage = EDHOC_TH_STATE_1;
 
 	uint8_t buf[512] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
@@ -64,10 +64,10 @@ TEST(internals_message4, comp_giy_invalid_role)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.role = 99;
-	ctx.chosen_method = EDHOC_METHOD_2;
-	ctx.prk_state = EDHOC_PRK_STATE_3E2M;
-	ctx.th_state = EDHOC_TH_STATE_3;
+	ctx.state.role = 99;
+	ctx.negotiation.selected_method = EDHOC_METHOD_2;
+	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
+	ctx.state.th.stage = EDHOC_TH_STATE_3;
 
 	struct edhoc_auth_creds ac = { 0 };
 	int ret = comp_giy(&ctx, &ac, NULL, 0);
@@ -94,8 +94,8 @@ TEST(internals_message4, compute_key_iv_aad_4_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	ctx.th_state = EDHOC_TH_STATE_1;
-	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
+	ctx.state.th.stage = EDHOC_TH_STATE_1;
+	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	uint8_t key[16], iv[13], aad[256];
 	int ret = compute_key_iv_aad_4(&ctx, key, 16, iv, 13, aad, 256);
@@ -186,8 +186,8 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_label)
 	struct edhoc_ead_token tok = { .label = 70000,
 				       .value = NULL,
 				       .value_len = 0 };
-	ctx.nr_of_ead_tokens = 1;
-	ctx.ead_token[0] = tok;
+	ctx.ead.count = 1;
+	ctx.ead.token[0] = tok;
 
 	size_t len = 0;
 	int ret = compute_plaintext_4_len(&ctx, &len);
@@ -204,8 +204,8 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_value)
 	struct edhoc_ead_token tok = { .label = 1,
 				       .value = NULL,
 				       .value_len = 60000 };
-	ctx.nr_of_ead_tokens = 1;
-	ctx.ead_token[0] = tok;
+	ctx.ead.count = 1;
+	ctx.ead.token[0] = tok;
 
 	size_t len = 0;
 	int ret = compute_plaintext_4_len(&ctx, &len);
@@ -222,8 +222,8 @@ TEST(internals_message4, compute_plaintext_4_len_very_large_ead_value)
 	struct edhoc_ead_token tok = { .label = 1,
 				       .value = NULL,
 				       .value_len = 70000 };
-	ctx.nr_of_ead_tokens = 1;
-	ctx.ead_token[0] = tok;
+	ctx.ead.count = 1;
+	ctx.ead.token[0] = tok;
 
 	size_t len = 0;
 	int ret = compute_plaintext_4_len(&ctx, &len);

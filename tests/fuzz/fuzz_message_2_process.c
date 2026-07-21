@@ -73,14 +73,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_bind_platform(&ctx, test_get_platform());
 
 	/* Pre-seed context state as if message_1 was already composed. */
-	ctx.role = EDHOC_INITIATOR;
-	ctx.status = EDHOC_SM_WAIT_M2;
-	ctx.chosen_method = EDHOC_METHOD_0;
-	ctx.chosen_csuite_idx = 0;
-	ctx.th_state = EDHOC_TH_STATE_1;
-	ctx.th_len = 32;
-	memset(ctx.th, 0xAA, ctx.th_len);
-	ctx.prk_state = EDHOC_PRK_STATE_INVALID;
+	ctx.state.role = EDHOC_ROLE_INITIATOR;
+	ctx.state.machine = EDHOC_SM_WAIT_M2;
+	ctx.negotiation.selected_method = EDHOC_METHOD_0;
+	ctx.negotiation.selected_cipher_suite_index = 0;
+	ctx.state.th.stage = EDHOC_TH_STATE_1;
+	ctx.state.th.length = 32;
+	memset(ctx.state.th.value, 0xAA, ctx.state.th.length);
+	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
 	/* Seed the initiator ephemeral private key as a live key-store handle;
 	 * message_2 processing decapsulates G_XY with it. */
