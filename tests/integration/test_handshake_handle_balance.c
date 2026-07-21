@@ -35,6 +35,7 @@
 
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
+#include "edhoc_macros_internal.h"
 #include "test_ead.h"
 
 /* PSA crypto header: */
@@ -323,19 +324,19 @@ static int counting_aead_decrypt(void *user_context, const void *key_id,
 				 size_t plaintext_size,
 				 size_t *plaintext_length);
 
-/** \brief Counting wrapper for \ref edhoc_crypto.hash_init. */
+/** \brief Counting wrapper for \ref crypto.hash_init. */
 static int counting_hash_init(void *user_context, void **operation);
 
-/** \brief Counting wrapper for \ref edhoc_crypto.hash_update. */
+/** \brief Counting wrapper for \ref crypto.hash_update. */
 static int counting_hash_update(void *user_context, void *operation,
 				const uint8_t *input, size_t input_length);
 
-/** \brief Counting wrapper for \ref edhoc_crypto.hash_finish. */
+/** \brief Counting wrapper for \ref crypto.hash_finish. */
 static int counting_hash_finish(void *user_context, void *operation,
 				uint8_t *hash, size_t hash_size,
 				size_t *hash_length);
 
-/** \brief Counting wrapper for \ref edhoc_crypto.hash_abort. */
+/** \brief Counting wrapper for \ref crypto.hash_abort. */
 static int counting_hash_abort(void *user_context, void *operation);
 
 /** \brief Import a raw P-256 scalar as a sign or key-agreement private key. */

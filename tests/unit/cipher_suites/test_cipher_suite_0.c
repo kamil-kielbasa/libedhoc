@@ -34,10 +34,10 @@
 #include <string.h>
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_crypto.h>
-#include <edhoc/edhoc_cipher_suite.h>
-#include <edhoc/edhoc_values.h>
-#include <edhoc/edhoc_macros.h>
+#include <edhoc/crypto.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/values.h>
+#include "edhoc_macros_internal.h"
 
 /* Unity headers: */
 #include <unity.h>

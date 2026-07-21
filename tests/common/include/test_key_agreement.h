@@ -16,9 +16,9 @@
 #include "edhoc_context_internal.h"
 
 /* EDHOC public headers: */
-#include <edhoc/edhoc_cipher_suite.h>
-#include <edhoc/edhoc_crypto.h>
-#include <edhoc/edhoc_values.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/crypto.h>
+#include <edhoc/values.h>
 
 /* Standard library headers: */
 #include <stdint.h>

@@ -9,6 +9,7 @@
 /* Include files ----------------------------------------------------------- */
 
 #include "test_ead.h"
+#include "edhoc_macros_internal.h"
 
 /* Module interface variables and constants -------------------------------- */
 

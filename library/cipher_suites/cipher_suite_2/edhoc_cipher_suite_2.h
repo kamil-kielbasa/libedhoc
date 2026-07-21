@@ -19,7 +19,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#include <edhoc/edhoc_crypto.h>
+#include <edhoc/crypto.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -44,7 +44,7 @@
  *          \c psa_key_id_t handles; no secret is exported to the caller. Access
  *          the vtables through \ref edhoc_cipher_suite_2_get_crypto and
  *          \ref edhoc_cipher_suite_2_get_suite (or the enum getters in
- *          \c <edhoc/edhoc_cipher_suite.h>).
+ *          \c <edhoc/cipher_suite.h>).
  *
  * @{
  */

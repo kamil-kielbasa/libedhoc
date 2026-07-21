@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_cipher_suite.h
+ * \file    cipher_suite.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC cipher suite parameters and reference-implementation getters.
  *
@@ -18,7 +18,7 @@
 
 /* Forward declarations ---------------------------------------------------- */
 
-/** \brief Cryptographic operations vtable (see edhoc_crypto.h). */
+/** \brief Cryptographic operations vtable (see crypto.h). */
 struct edhoc_crypto;
 
 /* Types and type definitions ---------------------------------------------- */

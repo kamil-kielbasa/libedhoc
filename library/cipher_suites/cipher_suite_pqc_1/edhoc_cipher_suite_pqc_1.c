@@ -34,8 +34,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <string.h>
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_values.h>
-#include <edhoc/edhoc_macros.h>
+#include <edhoc/values.h>
+#include "edhoc_macros_internal.h"
 #include "edhoc_backend_log.h"
 
 /* EDHOC KDF (KMAC256 extract / expand) backend: */

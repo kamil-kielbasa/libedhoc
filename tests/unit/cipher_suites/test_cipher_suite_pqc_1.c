@@ -31,10 +31,10 @@
 #include <string.h>
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_crypto.h>
-#include <edhoc/edhoc_cipher_suite.h>
-#include <edhoc/edhoc_values.h>
-#include <edhoc/edhoc_macros.h>
+#include <edhoc/crypto.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/values.h>
+#include "edhoc_macros_internal.h"
 
 /* Unity headers: */
 #include <unity.h>
@@ -1237,6 +1237,13 @@ TEST(cipher_suite_pqc_1_negative, hash_init_null)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
+TEST(cipher_suite_pqc_1_negative, hash_abort_null)
+{
+	/* hash_abort delegates to hash_release, which rejects a NULL handle. */
+	ret = edhoc_crypto->hash_abort(NULL, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
 TEST(cipher_suite_pqc_1_negative, hash_update_null_args)
 {
 	const uint8_t input[8] = { 0 };
@@ -1502,6 +1509,7 @@ TEST_GROUP_RUNNER(cipher_suite_pqc_1_negative)
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, aead_decrypt_null_args);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, aead_decrypt_tampered);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, hash_init_null);
+	RUN_TEST_CASE(cipher_suite_pqc_1_negative, hash_abort_null);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, hash_update_null_args);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, hash_finish_null_args);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative,

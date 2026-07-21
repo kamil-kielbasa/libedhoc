@@ -22,9 +22,9 @@
 #endif
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_types.h>
-#include <edhoc/edhoc_ead.h>
-#include <edhoc/edhoc_credentials.h>
+#include <edhoc/types.h>
+#include <edhoc/ead.h>
+#include <edhoc/credentials.h>
 
 /* Standard library headers: */
 #include <stdint.h>

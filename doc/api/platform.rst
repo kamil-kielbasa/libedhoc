@@ -10,7 +10,7 @@ The binding is mandatory: the message-processing API refuses to run (returns
 ``EDHOC_ERROR_BAD_STATE``) until a platform with a valid ``zeroize`` is bound
 with :c:func:`edhoc_bind_platform`.
 
-| Header file: :file:`include/edhoc/edhoc_platform.h`
+| Header file: :file:`include/edhoc/platform.h`
 
 .. doxygengroup:: edhoc-interface-platform
    :project: libedhoc

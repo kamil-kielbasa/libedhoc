@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_values.h
+ * \file    values.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC values and error codes.
  * 

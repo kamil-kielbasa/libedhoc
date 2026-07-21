@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_platform.h
+ * \file    platform.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC platform services interface.
  * 

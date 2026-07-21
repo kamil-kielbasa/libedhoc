@@ -10,7 +10,7 @@ persisted in the application context.
 Supported credential identifications (from the COSE IANA registry) are
 :term:`kid`, :term:`x5chain` and :term:`x5t`.
 
-| Header file: :file:`include/edhoc/edhoc_credentials.h`
+| Header file: :file:`include/edhoc/credentials.h`
 
 .. doxygengroup:: edhoc-interface-credentials
    :project: libedhoc

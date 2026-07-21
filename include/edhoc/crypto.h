@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_crypto.h
+ * \file    crypto.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC cryptographic interface.
  * 
@@ -16,7 +16,7 @@
 #include <stddef.h>
 
 /* EDHOC headers: */
-#include "edhoc_cipher_suite.h"
+#include "cipher_suite.h"
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */

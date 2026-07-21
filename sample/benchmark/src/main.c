@@ -26,6 +26,7 @@
 
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
+#include "edhoc_macros_internal.h"
 
 /* Cipher suite 2 header: */
 #include "edhoc_cipher_suite_2.h"

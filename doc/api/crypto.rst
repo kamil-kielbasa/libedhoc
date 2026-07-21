@@ -15,7 +15,7 @@ A set of ready-made bindings for :term:`cipher suite` 0, 2 and 24 against
 mbed TLS / PSA Crypto lives under ``library/cipher_suites/`` and is documented
 on :doc:`helpers`.
 
-| Header file: :file:`include/edhoc/edhoc_crypto.h`
+| Header file: :file:`include/edhoc/crypto.h`
 
 Key usage
 ---------

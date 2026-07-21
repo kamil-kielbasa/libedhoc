@@ -18,7 +18,7 @@
 
 /* EDHOC headers */
 #include <edhoc/edhoc.h>
-#include <edhoc/edhoc_macros.h>
+#include "edhoc_macros_internal.h"
 
 /* PSA crypto header */
 #include <psa/crypto.h>

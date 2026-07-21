@@ -53,7 +53,7 @@ Post-quantum cipher suite 1
 Connection identifier helpers
 -----------------------------
 
-| Header file: :file:`include/edhoc/edhoc_coap.h`
+| Header file: :file:`include/edhoc/coap.h`
 
 .. doxygengroup:: edhoc-api-connection-id
    :project: libedhoc
@@ -63,15 +63,6 @@ Buffer utilities
 ----------------
 
 .. doxygengroup:: edhoc-api-buffer-utils
-   :project: libedhoc
-   :members:
-
-Macros
-------
-
-| Header file: :file:`include/edhoc/edhoc_macros.h`
-
-.. doxygengroup:: edhoc-macros
    :project: libedhoc
    :members:
 

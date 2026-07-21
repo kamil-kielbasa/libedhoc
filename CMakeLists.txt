@@ -80,6 +80,14 @@ if(PROJECT_IS_TOP_LEVEL AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     install(DIRECTORY backends/cbor/include/ backends/memory/include/
                       backends/log/include/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+
+    # The reference cipher-suite sources #include "edhoc_macros_internal.h"
+    # unqualified (like the backend helper headers above). It is a private
+    # header — not part of the edhoc/ public API — but ship it flat too so a
+    # downstream consumer can still recompile those reference sources.
+    install(FILES library/internal/edhoc_macros_internal.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
     install(DIRECTORY library/cipher_suites/cipher_suite_0/
                       library/cipher_suites/cipher_suite_2/
                       library/cipher_suites/cipher_suite_24/

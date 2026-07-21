@@ -13,6 +13,7 @@
 #include "test_platform.h"
 #include "edhoc_context_internal.h"
 #include <edhoc/edhoc.h>
+#include "edhoc_macros_internal.h"
 
 /* Cipher suite headers: */
 #include "edhoc_cipher_suite_0.h"

@@ -18,14 +18,13 @@
 #include <stddef.h>
 
 /* EDHOC headers: */
-#include "edhoc_types.h"
-#include "edhoc_credentials.h"
-#include "edhoc_cipher_suite.h"
-#include "edhoc_crypto.h"
-#include "edhoc_ead.h"
-#include "edhoc_platform.h"
-#include "edhoc_macros.h"
-#include "edhoc_values.h"
+#include "types.h"
+#include "credentials.h"
+#include "cipher_suite.h"
+#include "crypto.h"
+#include "ead.h"
+#include "platform.h"
+#include "values.h"
 
 /* Defines ----------------------------------------------------------------- */
 

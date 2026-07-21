@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_credentials.h
+ * \file    credentials.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC authentication credentials interface.
  * 

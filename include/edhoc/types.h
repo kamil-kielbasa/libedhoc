@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_types.h
+ * \file    types.h
  * \author  Kamil Kielbasa
  * \brief   Public EDHOC protocol types.
  *

@@ -64,7 +64,7 @@ Error model
 -----------
 
 All API functions return ``EDHOC_SUCCESS`` (0) on success or a negative error
-code on failure. Error codes are defined in :file:`include/edhoc/edhoc_values.h` and
+code on failure. Error codes are defined in :file:`include/edhoc/values.h` and
 listed on the :doc:`../reference/error_codes` page.
 
 After a message-processing function fails, use :c:func:`edhoc_error_get_code`

@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_coap.h
+ * \file    coap.h
  * \author  Assa Abloy
  * \brief   EDHOC Utilities API:
  *          - Connection ID utilities.
@@ -21,8 +21,8 @@
 #include <stdbool.h>
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_types.h>
-#include <edhoc/edhoc_values.h>
+#include <edhoc/types.h>
+#include <edhoc/values.h>
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */

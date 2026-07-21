@@ -11,7 +11,7 @@
 
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
-#include <edhoc/edhoc_coap.h>
+#include <edhoc/coap.h>
 
 /* Standard library headers: */
 #include <stdint.h>

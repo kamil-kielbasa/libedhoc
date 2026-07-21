@@ -25,13 +25,13 @@
 #endif
 
 /* EDHOC public headers (types referenced by the context): */
-#include <edhoc/edhoc_types.h>
-#include <edhoc/edhoc_platform.h>
-#include <edhoc/edhoc_credentials.h>
-#include <edhoc/edhoc_cipher_suite.h>
-#include <edhoc/edhoc_crypto.h>
-#include <edhoc/edhoc_ead.h>
-#include <edhoc/edhoc_values.h>
+#include <edhoc/types.h>
+#include <edhoc/platform.h>
+#include <edhoc/credentials.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/crypto.h>
+#include <edhoc/ead.h>
+#include <edhoc/values.h>
 
 /* Standard library headers: */
 #include <stdint.h>

@@ -12,7 +12,7 @@ storage sized by ``edhoc_context_size()`` — on the stack (a VLA) or on the hea
 — and drive it through the API; do not declare a ``struct edhoc_context`` by
 value.
 
-| Header file: :file:`include/edhoc/edhoc_types.h`
+| Header file: :file:`include/edhoc/types.h`
 
 Context object
 --------------

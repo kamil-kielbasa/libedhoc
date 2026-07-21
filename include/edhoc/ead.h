@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_ead.h
+ * \file    ead.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC External Authorization Data (EAD) interface.
  * 

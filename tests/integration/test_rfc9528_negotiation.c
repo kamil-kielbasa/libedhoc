@@ -14,6 +14,7 @@
 #include "test_credentials.h"
 #include "edhoc_context_internal.h"
 #include <edhoc/edhoc.h>
+#include "edhoc_macros_internal.h"
 
 /* Cipher suite 2: */
 #include "edhoc_cipher_suite_2.h"

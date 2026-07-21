@@ -11,6 +11,7 @@
 
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
+#include "edhoc_macros_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>

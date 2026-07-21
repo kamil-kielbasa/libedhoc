@@ -25,9 +25,9 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <string.h>
 
 /* EDHOC headers: */
-#include <edhoc/edhoc_crypto.h>
-#include <edhoc/edhoc_values.h>
-#include <edhoc/edhoc_macros.h>
+#include <edhoc/crypto.h>
+#include <edhoc/values.h>
+#include "edhoc_macros_internal.h"
 #include "edhoc_backend_log.h"
 
 /* PSA crypto header: */
@@ -187,18 +187,18 @@ static int allocate_hash_slot(void **operation);
 /** \brief Release the pool slot backing a multipart hash operation. */
 static void release_hash_slot(const void *operation);
 
-/** \brief Begin a multipart hash operation (\ref edhoc_crypto.hash_init). */
+/** \brief Begin a multipart hash operation (\ref crypto.hash_init). */
 static int hash_init(void *user_context, void **operation);
 
-/** \brief Add input to a multipart hash (\ref edhoc_crypto.hash_update). */
+/** \brief Add input to a multipart hash (\ref crypto.hash_update). */
 static int hash_update(void *user_context, void *operation,
 		       const uint8_t *input, size_t input_length);
 
-/** \brief Finish a multipart hash (\ref edhoc_crypto.hash_finish). */
+/** \brief Finish a multipart hash (\ref crypto.hash_finish). */
 static int hash_finish(void *user_context, void *operation, uint8_t *hash,
 		       size_t hash_size, size_t *hash_length);
 
-/** \brief Abort a multipart hash (\ref edhoc_crypto.hash_abort). */
+/** \brief Abort a multipart hash (\ref crypto.hash_abort). */
 static int hash_abort(void *user_context, void *operation);
 
 /* Static function definitions --------------------------------------------- */

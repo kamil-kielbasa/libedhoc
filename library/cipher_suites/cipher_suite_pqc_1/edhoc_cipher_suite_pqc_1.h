@@ -25,8 +25,8 @@
 
 /* Include files ----------------------------------------------------------- */
 
-#include <edhoc/edhoc_crypto.h>
-#include <edhoc/edhoc_cipher_suite.h>
+#include <edhoc/crypto.h>
+#include <edhoc/cipher_suite.h>
 
 #include <stdint.h>
 #include <stddef.h>

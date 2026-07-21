@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_macros.h
+ * \file    edhoc_macros_internal.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC utility macros.
  * 
@@ -8,8 +8,8 @@
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef EDHOC_MACROS_H
-#define EDHOC_MACROS_H
+#ifndef EDHOC_MACROS_INTERNAL_H
+#define EDHOC_MACROS_INTERNAL_H
 
 /* Include files ----------------------------------------------------------- */
 #include <stddef.h>
@@ -74,4 +74,4 @@
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
-#endif /* EDHOC_MACROS_H */
+#endif /* EDHOC_MACROS_INTERNAL_H */

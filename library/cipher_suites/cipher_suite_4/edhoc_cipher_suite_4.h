@@ -19,7 +19,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#include <edhoc/edhoc_crypto.h>
+#include <edhoc/crypto.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -47,7 +47,7 @@
  *          Compact25519 call and wipes the copy afterwards. Access the vtables
  *          through \ref edhoc_cipher_suite_4_get_crypto and
  *          \ref edhoc_cipher_suite_4_get_suite (or the enum getters in
- *          \c <edhoc/edhoc_cipher_suite.h>).
+ *          \c <edhoc/cipher_suite.h>).
  *
  * @{
  */

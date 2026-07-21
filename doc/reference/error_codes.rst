@@ -10,7 +10,7 @@ negative C error code. After a failure, call :c:func:`edhoc_error_get_code`
 to retrieve the EDHOC error code carried in (or to be carried in) the
 on-the-wire error message defined in RFC 9528, Section 6.
 
-| Header file: :file:`include/edhoc/edhoc_values.h`
+| Header file: :file:`include/edhoc/values.h`
 
 Error code enumeration
 ----------------------

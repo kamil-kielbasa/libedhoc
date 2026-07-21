@@ -19,7 +19,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
-#include <edhoc/edhoc_crypto.h>
+#include <edhoc/crypto.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -48,7 +48,7 @@
  *          through
  *          \ref edhoc_cipher_suite_0_get_crypto and
  *          \ref edhoc_cipher_suite_0_get_suite (or the enum getters in
- *          \c <edhoc/edhoc_cipher_suite.h>).
+ *          \c <edhoc/cipher_suite.h>).
  *
  * @{
  */

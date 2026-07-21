@@ -19,8 +19,8 @@
 #endif
 
 /* EDHOC public headers: */
-#include <edhoc/edhoc_cipher_suite.h>
-#include <edhoc/edhoc_crypto.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/crypto.h>
 
 /* Reference cipher-suite headers (only those enabled at build time): */
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE
