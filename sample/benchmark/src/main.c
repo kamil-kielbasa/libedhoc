@@ -163,9 +163,9 @@ static int cred_fetch_init(void *user_ctx,
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
+	auth_cred->x509_chain.certificate_count = 1;
 	auth_cred->x509_chain.certificate[0] = CRED_I;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_I);
 
 	return import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
 				    auth_cred->private_key_id);
@@ -177,9 +177,9 @@ static int cred_fetch_resp(void *user_ctx,
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
+	auth_cred->x509_chain.certificate_count = 1;
 	auth_cred->x509_chain.certificate[0] = CRED_R;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_R);
 
 	return import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
 				    auth_cred->private_key_id);
@@ -194,11 +194,11 @@ static int cred_verify_init(void *user_ctx,
 	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_R))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[0],
-			auth_cred->x509_chain.cert_len[0]))
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	*pub_key = PK_R;
@@ -216,11 +216,11 @@ static int cred_verify_resp(void *user_ctx,
 	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[0],
-			auth_cred->x509_chain.cert_len[0]))
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	*pub_key = PK_I;
@@ -278,7 +278,7 @@ static void setup_context(struct edhoc_context *ctx,
 	assert(EDHOC_SUCCESS == ret);
 
 	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = is_initiator ? -14 : -24,
 	};
 	ret = edhoc_set_connection_id(ctx, &cid);

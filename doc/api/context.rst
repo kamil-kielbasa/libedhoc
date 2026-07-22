@@ -17,7 +17,7 @@ value.
 Context object
 --------------
 
-.. doxygengroup:: edhoc-context
+.. doxygengroup:: edhoc-types
    :project: libedhoc
    :members:
 
