@@ -32,7 +32,7 @@ TEST_TEAR_DOWN(internals_common)
 TEST(internals_common, comp_cid_len_one_byte_int)
 {
 	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 5,
 	};
 	size_t len = 0;
@@ -45,7 +45,7 @@ TEST(internals_common, comp_cid_len_one_byte_int)
 TEST(internals_common, comp_cid_len_byte_string)
 {
 	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = 3,
 	};
 	size_t len = 0;
@@ -58,7 +58,7 @@ TEST(internals_common, comp_cid_len_byte_string)
 TEST(internals_common, comp_cid_len_null_args)
 {
 	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 	};
 	size_t len = 0;
 
@@ -81,7 +81,7 @@ TEST(internals_common, comp_cid_len_invalid_type)
 
 TEST(internals_common, comp_id_cred_len_kid_int)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	cred.key_id.key_id_int = 5;
@@ -94,10 +94,10 @@ TEST(internals_common, comp_id_cred_len_kid_int)
 
 TEST(internals_common, comp_id_cred_len_kid_bstr)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	cred.key_id.key_id_bstr_length = 1;
+	cred.key_id.key_id_bstr.length = 1;
 	size_t len = 0;
 
 	int ret = comp_id_cred_len(&cred, &len);
@@ -108,11 +108,11 @@ TEST(internals_common, comp_id_cred_len_kid_bstr)
 TEST(internals_common, comp_id_cred_len_x509_chain_single)
 {
 	static uint8_t cert_buf[100];
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_CHAIN;
-	cred.x509_chain.nr_of_certs = 1;
-	cred.x509_chain.cert[0] = cert_buf;
-	cred.x509_chain.cert_len[0] = 100;
+	cred.x509_chain.certificate_count = 1;
+	cred.x509_chain.certificate[0] = cert_buf;
+	cred.x509_chain.certificate_length[0] = 100;
 	size_t len = 0;
 
 	int ret = comp_id_cred_len(&cred, &len);
@@ -124,13 +124,13 @@ TEST(internals_common, comp_id_cred_len_x509_chain_multi)
 {
 	static uint8_t cert0[50];
 	static uint8_t cert1[60];
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_CHAIN;
-	cred.x509_chain.nr_of_certs = 2;
-	cred.x509_chain.cert[0] = cert0;
-	cred.x509_chain.cert_len[0] = 50;
-	cred.x509_chain.cert[1] = cert1;
-	cred.x509_chain.cert_len[1] = 60;
+	cred.x509_chain.certificate_count = 2;
+	cred.x509_chain.certificate[0] = cert0;
+	cred.x509_chain.certificate_length[0] = 50;
+	cred.x509_chain.certificate[1] = cert1;
+	cred.x509_chain.certificate_length[1] = 60;
 	size_t len = 0;
 
 	int ret = comp_id_cred_len(&cred, &len);
@@ -140,13 +140,13 @@ TEST(internals_common, comp_id_cred_len_x509_chain_multi)
 
 TEST(internals_common, comp_id_cred_len_x509_hash_int)
 {
-	static uint8_t cert_fp[32];
-	struct edhoc_auth_creds cred = { 0 };
+	static uint8_t cert_fingerprint[32];
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_HASH;
 	cred.x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	cred.x509_hash.alg_int = -8;
-	cred.x509_hash.cert_fp = cert_fp;
-	cred.x509_hash.cert_fp_len = 32;
+	cred.x509_hash.algorithm_int = -8;
+	cred.x509_hash.certificate_fingerprint = cert_fingerprint;
+	cred.x509_hash.certificate_fingerprint_length = 32;
 	size_t len = 0;
 
 	int ret = comp_id_cred_len(&cred, &len);
@@ -156,15 +156,16 @@ TEST(internals_common, comp_id_cred_len_x509_hash_int)
 
 TEST(internals_common, comp_id_cred_len_x509_hash_bstr)
 {
-	static uint8_t cert_fp[32];
-	struct edhoc_auth_creds cred = { 0 };
+	static uint8_t cert_fingerprint[32];
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_HASH;
 	cred.x509_hash.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	cred.x509_hash.alg_bstr_length = sizeof(cred.x509_hash.alg_bstr);
-	cred.x509_hash.alg_bstr[0] = 'S';
-	cred.x509_hash.alg_bstr[1] = 'H';
-	cred.x509_hash.cert_fp = cert_fp;
-	cred.x509_hash.cert_fp_len = 32;
+	cred.x509_hash.algorithm_bstr.length =
+		sizeof(cred.x509_hash.algorithm_bstr.value);
+	cred.x509_hash.algorithm_bstr.value[0] = 'S';
+	cred.x509_hash.algorithm_bstr.value[1] = 'H';
+	cred.x509_hash.certificate_fingerprint = cert_fingerprint;
+	cred.x509_hash.certificate_fingerprint_length = 32;
 	size_t len = 0;
 
 	int ret = comp_id_cred_len(&cred, &len);
@@ -174,7 +175,7 @@ TEST(internals_common, comp_id_cred_len_x509_hash_bstr)
 
 TEST(internals_common, comp_id_cred_len_unsupported)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = 99;
 	size_t len = 0;
 
@@ -184,7 +185,7 @@ TEST(internals_common, comp_id_cred_len_unsupported)
 
 TEST(internals_common, comp_id_cred_len_null)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	size_t len = 0;
 
@@ -213,9 +214,9 @@ TEST(internals_common, comp_th_len_zero)
 
 TEST(internals_common, comp_cred_len_any)
 {
-	struct edhoc_auth_creds cred = { 0 };
-	cred.label = EDHOC_COSE_ANY;
-	cred.any.cred_len = 50;
+	struct edhoc_auth_credentials cred = { 0 };
+	cred.label = EDHOC_COSE_HEADER_CUSTOM;
+	cred.custom.credential_length = 50;
 	size_t len = 0;
 
 	int ret = comp_cred_len(&cred, &len);
@@ -225,9 +226,9 @@ TEST(internals_common, comp_cred_len_any)
 
 TEST(internals_common, comp_cred_len_kid)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
-	cred.key_id.cred_len = 100;
+	cred.key_id.credential_length = 100;
 	size_t len = 0;
 
 	int ret = comp_cred_len(&cred, &len);
@@ -238,11 +239,11 @@ TEST(internals_common, comp_cred_len_kid)
 TEST(internals_common, comp_cred_len_x509_chain)
 {
 	static uint8_t cert_buf[200];
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_CHAIN;
-	cred.x509_chain.nr_of_certs = 1;
-	cred.x509_chain.cert[0] = cert_buf;
-	cred.x509_chain.cert_len[0] = 200;
+	cred.x509_chain.certificate_count = 1;
+	cred.x509_chain.certificate[0] = cert_buf;
+	cred.x509_chain.certificate_length[0] = 200;
 	size_t len = 0;
 
 	int ret = comp_cred_len(&cred, &len);
@@ -252,9 +253,9 @@ TEST(internals_common, comp_cred_len_x509_chain)
 
 TEST(internals_common, comp_cred_len_x509_hash)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_HASH;
-	cred.x509_hash.cert_len = 150;
+	cred.x509_hash.certificate_length = 150;
 	size_t len = 0;
 
 	int ret = comp_cred_len(&cred, &len);
@@ -264,7 +265,7 @@ TEST(internals_common, comp_cred_len_x509_hash)
 
 TEST(internals_common, comp_cred_len_unsupported)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = 99;
 	size_t len = 0;
 
@@ -295,10 +296,10 @@ TEST(internals_common, comp_ead_len_with_tokens)
 	ctx.ead.count = 2;
 	ctx.ead.token[0].label = 1;
 	ctx.ead.token[0].value = val0;
-	ctx.ead.token[0].value_len = 4;
+	ctx.ead.token[0].value_length = 4;
 	ctx.ead.token[1].label = 2;
 	ctx.ead.token[1].value = val1;
-	ctx.ead.token[1].value_len = 2;
+	ctx.ead.token[1].value_length = 2;
 	size_t len = 0;
 
 	int ret = comp_ead_len(&ctx, &len);
@@ -314,11 +315,11 @@ TEST(internals_common, kid_compact_enc_int_cbor)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	cred.key_id.key_id_int = 7;
-	cred.key_id.cred_is_cbor = true;
+	cred.key_id.is_credential_cbor_encoded = true;
 
 	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -333,11 +334,11 @@ TEST(internals_common, kid_compact_enc_int_non_cbor)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	cred.key_id.key_id_int = 5;
-	cred.key_id.cred_is_cbor = false;
+	cred.key_id.is_credential_cbor_encoded = false;
 
 	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -350,12 +351,12 @@ TEST(internals_common, kid_compact_enc_bstr_cbor_one_byte)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	cred.key_id.cred_is_cbor = true;
-	cred.key_id.key_id_bstr_length = 1;
-	cred.key_id.key_id_bstr[0] = 0x05;
+	cred.key_id.is_credential_cbor_encoded = true;
+	cred.key_id.key_id_bstr.length = 1;
+	cred.key_id.key_id_bstr.value[0] = 0x05;
 
 	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -370,13 +371,13 @@ TEST(internals_common, kid_compact_enc_bstr_cbor_multi_byte)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	cred.key_id.cred_is_cbor = true;
-	cred.key_id.key_id_bstr_length = 2;
-	cred.key_id.key_id_bstr[0] = 0x18;
-	cred.key_id.key_id_bstr[1] = 0x64;
+	cred.key_id.is_credential_cbor_encoded = true;
+	cred.key_id.key_id_bstr.length = 2;
+	cred.key_id.key_id_bstr.value[0] = 0x18;
+	cred.key_id.key_id_bstr.value[1] = 0x64;
 
 	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -392,11 +393,11 @@ TEST(internals_common, kid_compact_enc_bstr_non_cbor)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	cred.key_id.cred_is_cbor = false;
-	cred.key_id.key_id_bstr_length = 0;
+	cred.key_id.is_credential_cbor_encoded = false;
+	cred.key_id.key_id_bstr.length = 0;
 
 	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -604,7 +605,7 @@ TEST(internals_common, comp_prk_3e2m_method_0)
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.th.length = 32;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
 	int ret = comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
@@ -640,9 +641,9 @@ TEST(internals_common, comp_prk_3e2m_method_1)
 		ctx.ephemeral.peer.value[i] = (uint8_t)(i + 0x60);
 	ctx.ephemeral.peer.length = 32;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
-	internals_inject_ecdh_key(auth_cred.priv_key_id, dh_priv,
+	internals_inject_ecdh_key(auth_cred.private_key_id, dh_priv,
 				  sizeof(dh_priv));
 
 	uint8_t pub_key[32];
@@ -666,7 +667,7 @@ TEST(internals_common, comp_prk_3e2m_method_max)
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.th.length = 32;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
 	int ret = comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
@@ -685,7 +686,7 @@ TEST(internals_common, comp_prk_4e3m_method_0)
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.th.length = 32;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
 	int ret = comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
@@ -723,9 +724,9 @@ TEST(internals_common, comp_prk_4e3m_method_2)
 
 	ctx.ephemeral.peer.length = 32;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
-	internals_inject_ecdh_key(auth_cred.priv_key_id, dh_priv,
+	internals_inject_ecdh_key(auth_cred.private_key_id, dh_priv,
 				  sizeof(dh_priv));
 
 	uint8_t pub_key[32];
@@ -749,7 +750,7 @@ TEST(internals_common, comp_prk_4e3m_method_max)
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.th.length = 32;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
 
 	int ret = comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
@@ -760,7 +761,7 @@ TEST(internals_common, comp_prk_4e3m_method_max)
 
 TEST(internals_common, comp_id_cred_len_kid_invalid_encode)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = 99;
 	size_t len = 0;
@@ -771,7 +772,7 @@ TEST(internals_common, comp_id_cred_len_kid_invalid_encode)
 
 TEST(internals_common, comp_id_cred_len_x509_hash_invalid_encode)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_X509_HASH;
 	cred.x509_hash.encode_type = 99;
 	size_t len = 0;
@@ -782,7 +783,7 @@ TEST(internals_common, comp_id_cred_len_x509_hash_invalid_encode)
 
 TEST(internals_common, comp_cred_len_null)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	size_t len = 0;
 
@@ -826,7 +827,7 @@ TEST(internals_common, comp_prk_2e_bad_state)
 
 TEST(internals_common, comp_prk_3e2m_null)
 {
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	int ret = comp_prk_3e2m(NULL, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
@@ -840,7 +841,7 @@ TEST(internals_common, comp_prk_3e2m_bad_prk_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	int ret = comp_prk_3e2m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
@@ -849,7 +850,7 @@ TEST(internals_common, comp_prk_3e2m_bad_prk_state)
 
 TEST(internals_common, comp_prk_4e3m_null)
 {
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	int ret = comp_prk_4e3m(NULL, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
@@ -863,7 +864,7 @@ TEST(internals_common, comp_prk_4e3m_bad_prk_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	int ret = comp_prk_4e3m(&ctx, &auth_cred, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
@@ -899,7 +900,7 @@ TEST(internals_common, compute_new_prk_out_null)
 
 TEST(internals_common, kid_compact_enc_invalid_type)
 {
-	struct edhoc_auth_creds cred = { 0 };
+	struct edhoc_auth_credentials cred = { 0 };
 	cred.label = EDHOC_COSE_HEADER_KID;
 	cred.key_id.encode_type = 99;
 	cred.key_id.key_id_int = 5;

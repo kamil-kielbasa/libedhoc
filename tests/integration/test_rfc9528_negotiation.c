@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Module tests for RFC 9528 suites negotation examples.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -82,7 +82,7 @@ static int make_key_pair_init(void *user_context, void *decapsulation_key_id,
 	psa_key_id_t *psa_kid = decapsulation_key_id;
 	*psa_kid = PSA_KEY_ID_NULL;
 	if (PSA_SUCCESS != psa_import_key(&attr, X, ARRAY_SIZE(X), psa_kid))
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+		return EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE;
 
 	memcpy(encapsulation_key, G_X, ARRAY_SIZE(G_X));
 	*encapsulation_key_length = ARRAY_SIZE(G_X);
@@ -129,16 +129,16 @@ TEST(rfc9528_negotiation, example_1)
 	const enum edhoc_method methods[] = { EDHOC_METHOD_1 };
 	const struct edhoc_cipher_suite csuites_init[] = {
 		[0].value = 5,
-		[0].kem_public_key_length = 32,
+		[0].kem_encapsulation_key_length = 32,
 		[0].hash_length = 32,
 	};
 	const struct edhoc_cipher_suite csuites_resp[] = {
 		[0].value = 6,
-		[0].kem_public_key_length = 32,
+		[0].kem_encapsulation_key_length = 32,
 		[0].hash_length = 32,
 	};
 	const struct edhoc_connection_id conn_id_init = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 1,
 	};
 
@@ -236,8 +236,8 @@ TEST(rfc9528_negotiation, example_1)
 
 	struct edhoc_error_info error_info = {
 		.cipher_suites = csuites,
-		.total_entries = ARRAY_SIZE(csuites),
-		.written_entries = csuites_len,
+		.entries_size = ARRAY_SIZE(csuites),
+		.entries_length = csuites_len,
 	};
 	ret = edhoc_message_error_compose(msg_err, ARRAY_SIZE(msg_err),
 					  &msg_err_len, error_code_resp,
@@ -249,8 +249,8 @@ TEST(rfc9528_negotiation, example_1)
 	int32_t cipher_suites_init[1] = { 0 };
 	struct edhoc_error_info error_info_init = {
 		.cipher_suites = cipher_suites_init,
-		.total_entries = ARRAY_SIZE(cipher_suites_init),
-		.written_entries = 0,
+		.entries_size = ARRAY_SIZE(cipher_suites_init),
+		.entries_length = 0,
 	};
 	ret = edhoc_message_error_process(msg_err, msg_err_len,
 					  &error_code_init, &error_info_init);
@@ -258,7 +258,7 @@ TEST(rfc9528_negotiation, example_1)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE,
 			  error_code_init);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_resp),
-			  error_info_init.written_entries);
+			  error_info_init.entries_length);
 	TEST_ASSERT_EQUAL(csuites_resp[0].value,
 			  error_info_init.cipher_suites[0]);
 
@@ -271,10 +271,10 @@ TEST(rfc9528_negotiation, example_1)
 
 	const struct edhoc_cipher_suite fixed_csuites_init[] = {
 		[0].value = 5,
-		[0].kem_public_key_length = 32,
+		[0].kem_encapsulation_key_length = 32,
 		[0].hash_length = 32,
 		[1].value = 6,
-		[1].kem_public_key_length = 32,
+		[1].kem_encapsulation_key_length = 32,
 		[1].hash_length = 32,
 	};
 	ret = edhoc_set_cipher_suites(&init_ctx, fixed_csuites_init,
@@ -355,22 +355,22 @@ TEST(rfc9528_negotiation, example_2)
 	const enum edhoc_method methods[] = { EDHOC_METHOD_1 };
 	const struct edhoc_cipher_suite csuites_init[] = {
 		[0].value = 5,
-		[0].kem_public_key_length = 32,
+		[0].kem_encapsulation_key_length = 32,
 		[0].hash_length = 32,
 		[1].value = 6,
-		[1].kem_public_key_length = 32,
+		[1].kem_encapsulation_key_length = 32,
 		[1].hash_length = 32,
 	};
 	const struct edhoc_cipher_suite csuites_resp[] = {
 		[0].value = 9,
-		[0].kem_public_key_length = 32,
+		[0].kem_encapsulation_key_length = 32,
 		[0].hash_length = 32,
 		[1].value = 8,
-		[1].kem_public_key_length = 32,
+		[1].kem_encapsulation_key_length = 32,
 		[1].hash_length = 32,
 	};
 	const struct edhoc_connection_id conn_id_init = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 1,
 	};
 
@@ -470,8 +470,8 @@ TEST(rfc9528_negotiation, example_2)
 
 	struct edhoc_error_info error_info = {
 		.cipher_suites = csuites,
-		.total_entries = ARRAY_SIZE(csuites),
-		.written_entries = csuites_len,
+		.entries_size = ARRAY_SIZE(csuites),
+		.entries_length = csuites_len,
 	};
 
 	ret = edhoc_message_error_compose(msg_err, ARRAY_SIZE(msg_err),
@@ -484,8 +484,8 @@ TEST(rfc9528_negotiation, example_2)
 	int32_t cipher_suites_init[2] = { 0 };
 	struct edhoc_error_info error_info_init = {
 		.cipher_suites = cipher_suites_init,
-		.total_entries = ARRAY_SIZE(cipher_suites_init),
-		.written_entries = 0,
+		.entries_size = ARRAY_SIZE(cipher_suites_init),
+		.entries_length = 0,
 	};
 
 	ret = edhoc_message_error_process(msg_err, msg_err_len,
@@ -494,7 +494,7 @@ TEST(rfc9528_negotiation, example_2)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE,
 			  error_code_init);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_resp),
-			  error_info_init.written_entries);
+			  error_info_init.entries_length);
 	TEST_ASSERT_EQUAL(csuites_resp[0].value,
 			  error_info_init.cipher_suites[0]);
 	TEST_ASSERT_EQUAL(csuites_resp[1].value,
@@ -516,15 +516,15 @@ TEST(rfc9528_negotiation, example_2)
          * To avoid regeneration to all files, cipher suite 5 is missed.
          */
 	const struct edhoc_cipher_suite fixed_csuites_init[] = {
-		/* [0].value = 5, [0].kem_public_key_length = 32, [0].hash_length = 32, */
+		/* [0].value = 5, [0].kem_encapsulation_key_length = 32, [0].hash_length = 32, */
 		[0].value = 6,
-		[0].kem_public_key_length = 32,
+		[0].kem_encapsulation_key_length = 32,
 		[0].hash_length = 32,
 		[1].value = 7,
-		[1].kem_public_key_length = 32,
+		[1].kem_encapsulation_key_length = 32,
 		[1].hash_length = 32,
 		[2].value = 8,
-		[2].kem_public_key_length = 32,
+		[2].kem_encapsulation_key_length = 32,
 		[2].hash_length = 32,
 
 	};

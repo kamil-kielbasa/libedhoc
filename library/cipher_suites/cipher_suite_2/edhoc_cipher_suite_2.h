@@ -8,7 +8,7 @@
  *            - key exchange algorithm (ECDH curve) = P-256
  *            - signature algorithm                 = ES256
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 

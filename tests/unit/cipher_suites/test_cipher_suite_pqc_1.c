@@ -152,7 +152,7 @@ TEST(cipher_suite_pqc_1_positive, enum_getters)
 	 * ML-DSA-44 / AES-CCM-16-128-128 / SHAKE256). */
 	TEST_ASSERT_EQUAL_INT32(EDHOC_CIPHER_SUITE_PQC_1, edhoc_suite->value);
 	TEST_ASSERT_FALSE(edhoc_suite->supports_dh_nike);
-	TEST_ASSERT_EQUAL(800, edhoc_suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(800, edhoc_suite->kem_encapsulation_key_length);
 	TEST_ASSERT_EQUAL(768, edhoc_suite->kem_ciphertext_length);
 	TEST_ASSERT_EQUAL(0, edhoc_suite->nike_key_length);
 	TEST_ASSERT_EQUAL(2420, edhoc_suite->sign_length);
@@ -188,7 +188,7 @@ TEST(cipher_suite_pqc_1_positive, mlkem512_roundtrip)
 	psa_key_id_t shared_secret_responder_kid = PSA_KEY_ID_NULL;
 	psa_key_id_t shared_secret_initiator_kid = PSA_KEY_ID_NULL;
 
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	uint8_t ciphertext[edhoc_suite->kem_ciphertext_length];
 	memset(ciphertext, 0, sizeof(ciphertext));
@@ -201,7 +201,7 @@ TEST(cipher_suite_pqc_1_positive, mlkem512_roundtrip)
 					      sizeof(encapsulation_key),
 					      &encapsulation_key_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_suite->kem_public_key_length,
+	TEST_ASSERT_EQUAL(edhoc_suite->kem_encapsulation_key_length,
 			  encapsulation_key_len);
 
 	/* Responder: encapsulate (message_2). ML-KEM keeps no ephemeral for a
@@ -643,7 +643,7 @@ TEST(cipher_suite_pqc_1_negative, destroy_key_invalid_id)
 TEST(cipher_suite_pqc_1_negative, generate_key_pair_null_args)
 {
 	psa_key_id_t decaps_kid = PSA_KEY_ID_NULL;
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	size_t encapsulation_key_len = 0;
 
@@ -671,7 +671,7 @@ TEST(cipher_suite_pqc_1_negative, generate_key_pair_null_args)
 TEST(cipher_suite_pqc_1_negative, generate_key_pair_buffer_too_small)
 {
 	psa_key_id_t decaps_kid = PSA_KEY_ID_NULL;
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length - 1];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length - 1];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	size_t encapsulation_key_len = 0;
 
@@ -686,7 +686,7 @@ TEST(cipher_suite_pqc_1_negative, encapsulate_null_args)
 {
 	psa_key_id_t decaps_kid = PSA_KEY_ID_NULL;
 	psa_key_id_t shared_secret_kid = PSA_KEY_ID_NULL;
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	uint8_t ciphertext[edhoc_suite->kem_ciphertext_length];
 	memset(ciphertext, 0, sizeof(ciphertext));
@@ -732,7 +732,7 @@ TEST(cipher_suite_pqc_1_negative, encapsulate_bad_encapsulation_key_length)
 {
 	psa_key_id_t decaps_kid = PSA_KEY_ID_NULL;
 	psa_key_id_t shared_secret_kid = PSA_KEY_ID_NULL;
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	uint8_t ciphertext[edhoc_suite->kem_ciphertext_length];
 	memset(ciphertext, 0, sizeof(ciphertext));
@@ -750,7 +750,7 @@ TEST(cipher_suite_pqc_1_negative, encapsulate_ciphertext_too_small)
 {
 	psa_key_id_t decaps_kid = PSA_KEY_ID_NULL;
 	psa_key_id_t shared_secret_kid = PSA_KEY_ID_NULL;
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	uint8_t ciphertext[edhoc_suite->kem_ciphertext_length - 1];
 	memset(ciphertext, 0, sizeof(ciphertext));
@@ -804,7 +804,7 @@ TEST(cipher_suite_pqc_1_negative, decapsulate_stale_handle)
 {
 	psa_key_id_t decaps_kid = PSA_KEY_ID_NULL;
 	psa_key_id_t shared_secret_kid = PSA_KEY_ID_NULL;
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	uint8_t ciphertext[edhoc_suite->kem_ciphertext_length];
 	memset(ciphertext, 0, sizeof(ciphertext));
@@ -1332,7 +1332,7 @@ TEST(cipher_suite_pqc_1_negative, keystore_exhaustion)
 	/* Fill the software keystore until it rejects a new key, then release
 	 * every slot that was taken (the keystore is static across tests). */
 	psa_key_id_t decaps_kids[16] = { 0 };
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	size_t encapsulation_key_len = 0;
 	size_t filled = 0;
@@ -1388,7 +1388,7 @@ TEST(cipher_suite_pqc_1_negative, sign_wrong_key_type_handle)
 	 * differs from an ML-DSA-44 signing key, so signing with it must be
 	 * rejected on the length check. */
 	psa_key_id_t decaps_kid = PSA_KEY_ID_NULL;
-	uint8_t encapsulation_key[edhoc_suite->kem_public_key_length];
+	uint8_t encapsulation_key[edhoc_suite->kem_encapsulation_key_length];
 	memset(encapsulation_key, 0, sizeof(encapsulation_key));
 	size_t encapsulation_key_len = 0;
 	const uint8_t input[16] = { 0 };

@@ -60,7 +60,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_set_cipher_suites(&ctx, edhoc_cipher_suite_0_get_suite(), 1);
 
 	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 0,
 	};
 	edhoc_set_connection_id(&ctx, &cid);

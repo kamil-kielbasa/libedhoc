@@ -1268,7 +1268,7 @@ const struct edhoc_cipher_suite *edhoc_cipher_suite_pqc_1_get_suite(void)
 	static const struct edhoc_cipher_suite suite = {
 		.value = EDHOC_CIPHER_SUITE_PQC_1_VALUE,
 		.supports_dh_nike = false,
-		.kem_public_key_length =
+		.kem_encapsulation_key_length =
 			EDHOC_CIPHER_SUITE_PQC_1_KEM_PUBLIC_KEY_LEN,
 		.kem_ciphertext_length =
 			EDHOC_CIPHER_SUITE_PQC_1_KEM_CIPHERTEXT_LEN,

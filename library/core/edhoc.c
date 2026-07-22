@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC context.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  *
  */
 
@@ -17,6 +17,7 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -152,7 +153,7 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 	}
 
 	switch (cid->encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		if (ONE_BYTE_CBOR_INT_MIN_VALUE > cid->int_value ||
 		    ONE_BYTE_CBOR_INT_MAX_VALUE < cid->int_value) {
 			EDHOC_LOG_ERR("Bad state");
@@ -160,7 +161,7 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 		}
 		break;
 
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		if (0 == cid->bstr_length) {
 			EDHOC_LOG_ERR("Bad state");
 			return EDHOC_ERROR_BAD_STATE;

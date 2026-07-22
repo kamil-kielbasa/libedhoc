@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Shared EAD (External Authorization Data) test helpers.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  */
 
 #ifndef TEST_EAD_H
@@ -20,7 +20,7 @@
 struct ead_token_buf {
 	int32_t label;
 	uint8_t value[EAD_TOKEN_BUFFER_LEN];
-	size_t value_len;
+	size_t value_length;
 };
 
 /**

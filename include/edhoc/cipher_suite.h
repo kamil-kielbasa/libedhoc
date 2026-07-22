@@ -1,9 +1,10 @@
 /**
  * \file    cipher_suite.h
  * \author  Kamil Kielbasa
- * \brief   EDHOC cipher suite parameters and reference-implementation getters.
+ * \brief   EDHOC cipher suite parameters and lookup of the bundled reference
+ *          cipher suites.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  *
  */
 
@@ -12,6 +13,8 @@
 #define EDHOC_CIPHER_SUITE_H
 
 /* Include files ----------------------------------------------------------- */
+
+/* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -28,7 +31,7 @@ struct edhoc_crypto;
  */
 
 /**
- * \brief Structure for cipher suite value and related algorithms lengths in bytes.
+ * \brief Cipher suite value and the byte lengths of its algorithms.
  *
  *        Generalized for both NIKE (classical Diffie-Hellman) and KEM
  *        (e.g. ML-KEM) key exchange. For a classical suite the ephemeral leg
@@ -39,11 +42,13 @@ struct edhoc_cipher_suite {
 	/** Cipher suite IANA registry value. */
 	int32_t value;
 
-	/** Whether the suite supports static Diffie-Hellman (gates methods 1/2/3). */
+	/** Whether the suite provides static Diffie-Hellman authentication
+	 *  (RFC 9528: 3.2, methods 1/2/3); method 0 (signatures only) needs no
+	 *  static DH and is always available. */
 	bool supports_dh_nike;
 
 	/** Key exchange: encapsulation key (\c G_X) length in bytes. */
-	size_t kem_public_key_length;
+	size_t kem_encapsulation_key_length;
 	/** Key exchange: ciphertext (\c G_Y) length in bytes. */
 	size_t kem_ciphertext_length;
 	/** Static-DH authentication key length in bytes; 0 if unsupported. */
@@ -81,36 +86,44 @@ enum edhoc_cipher_suite_id {
 	EDHOC_CIPHER_SUITE_4 = 4,
 	/** P-384 / ES384 / A256GCM / SHA-384. */
 	EDHOC_CIPHER_SUITE_24 = 24,
-	/** Experimental ML-KEM + ML-DSA (private-use range until IANA assignment). */
+	/** ML-KEM-512 / ML-DSA-44 / AES-CCM-16-128-128 / SHAKE256. */
 	EDHOC_CIPHER_SUITE_PQC_1 = -24,
 };
 
 /**@}*/
 
 /** \defgroup edhoc-cipher-suite-getters EDHOC cipher suite getters
+ *
+ * Look up the parameters and reference crypto backend of a bundled suite by its
+ * \ref edhoc_cipher_suite_id, to pass to \ref edhoc_set_cipher_suites and
+ * \ref edhoc_bind_crypto.
  * @{
  */
 
 /**
- * \brief Get the algorithm-length parameters of a cipher suite.
+ * \brief Look up the algorithm lengths of a cipher suite.
  *
- * Works for every known suite regardless of Kconfig (sizes are plain data with
- * no dependencies).
+ * Available for every identifier in \ref edhoc_cipher_suite_id: the lengths are
+ * plain data with no build-time dependency.
  *
  * \param id                            Cipher suite identifier.
  *
- * \return Pointer to the cipher suite parameters, or NULL if \p id is unknown.
+ * \return Pointer to the statically allocated cipher suite parameters, or NULL
+ *         if \p id is not a known suite.
  */
 const struct edhoc_cipher_suite *
 edhoc_cipher_suite_get_params(enum edhoc_cipher_suite_id id);
 
 /**
- * \brief Get the reference cryptographic operations of a cipher suite.
+ * \brief Look up the reference cryptographic operations of a cipher suite.
+ *
+ * Unlike \ref edhoc_cipher_suite_get_params, a reference crypto backend exists
+ * only when its suite is enabled in the build configuration.
  *
  * \param id                            Cipher suite identifier.
  *
- * \return Pointer to the cipher suite crypto vtable, or NULL unless the suite
- *         is compiled in.
+ * \return Pointer to the statically allocated crypto vtable, or NULL if \p id is
+ *         unknown or its reference backend is not compiled in.
  */
 const struct edhoc_crypto *
 edhoc_cipher_suite_get_crypto(enum edhoc_cipher_suite_id id);

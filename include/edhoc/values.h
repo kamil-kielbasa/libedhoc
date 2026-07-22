@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC values and error codes.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  *
  */
 
@@ -25,158 +25,90 @@
 /** The action was completed successfully. */
 #define EDHOC_SUCCESS ((int)0)
 
-/** An error occurred that does not correspond to any defined failure cause. */
+/** An unspecified failure that maps to no more specific error code. */
 #define EDHOC_ERROR_GENERIC_ERROR ((int)-100)
 
-/** The requested operation or a parameter is not supported by this implementation. */
+/** The requested operation, method, or cipher suite is not supported by this
+ *  build. */
 #define EDHOC_ERROR_NOT_SUPPORTED ((int)-101)
 
-/** The requested action is denied by the EDHOC specification. */
+/** The requested action is not permitted in the current configuration or
+ *  protocol state. */
 #define EDHOC_ERROR_NOT_PERMITTED ((int)-102)
 
-/** An output buffer is too small. */
+/** An output buffer is too small; retry with a larger buffer. */
 #define EDHOC_ERROR_BUFFER_TOO_SMALL ((int)-103)
 
-/** The requested action cannot be performed in the current state. */
+/** The action is not valid in the current context state: a mandatory input is
+ *  missing, or messages were composed/processed out of order. */
 #define EDHOC_ERROR_BAD_STATE ((int)-104)
 
-/** The parameters passed to the function are invalid. */
+/** A function argument is invalid, e.g. a NULL pointer or a zero length. */
 #define EDHOC_ERROR_INVALID_ARGUMENT ((int)-105)
 
 /** A memory allocation failed (heap or custom memory backend). */
 #define EDHOC_ERROR_NOT_ENOUGH_MEMORY ((int)-106)
 
-/** CBOR encoding or decoding failed. */
+/** CBOR encoding or decoding of an EDHOC message or field failed. */
 #define EDHOC_ERROR_CBOR_FAILURE ((int)-110)
 
-/** A cryptographic operation failed. */
+/** A cryptographic operation reported by the bound crypto backend failed. */
 #define EDHOC_ERROR_CRYPTO_FAILURE ((int)-111)
 
-/** Authentication credentials fetch or verify callback failed. */
+/** The application's credentials fetch or verify callback returned an error. */
 #define EDHOC_ERROR_CREDENTIALS_FAILURE ((int)-112)
 
-/** External authorization data compose failed. */
+/** The application's EAD compose callback returned an error. */
 #define EDHOC_ERROR_EAD_COMPOSE_FAILURE ((int)-120)
 
-/** External authorization data process failed. */
+/** The application's EAD process callback returned an error. */
 #define EDHOC_ERROR_EAD_PROCESS_FAILURE ((int)-121)
 
-/** EDHOC message 1 processing failed. */
+/** Processing of a received EDHOC message 1 failed. */
 #define EDHOC_ERROR_MSG_1_PROCESS_FAILURE ((int)-130)
 
-/** EDHOC message 2 processing failed. */
+/** Processing of a received EDHOC message 2 failed. */
 #define EDHOC_ERROR_MSG_2_PROCESS_FAILURE ((int)-131)
 
-/** EDHOC message 3 processing failed. */
+/** Processing of a received EDHOC message 3 failed. */
 #define EDHOC_ERROR_MSG_3_PROCESS_FAILURE ((int)-132)
 
-/** EDHOC message 4 processing failed. */
+/** Processing of a received EDHOC message 4 failed. */
 #define EDHOC_ERROR_MSG_4_PROCESS_FAILURE ((int)-133)
 
-/** Ephemeral Diffie-Hellman key generation or agreement failed. */
-#define EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE ((int)-134)
+/** The ephemeral key exchange failed: key generation, agreement, or KEM
+ *  encapsulation/decapsulation. */
+#define EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE ((int)-134)
 
-/** Transcript hash computation failed. */
+/** Computation of an EDHOC transcript hash (TH_2, TH_3, or TH_4) failed. */
 #define EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE ((int)-135)
 
-/** Pseudorandom key derivation failed. */
+/** Derivation of an EDHOC pseudorandom key (PRK) in the key schedule failed. */
 #define EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE ((int)-136)
 
-/** MAC_2 verification failed. */
+/** MAC_2 verification failed: the Responder could not be authenticated in
+ *  message 2 (static Diffie-Hellman authentication). */
 #define EDHOC_ERROR_INVALID_MAC_2 ((int)-137)
 
-/** Signature_or_MAC_2 verification failed. */
+/** Signature_or_MAC_2 verification failed: the Responder's authentication in
+ *  message 2 is invalid. */
 #define EDHOC_ERROR_INVALID_SIGN_OR_MAC_2 ((int)-138)
 
-/** MAC_3 verification failed. */
+/** MAC_3 verification failed: the Initiator could not be authenticated in
+ *  message 3 (static Diffie-Hellman authentication). */
 #define EDHOC_ERROR_INVALID_MAC_3 ((int)-139)
 
-/** Signature_or_MAC_3 verification failed. */
+/** Signature_or_MAC_3 verification failed: the Initiator's authentication in
+ *  message 3 is invalid. */
 #define EDHOC_ERROR_INVALID_SIGN_OR_MAC_3 ((int)-140)
 
 /**@}*/
 
-/** \defgroup edhoc-values-cbor-one-byte EDHOC CBOR one byte
+/** \defgroup edhoc-exporter-labels EDHOC exporter labels
  *
- * \note It must follow the RFC 9528: 3.3.2. Representation of Byte String Identifiers.
- *
- * @{
- */
-
-/** Minimum value for CBOR one byte integer. */
-#define ONE_BYTE_CBOR_INT_MIN_VALUE ((int32_t)-24)
-
-/** Maximum value for CBOR one byte integer. */
-#define ONE_BYTE_CBOR_INT_MAX_VALUE ((int32_t)23)
-
-/**@}*/
-
-/** \defgroup edhoc-values-cbor-primitive EDHOC CBOR primitive values
- *
- * Standard CBOR primitive values that may be used in EDHOC implementations.
+ * RFC 9528: 10.1. EDHOC Exporter Label Registry.
  *
  * @{
- */
-
-/** CBOR encoding for boolean true (RFC 8949: 3.3.1. Major Type 7). */
-#define EDHOC_CBOR_TRUE ((uint8_t)0xf5)
-
-/**@}*/
-
-/** \defgroup edhoc-values-extract EDHOC extract labels
- * @{
- */
-
-/** KEYSTREAM_2 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2 ((size_t)0)
-
-/** SALT_3e2m from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M ((size_t)1)
-
-/** MAC_2 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2 ((size_t)2)
-
-/** K_3 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_K_3 ((size_t)3)
-
-/** IV_3 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3 ((size_t)4)
-
-/** SALT_4e3m from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M ((size_t)5)
-
-/** MAC_3 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3 ((size_t)6)
-
-/** PRK_out from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT ((size_t)7)
-
-/** K_4 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_K_4 ((size_t)8)
-
-/** IV_4 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4 ((size_t)9)
-
-/** PRK_Exporter from RFC 9528: 4.2.1. EDHOC_Exporter. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER ((size_t)10)
-
-/** PRK_out from RFC 9528: 4.1.3. PRK_out. */
-#define EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT ((size_t)11)
-
-/**
- * \brief RFC 9528: A.1. Deriving the OSCORE Security Context
- */
-
-/** EDHOC exporter label for OSCORE Master Secret from
- * RFC 9528: A.1. Deriving the OSCORE Security Context. */
-#define OSCORE_EXTRACT_LABEL_MASTER_SECRET ((size_t)0)
-
-/** EDHOC exporter label for OSCORE Master Salt from
- * RFC 9528: A.1. Deriving the OSCORE Security Context. */
-#define OSCORE_EXTRACT_LABEL_MASTER_SALT ((size_t)1)
-
-/**
- * \brief RFC 9528: 10.1. EDHOC Exporter Label Registry
  */
 
 /** Minimum value for EDHOC exporter label for private usage. */

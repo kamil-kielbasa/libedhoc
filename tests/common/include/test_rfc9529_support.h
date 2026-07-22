@@ -373,13 +373,14 @@ static inline void tv_assert_slot_equals_vector(
 /**
  * \brief Assert that two caller-owned key handles hold the same key material.
  *
- *        A derived key handle is not exportable, so equality is proven by
- *        running the same EDHOC_Expand over both handles (via \c expand_raw)
- *        and comparing the derived bytes: they match iff the underlying keys
- *        match. Used to check that two peers derived the same OSCORE
- *        master-secret handle from \c edhoc_export_oscore_session.
+ *        A derived key handle is not exportable. The OSCORE master secret is
+ *        exported as an AEAD key handle, so equality is proven by encrypting a
+ *        fixed input with each handle through the suite's crypto vtable
+ *        (aead_encrypt) and comparing the ciphertexts: they match iff the
+ *        underlying keys match. Used to check that two peers derived the same
+ *        OSCORE master-secret handle from \c edhoc_export_oscore_session.
  *
- * \param suite                         Cipher suite whose crypto probes the keys.
+ * \param suite                         Cipher suite of the handles.
  * \param[in] key_id_a                  First caller-owned key handle buffer.
  * \param[in] key_id_b                  Second caller-owned key handle buffer.
  */
@@ -392,22 +393,40 @@ static inline void tv_assert_handles_equal(enum edhoc_cipher_suite_id suite,
 
 	const struct edhoc_crypto *crypto =
 		edhoc_cipher_suite_get_crypto(suite);
-	static const uint8_t info[] = { 'k', 'e', 'y', '-', 'c',
-					'h', 'e', 'c', 'k' };
-	uint8_t okm_a[TEST_RFC9529_OKM_LEN] = { 0 };
-	uint8_t okm_b[TEST_RFC9529_OKM_LEN] = { 0 };
-
 	TEST_ASSERT_NOT_NULL(crypto);
+	TEST_ASSERT_NOT_NULL(crypto->aead_encrypt);
 
-	int ret = crypto->expand_raw(NULL, key_id_a, info, sizeof(info), okm_a,
-				     sizeof(okm_a));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	const struct edhoc_cipher_suite *params =
+		edhoc_cipher_suite_get_params(suite);
+	TEST_ASSERT_NOT_NULL(params);
 
-	ret = crypto->expand_raw(NULL, key_id_b, info, sizeof(info), okm_b,
-				 sizeof(okm_b));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	uint8_t nonce[16] = { 0 };
+	const size_t nonce_len = params->aead_iv_length;
+	TEST_ASSERT_NOT_EQUAL(0, nonce_len);
+	TEST_ASSERT_TRUE(nonce_len <= sizeof(nonce));
 
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(okm_a, okm_b, sizeof(okm_a));
+	/* The crypto vtable AEAD requires non-empty associated data. */
+	static const uint8_t aad[] = { 'h', 'a', 'n', 'd', 'l',
+				       'e', '-', 'e', 'q' };
+	static const uint8_t plaintext[16] = { 0 };
+	uint8_t ct_a[sizeof(plaintext) + 16] = { 0 };
+	uint8_t ct_b[sizeof(plaintext) + 16] = { 0 };
+	size_t ct_a_len = 0;
+	size_t ct_b_len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  crypto->aead_encrypt(NULL, key_id_a, nonce, nonce_len,
+					       aad, sizeof(aad), plaintext,
+					       sizeof(plaintext), ct_a,
+					       sizeof(ct_a), &ct_a_len));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  crypto->aead_encrypt(NULL, key_id_b, nonce, nonce_len,
+					       aad, sizeof(aad), plaintext,
+					       sizeof(plaintext), ct_b,
+					       sizeof(ct_b), &ct_b_len));
+
+	TEST_ASSERT_EQUAL(ct_a_len, ct_b_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(ct_a, ct_b, ct_a_len);
 }
 
 #endif /* TEST_RFC9529_SUPPORT_H */

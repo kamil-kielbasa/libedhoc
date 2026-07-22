@@ -8,7 +8,7 @@
  *          - Integration tests: Full EDHOC handshake and protocol flows.
  *          - Fuzz tests:        Built separately (see fuzz/ directory).
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  */
 
 #include <unity.h>

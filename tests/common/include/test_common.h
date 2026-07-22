@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Common includes, defines, and macros for all tests.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  */
 
 #ifndef TEST_COMMON_H

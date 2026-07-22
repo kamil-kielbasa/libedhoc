@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Shared EAD (External Authorization Data) test helpers implementation.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -33,25 +33,25 @@ const uint8_t ead_val_msg_4[] = { 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x00 };
 
 /* Initializer macros — reused in both single-token structs and multi-token arrays
  * so that Clang (which rejects const-variable initializers) also compiles. */
-#define EAD_INIT_MSG1                                  \
-	{                                              \
-		.label = 0, .value = ead_val_msg_1,    \
-		.value_len = ARRAY_SIZE(ead_val_msg_1) \
+#define EAD_INIT_MSG1                                     \
+	{                                                 \
+		.label = 0, .value = ead_val_msg_1,       \
+		.value_length = ARRAY_SIZE(ead_val_msg_1) \
 	}
-#define EAD_INIT_MSG2                                  \
-	{                                              \
-		.label = 24, .value = ead_val_msg_2,   \
-		.value_len = ARRAY_SIZE(ead_val_msg_2) \
+#define EAD_INIT_MSG2                                     \
+	{                                                 \
+		.label = 24, .value = ead_val_msg_2,      \
+		.value_length = ARRAY_SIZE(ead_val_msg_2) \
 	}
-#define EAD_INIT_MSG3                                   \
-	{                                               \
-		.label = 65535, .value = ead_val_msg_3, \
-		.value_len = ARRAY_SIZE(ead_val_msg_3)  \
+#define EAD_INIT_MSG3                                     \
+	{                                                 \
+		.label = 65535, .value = ead_val_msg_3,   \
+		.value_length = ARRAY_SIZE(ead_val_msg_3) \
 	}
-#define EAD_INIT_MSG4                                  \
-	{                                              \
-		.label = -830, .value = ead_val_msg_4, \
-		.value_len = ARRAY_SIZE(ead_val_msg_4) \
+#define EAD_INIT_MSG4                                     \
+	{                                                 \
+		.label = -830, .value = ead_val_msg_4,    \
+		.value_length = ARRAY_SIZE(ead_val_msg_4) \
 	}
 
 /* Single-token EAD structures */
@@ -95,16 +95,16 @@ int test_ead_compose_single(void *user_ctx, enum edhoc_message msg,
 	const struct edhoc_ead_token *token = NULL;
 
 	switch (msg) {
-	case EDHOC_MSG_1:
+	case EDHOC_MESSAGE_1:
 		token = &ead_single_token_msg_1;
 		break;
-	case EDHOC_MSG_2:
+	case EDHOC_MESSAGE_2:
 		token = &ead_single_token_msg_2;
 		break;
-	case EDHOC_MSG_3:
+	case EDHOC_MESSAGE_3:
 		token = &ead_single_token_msg_3;
 		break;
-	case EDHOC_MSG_4:
+	case EDHOC_MESSAGE_4:
 		token = &ead_single_token_msg_4;
 		break;
 	default:
@@ -121,9 +121,9 @@ int test_ead_compose_single(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_ctx->recv_tokens; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -143,9 +143,9 @@ int test_ead_process_single(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_token_size; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -163,19 +163,19 @@ int test_ead_compose_multiple(void *user_ctx, enum edhoc_message msg,
 	const struct edhoc_ead_token *token = NULL;
 
 	switch (msg) {
-	case EDHOC_MSG_1:
+	case EDHOC_MESSAGE_1:
 		token = ead_multiple_tokens_msg_1;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_1);
 		break;
-	case EDHOC_MSG_2:
+	case EDHOC_MESSAGE_2:
 		token = ead_multiple_tokens_msg_2;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_2);
 		break;
-	case EDHOC_MSG_3:
+	case EDHOC_MESSAGE_3:
 		token = ead_multiple_tokens_msg_3;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_3);
 		break;
-	case EDHOC_MSG_4:
+	case EDHOC_MESSAGE_4:
 		token = ead_multiple_tokens_msg_4;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_4);
 		break;
@@ -195,9 +195,9 @@ int test_ead_compose_multiple(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_ctx->recv_tokens; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -217,9 +217,9 @@ int test_ead_process_multiple(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_token_size; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;

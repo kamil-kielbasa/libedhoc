@@ -2,9 +2,9 @@
  * \file    crypto.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC cryptographic interface.
- * 
- * \copyright Copyright (c) 2025
- * 
+ *
+ * \copyright Copyright (c) 2026
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -26,18 +26,12 @@
  */
 
 /**
- * \brief Usage of a key handle produced by \ref edhoc_crypto.expand.
- *
- *        A PSA / secure-element key must receive its policy at creation time,
- *        so a key handle is created with the usage it will serve. Unlike the
- *        removed \c enum \c edhoc_key_type, no raw secret ever crosses the
- *        interface boundary: the usage only selects the policy of a key that
- *        is derived and kept inside the backend key store.
+ * \brief Policy of a key handle produced by \ref edhoc_crypto.expand.
  */
 enum edhoc_key_usage {
-	/** KDF input: chain salts, rolling pseudorandom keys, exported keys. */
+	/** Key used as input to key derivation (EDHOC_Extract / EDHOC_Expand). */
 	EDHOC_KEY_USAGE_KDF,
-	/** AEAD key: K_3, K_4. */
+	/** Key used for AEAD encryption and decryption. */
 	EDHOC_KEY_USAGE_AEAD,
 };
 
@@ -48,17 +42,18 @@ enum edhoc_key_usage {
  */
 
 /**
- * \brief Bind structure for cryptographic operations (handle-only, KEM-style).
+ * \brief Cryptographic operations vtable (handle-based).
  *
- *        Every long-lived secret is an opaque handle into the backend key
- *        store (a software PSA slot, the TrustZone secure world or a secure
- *        element); it is never serialized into \ref edhoc_context or onto the
- *        stack. Peer public keys enter as raw bytes and one-shot public
- *        outputs (keystreams, IVs, MACs) leave as raw bytes. The ephemeral key
- *        exchange is expressed as a KEM: classical Diffie-Hellman suites
- *        implement it as a thin NIKE-as-KEM shim, so ML-KEM drops in behind the
- *        same interface with the wire unchanged (\c G_X carries the
- *        encapsulation key, \c G_Y carries the ciphertext).
+ *        - Every long-lived secret is an opaque handle into the backend key
+ *          store (a software PSA slot, the TrustZone secure world or a secure
+ *          element); it is never serialized into \ref edhoc_context or onto
+ *          the stack.
+ *        - Peer public keys enter as raw bytes; one-shot public outputs
+ *          (keystreams, IVs, MACs) leave as raw bytes.
+ *        - The ephemeral key exchange is modelled as a KEM; a classical
+ *          Diffie-Hellman suite implements it as a thin NIKE-as-KEM shim
+ *          (\c G_X carries the encapsulation key, \c G_Y the ciphertext), so
+ *          ML-KEM drops in behind the same interface with the wire unchanged.
  */
 struct edhoc_crypto {
 	/**
@@ -72,7 +67,7 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*destroy_key)(void *user_context, void *key_id);
 
@@ -91,21 +86,29 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*generate_key_pair)(void *user_context, void *decapsulation_key_id,
 				 uint8_t *encapsulation_key,
 				 size_t encapsulation_key_size,
 				 size_t *encapsulation_key_length);
+
 	/**
-	 * \brief Encapsulate to a peer encapsulation key (Responder, message_2).
+	 * \brief Encapsulate to a peer's ephemeral public key (Responder,
+	 *        message_2).
 	 *
-	 *        For a NIKE-as-KEM shim the backend generates its own ephemeral
-	 *        key pair, runs the key agreement and returns its ephemeral
-	 *        public key as \p ciphertext (sent in \c G_Y). The ephemeral
-	 *        private key is retained as \p decapsulation_key_id so the
-	 *        Responder can reuse it for the static-DH \c G_IY agreement in
-	 *        message_3 (methods 2 and 3).
+	 *        - KEM suite: encapsulate against \p encapsulation_key (\c G_X),
+	 *          yielding the shared-secret handle and the \p ciphertext
+	 *          (\c G_Y).
+	 *        - NIKE (classical Diffie-Hellman) suite: the backend generates
+	 *          its own ephemeral key pair, runs the key agreement against
+	 *          \p encapsulation_key, and returns its own ephemeral public key
+	 *          as the \p ciphertext (\c G_Y).
+	 *
+	 *        \p decapsulation_key_id returns the Responder's ephemeral private
+	 *        key so it can be reused for the static-DH \c G_IY agreement in
+	 *        message_3 (methods 2 and 3); a KEM without static-DH support
+	 *        leaves it a null handle.
 	 *
 	 * \param[in] user_context		User context.
 	 * \param[in] encapsulation_key         Peer public key from \c G_X.
@@ -119,13 +122,14 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*encapsulate)(void *user_context, const uint8_t *encapsulation_key,
 			   size_t encapsulation_key_length,
 			   void *decapsulation_key_id,
 			   void *shared_secret_key_id, uint8_t *ciphertext,
 			   size_t ciphertext_size, size_t *ciphertext_length);
+
 	/**
 	 * \brief Decapsulate a ciphertext (Initiator, after message_2).
 	 *
@@ -137,14 +141,15 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*decapsulate)(void *user_context, const void *decapsulation_key_id,
 			   const uint8_t *ciphertext, size_t ciphertext_length,
 			   void *shared_secret_key_id);
 
 	/**
-	 * \brief Static Diffie-Hellman key agreement (methods 1/2/3, NIKE suites).
+	 * \brief Compute a static Diffie-Hellman shared secret (methods 1/2/3,
+	 *        NIKE suites).
 	 *
 	 *        Used only for static-DH authentication; the shared secret is
 	 *        produced as a handle, never as raw bytes.
@@ -157,7 +162,7 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*key_agreement)(void *user_context, const void *private_key_id,
 			     const uint8_t *peer_public_key,
@@ -177,12 +182,13 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*sign)(void *user_context, const void *private_key_id,
 		    const uint8_t *input, size_t input_length,
 		    uint8_t *signature, size_t signature_size,
 		    size_t *signature_length);
+
 	/**
 	 * \brief Verify a digital signature against a raw peer public key.
 	 *
@@ -196,7 +202,7 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*verify)(void *user_context, const uint8_t *public_key,
 		      size_t public_key_length, const uint8_t *input,
@@ -207,10 +213,7 @@ struct edhoc_crypto {
 	 * \brief EDHOC_Extract: derive a pseudorandom key handle from a salt.
 	 *
 	 *        The input keying material and the output pseudorandom key are
-	 *        handles; the salt is raw bytes. For \c PRK_2e the salt is the
-	 *        public \c TH_2; for the rolling pseudorandom keys it is a chain
-	 *        salt that the caller derives with \ref expand_raw and zeroizes
-	 *        after use.
+	 *        handles; the salt is raw bytes.
 	 *
 	 * \param[in] user_context		User context.
 	 * \param[in] ikm_key_id                Input keying material handle.
@@ -220,11 +223,12 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*extract)(void *user_context, const void *ikm_key_id,
 		       const uint8_t *salt, size_t salt_length,
 		       void *prk_key_id);
+
 	/**
 	 * \brief EDHOC_Expand producing a key handle (handle space).
 	 *
@@ -240,11 +244,12 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*expand)(void *user_context, const void *prk_key_id,
 		      const uint8_t *info, size_t info_length,
 		      enum edhoc_key_usage usage, void *output_key_id);
+
 	/**
 	 * \brief EDHOC_Expand producing raw output (keystream, IV, MAC, exporter).
 	 *
@@ -257,14 +262,14 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*expand_raw)(void *user_context, const void *prk_key_id,
 			  const uint8_t *info, size_t info_length,
 			  uint8_t *output, size_t output_length);
 
 	/**
-	 * \brief Perform AEAD encryption.
+	 * \brief Encrypt with an AEAD.
 	 *
 	 * \param[in] user_context		User context.
 	 * \param[in] key_id                    AEAD key handle.
@@ -280,7 +285,7 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*aead_encrypt)(void *user_context, const void *key_id,
 			    const uint8_t *nonce, size_t nonce_length,
@@ -289,8 +294,9 @@ struct edhoc_crypto {
 			    const uint8_t *plaintext, size_t plaintext_length,
 			    uint8_t *ciphertext, size_t ciphertext_size,
 			    size_t *ciphertext_length);
+
 	/**
-	 * \brief Perform AEAD decryption.
+	 * \brief Decrypt with an AEAD.
 	 *
 	 * \param[in] user_context		User context.
 	 * \param[in] key_id                    AEAD key handle.
@@ -306,7 +312,7 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*aead_decrypt)(void *user_context, const void *key_id,
 			    const uint8_t *nonce, size_t nonce_length,
@@ -319,9 +325,7 @@ struct edhoc_crypto {
 	/**
 	 * \brief Begin a multipart hash operation.
 	 *
-	 *        Multipart-only: large PQC transcripts must be hashed
-	 *        incrementally. The operation object is owned by the backend
-	 *        (no heap allocation in the library) and released by
+	 *        The operation object is owned by the backend and released by
 	 *        \ref hash_finish or \ref hash_abort.
 	 *
 	 * \param[in] user_context		User context.
@@ -329,9 +333,10 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*hash_init)(void *user_context, void **operation);
+
 	/**
 	 * \brief Add input to a multipart hash operation.
 	 *
@@ -342,10 +347,11 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*hash_update)(void *user_context, void *operation,
 			   const uint8_t *input, size_t input_length);
+
 	/**
 	 * \brief Finish a multipart hash operation and release it.
 	 *
@@ -357,10 +363,11 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*hash_finish)(void *user_context, void *operation, uint8_t *hash,
 			   size_t hash_size, size_t *hash_length);
+
 	/**
 	 * \brief Abort a multipart hash operation and release it.
 	 *
@@ -369,7 +376,7 @@ struct edhoc_crypto {
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
-	 * \return Negative error code on failure.
+	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
 	int (*hash_abort)(void *user_context, void *operation);
 };

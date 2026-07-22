@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Test vector with keys and certificates for Ed25519 & X25519 curve.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 

@@ -39,7 +39,7 @@ TEST(coverage_msg1, msg1_compose_generate_key_pair_fail)
 	uint8_t msg[256] = { 0 };
 	size_t msg_len = 0;
 	int ret = edhoc_message_1_compose(&ctx, msg, sizeof(msg), &msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE, ret);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
@@ -125,7 +125,7 @@ TEST(coverage_msg1, conn_id_byte_string)
 	edhoc_context_init(&ctx);
 
 	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = 3,
 		.bstr_value = { 0x01, 0x02, 0x03 },
 	};

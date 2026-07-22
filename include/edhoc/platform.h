@@ -2,9 +2,9 @@
  * \file    platform.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC platform services interface.
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */

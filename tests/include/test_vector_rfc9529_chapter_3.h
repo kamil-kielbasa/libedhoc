@@ -6,7 +6,7 @@
  *          represented as raw public keys (RPKs), encoded in a CWT Claims Set (CCS)
  *          and identified by the COSE header parameter 'kid'.
  *          
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 

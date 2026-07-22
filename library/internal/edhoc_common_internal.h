@@ -6,7 +6,7 @@
  *          - MAC context.
  *          - MAC & Signature_or_MAC.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -104,7 +104,7 @@ struct mac_context {
  */
 struct plaintext {
 	/** Authentication credentials. */
-	struct edhoc_auth_creds auth_cred;
+	struct edhoc_auth_credentials auth_cred;
 
 	/** Buffer containing cborised Signature_or_MAC (2/3). */
 	const uint8_t *sign_or_mac;
@@ -238,9 +238,10 @@ int edhoc_comp_hash(const struct edhoc_context *ctx,
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_mac_context_length(const struct edhoc_context *edhoc_context,
-				  const struct edhoc_auth_creds *credentials,
-				  size_t *mac_context_length);
+int edhoc_comp_mac_context_length(
+	const struct edhoc_context *edhoc_context,
+	const struct edhoc_auth_credentials *credentials,
+	size_t *mac_context_length);
 
 /**
  * \brief CBOR-encode items required by the MAC 2/3 context.
@@ -254,7 +255,7 @@ int edhoc_comp_mac_context_length(const struct edhoc_context *edhoc_context,
  * \return Negative error code on failure.
  */
 int edhoc_comp_mac_context(const struct edhoc_context *edhoc_context,
-			   const struct edhoc_auth_creds *credentials,
+			   const struct edhoc_auth_credentials *credentials,
 			   struct mac_context *mac_context);
 
 /**@}*/
@@ -326,7 +327,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *edhoc_context,
  * \return Negative error code on failure.
  */
 int edhoc_comp_sign_or_mac(const struct edhoc_context *edhoc_context,
-			   const struct edhoc_auth_creds *cred,
+			   const struct edhoc_auth_credentials *cred,
 			   const struct mac_context *mac_context,
 			   const uint8_t *mac, size_t mac_len,
 			   uint8_t *signature, size_t signature_size,

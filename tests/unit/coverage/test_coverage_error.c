@@ -36,8 +36,8 @@ TEST(coverage_error, error_msg_compose_bad_info)
 	const char text[] = "error";
 	struct edhoc_error_info info = {
 		.text_string = (char *)text,
-		.total_entries = 2,
-		.written_entries = 5,
+		.entries_size = 2,
+		.entries_length = 5,
 	};
 
 	int ret = edhoc_message_error_compose(
@@ -57,8 +57,8 @@ TEST(coverage_error, error_msg_compose_suites_overflow)
 
 	struct edhoc_error_info info = {
 		.cipher_suites = suites,
-		.total_entries = 100,
-		.written_entries = 100,
+		.entries_size = 100,
+		.entries_length = 100,
 	};
 
 	int ret = edhoc_message_error_compose(
@@ -85,8 +85,8 @@ TEST(coverage_error, error_msg_process_text_too_small)
 	const char text[] = "a long error description";
 	struct edhoc_error_info info = {
 		.text_string = (char *)text,
-		.total_entries = sizeof(text) - 1,
-		.written_entries = sizeof(text) - 1,
+		.entries_size = sizeof(text) - 1,
+		.entries_length = sizeof(text) - 1,
 	};
 
 	int ret = edhoc_message_error_compose(
@@ -97,7 +97,7 @@ TEST(coverage_error, error_msg_process_text_too_small)
 	char recv_text[2] = { 0 };
 	struct edhoc_error_info recv_info = {
 		.text_string = recv_text,
-		.total_entries = 1,
+		.entries_size = 1,
 	};
 	enum edhoc_error_code code;
 	ret = edhoc_message_error_process(buf, len, &code, &recv_info);
@@ -112,8 +112,8 @@ TEST(coverage_error, error_msg_process_suites_too_small)
 	int32_t suites[] = { 0, 2, 3 };
 	struct edhoc_error_info info = {
 		.cipher_suites = suites,
-		.total_entries = 3,
-		.written_entries = 3,
+		.entries_size = 3,
+		.entries_length = 3,
 	};
 
 	int ret = edhoc_message_error_compose(
@@ -124,7 +124,7 @@ TEST(coverage_error, error_msg_process_suites_too_small)
 	int32_t recv_suites[1] = { 0 };
 	struct edhoc_error_info recv_info = {
 		.cipher_suites = recv_suites,
-		.total_entries = 1,
+		.entries_size = 1,
 	};
 	enum edhoc_error_code code;
 	ret = edhoc_message_error_process(buf, len, &code, &recv_info);

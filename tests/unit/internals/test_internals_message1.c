@@ -56,7 +56,7 @@ TEST(internals_message1, msg1_compose_zero_csuites)
 	edhoc_set_methods(&ctx, method, 1);
 
 	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 1,
 	};
 	edhoc_set_connection_id(&ctx, &cid);

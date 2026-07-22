@@ -73,7 +73,7 @@ TEST(coverage_exporters, oscore_export_raw_wrong_status)
 	ctx.is_oscore_export_allowed = true;
 	ctx.state.th.length = 32;
 	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.peer_connection_id.int_value = -8;
 
 	uint8_t ms[16], salt[8], sid[8], rid[8];
@@ -134,7 +134,7 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid)
 	ctx.is_oscore_export_allowed = true;
 	ctx.state.th.length = 32;
 	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CID_TYPE_BYTE_STRING;
+		EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
 	ctx.negotiation.peer_connection_id.bstr_length = 2;
 	ctx.negotiation.peer_connection_id.bstr_value[0] = 0xAA;
 	ctx.negotiation.peer_connection_id.bstr_value[1] = 0xBB;
@@ -196,7 +196,7 @@ TEST(coverage_exporters, oscore_export_raw_failure_sweep)
 		ctx.is_oscore_export_allowed = true;
 		ctx.state.th.length = 32;
 		ctx.negotiation.peer_connection_id.encode_type =
-			EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 		ctx.negotiation.peer_connection_id.int_value = -8;
 
 		uint8_t ms[16], salt[8], sid[8], rid[8];

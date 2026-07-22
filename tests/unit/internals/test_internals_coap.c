@@ -51,7 +51,7 @@ TEST(internals_coap, conn_id_equal_invalid_type)
 TEST(internals_coap, conn_id_equal_null)
 {
 	struct edhoc_connection_id a = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 1,
 	};
 	TEST_ASSERT_FALSE(edhoc_coap_connection_id_equal(NULL, &a));
@@ -61,11 +61,11 @@ TEST(internals_coap, conn_id_equal_null)
 TEST(internals_coap, conn_id_equal_type_mismatch)
 {
 	struct edhoc_connection_id a = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 1,
 	};
 	struct edhoc_connection_id b = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = 1,
 	};
 	TEST_ASSERT_FALSE(edhoc_coap_connection_id_equal(&a, &b));
@@ -74,7 +74,7 @@ TEST(internals_coap, conn_id_equal_type_mismatch)
 TEST(internals_coap, conn_id_equal_bstr_success)
 {
 	struct edhoc_connection_id a = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = 2,
 	};
 	a.bstr_value[0] = 0xAA;
@@ -98,7 +98,7 @@ TEST(internals_coap, prepend_conn_id_zero_buf)
 		.buffer_size = 0,
 	};
 	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 5,
 	};
 	int ret = edhoc_coap_prepend_connection_id(&pf, &cid);
@@ -125,7 +125,7 @@ TEST(internals_coap, prepend_conn_id_bstr_zero_len)
 		.buffer_size = sizeof(buf),
 	};
 	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = 0,
 	};
 	int ret = edhoc_coap_prepend_connection_id(&pf, &cid);
@@ -140,7 +140,7 @@ TEST(internals_coap, prepend_conn_id_bstr_success)
 		.buffer_size = sizeof(buf),
 	};
 	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = 2,
 	};
 	cid.bstr_value[0] = 0xAA;
@@ -252,7 +252,7 @@ TEST(internals_coap, extract_conn_id_int)
 	};
 	int ret = edhoc_coap_extract_connection_id(&ef);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  ef.extracted_conn_id.encode_type);
 }
 
@@ -265,7 +265,7 @@ TEST(internals_coap, extract_conn_id_bstr)
 	};
 	int ret = edhoc_coap_extract_connection_id(&ef);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 			  ef.extracted_conn_id.encode_type);
 	TEST_ASSERT_EQUAL(2, ef.extracted_conn_id.bstr_length);
 }
@@ -278,7 +278,7 @@ TEST(internals_coap, prepend_conn_id_bstr_tiny_buf)
 		.buffer_size = 1,
 	};
 	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = 2,
 	};
 	cid.bstr_value[0] = 0xAA;

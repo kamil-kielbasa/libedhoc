@@ -2,9 +2,9 @@
  * \file    test_exporters.c
  * \author  Kamil Kielbasa
  * \brief   Tests for EDHOC exporter and error getter API functions.
- * 
- * \copyright Copyright (c) 2025
- * 
+ *
+ * \copyright Copyright (c) 2026
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -12,6 +12,7 @@
 /* EDHOC header: */
 #include "test_platform.h"
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
@@ -76,6 +77,61 @@ static void expand_raw_probe(const uint8_t *key_id, uint8_t *out,
 }
 
 /*
+ * Import raw keying material as an AEAD key mirroring an existing handle's type
+ * and algorithm, so both can be probed for byte-equality by encryption.
+ */
+static void import_aead_ref(const uint8_t *like_key_id, const uint8_t *key,
+			    size_t key_len, uint8_t *out_key_id)
+{
+	psa_key_id_t like = PSA_KEY_ID_NULL;
+	memcpy(&like, like_key_id, sizeof(like));
+
+	psa_key_attributes_t src = PSA_KEY_ATTRIBUTES_INIT;
+	TEST_ASSERT_EQUAL(PSA_SUCCESS, psa_get_key_attributes(like, &src));
+
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_type(&attr, psa_get_key_type(&src));
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_ENCRYPT);
+	psa_set_key_algorithm(&attr, psa_get_key_algorithm(&src));
+	psa_reset_key_attributes(&src);
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	TEST_ASSERT_EQUAL(PSA_SUCCESS,
+			  psa_import_key(&attr, key, key_len, &kid));
+	memcpy(out_key_id, &kid, sizeof(kid));
+}
+
+/*
+ * Encrypt a fixed vector with an AEAD key handle through the crypto vtable
+ * (aead_encrypt). Two keys holding the same bytes yield identical ciphertext,
+ * so this probes a non-exportable AEAD handle for byte-equality against a known
+ * reference.
+ */
+static size_t aead_probe(const uint8_t *key_id, uint8_t *out, size_t out_size)
+{
+	const struct edhoc_cipher_suite *params =
+		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_0);
+	TEST_ASSERT_NOT_NULL(params);
+
+	uint8_t nonce[16] = { 0 };
+	const size_t nonce_len = params->aead_iv_length;
+	TEST_ASSERT_NOT_EQUAL(0, nonce_len);
+	TEST_ASSERT_TRUE(nonce_len <= sizeof(nonce));
+
+	/* The crypto vtable AEAD requires non-empty associated data. */
+	static const uint8_t aad[] = { 'a', 'e', 'a', 'd', '-',
+				       'p', 'r', 'o', 'b', 'e' };
+	static const uint8_t pt[16] = { 0 };
+	size_t out_len = 0;
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  crypto->aead_encrypt(NULL, key_id, nonce, nonce_len,
+					       aad, sizeof(aad), pt, sizeof(pt),
+					       out, out_size, &out_len));
+	return out_len;
+}
+
+/*
  * The exporter tests inject a known PRK_4e3m without running a handshake. Under
  * the handle-only crypto interface the PRK is a key-store handle, so import the
  * raw material as a DERIVE key and publish the handle in the PRK_4e3m slot.
@@ -92,7 +148,7 @@ static void setup_basic_context(struct edhoc_context *ctx)
 {
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
 	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 1,
 	};
 
@@ -129,10 +185,10 @@ static void setup_export_ready(struct edhoc_context *ctx)
 	inject_prk_4e3m(ctx, prk, sizeof(prk));
 
 	ctx->negotiation.peer_connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx->negotiation.peer_connection_id.int_value = 1;
 	ctx->negotiation.connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx->negotiation.connection_id.int_value = 2;
 }
 
@@ -379,11 +435,11 @@ TEST(exporters, oscore_session_raw_sender_id_encode_fail)
 	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
 	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.peer_connection_id.int_value = 24;
 
 	ctx.negotiation.connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.connection_id.int_value = 1;
 
 	uint8_t secret[16] = { 0 };
@@ -419,11 +475,11 @@ TEST(exporters, oscore_session_raw_recipient_id_encode_fail)
 	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
 	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.peer_connection_id.int_value = 1;
 
 	ctx.negotiation.connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.connection_id.int_value = 24;
 
 	uint8_t secret[16] = { 0 };
@@ -590,23 +646,29 @@ TEST(exporters, oscore_session_null_master_secret_key_id)
 TEST(exporters, oscore_session_handle_matches_raw)
 {
 	/* Two identical contexts export the OSCORE session: one fully raw, one
-	 * with the master secret as a handle. Salt/IDs must match and the
-	 * handle must hold exactly the raw master secret. */
+	 * with the master secret as an AEAD key handle. Salt/IDs must match and
+	 * the handle must hold exactly the raw master secret. */
 	struct edhoc_context ctx_raw = { 0 };
 	struct edhoc_context ctx_handle = { 0 };
 	setup_export_ready(&ctx_raw);
 	setup_export_ready(&ctx_handle);
 
-	uint8_t ms_raw[32] = { 0 };
+	/* The OSCORE master secret has the application AEAD key length. */
+	const size_t ms_len =
+		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_0)
+			->aead_key_length;
+
+	uint8_t ms_raw[16] = { 0 };
+	TEST_ASSERT_TRUE(0 != ms_len && ms_len <= sizeof(ms_raw));
 	uint8_t salt_raw[8] = { 0 };
 	uint8_t sid_raw[8] = { 0 };
 	uint8_t rid_raw[8] = { 0 };
 	size_t sid_raw_len = 0;
 	size_t rid_raw_len = 0;
 	int ret = edhoc_export_oscore_session_raw(
-		&ctx_raw, ms_raw, sizeof(ms_raw), salt_raw, sizeof(salt_raw),
-		sid_raw, sizeof(sid_raw), &sid_raw_len, rid_raw,
-		sizeof(rid_raw), &rid_raw_len);
+		&ctx_raw, ms_raw, ms_len, salt_raw, sizeof(salt_raw), sid_raw,
+		sizeof(sid_raw), &sid_raw_len, rid_raw, sizeof(rid_raw),
+		&rid_raw_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t ms_kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
@@ -627,13 +689,17 @@ TEST(exporters, oscore_session_handle_matches_raw)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(sid_raw, sid_h, sid_raw_len);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(rid_raw, rid_h, rid_raw_len);
 
+	/* The handle is an AEAD key: import the raw bytes as a matching key and
+	 * compare by encrypting a fixed vector with each. */
 	uint8_t ms_ref[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	import_derive_ref(ms_raw, sizeof(ms_raw), ms_ref);
-	uint8_t out_h[16] = { 0 };
-	uint8_t out_r[16] = { 0 };
-	expand_raw_probe(ms_kid, out_h, sizeof(out_h));
-	expand_raw_probe(ms_ref, out_r, sizeof(out_r));
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(out_r, out_h, sizeof(out_r));
+	import_aead_ref(ms_kid, ms_raw, ms_len, ms_ref);
+
+	uint8_t out_h[32] = { 0 };
+	uint8_t out_r[32] = { 0 };
+	const size_t out_h_len = aead_probe(ms_kid, out_h, sizeof(out_h));
+	const size_t out_r_len = aead_probe(ms_ref, out_r, sizeof(out_r));
+	TEST_ASSERT_EQUAL(out_h_len, out_r_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(out_h, out_r, out_h_len);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, crypto->destroy_key(NULL, ms_kid));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, crypto->destroy_key(NULL, ms_ref));

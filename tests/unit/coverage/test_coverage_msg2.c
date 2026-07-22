@@ -53,7 +53,7 @@ TEST(coverage_msg2, msg2_compose_dh_fail)
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE, ret);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&init_ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&resp_ctx));

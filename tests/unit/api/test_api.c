@@ -2,9 +2,9 @@
  * \file    test_api.c
  * \author  Kamil Kielbasa
  * \brief   Module tests for EDHOC public api.
- * 
- * \copyright Copyright (c) 2025
- * 
+ *
+ * \copyright Copyright (c) 2026
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -12,6 +12,7 @@
 /* EDHOC header: */
 #include "test_platform.h"
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include <edhoc/edhoc.h>
 #include "edhoc_macros_internal.h"
 
@@ -139,7 +140,7 @@ TEST(api, set_cipher_suites)
 			.aead_iv_length = 1 << 4,
 			.hash_length = 1 << 5,
 			.mac_length = 1 << 6,
-			.kem_public_key_length = 1 << 7,
+			.kem_encapsulation_key_length = 1 << 7,
 			.kem_ciphertext_length = 1 << 8,
 			.nike_key_length = 1 << 9,
 			.sign_length = 1 << 10,
@@ -171,9 +172,10 @@ TEST(api, set_cipher_suites)
 		TEST_ASSERT_EQUAL(
 			single_cipher_suite[i].supports_dh_nike,
 			ctx.negotiation.cipher_suite.entry[i].supports_dh_nike);
-		TEST_ASSERT_EQUAL(single_cipher_suite[i].kem_public_key_length,
-				  ctx.negotiation.cipher_suite.entry[i]
-					  .kem_public_key_length);
+		TEST_ASSERT_EQUAL(
+			single_cipher_suite[i].kem_encapsulation_key_length,
+			ctx.negotiation.cipher_suite.entry[i]
+				.kem_encapsulation_key_length);
 		TEST_ASSERT_EQUAL(single_cipher_suite[i].kem_ciphertext_length,
 				  ctx.negotiation.cipher_suite.entry[i]
 					  .kem_ciphertext_length);
@@ -207,7 +209,7 @@ TEST(api, set_cipher_suites)
 			.aead_iv_length = v << 4,
 			.hash_length = v << 5,
 			.mac_length = v << 6,
-			.kem_public_key_length = v << 7,
+			.kem_encapsulation_key_length = v << 7,
 			.kem_ciphertext_length = v << 8,
 			.nike_key_length = v << 9,
 			.sign_length = v << 10,
@@ -240,9 +242,10 @@ TEST(api, set_cipher_suites)
 		TEST_ASSERT_EQUAL(
 			many_cipher_suite[i].supports_dh_nike,
 			ctx.negotiation.cipher_suite.entry[i].supports_dh_nike);
-		TEST_ASSERT_EQUAL(many_cipher_suite[i].kem_public_key_length,
-				  ctx.negotiation.cipher_suite.entry[i]
-					  .kem_public_key_length);
+		TEST_ASSERT_EQUAL(
+			many_cipher_suite[i].kem_encapsulation_key_length,
+			ctx.negotiation.cipher_suite.entry[i]
+				.kem_encapsulation_key_length);
 		TEST_ASSERT_EQUAL(many_cipher_suite[i].kem_ciphertext_length,
 				  ctx.negotiation.cipher_suite.entry[i]
 					  .kem_ciphertext_length);
@@ -271,7 +274,7 @@ TEST(api, set_connection_id)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	struct edhoc_connection_id one_byte_cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER
 	};
 
 	one_byte_cid.int_value = ONE_BYTE_CBOR_INT_MIN_VALUE - 1;
@@ -302,7 +305,7 @@ TEST(api, set_connection_id)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	struct edhoc_connection_id bstr_cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING
 	};
 
 	bstr_cid.bstr_length = 0;
@@ -409,7 +412,7 @@ TEST(api, get_cipher_suite_descriptors)
 	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
 	TEST_ASSERT_EQUAL(32, suite->hash_length);
 	TEST_ASSERT_EQUAL(8, suite->mac_length);
-	TEST_ASSERT_EQUAL(32, suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(32, suite->kem_encapsulation_key_length);
 	TEST_ASSERT_EQUAL(32, suite->kem_ciphertext_length);
 	TEST_ASSERT_EQUAL(32, suite->nike_key_length);
 	TEST_ASSERT_EQUAL(64, suite->sign_length);
@@ -424,7 +427,7 @@ TEST(api, get_cipher_suite_descriptors)
 	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
 	TEST_ASSERT_EQUAL(32, suite->hash_length);
 	TEST_ASSERT_EQUAL(8, suite->mac_length);
-	TEST_ASSERT_EQUAL(32, suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(32, suite->kem_encapsulation_key_length);
 	TEST_ASSERT_EQUAL(32, suite->kem_ciphertext_length);
 	TEST_ASSERT_EQUAL(32, suite->nike_key_length);
 	TEST_ASSERT_EQUAL(64, suite->sign_length);
@@ -439,7 +442,7 @@ TEST(api, get_cipher_suite_descriptors)
 	TEST_ASSERT_EQUAL(12, suite->aead_iv_length);
 	TEST_ASSERT_EQUAL(48, suite->hash_length);
 	TEST_ASSERT_EQUAL(16, suite->mac_length);
-	TEST_ASSERT_EQUAL(48, suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(48, suite->kem_encapsulation_key_length);
 	TEST_ASSERT_EQUAL(48, suite->kem_ciphertext_length);
 	TEST_ASSERT_EQUAL(48, suite->nike_key_length);
 	TEST_ASSERT_EQUAL(96, suite->sign_length);

@@ -18,7 +18,7 @@
  *            - HKDF is checked by \c extract -> \c expand_raw against the
  *              RFC 5869 OKM (the intermediate PRK handle is not exportable).
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -192,7 +192,7 @@ TEST(cipher_suite_2_positive, enum_getters)
 	 * (P-256 / ES256 / AES-CCM-16-64-128 / SHA-256). */
 	TEST_ASSERT_EQUAL_INT32(2, edhoc_suite->value);
 	TEST_ASSERT_TRUE(edhoc_suite->supports_dh_nike);
-	TEST_ASSERT_EQUAL(32, edhoc_suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(32, edhoc_suite->kem_encapsulation_key_length);
 	TEST_ASSERT_EQUAL(32, edhoc_suite->kem_ciphertext_length);
 	TEST_ASSERT_EQUAL(32, edhoc_suite->nike_key_length);
 	TEST_ASSERT_EQUAL(64, edhoc_suite->sign_length);

@@ -78,12 +78,12 @@ int coverage_mock_ead_compose_with_value(void *user_ctx, enum edhoc_message msg,
 int coverage_mock_ead_process_with_value(void *user_ctx, enum edhoc_message msg,
 					 const struct edhoc_ead_token *ead_token,
 					 size_t ead_token_size);
-int coverage_mock_cred_fetch_invalid_label(void *user_ctx,
-					   struct edhoc_auth_creds *auth_cred);
+int coverage_mock_cred_fetch_invalid_label(
+	void *user_ctx, struct edhoc_auth_credentials *auth_cred);
 int coverage_mock_cred_fetch_x509_zero_certs(
-	void *user_ctx, struct edhoc_auth_creds *auth_cred);
+	void *user_ctx, struct edhoc_auth_credentials *auth_cred);
 int coverage_mock_cred_verify(void *user_ctx,
-			      struct edhoc_auth_creds *auth_cred,
+			      struct edhoc_auth_credentials *auth_cred,
 			      const uint8_t **pub_key, size_t *pub_key_len);
 
 #endif /* COVERAGE_COMMON_H */

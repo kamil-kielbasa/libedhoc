@@ -33,16 +33,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
 	struct edhoc_error_info error_info = {
 		.text_string = text_buf,
-		.total_entries = sizeof(text_buf),
-		.written_entries = 0,
+		.entries_size = sizeof(text_buf),
+		.entries_length = 0,
 	};
 
 	edhoc_message_error_process(data, size, &error_code, &error_info);
 
 	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE == error_code) {
 		error_info.cipher_suites = cipher_suites;
-		error_info.total_entries = 8;
-		error_info.written_entries = 0;
+		error_info.entries_size = 8;
+		error_info.entries_length = 0;
 		edhoc_message_error_process(data, size, &error_code,
 					    &error_info);
 	}

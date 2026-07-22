@@ -8,7 +8,7 @@
  *            - key exchange algorithm (ECDH curve) = X25519
  *            - signature algorithm                 = EdDSA
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 

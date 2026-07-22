@@ -34,7 +34,7 @@ extern void internals_inject_prk(struct edhoc_context *ctx,
 
 /*
  * Import a raw scalar as an X25519 ECDH private-key handle (suite 0) and store
- * the handle in \p key_id, for auth_cred.priv_key_id in the static-DH tests.
+ * the handle in \p key_id, for auth_cred.private_key_id in the static-DH tests.
  */
 extern void internals_inject_ecdh_key(uint8_t *key_id, const uint8_t *priv,
 				      size_t priv_len);
@@ -42,11 +42,13 @@ extern void internals_inject_ecdh_key(uint8_t *key_id, const uint8_t *priv,
 /* Extern variables and constant declarations ------------------------------ */
 
 extern int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
-extern int comp_id_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+extern int comp_id_cred_len(const struct edhoc_auth_credentials *cred,
+			    size_t *len);
 extern int comp_th_len(size_t th_len, size_t *len);
-extern int comp_cred_len(const struct edhoc_auth_creds *cred, size_t *len);
+extern int comp_cred_len(const struct edhoc_auth_credentials *cred,
+			 size_t *len);
 extern int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
-extern int kid_compact_encoding(const struct edhoc_auth_creds *cred,
+extern int kid_compact_encoding(const struct edhoc_auth_credentials *cred,
 				struct mac_context *mac_ctx);
 extern int compute_prk_out(struct edhoc_context *ctx);
 extern int compute_new_prk_out(struct edhoc_context *ctx,
@@ -55,7 +57,7 @@ extern int compute_prk_exporter(struct edhoc_context *ctx);
 extern int comp_th_2(struct edhoc_context *ctx);
 extern int comp_prk_2e(struct edhoc_context *ctx);
 extern int comp_prk_3e2m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_creds *auth_cred,
+			 const struct edhoc_auth_credentials *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len);
 extern int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len);
@@ -67,7 +69,7 @@ extern int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
 extern int comp_grx(struct edhoc_context *ctx,
-		    const struct edhoc_auth_creds *auth_cred,
+		    const struct edhoc_auth_credentials *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len);
 extern int comp_plaintext_2_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
@@ -86,7 +88,7 @@ extern int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 extern int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 			     size_t ptxt_len, struct plaintext *parsed_ptxt);
 extern int comp_prk_4e3m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_creds *auth_cred,
+			 const struct edhoc_auth_credentials *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len);
 extern int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 			  size_t salt_len);
@@ -97,7 +99,7 @@ extern int comp_th_4(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
 extern int comp_giy(struct edhoc_context *ctx,
-		    const struct edhoc_auth_creds *auth_cred,
+		    const struct edhoc_auth_credentials *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len);
 extern int comp_plaintext_3_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,

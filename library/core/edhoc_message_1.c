@@ -2,9 +2,9 @@
  * \file    edhoc_message_1.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 1 compose & process.
- * 
- * \copyright Copyright (c) 2025
- * 
+ *
+ * \copyright Copyright (c) 2026
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
@@ -79,7 +80,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_1;
+	ctx->state.message = EDHOC_MESSAGE_1;
 	ctx->state.role = EDHOC_ROLE_INITIATOR;
 
 	/* 1a. Choose most preferred cipher suite. */
@@ -107,11 +108,11 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		&ctx->ephemeral.own.length);
 
 	if (EDHOC_SUCCESS != ret ||
-	    csuite->kem_public_key_length != ctx->ephemeral.own.length) {
+	    csuite->kem_encapsulation_key_length != ctx->ephemeral.own.length) {
 		EDHOC_LOG_ERR("Generate key pair: %d, %zu, %zu", ret,
-			      csuite->kem_public_key_length,
+			      csuite->kem_encapsulation_key_length,
 			      ctx->ephemeral.own.length);
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+		return EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE;
 	}
 
 	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_EPHEMERAL);
@@ -159,14 +160,14 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 	/* 3d. Fill CBOR structure for message 1 - connection identifier. */
 	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_int_c;
 		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 		cbor_enc_msg_1.message_1_C_I_int =
 			ctx->negotiation.connection_id.int_value;
 		break;
 
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_bstr_c;
 		cbor_enc_msg_1.message_1_C_I_bstr.value =
 			ctx->negotiation.connection_id.bstr_value;
@@ -201,10 +202,10 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_1 compose token label");
 
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_1 compose token value");
 			}
 		}
@@ -224,7 +225,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				ctx->ead.token[i].value;
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
 				.ead_x_ead_value.len =
-				ctx->ead.token[i].value_len;
+				ctx->ead.token[i].value_length;
 		}
 	} else {
 		cbor_enc_msg_1.message_1_EAD_1_m_present = false;
@@ -302,7 +303,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_1;
+	ctx->state.message = EDHOC_MESSAGE_1;
 	ctx->state.role = EDHOC_ROLE_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -422,16 +423,17 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	/* 3c. Verify ephemeral public key (peer G_X = encapsulation key). */
-	if (cbor_dec_msg_1.message_1_G_X.len != csuite->kem_public_key_length) {
+	if (cbor_dec_msg_1.message_1_G_X.len !=
+	    csuite->kem_encapsulation_key_length) {
 		EDHOC_LOG_ERR("Invalid G_X length: %zu, %zu",
-			      csuite->kem_public_key_length,
+			      csuite->kem_encapsulation_key_length,
 			      cbor_dec_msg_1.message_1_G_X.len);
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 
 	ctx->ephemeral.peer.length = cbor_dec_msg_1.message_1_G_X.len;
 	memcpy(ctx->ephemeral.peer.value, cbor_dec_msg_1.message_1_G_X.value,
-	       csuite->kem_public_key_length);
+	       csuite->kem_encapsulation_key_length);
 
 	/* 3d. Verify connection identifier. */
 	switch (cbor_dec_msg_1.message_1_C_I_choice) {
@@ -446,7 +448,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		}
 
 		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 		ctx->negotiation.peer_connection_id.int_value =
 			(int8_t)cbor_dec_msg_1.message_1_C_I_int;
 		break;
@@ -464,7 +466,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		}
 
 		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CID_TYPE_BYTE_STRING;
+			EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
 		ctx->negotiation.peer_connection_id.bstr_length =
 			cbor_dec_msg_1.message_1_C_I_bstr.len;
 		memcpy(ctx->negotiation.peer_connection_id.bstr_value,
@@ -480,14 +482,14 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		EDHOC_LOG_HEXDUMP_DBG(
 			(const uint8_t *)&ctx->negotiation.peer_connection_id
 				.int_value,
 			sizeof(ctx->negotiation.peer_connection_id.int_value),
 			"C_I");
 		break;
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		EDHOC_LOG_HEXDUMP_DBG(
 			ctx->negotiation.peer_connection_id.bstr_value,
 			ctx->negotiation.peer_connection_id.bstr_length, "C_I");
@@ -519,7 +521,7 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 			ctx->ead.token[i].value =
 				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
 					.ead_x_ead_value.value;
-			ctx->ead.token[i].value_len =
+			ctx->ead.token[i].value_length =
 				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
 					.ead_x_ead_value.len;
 		}
@@ -535,10 +537,10 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_1 process token label");
 
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_1 process token value");
 			}
 		}

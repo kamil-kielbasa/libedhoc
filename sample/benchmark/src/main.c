@@ -61,11 +61,15 @@ static double elapsed_us(struct timespec start, struct timespec end);
 static void record_phase(struct bench_result *result, struct timespec start,
 			 struct timespec end, double *total_iter_us);
 
-static int cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred);
-static int cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred);
-static int cred_verify_init(void *user_ctx, struct edhoc_auth_creds *auth_cred,
+static int cred_fetch_init(void *user_ctx,
+			   struct edhoc_auth_credentials *auth_cred);
+static int cred_fetch_resp(void *user_ctx,
+			   struct edhoc_auth_credentials *auth_cred);
+static int cred_verify_init(void *user_ctx,
+			    struct edhoc_auth_credentials *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len);
-static int cred_verify_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred,
+static int cred_verify_resp(void *user_ctx,
+			    struct edhoc_auth_credentials *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len);
 
 static int ead_compose_stub(void *user_ctx, enum edhoc_message msg,
@@ -153,33 +157,36 @@ static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
 	return EDHOC_SUCCESS;
 }
 
-static int cred_fetch_init(void *user_ctx, struct edhoc_auth_creds *auth_cred)
+static int cred_fetch_init(void *user_ctx,
+			   struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
 	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_I;
+	auth_cred->x509_chain.certificate[0] = CRED_I;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
 
 	return import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-				    auth_cred->priv_key_id);
+				    auth_cred->private_key_id);
 }
 
-static int cred_fetch_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred)
+static int cred_fetch_resp(void *user_ctx,
+			   struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
 	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_R;
+	auth_cred->x509_chain.certificate[0] = CRED_R;
 	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
 
 	return import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-				    auth_cred->priv_key_id);
+				    auth_cred->private_key_id);
 }
 
-static int cred_verify_init(void *user_ctx, struct edhoc_auth_creds *auth_cred,
+static int cred_verify_init(void *user_ctx,
+			    struct edhoc_auth_credentials *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -190,7 +197,7 @@ static int cred_verify_init(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[0],
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[0],
 			auth_cred->x509_chain.cert_len[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
@@ -200,7 +207,8 @@ static int cred_verify_init(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 	return EDHOC_SUCCESS;
 }
 
-static int cred_verify_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred,
+static int cred_verify_resp(void *user_ctx,
+			    struct edhoc_auth_credentials *auth_cred,
 			    const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -211,7 +219,7 @@ static int cred_verify_resp(void *user_ctx, struct edhoc_auth_creds *auth_cred,
 	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[0],
 			auth_cred->x509_chain.cert_len[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 

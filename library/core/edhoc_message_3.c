@@ -2,8 +2,8 @@
  * \file    edhoc_message_3.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 3 compose & process.
- * 
- * \copyright Copyright (c) 2025
+ *
+ * \copyright Copyright (c) 2026
  *
  */
 
@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
@@ -56,18 +57,18 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
  *
  * \param[in,out] ctx		EDHOC context.
  * \param[in] auth_cred         Authentication credentials.
- * \param[in] pub_key           Peer public static DH key. 
+ * \param[in] pub_key           Peer public static DH key.
  * \param pub_key_len           Size of the \p pub_key buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_creds *auth_cred,
+			 const struct edhoc_auth_credentials *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len);
 
 /**
- * \brief Compute memory required for PLAINTEXT_3. 
- * 
+ * \brief Compute memory required for PLAINTEXT_3.
+ *
  * \param[in] ctx               EDHOC context.
  * \param[in] mac_ctx        	MAC context.
  * \param sign_len              Size of the signature buffer in bytes.
@@ -218,7 +219,7 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 /**
  * \brief Compute SALT_4e3m.
- * 
+ *
  * \param[in] ctx               EDHOC context.
  * \param[out] salt             Buffer where the generated salt is to be written.
  * \param salt_len              Size of the \p salt buffer in bytes.
@@ -230,7 +231,7 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 
 /**
  * \brief Compute G_IY for PRK_4e3m into the G_IY key slot.
- * 
+ *
  * \param[in,out] ctx           EDHOC context.
  * \param[in] auth_cred         Authentication credentials.
  * \param[in] pub_key           Peer public key.
@@ -239,13 +240,13 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_giy(struct edhoc_context *ctx,
-		    const struct edhoc_auth_creds *auth_cred,
+		    const struct edhoc_auth_credentials *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len);
 
 /* Static function definitions --------------------------------------------- */
 
 STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_creds *auth_cred,
+			 const struct edhoc_auth_credentials *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len)
 {
 	if (NULL == ctx || NULL == auth_cred) {
@@ -347,11 +348,11 @@ STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 	size_t len = 0;
 
 	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		len += edhoc_cbor_int_mem_req(
 			ctx->negotiation.connection_id.int_value);
 		break;
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		len += ctx->negotiation.connection_id.bstr_length;
 		len += edhoc_cbor_bstr_oh(
 			ctx->negotiation.connection_id.bstr_length);
@@ -773,9 +774,9 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 		parsed_ptxt->auth_cred.label = EDHOC_COSE_HEADER_KID;
 		parsed_ptxt->auth_cred.key_id.encode_type =
 			EDHOC_ENCODE_TYPE_BYTE_STRING;
-		parsed_ptxt->auth_cred.key_id.key_id_bstr_length =
+		parsed_ptxt->auth_cred.key_id.key_id_bstr.length =
 			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.len;
-		memcpy(parsed_ptxt->auth_cred.key_id.key_id_bstr,
+		memcpy(parsed_ptxt->auth_cred.key_id.key_id_bstr.value,
 		       cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.value,
 		       cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.len);
 		break;
@@ -793,20 +794,24 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 			switch (cose_x509->COSE_X509_choice) {
 			case COSE_X509_bstr_c:
-				parsed_ptxt->auth_cred.x509_chain.nr_of_certs =
-					1;
-				parsed_ptxt->auth_cred.x509_chain.cert[0] =
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate_count = 1;
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate[0] =
 					cose_x509->COSE_X509_bstr.value;
-				parsed_ptxt->auth_cred.x509_chain.cert_len[0] =
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate_length[0] =
 					cose_x509->COSE_X509_bstr.len;
 				break;
 
 			case COSE_X509_certs_l_c: {
-				parsed_ptxt->auth_cred.x509_chain.nr_of_certs =
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate_count =
 					cose_x509->COSE_X509_certs_l_certs_count;
 
 				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_chain
-						       .cert) <
+						       .certificate) -
+					    1 <
 				    cose_x509->COSE_X509_certs_l_certs_count) {
 					EDHOC_LOG_ERR(
 						"X.509 certificate chain too large: %zu",
@@ -820,13 +825,13 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 				     cose_x509->COSE_X509_certs_l_certs_count;
 				     ++i) {
 					parsed_ptxt->auth_cred.x509_chain
-						.cert[i] =
+						.certificate[i] =
 						cose_x509
 							->COSE_X509_certs_l_certs
 								[i]
 							.value;
 					parsed_ptxt->auth_cred.x509_chain
-						.cert_len[i] =
+						.certificate_length[i] =
 						cose_x509
 							->COSE_X509_certs_l_certs
 								[i]
@@ -847,21 +852,23 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 			const struct COSE_CertHash *cose_x509 =
 				&cbor_map->map_x5t.map_x5t;
 
-			parsed_ptxt->auth_cred.x509_hash.cert_fp =
+			parsed_ptxt->auth_cred.x509_hash
+				.certificate_fingerprint =
 				cose_x509->COSE_CertHash_hashValue.value;
-			parsed_ptxt->auth_cred.x509_hash.cert_fp_len =
+			parsed_ptxt->auth_cred.x509_hash
+				.certificate_fingerprint_length =
 				cose_x509->COSE_CertHash_hashValue.len;
 
 			switch (cose_x509->COSE_CertHash_hashAlg_choice) {
 			case COSE_CertHash_hashAlg_int_c:
 				parsed_ptxt->auth_cred.x509_hash.encode_type =
 					EDHOC_ENCODE_TYPE_INTEGER;
-				parsed_ptxt->auth_cred.x509_hash.alg_int =
+				parsed_ptxt->auth_cred.x509_hash.algorithm_int =
 					cose_x509->COSE_CertHash_hashAlg_int;
 				break;
 			case COSE_CertHash_hashAlg_tstr_c:
 				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_hash
-						       .alg_bstr) <
+						       .algorithm_bstr.value) <
 				    cose_x509->COSE_CertHash_hashAlg_tstr.len) {
 					EDHOC_LOG_ERR(
 						"X.509 hash algorithm string too large: %zu",
@@ -873,11 +880,12 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 				parsed_ptxt->auth_cred.x509_hash.encode_type =
 					EDHOC_ENCODE_TYPE_BYTE_STRING;
-				parsed_ptxt->auth_cred.x509_hash
-					.alg_bstr_length =
+				parsed_ptxt->auth_cred.x509_hash.algorithm_bstr
+					.length =
 					cose_x509->COSE_CertHash_hashAlg_tstr
 						.len;
-				memcpy(parsed_ptxt->auth_cred.x509_hash.alg_bstr,
+				memcpy(parsed_ptxt->auth_cred.x509_hash
+					       .algorithm_bstr.value,
 				       cose_x509->COSE_CertHash_hashAlg_tstr
 					       .value,
 				       cose_x509->COSE_CertHash_hashAlg_tstr
@@ -912,7 +920,7 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 			ctx->ead.token[i].value =
 				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3[i]
 					.ead_y_ead_value.value;
-			ctx->ead.token[i].value_len =
+			ctx->ead.token[i].value_length =
 				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3[i]
 					.ead_y_ead_value.len;
 		}
@@ -984,7 +992,7 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 }
 
 STATIC int comp_giy(struct edhoc_context *ctx,
-		    const struct edhoc_auth_creds *auth_cred,
+		    const struct edhoc_auth_credentials *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len)
 {
 	if (NULL == ctx || NULL == auth_cred) {
@@ -1000,7 +1008,7 @@ STATIC int comp_giy(struct edhoc_context *ctx,
 		/* G_IY = key_agreement(I's static private key, R's ephemeral
 		 * public key G_Y). The shared secret is produced as a handle. */
 		ret = edhoc_crypto(ctx)->key_agreement(
-			ctx->user_context, auth_cred->priv_key_id,
+			ctx->user_context, auth_cred->private_key_id,
 			ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
 			giy_key_id);
 		break;
@@ -1075,7 +1083,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_3;
+	ctx->state.message = EDHOC_MESSAGE_3;
 	ctx->state.role = EDHOC_ROLE_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -1105,17 +1113,17 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_3 token label:");
 
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_3 token value:");
 			}
 		}
 	}
 
 	/* 3. Fetch authentication credentials. */
-	struct edhoc_auth_creds auth_creds = { 0 };
+	struct edhoc_auth_credentials auth_creds = { 0 };
 	ret = ctx->interfaces.cred.fetch(ctx->user_context, &auth_creds);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1437,7 +1445,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_3;
+	ctx->state.message = EDHOC_MESSAGE_3;
 	ctx->state.role = EDHOC_ROLE_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -1553,10 +1561,10 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_3 process label");
 
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_3 process value");
 			}
 		}

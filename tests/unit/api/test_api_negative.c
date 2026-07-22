@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Negative tests for EDHOC public API error paths.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  *
  */
 
@@ -192,7 +192,7 @@ TEST(api_negative, set_connection_id_not_initialized)
 	struct edhoc_context ctx;
 	memset(&ctx, 0, sizeof(ctx));
 	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 0,
 	};
 	int ret = edhoc_set_connection_id(&ctx, &cid);

@@ -50,14 +50,14 @@
 static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
 				uint8_t *key_id);
 static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred);
+				struct edhoc_auth_credentials *auth_cred);
 static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred);
+				struct edhoc_auth_credentials *auth_cred);
 static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len);
 static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /* Static function definitions --------------------------------------------- */
@@ -82,7 +82,7 @@ static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
 }
 
 static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred)
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -90,12 +90,12 @@ static int auth_cred_fetch_init(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_I;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.certificate_count = 1;
+	auth_cred->x509_chain.certificate[0] = CRED_I;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_I);
 
 	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -104,7 +104,7 @@ static int auth_cred_fetch_init(void *user_ctx,
 }
 
 static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred)
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -112,12 +112,12 @@ static int auth_cred_fetch_resp(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_R;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.certificate_count = 1;
+	auth_cred->x509_chain.certificate[0] = CRED_R;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_R);
 
 	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -126,7 +126,7 @@ static int auth_cred_fetch_resp(void *user_ctx,
 }
 
 static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -137,14 +137,14 @@ static int auth_cred_verify_init(void *user_ctx,
 	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (1 != auth_cred->x509_chain.nr_of_certs)
+	if (1 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_R))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	*pub_key = PK_R;
@@ -154,7 +154,7 @@ static int auth_cred_verify_init(void *user_ctx,
 }
 
 static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -165,14 +165,14 @@ static int auth_cred_verify_resp(void *user_ctx,
 	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (1 != auth_cred->x509_chain.nr_of_certs)
+	if (1 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	*pub_key = PK_I;
@@ -202,12 +202,12 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
 	};
 
 	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = (int8_t)C_I[0],
 	};
 
 	struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
 

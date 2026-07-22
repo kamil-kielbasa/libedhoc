@@ -7,7 +7,7 @@
  *          - cipher suite 2.
  *          - multiple EAD tokens.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -53,7 +53,7 @@
 struct ead_token_buf {
 	int32_t label;
 	uint8_t value[EAD_TOKEN_BUFFER_LEN];
-	size_t value_len;
+	size_t value_length;
 };
 
 struct ead_context {
@@ -69,33 +69,35 @@ struct ead_context {
  * \brief Authentication credentials fetch callback for initiator
  *        for single certificate.
  */
-static int auth_cred_fetch_init_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred);
+static int
+auth_cred_fetch_init_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials fetch callback for responder
  *        for single certificate.
  */
-static int auth_cred_fetch_resp_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred);
+static int
+auth_cred_fetch_resp_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials verify callback for initiator
  *        for single certificate.
  */
-static int auth_cred_verify_init_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len);
+static int
+auth_cred_verify_init_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
  * \brief Authentication credentials verify callback for responder
  *        for single certificate.
  */
-static int auth_cred_verify_resp_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len);
+static int
+auth_cred_verify_resp_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
  * \brief Example EAD compose for multiple tokens. 
@@ -145,25 +147,25 @@ static const uint8_t ead_val_msg_3[] = {
 static const uint8_t ead_val_msg_4[] = { 0xff, 0xee, 0xdd, 0xcc,
 					 0xbb, 0xaa, 0x00 };
 
-#define EAD_INIT_MSG1                                  \
-	{                                              \
-		.label = 0, .value = ead_val_msg_1,    \
-		.value_len = ARRAY_SIZE(ead_val_msg_1) \
+#define EAD_INIT_MSG1                                     \
+	{                                                 \
+		.label = 0, .value = ead_val_msg_1,       \
+		.value_length = ARRAY_SIZE(ead_val_msg_1) \
 	}
-#define EAD_INIT_MSG2                                  \
-	{                                              \
-		.label = 24, .value = ead_val_msg_2,   \
-		.value_len = ARRAY_SIZE(ead_val_msg_2) \
+#define EAD_INIT_MSG2                                     \
+	{                                                 \
+		.label = 24, .value = ead_val_msg_2,      \
+		.value_length = ARRAY_SIZE(ead_val_msg_2) \
 	}
-#define EAD_INIT_MSG3                                   \
-	{                                               \
-		.label = 65535, .value = ead_val_msg_3, \
-		.value_len = ARRAY_SIZE(ead_val_msg_3)  \
+#define EAD_INIT_MSG3                                     \
+	{                                                 \
+		.label = 65535, .value = ead_val_msg_3,   \
+		.value_length = ARRAY_SIZE(ead_val_msg_3) \
 	}
-#define EAD_INIT_MSG4                                  \
-	{                                              \
-		.label = -830, .value = ead_val_msg_4, \
-		.value_len = ARRAY_SIZE(ead_val_msg_4) \
+#define EAD_INIT_MSG4                                     \
+	{                                                 \
+		.label = -830, .value = ead_val_msg_4,    \
+		.value_length = ARRAY_SIZE(ead_val_msg_4) \
 	}
 
 static const struct edhoc_ead_token ead_multiple_tokens_msg_1[] = {
@@ -233,8 +235,9 @@ static const struct edhoc_ead edhoc_ead_multiple_tokens = {
 
 /* Static function definitions --------------------------------------------- */
 
-static int auth_cred_fetch_init_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred)
+static int
+auth_cred_fetch_init_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -242,12 +245,12 @@ static int auth_cred_fetch_init_single_cert(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_I;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.certificate_count = 1;
+	auth_cred->x509_chain.certificate[0] = CRED_I;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_I);
 
 	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -255,8 +258,9 @@ static int auth_cred_fetch_init_single_cert(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_fetch_resp_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred)
+static int
+auth_cred_fetch_resp_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -264,12 +268,12 @@ static int auth_cred_fetch_resp_single_cert(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_R;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.certificate_count = 1;
+	auth_cred->x509_chain.certificate[0] = CRED_R;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_R);
 
 	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -277,10 +281,10 @@ static int auth_cred_fetch_resp_single_cert(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_init_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len)
+static int
+auth_cred_verify_init_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -296,20 +300,20 @@ static int auth_cred_verify_init_single_cert(void *user_ctx,
 	/**
          * \brief Verify received number of certificates. 
          */
-	if (1 != auth_cred->x509_chain.nr_of_certs)
+	if (1 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_R))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -321,10 +325,10 @@ static int auth_cred_verify_init_single_cert(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_resp_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len)
+static int
+auth_cred_verify_resp_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -340,20 +344,20 @@ static int auth_cred_verify_resp_single_cert(void *user_ctx,
 	/**
          * \brief Verify received number of certificates. 
          */
-	if (1 != auth_cred->x509_chain.nr_of_certs)
+	if (1 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -378,19 +382,19 @@ static int ead_compose_multiple_tokens(void *user_ctx, enum edhoc_message msg,
 	const struct edhoc_ead_token *token = NULL;
 
 	switch (msg) {
-	case EDHOC_MSG_1:
+	case EDHOC_MESSAGE_1:
 		token = ead_multiple_tokens_msg_1;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_1);
 		break;
-	case EDHOC_MSG_2:
+	case EDHOC_MESSAGE_2:
 		token = ead_multiple_tokens_msg_2;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_2);
 		break;
-	case EDHOC_MSG_3:
+	case EDHOC_MESSAGE_3:
 		token = ead_multiple_tokens_msg_3;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_3);
 		break;
-	case EDHOC_MSG_4:
+	case EDHOC_MESSAGE_4:
 		token = ead_multiple_tokens_msg_4;
 		len = ARRAY_SIZE(ead_multiple_tokens_msg_4);
 		break;
@@ -410,9 +414,9 @@ static int ead_compose_multiple_tokens(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_ctx->recv_tokens; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -432,9 +436,9 @@ static int ead_process_multiple_tokens(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_token_size; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -455,12 +459,12 @@ TEST_SETUP(handshake_x5chain_sig_suite2)
 	};
 
 	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = (int8_t)C_I[0],
 	};
 
 	struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
 	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
@@ -556,7 +560,7 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
@@ -590,7 +594,7 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R),
 			  init_ctx->negotiation.peer_connection_id.bstr_length);
@@ -828,19 +832,19 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_1 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_1, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_1),
 			  init_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < init_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_1[i].label,
 				  init_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_1[i].value_len,
-				  init_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_1[i].value_length,
+				  init_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_1[i].value,
 			init_ead_ctx.token[i].value,
-			init_ead_ctx.token[i].value_len);
+			init_ead_ctx.token[i].value_length);
 	}
 
 	/* EDHOC message 1 process. */
@@ -855,25 +859,25 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
 
 	/* Verify EAD_1 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_1, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_1),
 			  resp_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < resp_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_1[i].label,
 				  resp_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_1[i].value_len,
-				  resp_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_1[i].value_length,
+				  resp_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_1[i].value,
 			resp_ead_ctx.token[i].value,
-			resp_ead_ctx.token[i].value_len);
+			resp_ead_ctx.token[i].value_length);
 	}
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
@@ -897,19 +901,19 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_2 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_2, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_2, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_2),
 			  resp_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < resp_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_2[i].label,
 				  resp_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_2[i].value_len,
-				  resp_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_2[i].value_length,
+				  resp_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_2[i].value,
 			resp_ead_ctx.token[i].value,
-			resp_ead_ctx.token[i].value_len);
+			resp_ead_ctx.token[i].value_length);
 	}
 
 	/* EDHOC message 2 process. */
@@ -924,7 +928,7 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R),
 			  init_ctx->negotiation.peer_connection_id.bstr_length);
@@ -933,19 +937,19 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 		init_ctx->negotiation.peer_connection_id.bstr_length);
 
 	/* Verify EAD_2 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_2, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_2, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_2),
 			  init_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < init_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_2[i].label,
 				  init_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_2[i].value_len,
-				  init_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_2[i].value_length,
+				  init_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_2[i].value,
 			init_ead_ctx.token[i].value,
-			init_ead_ctx.token[i].value_len);
+			init_ead_ctx.token[i].value_length);
 	}
 
 	/* Both peers derived the DH secret into the same PRK_3e2m handle. */
@@ -973,19 +977,19 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_3 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_3, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_3, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_3),
 			  init_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < init_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_3[i].label,
 				  init_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_3[i].value_len,
-				  init_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_3[i].value_length,
+				  init_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_3[i].value,
 			init_ead_ctx.token[i].value,
-			init_ead_ctx.token[i].value_len);
+			init_ead_ctx.token[i].value_length);
 	}
 
 	/* EDHOC message 3 process. */
@@ -1001,19 +1005,19 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_3 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_3, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_3, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_3),
 			  resp_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < resp_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_3[i].label,
 				  resp_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_3[i].value_len,
-				  resp_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_3[i].value_length,
+				  resp_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_3[i].value,
 			resp_ead_ctx.token[i].value,
-			resp_ead_ctx.token[i].value_len);
+			resp_ead_ctx.token[i].value_length);
 	}
 
 	/* Both peers derived the same PRK_4e3m handle (message 3/4 auth key). */
@@ -1041,19 +1045,19 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_4 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_4, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_4, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_4),
 			  resp_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < resp_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_4[i].label,
 				  resp_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_4[i].value_len,
-				  resp_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_4[i].value_length,
+				  resp_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_4[i].value,
 			resp_ead_ctx.token[i].value,
-			resp_ead_ctx.token[i].value_len);
+			resp_ead_ctx.token[i].value_length);
 	}
 
 	/* EDHOC message 4 process. */
@@ -1070,19 +1074,19 @@ TEST(handshake_x5chain_sig_suite2, one_cert_in_chain_with_multiple_ead)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_4 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_4, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_4, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(ead_multiple_tokens_msg_4),
 			  init_ead_ctx.recv_tokens);
 
 	for (size_t i = 0; i < init_ead_ctx.recv_tokens; ++i) {
 		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_4[i].label,
 				  init_ead_ctx.token[i].label);
-		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_4[i].value_len,
-				  init_ead_ctx.token[i].value_len);
+		TEST_ASSERT_EQUAL(ead_multiple_tokens_msg_4[i].value_length,
+				  init_ead_ctx.token[i].value_length);
 		TEST_ASSERT_EQUAL_UINT8_ARRAY(
 			ead_multiple_tokens_msg_4[i].value,
 			init_ead_ctx.token[i].value,
-			init_ead_ctx.token[i].value_len);
+			init_ead_ctx.token[i].value_length);
 	}
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));

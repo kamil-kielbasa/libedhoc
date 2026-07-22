@@ -2,9 +2,9 @@
  * \file    edhoc_message_4.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 4 compose & process.
- * 
- * \copyright Copyright (c) 2025
- * 
+ *
+ * \copyright Copyright (c) 2026
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
@@ -187,8 +188,8 @@ STATIC int compute_plaintext_4_len(const struct edhoc_context *ctx,
 
 	for (size_t i = 0; i < ctx->ead.count; ++i) {
 		len += edhoc_cbor_int_mem_req(ctx->ead.token[i].label);
-		len += ctx->ead.token[i].value_len;
-		len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value_len);
+		len += ctx->ead.token[i].value_length;
+		len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value_length);
 	}
 
 	*ptxt_4_len = len;
@@ -222,7 +223,7 @@ STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value =
 				ctx->ead.token[i].value;
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len =
-				ctx->ead.token[i].value_len;
+				ctx->ead.token[i].value_length;
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value_present =
 				(NULL != ctx->ead.token[i].value);
 		}
@@ -491,7 +492,7 @@ STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label;
 		ctx->ead.token[i].value =
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value;
-		ctx->ead.token[i].value_len =
+		ctx->ead.token[i].value_length =
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len;
 	}
 
@@ -538,7 +539,7 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_4;
+	ctx->state.message = EDHOC_MESSAGE_4;
 	ctx->state.role = EDHOC_ROLE_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -567,10 +568,10 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 				(const uint8_t *)&ctx->ead.token[i].label,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_4 compose label");
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_4 compose value");
 			}
 		}
@@ -737,7 +738,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_4;
+	ctx->state.message = EDHOC_MESSAGE_4;
 	ctx->state.role = EDHOC_ROLE_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -856,10 +857,10 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_4 process label");
 
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_4 process value");
 			}
 		}

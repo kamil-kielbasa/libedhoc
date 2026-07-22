@@ -4,9 +4,9 @@
  * \brief   EDHOC Utilities implementations:
  *          - Connection ID utilities.
  *          - Buffer utilities (prepend/extract).
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -21,6 +21,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include <edhoc/coap.h>
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
@@ -50,10 +51,10 @@ bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
 		return false;
 
 	switch (conn_id_1->encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		return (conn_id_1->int_value == conn_id_2->int_value);
 
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		return (conn_id_1->bstr_length == conn_id_2->bstr_length) &&
 		       (0 == memcmp(conn_id_1->bstr_value,
 				    conn_id_2->bstr_value,
@@ -106,13 +107,14 @@ int edhoc_coap_prepend_connection_id(
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	if (conn_id->encode_type == EDHOC_CID_TYPE_ONE_BYTE_INTEGER) {
+	if (conn_id->encode_type == EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER) {
 		prepended_fields->buffer[0] = (uint8_t)conn_id->int_value;
 		prepended_fields->edhoc_message_ptr =
 			prepended_fields->buffer + 1;
 		prepended_fields->edhoc_message_size =
 			prepended_fields->buffer_size - 1;
-	} else if (conn_id->encode_type == EDHOC_CID_TYPE_BYTE_STRING) {
+	} else if (conn_id->encode_type ==
+		   EDHOC_CONNECTION_ID_TYPE_BYTE_STRING) {
 		if (conn_id->bstr_length == 0 ||
 		    conn_id->bstr_length > CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID) {
 			EDHOC_LOG_ERR("Invalid bstr cid len: %zu",
@@ -272,7 +274,7 @@ int edhoc_coap_extract_connection_id(
 	switch (cid_r.connection_identifier_choice) {
 	case connection_identifier_int_c:
 		extracted_fields->extracted_conn_id.encode_type =
-			EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 		extracted_fields->extracted_conn_id.int_value =
 			(int8_t)extracted_fields->buffer[0];
 		break;
@@ -285,7 +287,7 @@ int edhoc_coap_extract_connection_id(
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 		extracted_fields->extracted_conn_id.encode_type =
-			EDHOC_CID_TYPE_BYTE_STRING;
+			EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
 		extracted_fields->extracted_conn_id.bstr_length =
 			cid_r.connection_identifier_bstr.len;
 		memcpy(extracted_fields->extracted_conn_id.bstr_value,

@@ -6,7 +6,7 @@
  *          - signature keys.
  *          - cipher suite 0.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -53,65 +53,69 @@
  * \brief Authentication credentials fetch callback for initiator
  *        for single certificate.
  */
-static int auth_cred_fetch_init_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred);
+static int
+auth_cred_fetch_init_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials fetch callback for responder
  *        for single certificate.
  */
-static int auth_cred_fetch_resp_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred);
+static int
+auth_cred_fetch_resp_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials verify callback for initiator
  *        for single certificate.
  */
-static int auth_cred_verify_init_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len);
+static int
+auth_cred_verify_init_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
  * \brief Authentication credentials verify callback for responder
  *        for single certificate.
  */
-static int auth_cred_verify_resp_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len);
+static int
+auth_cred_verify_resp_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
  * \brief Authentication credentials fetch callback for initiator
  *        for many certificates.
  */
-static int auth_cred_fetch_init_many_certs(void *user_ctx,
-					   struct edhoc_auth_creds *auth_cred);
+static int
+auth_cred_fetch_init_many_certs(void *user_ctx,
+				struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials fetch callback for responder
  *        for many certificates.
  */
-static int auth_cred_fetch_resp_many_certs(void *user_ctx,
-					   struct edhoc_auth_creds *auth_cred);
+static int
+auth_cred_fetch_resp_many_certs(void *user_ctx,
+				struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials verify callback for initiator
  *        for single certificate.
  */
-static int auth_cred_verify_init_many_certs(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred,
-					    const uint8_t **pub_key,
-					    size_t *pub_key_len);
+static int
+auth_cred_verify_init_many_certs(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred,
+				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
  * \brief Authentication credentials verify callback for responder
  *        for single certificate.
  */
-static int auth_cred_verify_resp_many_certs(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred,
-					    const uint8_t **pub_key,
-					    size_t *pub_key_len);
+static int
+auth_cred_verify_resp_many_certs(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred,
+				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /* Static variables and constants ------------------------------------------ */
 
@@ -174,8 +178,9 @@ static const struct edhoc_credentials edhoc_auth_cred_many_certs_mocked_resp = {
 
 /* Static function definitions --------------------------------------------- */
 
-static int auth_cred_fetch_init_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred)
+static int
+auth_cred_fetch_init_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -183,12 +188,12 @@ static int auth_cred_fetch_init_single_cert(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_I;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.certificate_count = 1;
+	auth_cred->x509_chain.certificate[0] = CRED_I;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_I);
 
 	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -196,8 +201,9 @@ static int auth_cred_fetch_init_single_cert(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_fetch_resp_single_cert(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred)
+static int
+auth_cred_fetch_resp_single_cert(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -205,12 +211,12 @@ static int auth_cred_fetch_resp_single_cert(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 1;
-	auth_cred->x509_chain.cert[0] = CRED_R;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.certificate_count = 1;
+	auth_cred->x509_chain.certificate[0] = CRED_R;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_R);
 
 	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -218,10 +224,10 @@ static int auth_cred_fetch_resp_single_cert(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_init_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len)
+static int
+auth_cred_verify_init_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -237,20 +243,20 @@ static int auth_cred_verify_init_single_cert(void *user_ctx,
 	/**
          * \brief Verify received number of certificates. 
          */
-	if (1 != auth_cred->x509_chain.nr_of_certs)
+	if (1 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_R))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -262,10 +268,10 @@ static int auth_cred_verify_init_single_cert(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_resp_single_cert(void *user_ctx,
-					     struct edhoc_auth_creds *auth_cred,
-					     const uint8_t **pub_key,
-					     size_t *pub_key_len)
+static int
+auth_cred_verify_resp_single_cert(void *user_ctx,
+				  struct edhoc_auth_credentials *auth_cred,
+				  const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -281,20 +287,20 @@ static int auth_cred_verify_resp_single_cert(void *user_ctx,
 	/**
          * \brief Verify received number of certificates. 
          */
-	if (1 != auth_cred->x509_chain.nr_of_certs)
+	if (1 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -306,8 +312,9 @@ static int auth_cred_verify_resp_single_cert(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_fetch_init_many_certs(void *user_ctx,
-					   struct edhoc_auth_creds *auth_cred)
+static int
+auth_cred_fetch_init_many_certs(void *user_ctx,
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -315,16 +322,16 @@ static int auth_cred_fetch_init_many_certs(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 2;
+	auth_cred->x509_chain.certificate_count = 2;
 
-	auth_cred->x509_chain.cert[0] = CRED_I;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.certificate[0] = CRED_I;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_I);
 
-	auth_cred->x509_chain.cert[1] = CRED_R;
-	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.certificate[1] = CRED_R;
+	auth_cred->x509_chain.certificate_length[1] = ARRAY_SIZE(CRED_R);
 
 	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -332,8 +339,9 @@ static int auth_cred_fetch_init_many_certs(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_fetch_resp_many_certs(void *user_ctx,
-					   struct edhoc_auth_creds *auth_cred)
+static int
+auth_cred_fetch_resp_many_certs(void *user_ctx,
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -341,16 +349,16 @@ static int auth_cred_fetch_resp_many_certs(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->x509_chain.nr_of_certs = 2;
+	auth_cred->x509_chain.certificate_count = 2;
 
-	auth_cred->x509_chain.cert[0] = CRED_R;
-	auth_cred->x509_chain.cert_len[0] = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_chain.certificate[0] = CRED_R;
+	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_R);
 
-	auth_cred->x509_chain.cert[1] = CRED_I;
-	auth_cred->x509_chain.cert_len[1] = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_chain.certificate[1] = CRED_I;
+	auth_cred->x509_chain.certificate_length[1] = ARRAY_SIZE(CRED_I);
 
 	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -358,10 +366,10 @@ static int auth_cred_fetch_resp_many_certs(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_init_many_certs(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred,
-					    const uint8_t **pub_key,
-					    size_t *pub_key_len)
+static int
+auth_cred_verify_init_many_certs(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred,
+				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -377,33 +385,33 @@ static int auth_cred_verify_init_many_certs(void *user_ctx,
 	/**
          * \brief Verify received number of certificates. 
          */
-	if (2 != auth_cred->x509_chain.nr_of_certs)
+	if (2 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_R))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[1] != ARRAY_SIZE(CRED_I))
+	if (auth_cred->x509_chain.certificate_length[1] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[1],
-			auth_cred->x509_chain.cert_len[1]))
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[1],
+			auth_cred->x509_chain.certificate_length[1]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -415,10 +423,10 @@ static int auth_cred_verify_init_many_certs(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_resp_many_certs(void *user_ctx,
-					    struct edhoc_auth_creds *auth_cred,
-					    const uint8_t **pub_key,
-					    size_t *pub_key_len)
+static int
+auth_cred_verify_resp_many_certs(void *user_ctx,
+				 struct edhoc_auth_credentials *auth_cred,
+				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
 
@@ -434,33 +442,33 @@ static int auth_cred_verify_resp_many_certs(void *user_ctx,
 	/**
          * \brief Verify received number of certificates. 
          */
-	if (2 != auth_cred->x509_chain.nr_of_certs)
+	if (2 != auth_cred->x509_chain.certificate_count)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[0] != ARRAY_SIZE(CRED_I))
+	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_I))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.cert[0],
-			auth_cred->x509_chain.cert_len[0]))
+	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[0],
+			auth_cred->x509_chain.certificate_length[0]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate length. 
          */
-	if (auth_cred->x509_chain.cert_len[1] != ARRAY_SIZE(CRED_R))
+	if (auth_cred->x509_chain.certificate_length[1] != ARRAY_SIZE(CRED_R))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received peer certificate. 
          */
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.cert[1],
-			auth_cred->x509_chain.cert_len[1]))
+	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[1],
+			auth_cred->x509_chain.certificate_length[1]))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -487,12 +495,12 @@ TEST_SETUP(handshake_x5chain_sig_suite0)
 	};
 
 	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = (int8_t)C_I[0],
 	};
 
 	struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
 	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
@@ -589,7 +597,7 @@ TEST(handshake_x5chain_sig_suite0, one_cert_in_chain)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
@@ -623,7 +631,7 @@ TEST(handshake_x5chain_sig_suite0, one_cert_in_chain)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R),
 			  init_ctx->negotiation.peer_connection_id.bstr_length);
@@ -868,7 +876,7 @@ TEST(handshake_x5chain_sig_suite0, two_certs_in_chain)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
@@ -902,7 +910,7 @@ TEST(handshake_x5chain_sig_suite0, two_certs_in_chain)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R),
 			  init_ctx->negotiation.peer_connection_id.bstr_length);

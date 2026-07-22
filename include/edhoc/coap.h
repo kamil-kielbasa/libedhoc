@@ -1,12 +1,17 @@
 /**
  * \file    coap.h
  * \author  Assa Abloy
- * \brief   EDHOC Utilities API:
- *          - Connection ID utilities.
- *          - Buffer utilities (prepend/extract).
- * 
+ * \brief   Helpers for transferring EDHOC messages over CoAP (RFC 9528: A.2).
+ *
+ *          When EDHOC runs over CoAP the party acting as CoAP client prepends,
+ *          to each message it sends, either the flow indicator (the CBOR simple
+ *          value \c true, before message 1 of the forward flow) or the
+ *          connection identifier selected by the peer. These helpers build such
+ *          a prepended buffer on the sending side and strip it on the receiving
+ *          side, and compare connection identifiers.
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -27,42 +32,64 @@
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 
-/** \defgroup edhoc-api-buffer-utils EDHOC Buffer Utilities API
+/** \defgroup edhoc-api-buffer-utils EDHOC CoAP buffer utilities
+ *
+ * Build and parse a CoAP payload that carries an EDHOC message optionally
+ * prepended with a flow indicator and/or a connection identifier
+ * (RFC 9528: A.2). The sender fills a \ref edhoc_coap_prepended_fields, prepends
+ * what it needs, composes the EDHOC message into the reserved area, then
+ * recomputes the total size. The receiver fills a
+ * \ref edhoc_coap_extracted_fields and strips the prepended data before EDHOC
+ * processing.
  * @{
  */
 
 /**
- * \brief Helper structure for prepending data before EDHOC messages.
+ * \brief Working buffer for building a CoAP payload to send.
+ *
+ * Initialise \p buffer / \p buffer_size to the whole output buffer and point
+ * \p edhoc_message_ptr / \p edhoc_message_size at the same buffer. Each prepend
+ * call advances \p edhoc_message_ptr past the bytes it wrote and shrinks
+ * \p edhoc_message_size; compose the EDHOC message there, then call
+ * \ref edhoc_coap_prepend_recalculate_size.
  */
 struct edhoc_coap_prepended_fields {
-	/** Complete buffer including prepended data and EDHOC message. */
+	/** Output buffer holding the prepended data followed by the EDHOC message. */
 	uint8_t *buffer;
-	/** Total size of the buffer. */
+	/** In: capacity of \p buffer; out: total used size after recalculation. */
 	size_t buffer_size;
-	/** Pointer to where EDHOC message should be written (after prepended data). */
+	/** Where the EDHOC message is to be written (advanced past prepended data). */
 	uint8_t *edhoc_message_ptr;
-	/** Available size for EDHOC message (after composition, contains actual message length). */
+	/** In: space left for the EDHOC message; out (after compose): its length. */
 	size_t edhoc_message_size;
 };
 
 /**
- * \brief Helper structure for extracting data from received messages.
+ * \brief Working buffer for parsing a received CoAP payload.
+ *
+ * Initialise \p buffer / \p buffer_size to the received payload and point
+ * \p edhoc_message_ptr / \p edhoc_message_size at the same buffer. Each extract
+ * call advances \p edhoc_message_ptr past the bytes it consumed and shrinks
+ * \p edhoc_message_size, leaving the bare EDHOC message to process.
  */
 struct edhoc_coap_extracted_fields {
-	/** Complete received buffer. */
+	/** Received payload. */
 	const uint8_t *buffer;
-	/** Size of received buffer. */
+	/** Size of the received payload in bytes. */
 	size_t buffer_size;
-	/** Pointer to EDHOC message (after extracted data). */
+	/** Start of the EDHOC message (advanced past extracted data). */
 	const uint8_t *edhoc_message_ptr;
-	/** Size of EDHOC message. */
+	/** Remaining EDHOC message length in bytes. */
 	size_t edhoc_message_size;
 
-	/** True if forward flow detected (CBOR true found, set by edhoc_coap_extract_flow_info). */
+	/** Forward flow: the CBOR \c true indicator was found (set by
+	 *  \ref edhoc_coap_extract_flow_info). */
 	bool is_forward_flow;
-	/** True if reverse flow detected (empty buffer, set by edhoc_coap_extract_flow_info). */
+	/** Reverse flow: the payload was empty (set by
+	 *  \ref edhoc_coap_extract_flow_info). */
 	bool is_reverse_flow;
-	/** Extracted connection identifier (set by edhoc_coap_extract_connection_id). */
+	/** Connection identifier extracted by
+	 *  \ref edhoc_coap_extract_connection_id. */
 	struct edhoc_connection_id extracted_conn_id;
 };
 
@@ -72,17 +99,20 @@ struct edhoc_coap_extracted_fields {
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
-/** \defgroup edhoc-api-connection-id EDHOC Connection ID Utilities API
+/** \defgroup edhoc-api-connection-id EDHOC CoAP connection-id utilities
+ *
+ * Compare EDHOC connection identifiers, e.g. to match the identifier extracted
+ * from an incoming CoAP message against the one selected for a session.
  * @{
  */
 
 /**
  * \brief Compare two connection identifiers for equality.
- * 
+ *
  * \param[in] conn_id_1                First connection identifier.
  * \param[in] conn_id_2                Second connection identifier.
- * 
- * \return true if connection IDs are equal, false otherwise.
+ *
+ * \return \c true if both encode the same connection identifier, else \c false.
  */
 bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
 				    const struct edhoc_connection_id *conn_id_2);
@@ -94,7 +124,7 @@ bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
  */
 
 /**
- * \note Initialize prepend buffer directly using struct initialization:
+ * \note Initialise the prepend buffer with designated initialisers before use:
  * \code
  * struct edhoc_coap_prepended_fields prepended_fields = {
  *     .buffer = buffer,
@@ -103,62 +133,63 @@ bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
  *     .edhoc_message_size = buffer_size
  * };
  * \endcode
- * 
- * \note After calling edhoc_coap_prepend_recalculate_size(), buffer_size contains
- *       the actual used size (prepended + EDHOC message).
+ * Then prepend as needed, compose the EDHOC message into
+ * \c edhoc_message_ptr, and call \ref edhoc_coap_prepend_recalculate_size.
  */
 
 /**
- * \brief Prepend flow indicator (CBOR true) to buffer before EDHOC message.
- * 
- * Prepends EDHOC_CBOR_TRUE to indicate forward flow.
- * The prepend buffer must be initialized with buffer and buffer_size before calling this function.
- * 
- * \param[in,out] prepended_fields     Prepend buffer structure (must have buffer and buffer_size set).
- * 
- * \retval #EDHOC_SUCCESS Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL Not enough space.
+ * \brief Prepend the forward-flow indicator before the EDHOC message.
+ *
+ * Writes the CBOR simple value \c true (0xf5) that marks message 1 of the
+ * forward flow / a new EDHOC session (RFC 9528: A.2), and reserves the rest of
+ * the buffer for the EDHOC message.
+ *
+ * \param[in,out] prepended_fields     Prepend buffer (\p buffer and \p buffer_size set).
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_coap_prepend_flow(
 	struct edhoc_coap_prepended_fields *prepended_fields);
 
 /**
- * \brief Prepend connection identifier to buffer before EDHOC message.
- * 
- * Encodes and prepends the connection identifier.
- * 
- * \param[in,out] prepended_fields     Prepend buffer structure.
+ * \brief Prepend a connection identifier before the EDHOC message.
+ *
+ * CBOR-encodes \p conn_id and prepends it, as the CoAP client must do on the
+ * messages it sends (RFC 9528: A.2): the peer's C_R in the forward flow, or
+ * C_I in the reverse flow.
+ *
+ * \param[in,out] prepended_fields     Prepend buffer.
  * \param[in] conn_id                  Connection identifier to prepend.
- * 
- * \retval #EDHOC_SUCCESS Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL Not enough space.
- * \retval #EDHOC_ERROR_CBOR_FAILURE Encoding failure.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_coap_prepend_connection_id(
 	struct edhoc_coap_prepended_fields *prepended_fields,
 	const struct edhoc_connection_id *conn_id);
 
 /**
- * \brief Recalculate total size after EDHOC message composition.
- * 
- * Recalculates total size after EDHOC message composition and updates
- * buffer_size to reflect the actual used size (prepended + EDHOC message).
- * The EDHOC message length is taken from edhoc_message_size after composition.
- * 
- * \param[in,out] prepended_fields          Prepend buffer structure.
- *                                          On success, buffer_size is updated to the actual used size.
- * 
- * \retval #EDHOC_SUCCESS Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL Total size exceeds buffer capacity.
+ * \brief Finalise the payload size after composing the EDHOC message.
+ *
+ * Call once the EDHOC message has been composed into \p edhoc_message_ptr and
+ * \p edhoc_message_size holds its actual length. Sets \p buffer_size to the
+ * total bytes to send (prepended data + EDHOC message).
+ *
+ * \param[in,out] prepended_fields     Prepend buffer; \p buffer_size is updated
+ *                                     to the total used size on success.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_coap_prepend_recalculate_size(
 	struct edhoc_coap_prepended_fields *prepended_fields);
 
 /**
- * \note Initialize extract buffer directly using struct initialization:
+ * \note Initialise the extract buffer with designated initialisers before use:
  * \code
  * struct edhoc_coap_extracted_fields extracted_fields = {
  *     .buffer = buffer,
@@ -170,37 +201,37 @@ int edhoc_coap_prepend_recalculate_size(
  */
 
 /**
- * \brief Extract flow information from buffer.
- * 
- * Checks the beginning of the buffer for flow indicators:
- * - Empty buffer indicates reverse flow
- * - CBOR true (EDHOC_CBOR_TRUE) indicates forward flow
- * - Otherwise, no flow indicator present
- * 
- * If a flow indicator is found, it is extracted and the extract buffer
- * is updated to point to the EDHOC message after the indicator.
- * Flow information is stored in the \p is_forward_flow and \p is_reverse_flow fields.
- * 
- * \param[in,out] extracted_fields     Extract buffer structure.
- * 
- * \retval #EDHOC_SUCCESS Success (flow info extracted or buffer is empty).
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.
+ * \brief Detect and strip the flow indicator at the start of the payload.
+ *
+ * Inspects the first byte (RFC 9528: A.2):
+ * - an empty payload indicates the reverse flow (\p is_reverse_flow);
+ * - a leading CBOR \c true (0xf5) indicates the forward flow
+ *   (\p is_forward_flow), which is then consumed;
+ * - otherwise no indicator is present and the buffer is left unchanged.
+ *
+ * \param[in,out] extracted_fields     Extract buffer; advanced past the
+ *                                     indicator and flow flags set.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success (indicator stripped, or none present / empty buffer).
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_coap_extract_flow_info(
 	struct edhoc_coap_extracted_fields *extracted_fields);
 
 /**
- * \brief Extract connection identifier from buffer.
- * 
- * Extracts and decodes a connection identifier from the beginning of the buffer.
- * The connection identifier is stored in the \p extracted_conn_id field on success.
- * The buffer is advanced to point past the connection ID.
- * 
- * \param[in,out] extracted_fields     Extract buffer structure.
- * 
- * \retval #EDHOC_SUCCESS Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT Invalid parameters.
- * \retval #EDHOC_ERROR_CBOR_FAILURE Decoding failure.
+ * \brief Extract and strip the prepended connection identifier.
+ *
+ * CBOR-decodes the connection identifier at the start of the payload into
+ * \p extracted_conn_id and advances past it, leaving the bare EDHOC message
+ * (RFC 9528: A.2).
+ *
+ * \param[in,out] extracted_fields     Extract buffer; \p extracted_conn_id is
+ *                                     set and the buffer advanced on success.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_coap_extract_connection_id(
 	struct edhoc_coap_extracted_fields *extracted_fields);

@@ -7,7 +7,7 @@
  *          - cipher suite 2.
  *          - single EAD token.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -55,7 +55,7 @@
 struct ead_token_buf {
 	int32_t label;
 	uint8_t value[EAD_TOKEN_BUFFER_LEN];
-	size_t value_len;
+	size_t value_length;
 };
 
 struct ead_context {
@@ -71,26 +71,26 @@ struct ead_context {
  * \brief Authentication credentials fetch callback for initiator.
  */
 static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred);
+				struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials fetch callback for responder.
  */
 static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred);
+				struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials verify callback for initiator.
  */
 static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
  * \brief Authentication credentials verify callback for responder.
  */
 static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
@@ -146,25 +146,25 @@ static const uint8_t ead_val_msg_4[] = { 0xff, 0xee, 0xdd, 0xcc,
 static const struct edhoc_ead_token ead_single_token_msg_1 = {
 	.label = 0,
 	.value = ead_val_msg_1,
-	.value_len = ARRAY_SIZE(ead_val_msg_1),
+	.value_length = ARRAY_SIZE(ead_val_msg_1),
 };
 
 static const struct edhoc_ead_token ead_single_token_msg_2 = {
 	.label = 24,
 	.value = ead_val_msg_2,
-	.value_len = ARRAY_SIZE(ead_val_msg_2),
+	.value_length = ARRAY_SIZE(ead_val_msg_2),
 };
 
 static const struct edhoc_ead_token ead_single_token_msg_3 = {
 	.label = 65535,
 	.value = ead_val_msg_3,
-	.value_len = ARRAY_SIZE(ead_val_msg_3),
+	.value_length = ARRAY_SIZE(ead_val_msg_3),
 };
 
 static const struct edhoc_ead_token ead_single_token_msg_4 = {
 	.label = -830,
 	.value = ead_val_msg_4,
-	.value_len = ARRAY_SIZE(ead_val_msg_4),
+	.value_length = ARRAY_SIZE(ead_val_msg_4),
 };
 
 /* Import a raw P-256 scalar as an ECDSA (SIGN_HASH) private key handle. */
@@ -212,7 +212,7 @@ static const struct edhoc_ead edhoc_ead_single_token = {
 /* Static function definitions --------------------------------------------- */
 
 static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred)
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -227,15 +227,16 @@ static int auth_cred_fetch_init(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
-	auth_cred->x509_hash.cert = CRED_I;
-	auth_cred->x509_hash.cert_len = ARRAY_SIZE(CRED_I);
-	auth_cred->x509_hash.cert_fp = CRED_I_thumbprint;
-	auth_cred->x509_hash.cert_fp_len = ARRAY_SIZE(CRED_I_thumbprint);
+	auth_cred->x509_hash.certificate = CRED_I;
+	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_hash.certificate_fingerprint = CRED_I_thumbprint;
+	auth_cred->x509_hash.certificate_fingerprint_length =
+		ARRAY_SIZE(CRED_I_thumbprint);
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
+	auth_cred->x509_hash.algorithm_int = COSE_ALG_SHA_256_64;
 
 	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -244,7 +245,7 @@ static int auth_cred_fetch_init(void *user_ctx,
 }
 
 static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred)
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
@@ -259,15 +260,16 @@ static int auth_cred_fetch_resp(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
-	auth_cred->x509_hash.cert = CRED_R;
-	auth_cred->x509_hash.cert_len = ARRAY_SIZE(CRED_R);
-	auth_cred->x509_hash.cert_fp = CRED_R_thumbprint;
-	auth_cred->x509_hash.cert_fp_len = ARRAY_SIZE(CRED_R_thumbprint);
+	auth_cred->x509_hash.certificate = CRED_R;
+	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_hash.certificate_fingerprint = CRED_R_thumbprint;
+	auth_cred->x509_hash.certificate_fingerprint_length =
+		ARRAY_SIZE(CRED_R_thumbprint);
 	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	auth_cred->x509_hash.alg_int = COSE_ALG_SHA_256_64;
+	auth_cred->x509_hash.algorithm_int = COSE_ALG_SHA_256_64;
 
 	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					     auth_cred->priv_key_id);
+					     auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -276,7 +278,7 @@ static int auth_cred_fetch_resp(void *user_ctx,
 }
 
 static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -294,7 +296,7 @@ static int auth_cred_verify_init(void *user_ctx,
          * \brief Verify received COSE IANA hash algorithm value. 
          */
 	if (EDHOC_ENCODE_TYPE_INTEGER != auth_cred->x509_hash.encode_type ||
-	    COSE_ALG_SHA_256_64 != auth_cred->x509_hash.alg_int)
+	    COSE_ALG_SHA_256_64 != auth_cred->x509_hash.algorithm_int)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -309,21 +311,23 @@ static int auth_cred_verify_init(void *user_ctx,
 	if (PSA_SUCCESS != status || ARRAY_SIZE(hash) != hash_len)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	uint8_t cert_fp[8] = { 0 };
-	memcpy(cert_fp, hash, sizeof(cert_fp));
+	uint8_t cert_fingerprint[8] = { 0 };
+	memcpy(cert_fingerprint, hash, sizeof(cert_fingerprint));
 
-	if (ARRAY_SIZE(cert_fp) != auth_cred->x509_hash.cert_fp_len)
+	if (ARRAY_SIZE(cert_fingerprint) !=
+	    auth_cred->x509_hash.certificate_fingerprint_length)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(cert_fp, auth_cred->x509_hash.cert_fp,
-			auth_cred->x509_hash.cert_fp_len))
+	if (0 != memcmp(cert_fingerprint,
+			auth_cred->x509_hash.certificate_fingerprint,
+			auth_cred->x509_hash.certificate_fingerprint_length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief If successful then assign certificate and public key. 
          */
-	auth_cred->x509_hash.cert = CRED_R;
-	auth_cred->x509_hash.cert_len = ARRAY_SIZE(CRED_R);
+	auth_cred->x509_hash.certificate = CRED_R;
+	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_R);
 
 	*pub_key = PK_R;
 	*pub_key_len = ARRAY_SIZE(PK_R);
@@ -332,7 +336,7 @@ static int auth_cred_verify_init(void *user_ctx,
 }
 
 static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -350,7 +354,7 @@ static int auth_cred_verify_resp(void *user_ctx,
          * \brief Verify received COSE IANA hash algorithm value. 
          */
 	if (EDHOC_ENCODE_TYPE_INTEGER != auth_cred->x509_hash.encode_type ||
-	    COSE_ALG_SHA_256_64 != auth_cred->x509_hash.alg_int)
+	    COSE_ALG_SHA_256_64 != auth_cred->x509_hash.algorithm_int)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -365,21 +369,23 @@ static int auth_cred_verify_resp(void *user_ctx,
 	if (PSA_SUCCESS != status || ARRAY_SIZE(hash) != hash_len)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	uint8_t cert_fp[8] = { 0 };
-	memcpy(cert_fp, hash, sizeof(cert_fp));
+	uint8_t cert_fingerprint[8] = { 0 };
+	memcpy(cert_fingerprint, hash, sizeof(cert_fingerprint));
 
-	if (ARRAY_SIZE(cert_fp) != auth_cred->x509_hash.cert_fp_len)
+	if (ARRAY_SIZE(cert_fingerprint) !=
+	    auth_cred->x509_hash.certificate_fingerprint_length)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(cert_fp, auth_cred->x509_hash.cert_fp,
-			auth_cred->x509_hash.cert_fp_len))
+	if (0 != memcmp(cert_fingerprint,
+			auth_cred->x509_hash.certificate_fingerprint,
+			auth_cred->x509_hash.certificate_fingerprint_length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief If successful then assign certificate and public key. 
          */
-	auth_cred->x509_hash.cert = CRED_I;
-	auth_cred->x509_hash.cert_len = ARRAY_SIZE(CRED_I);
+	auth_cred->x509_hash.certificate = CRED_I;
+	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_I);
 
 	*pub_key = PK_I;
 	*pub_key_len = ARRAY_SIZE(PK_I);
@@ -399,16 +405,16 @@ static int ead_compose_single_token(void *user_ctx, enum edhoc_message msg,
 	const struct edhoc_ead_token *token = NULL;
 
 	switch (msg) {
-	case EDHOC_MSG_1:
+	case EDHOC_MESSAGE_1:
 		token = &ead_single_token_msg_1;
 		break;
-	case EDHOC_MSG_2:
+	case EDHOC_MESSAGE_2:
 		token = &ead_single_token_msg_2;
 		break;
-	case EDHOC_MSG_3:
+	case EDHOC_MESSAGE_3:
 		token = &ead_single_token_msg_3;
 		break;
-	case EDHOC_MSG_4:
+	case EDHOC_MESSAGE_4:
 		token = &ead_single_token_msg_4;
 		break;
 	default:
@@ -425,9 +431,9 @@ static int ead_compose_single_token(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_ctx->recv_tokens; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -447,9 +453,9 @@ static int ead_process_single_token(void *user_ctx, enum edhoc_message msg,
 
 	for (size_t i = 0; i < ead_token_size; ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_len = ead_token[i].value_len;
+		ead_ctx->token[i].value_length = ead_token[i].value_length;
 		memcpy(ead_ctx->token[i].value, ead_token[i].value,
-		       ead_token[i].value_len);
+		       ead_token[i].value_length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -470,12 +476,12 @@ TEST_SETUP(handshake_x5t_sig_suite2)
 	};
 
 	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = (int8_t)C_I[0],
 	};
 
 	struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 		.bstr_length = ARRAY_SIZE(C_R),
 	};
 	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
@@ -575,15 +581,15 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_1 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_1, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, init_ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(ead_single_token_msg_1.label,
 			  init_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_1.value_len,
-			  init_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_1.value_length,
+			  init_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_1.value,
 				      init_ead_ctx.token[0].value,
-				      init_ead_ctx.token[0].value_len);
+				      init_ead_ctx.token[0].value_length);
 
 	/* EDHOC message 1 process. */
 	ret = edhoc_message_1_process(resp_ctx, msg_1, msg_1_len);
@@ -597,21 +603,21 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
 
 	/* Verify EAD_1 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_1, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, resp_ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(ead_single_token_msg_1.label,
 			  resp_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_1.value_len,
-			  resp_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_1.value_length,
+			  resp_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_1.value,
 				      resp_ead_ctx.token[0].value,
-				      resp_ead_ctx.token[0].value_len);
+				      resp_ead_ctx.token[0].value_length);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));
@@ -634,15 +640,15 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_2 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_2, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_2, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, resp_ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(ead_single_token_msg_2.label,
 			  resp_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_2.value_len,
-			  resp_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_2.value_length,
+			  resp_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_2.value,
 				      resp_ead_ctx.token[0].value,
-				      resp_ead_ctx.token[0].value_len);
+				      resp_ead_ctx.token[0].value_length);
 
 	/* EDHOC message 2 process. */
 	ret = edhoc_message_2_process(init_ctx, msg_2, msg_2_len);
@@ -656,7 +662,7 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R),
 			  init_ctx->negotiation.peer_connection_id.bstr_length);
@@ -665,15 +671,15 @@ TEST(handshake_x5t_sig_suite2, handshake)
 		init_ctx->negotiation.peer_connection_id.bstr_length);
 
 	/* Verify EAD_2 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_2, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_2, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, init_ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(ead_single_token_msg_2.label,
 			  init_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_2.value_len,
-			  init_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_2.value_length,
+			  init_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_2.value,
 				      init_ead_ctx.token[0].value,
-				      init_ead_ctx.token[0].value_len);
+				      init_ead_ctx.token[0].value_length);
 
 	/* Both peers derived the DH secret into the same PRK_3e2m handle. */
 	assert_peers_share_slot_key(init_ctx, resp_ctx,
@@ -700,15 +706,15 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_3 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_3, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_3, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, init_ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(ead_single_token_msg_3.label,
 			  init_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_3.value_len,
-			  init_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_3.value_length,
+			  init_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_3.value,
 				      init_ead_ctx.token[0].value,
-				      init_ead_ctx.token[0].value_len);
+				      init_ead_ctx.token[0].value_length);
 
 	/* EDHOC message 3 process. */
 	ret = edhoc_message_3_process(resp_ctx, msg_3, msg_3_len);
@@ -723,15 +729,15 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_3 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_3, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_3, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, resp_ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(ead_single_token_msg_3.label,
 			  resp_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_3.value_len,
-			  resp_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_3.value_length,
+			  resp_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_3.value,
 				      resp_ead_ctx.token[0].value,
-				      resp_ead_ctx.token[0].value_len);
+				      resp_ead_ctx.token[0].value_length);
 
 	/* Both peers derived the same PRK_4e3m handle (message 3/4 auth key). */
 	assert_peers_share_slot_key(init_ctx, resp_ctx,
@@ -758,15 +764,15 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_4 compose. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_4, resp_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_4, resp_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, resp_ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(ead_single_token_msg_4.label,
 			  resp_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_4.value_len,
-			  resp_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_4.value_length,
+			  resp_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_4.value,
 				      resp_ead_ctx.token[0].value,
-				      resp_ead_ctx.token[0].value_len);
+				      resp_ead_ctx.token[0].value_length);
 
 	/* EDHOC message 4 process. */
 	ret = edhoc_message_4_process(init_ctx, msg_4, msg_4_len);
@@ -782,16 +788,16 @@ TEST(handshake_x5t_sig_suite2, handshake)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
 	/* Verify EAD_4 process. */
-	TEST_ASSERT_EQUAL(EDHOC_MSG_4, init_ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_4, init_ead_ctx.msg);
 	TEST_ASSERT_EQUAL(1, init_ead_ctx.recv_tokens);
 
 	TEST_ASSERT_EQUAL(ead_single_token_msg_4.label,
 			  init_ead_ctx.token[0].label);
-	TEST_ASSERT_EQUAL(ead_single_token_msg_4.value_len,
-			  init_ead_ctx.token[0].value_len);
+	TEST_ASSERT_EQUAL(ead_single_token_msg_4.value_length,
+			  init_ead_ctx.token[0].value_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(ead_single_token_msg_4.value,
 				      init_ead_ctx.token[0].value,
-				      init_ead_ctx.token[0].value_len);
+				      init_ead_ctx.token[0].value_length);
 
 	memset(&init_ead_ctx, 0, sizeof(init_ead_ctx));
 	memset(&resp_ead_ctx, 0, sizeof(resp_ead_ctx));

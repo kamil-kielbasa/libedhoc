@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Module tests for EDHOC error message.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -70,8 +70,8 @@ TEST(error_message, unspecified_error)
 		EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 	const struct edhoc_error_info error_info = {
 		.text_string = (char *)error_string,
-		.total_entries = strlen(error_string),
-		.written_entries = strlen(error_string),
+		.entries_size = strlen(error_string),
+		.entries_length = strlen(error_string),
 	};
 
 	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
@@ -81,19 +81,19 @@ TEST(error_message, unspecified_error)
 	char recv_text_string[100] = { 0 };
 	struct edhoc_error_info recv_error_info = {
 		.text_string = recv_text_string,
-		.total_entries = ARRAY_SIZE(recv_text_string),
-		.written_entries = 0,
+		.entries_size = ARRAY_SIZE(recv_text_string),
+		.entries_length = 0,
 	};
 
 	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
 					  &recv_error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
-	TEST_ASSERT_EQUAL(error_info.written_entries,
-			  recv_error_info.written_entries);
+	TEST_ASSERT_EQUAL(error_info.entries_length,
+			  recv_error_info.entries_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(error_info.text_string,
 				      recv_error_info.text_string,
-				      error_info.written_entries);
+				      error_info.entries_length);
 }
 
 TEST(error_message, wrong_selected_cipher_suite_one)
@@ -106,8 +106,8 @@ TEST(error_message, wrong_selected_cipher_suite_one)
 		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 	const struct edhoc_error_info error_info = {
 		.cipher_suites = (int32_t *)cipher_suites,
-		.total_entries = ARRAY_SIZE(cipher_suites),
-		.written_entries = ARRAY_SIZE(cipher_suites),
+		.entries_size = ARRAY_SIZE(cipher_suites),
+		.entries_length = ARRAY_SIZE(cipher_suites),
 	};
 
 	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
@@ -117,19 +117,19 @@ TEST(error_message, wrong_selected_cipher_suite_one)
 	int32_t recv_cipher_suites[10] = { 0 };
 	struct edhoc_error_info recv_error_info = {
 		.cipher_suites = recv_cipher_suites,
-		.total_entries = ARRAY_SIZE(recv_cipher_suites),
-		.written_entries = 0,
+		.entries_size = ARRAY_SIZE(recv_cipher_suites),
+		.entries_length = 0,
 	};
 
 	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
 					  &recv_error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
-	TEST_ASSERT_EQUAL(recv_error_info.written_entries,
-			  error_info.written_entries);
+	TEST_ASSERT_EQUAL(recv_error_info.entries_length,
+			  error_info.entries_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(
 		error_info.cipher_suites, recv_error_info.cipher_suites,
-		error_info.written_entries * sizeof(*error_info.cipher_suites));
+		error_info.entries_length * sizeof(*error_info.cipher_suites));
 }
 
 TEST(error_message, wrong_selected_cipher_suite_many)
@@ -142,8 +142,8 @@ TEST(error_message, wrong_selected_cipher_suite_many)
 		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 	const struct edhoc_error_info error_info = {
 		.cipher_suites = (int32_t *)cipher_suites,
-		.total_entries = ARRAY_SIZE(cipher_suites),
-		.written_entries = ARRAY_SIZE(cipher_suites),
+		.entries_size = ARRAY_SIZE(cipher_suites),
+		.entries_length = ARRAY_SIZE(cipher_suites),
 	};
 
 	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
@@ -153,19 +153,19 @@ TEST(error_message, wrong_selected_cipher_suite_many)
 	int32_t recv_cipher_suites[10] = { 0 };
 	struct edhoc_error_info recv_error_info = {
 		.cipher_suites = recv_cipher_suites,
-		.total_entries = ARRAY_SIZE(recv_cipher_suites),
-		.written_entries = 0,
+		.entries_size = ARRAY_SIZE(recv_cipher_suites),
+		.entries_length = 0,
 	};
 
 	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
 					  &recv_error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
-	TEST_ASSERT_EQUAL(recv_error_info.written_entries,
-			  error_info.written_entries);
+	TEST_ASSERT_EQUAL(recv_error_info.entries_length,
+			  error_info.entries_length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(
 		recv_error_info.cipher_suites, error_info.cipher_suites,
-		error_info.written_entries * sizeof(*error_info.cipher_suites));
+		error_info.entries_length * sizeof(*error_info.cipher_suites));
 }
 
 TEST(error_message, unknown_credential_referenced)
@@ -202,8 +202,8 @@ TEST(error_message, compose_cipher_suite_written_gt_total)
 	int32_t suites[] = { 0, 2 };
 	struct edhoc_error_info info = {
 		.cipher_suites = suites,
-		.total_entries = 2,
-		.written_entries = 5,
+		.entries_size = 2,
+		.entries_length = 5,
 	};
 	ret = edhoc_message_error_compose(
 		buffer, sizeof(buffer), &buffer_len,

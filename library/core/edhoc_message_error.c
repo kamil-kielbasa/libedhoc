@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC message error compose & process.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -65,13 +65,13 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 
 	case EDHOC_ERROR_CODE_UNSPECIFIED_ERROR: {
 		if (NULL == info || NULL == info->text_string ||
-		    0 == info->total_entries || 0 == info->written_entries) {
+		    0 == info->entries_size || 0 == info->entries_length) {
 			EDHOC_LOG_ERR(
 				"Invalid arguments for unspecified error: info missing or empty");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
 
-		if (info->written_entries > info->total_entries) {
+		if (info->entries_length > info->entries_size) {
 			EDHOC_LOG_ERR("Invalid arguments");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
@@ -82,7 +82,7 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 		input.message_error_ERR_INFO.message_error_ERR_INFO_tstr.value =
 			(const uint8_t *)info->text_string;
 		input.message_error_ERR_INFO.message_error_ERR_INFO_tstr.len =
-			info->written_entries;
+			info->entries_length;
 		break;
 	}
 
@@ -92,13 +92,13 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 			message_error_ERR_INFO_suites_m_c;
 
 		if (NULL == info || NULL == info->cipher_suites ||
-		    0 == info->total_entries || 0 == info->written_entries) {
+		    0 == info->entries_size || 0 == info->entries_length) {
 			EDHOC_LOG_ERR(
 				"Invalid arguments for wrong cipher suite: info missing or empty");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
 
-		if (info->written_entries > info->total_entries) {
+		if (info->entries_length > info->entries_size) {
 			EDHOC_LOG_ERR("Invalid arguments");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
@@ -107,22 +107,22 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 			&input.message_error_ERR_INFO
 				 .message_error_ERR_INFO_suites_m;
 
-		if (1 == info->written_entries) {
+		if (1 == info->entries_length) {
 			suites->suites_choice = suites_int_c;
 			suites->suites_int = *info->cipher_suites;
 		} else {
 			if (ARRAY_SIZE(suites->suites_int_l_int) <
-			    info->written_entries) {
+			    info->entries_length) {
 				EDHOC_LOG_ERR("Buffer too small: %zu",
-					      info->written_entries);
+					      info->entries_length);
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
 			}
 
 			suites->suites_choice = suites_int_l_c;
-			suites->suites_int_l_int_count = info->written_entries;
+			suites->suites_int_l_int_count = info->entries_length;
 			memcpy(suites->suites_int_l_int, info->cipher_suites,
 			       sizeof(*info->cipher_suites) *
-				       info->written_entries);
+				       info->entries_length);
 		}
 
 		break;
@@ -181,7 +181,7 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 		*code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
 		if (NULL == info || NULL == info->text_string ||
-		    0 == info->total_entries)
+		    0 == info->entries_size)
 			break;
 
 		if (true == result.message_error_ERR_INFO_present) {
@@ -189,13 +189,13 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 				&result.message_error_ERR_INFO
 					 .message_error_ERR_INFO_tstr;
 
-			if (tstr->len > info->total_entries) {
+			if (tstr->len > info->entries_size) {
 				EDHOC_LOG_ERR("Buffer too small: %zu, %zu",
-					      tstr->len, info->total_entries);
+					      tstr->len, info->entries_size);
 				return EDHOC_ERROR_BUFFER_TOO_SMALL;
 			}
 
-			info->written_entries = tstr->len;
+			info->entries_length = tstr->len;
 			memcpy(info->text_string, tstr->value,
 			       sizeof(*info->text_string) * tstr->len);
 		}
@@ -207,7 +207,7 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 		*code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 
 		if (NULL == info || NULL == info->cipher_suites ||
-		    0 == info->total_entries)
+		    0 == info->entries_size)
 			break;
 
 		if (true == result.message_error_ERR_INFO_present) {
@@ -217,22 +217,22 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 
 			switch (suites->suites_choice) {
 			case suites_int_c: {
-				info->written_entries = 1;
+				info->entries_length = 1;
 				*info->cipher_suites = suites->suites_int;
 				break;
 			}
 
 			case suites_int_l_c: {
 				if (suites->suites_int_l_int_count >
-				    info->total_entries) {
+				    info->entries_size) {
 					EDHOC_LOG_ERR(
 						"Buffer too small: %zu, %zu",
 						suites->suites_int_l_int_count,
-						info->total_entries);
+						info->entries_size);
 					return EDHOC_ERROR_BUFFER_TOO_SMALL;
 				}
 
-				info->written_entries =
+				info->entries_length =
 					suites->suites_int_l_int_count;
 				memcpy(info->cipher_suites,
 				       suites->suites_int_l_int,

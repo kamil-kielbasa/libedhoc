@@ -35,13 +35,13 @@
  * \brief Authentication credentials fetch stub.
  */
 static int auth_cred_fetch_stub(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred);
+				struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials verify stub.
  */
 static int auth_cred_verify_stub(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len);
 
 /**
@@ -65,7 +65,7 @@ static bool psa_initialized = false;
 /* Static function definitions --------------------------------------------- */
 
 static int auth_cred_fetch_stub(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred)
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 	(void)auth_cred;
@@ -74,7 +74,7 @@ static int auth_cred_fetch_stub(void *user_ctx,
 }
 
 static int auth_cred_verify_stub(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key, size_t *pub_key_len)
 {
 	(void)user_ctx;
@@ -135,7 +135,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	edhoc_set_cipher_suites(&ctx, edhoc_cipher_suite_0_get_suite(), 1);
 
 	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = 0,
 	};
 	edhoc_set_connection_id(&ctx, &cid);

@@ -110,8 +110,8 @@ TEST(internals_error, error_compose_unspecified_with_info)
 	char text[] = "test error";
 	struct edhoc_error_info info = {
 		.text_string = text,
-		.total_entries = 10,
-		.written_entries = 10,
+		.entries_size = 10,
+		.entries_length = 10,
 	};
 	int ret = edhoc_message_error_compose(
 		buf, sizeof(buf), &len, EDHOC_ERROR_CODE_UNSPECIFIED_ERROR,
@@ -127,8 +127,8 @@ TEST(internals_error, error_compose_wrong_csuite_single)
 	int32_t suites[] = { 0 };
 	struct edhoc_error_info info = {
 		.cipher_suites = suites,
-		.total_entries = 1,
-		.written_entries = 1,
+		.entries_size = 1,
+		.entries_length = 1,
 	};
 	int ret = edhoc_message_error_compose(
 		buf, sizeof(buf), &len,
@@ -143,8 +143,8 @@ TEST(internals_error, error_compose_wrong_csuite_multi)
 	int32_t suites[] = { 0, 2 };
 	struct edhoc_error_info info = {
 		.cipher_suites = suites,
-		.total_entries = 2,
-		.written_entries = 2,
+		.entries_size = 2,
+		.entries_length = 2,
 	};
 	int ret = edhoc_message_error_compose(
 		buf, sizeof(buf), &len,
@@ -173,8 +173,8 @@ TEST(internals_error, error_process_unspecified_roundtrip)
 	char text[] = "err";
 	struct edhoc_error_info info = {
 		.text_string = text,
-		.total_entries = 3,
-		.written_entries = 3,
+		.entries_size = 3,
+		.entries_length = 3,
 	};
 	int ret = edhoc_message_error_compose(
 		buf, sizeof(buf), &len, EDHOC_ERROR_CODE_UNSPECIFIED_ERROR,
@@ -195,8 +195,8 @@ TEST(internals_error, error_process_wrong_csuite_roundtrip)
 	int32_t suites[] = { 0, 2 };
 	struct edhoc_error_info info = {
 		.cipher_suites = suites,
-		.total_entries = 2,
-		.written_entries = 2,
+		.entries_size = 2,
+		.entries_length = 2,
 	};
 	int ret = edhoc_message_error_compose(
 		buf, sizeof(buf), &len,

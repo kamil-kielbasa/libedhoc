@@ -2,8 +2,8 @@
  * \file    edhoc_exporter.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC exporter for PRK exporter, key update or OSCORE session.
- * 
- * \copyright Copyright (c) 2025
+ *
+ * \copyright Copyright (c) 2026
  *
  */
 
@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
@@ -537,7 +538,7 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 
 	/* 2. Copy OSCORE sender ID. */
 	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER: {
 		/* See RFC9528 section 3.3.3 */
 		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 		int32_t int_value =
@@ -550,7 +551,7 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 		}
 		break;
 	}
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		if (sid_size <
 		    ctx->negotiation.peer_connection_id.bstr_length) {
 			EDHOC_LOG_ERR(
@@ -571,14 +572,14 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 	}
 
 	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		EDHOC_LOG_HEXDUMP_DBG(
 			(const uint8_t *)&ctx->negotiation.peer_connection_id
 				.int_value,
 			sizeof(ctx->negotiation.peer_connection_id.int_value),
 			"OSCORE sender ID");
 		break;
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		EDHOC_LOG_HEXDUMP_DBG(
 			ctx->negotiation.peer_connection_id.bstr_value,
 			ctx->negotiation.peer_connection_id.bstr_length,
@@ -592,7 +593,7 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 
 	/* 3. Copy OSCORE recipient ID. */
 	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER: {
 		/* See RFC9528 section 3.3.3 */
 		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 		int32_t int_value = ctx->negotiation.connection_id.int_value;
@@ -604,7 +605,7 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 		}
 		break;
 	}
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		if (rid_size < ctx->negotiation.connection_id.bstr_length) {
 			EDHOC_LOG_ERR(
 				"Buffer too small for OSCORE RID: %zu, %zu",
@@ -624,14 +625,14 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 	}
 
 	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		EDHOC_LOG_HEXDUMP_DBG(
 			(const uint8_t *)&ctx->negotiation.connection_id
 				.int_value,
 			sizeof(ctx->negotiation.connection_id.int_value),
 			"OSCORE recipient ID");
 		break;
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		EDHOC_LOG_HEXDUMP_DBG(
 			ctx->negotiation.connection_id.bstr_value,
 			ctx->negotiation.connection_id.bstr_length,
@@ -788,10 +789,12 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx,
 		return ret;
 	}
 
-	/* 2. Derive OSCORE master secret (caller-owned key handle). The derive
-	 * scrubs its own output on failure, so nothing leaks here. */
+	/* 2. Derive OSCORE master secret (caller-owned key handle). Per RFC 9528
+	 * A.1 the OSCORE Master Secret length defaults to the application AEAD
+	 * key length, so it is derived as an AEAD key. The derive scrubs its own
+	 * output on failure, so nothing leaks here. */
 	ret = edhoc_export(ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0,
-			   EDHOC_KEY_USAGE_KDF, master_secret_key_id);
+			   EDHOC_KEY_USAGE_AEAD, master_secret_key_id);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master secret: %d", ret);

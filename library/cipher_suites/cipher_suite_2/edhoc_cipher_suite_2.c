@@ -4,7 +4,7 @@
  * \brief   Implementation of cipher suite 2
  *          (P-256 / ES256 / AES-CCM-16-64-128 / SHA-256).
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -514,7 +514,7 @@ static int generate_key_pair(void *user_context, void *decaps_key_id,
 
 	if (PSA_SUCCESS != status) {
 		EDHOC_LOG_ERR("Generate key pair: %d", status);
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+		return EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE;
 	}
 
 	const int ret = export_public_key_x(psa_ephemeral, encaps_key,
@@ -558,7 +558,7 @@ static int encapsulate(void *user_context, const uint8_t *encaps_key,
 
 	if (PSA_SUCCESS != status) {
 		EDHOC_LOG_ERR("Generate ephemeral key pair: %d", status);
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+		return EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE;
 	}
 
 	int ret = export_public_key_x(psa_ephemeral, ciphertext,
@@ -1213,7 +1213,8 @@ const struct edhoc_cipher_suite *edhoc_cipher_suite_2_get_suite(void)
 	static const struct edhoc_cipher_suite suite = {
 		.value = EDHOC_CIPHER_SUITE_2_VALUE,
 		.supports_dh_nike = true,
-		.kem_public_key_length = EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN,
+		.kem_encapsulation_key_length =
+			EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN,
 		.kem_ciphertext_length = EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN,
 		.nike_key_length = EDHOC_CIPHER_SUITE_2_ECC_COMP_KEY_LEN,
 		.sign_length = EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN,

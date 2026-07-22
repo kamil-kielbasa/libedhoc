@@ -2,9 +2,9 @@
  * \file    test_coap.c
  * \author  Kamil Kielbasa
  * \brief   Module tests for EDHOC CoAP API.
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -12,6 +12,7 @@
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
 #include <edhoc/coap.h>
+#include "edhoc_values_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -45,10 +46,12 @@ TEST_TEAR_DOWN(coap)
 TEST(coap, connection_id_equal_same_int)
 {
 	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 
 	TEST_ASSERT_TRUE(
@@ -58,10 +61,12 @@ TEST(coap, connection_id_equal_same_int)
 TEST(coap, connection_id_equal_different_int)
 {
 	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 10
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 10
 	};
 
 	TEST_ASSERT_FALSE(
@@ -74,12 +79,14 @@ TEST(coap, connection_id_equal_same_bstr)
 	uint8_t bstr2[] = { 0x01, 0x02, 0x03 };
 
 	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 3
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 3
 	};
 	memcpy(conn_id_1.bstr_value, bstr1, 3);
 
 	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 3
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 3
 	};
 	memcpy(conn_id_2.bstr_value, bstr2, 3);
 
@@ -93,12 +100,14 @@ TEST(coap, connection_id_equal_different_bstr)
 	uint8_t bstr2[] = { 0x01, 0x02, 0x04 };
 
 	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 3
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 3
 	};
 	memcpy(conn_id_1.bstr_value, bstr1, 3);
 
 	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 3
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 3
 	};
 	memcpy(conn_id_2.bstr_value, bstr2, 3);
 
@@ -112,12 +121,14 @@ TEST(coap, connection_id_equal_different_bstr_length)
 	uint8_t bstr2[] = { 0x01, 0x02 };
 
 	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 3
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 3
 	};
 	memcpy(conn_id_1.bstr_value, bstr1, 3);
 
 	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 2
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 2
 	};
 	memcpy(conn_id_2.bstr_value, bstr2, 2);
 
@@ -128,11 +139,13 @@ TEST(coap, connection_id_equal_different_bstr_length)
 TEST(coap, connection_id_equal_different_type)
 {
 	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 	uint8_t bstr[] = { 0x05 };
 	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 1
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 1
 	};
 	memcpy(conn_id_2.bstr_value, bstr, 1);
 
@@ -143,7 +156,8 @@ TEST(coap, connection_id_equal_different_type)
 TEST(coap, connection_id_equal_null_first)
 {
 	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 
 	TEST_ASSERT_FALSE(edhoc_coap_connection_id_equal(NULL, &conn_id_2));
@@ -152,7 +166,8 @@ TEST(coap, connection_id_equal_null_first)
 TEST(coap, connection_id_equal_null_second)
 {
 	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 
 	TEST_ASSERT_FALSE(edhoc_coap_connection_id_equal(&conn_id_1, NULL));
@@ -214,7 +229,7 @@ TEST(coap, prepend_connection_id_int_success)
 {
 	uint8_t buffer[100] = { 0 };
 	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value =
 			5 /* Use value in valid CBOR one-byte integer range (-24 to 23) */
 	};
@@ -238,7 +253,8 @@ TEST(coap, prepend_connection_id_bstr_success)
 	uint8_t buffer[100] = { 0 };
 	uint8_t cid_bstr[] = { 0x01, 0x02, 0x03 };
 	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 3
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 3
 	};
 	memcpy(conn_id.bstr_value, cid_bstr, 3);
 	struct edhoc_coap_prepended_fields prepended_fields = {
@@ -261,7 +277,8 @@ TEST(coap, prepend_connection_id_bstr_success)
 TEST(coap, prepend_connection_id_null_fields)
 {
 	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 
 	int ret = edhoc_coap_prepend_connection_id(NULL, &conn_id);
@@ -282,7 +299,8 @@ TEST(coap, prepend_connection_id_null_conn_id)
 TEST(coap, prepend_connection_id_null_buffer)
 {
 	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER, .int_value = 5
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
+		.int_value = 5
 	};
 	struct edhoc_coap_prepended_fields prepended_fields = {
 		.buffer = NULL, .buffer_size = 100
@@ -296,7 +314,8 @@ TEST(coap, prepend_connection_id_bstr_zero_length)
 {
 	uint8_t buffer[100] = { 0 };
 	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 0
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 0
 	};
 	struct edhoc_coap_prepended_fields prepended_fields = {
 		.buffer = buffer, .buffer_size = sizeof(buffer)
@@ -486,7 +505,7 @@ TEST(coap, extract_connection_id_int_success)
 
 	int ret = edhoc_coap_extract_connection_id(&extracted_fields);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  extracted_fields.extracted_conn_id.encode_type);
 	TEST_ASSERT_EQUAL(5, extracted_fields.extracted_conn_id.int_value);
 }
@@ -505,7 +524,7 @@ TEST(coap, extract_connection_id_bstr_success)
 
 	int ret = edhoc_coap_extract_connection_id(&extracted_fields);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
 			  extracted_fields.extracted_conn_id.encode_type);
 	TEST_ASSERT_EQUAL(3, extracted_fields.extracted_conn_id.bstr_length);
 	TEST_ASSERT_EQUAL(0x01,
@@ -576,7 +595,8 @@ TEST(coap, prepend_and_extract_connection_id_roundtrip)
 	uint8_t buffer[100] = { 0 };
 	uint8_t cid_bstr[] = { 0x01, 0x02, 0x03 };
 	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CID_TYPE_BYTE_STRING, .bstr_length = 3
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
+		.bstr_length = 3
 	};
 	memcpy(conn_id.bstr_value, cid_bstr, 3);
 	struct edhoc_coap_prepended_fields prepended_fields = {

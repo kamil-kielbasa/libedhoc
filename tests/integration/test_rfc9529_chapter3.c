@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   Module tests according to RFC 9529, chapter 3.
  * 
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  * 
  */
 
@@ -46,7 +46,7 @@
  * \brief Authentication credentials fetch callback for initiator.
  */
 static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred);
+				struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials fetch callback for initiator.
@@ -54,13 +54,13 @@ static int auth_cred_fetch_init(void *user_ctx,
  * \note It will use already cborised credentials.
  */
 static int auth_cred_fetch_init_any(void *user_ctx,
-				    struct edhoc_auth_creds *auth_cred);
+				    struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials fetch callback for responder.
  */
 static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred);
+				struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials fetch callback for responder.
@@ -68,13 +68,13 @@ static int auth_cred_fetch_resp(void *user_ctx,
  * \note It will use already cborised credentials.
  */
 static int auth_cred_fetch_resp_any(void *user_ctx,
-				    struct edhoc_auth_creds *auth_cred);
+				    struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials verify callback for initiator.
  */
 static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key_ref,
 				 size_t *pub_key_len);
 
@@ -82,7 +82,7 @@ static int auth_cred_verify_init(void *user_ctx,
  * \brief Authentication credentials verify callback for responder.
  */
 static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key_ref,
 				 size_t *pub_key_len);
 
@@ -107,7 +107,7 @@ static const struct edhoc_cipher_suite edhoc_cipher_suites_init[] = {
 		.aead_iv_length = 13,
 		.hash_length = 32,
 		.mac_length = 8,
-		.kem_public_key_length = 32,
+		.kem_encapsulation_key_length = 32,
 		.kem_ciphertext_length = 32,
 		.nike_key_length = 32,
 		.sign_length = 64,
@@ -120,7 +120,7 @@ static const struct edhoc_cipher_suite edhoc_cipher_suites_init[] = {
 		.aead_iv_length = 13,
 		.hash_length = 32,
 		.mac_length = 8,
-		.kem_public_key_length = 32,
+		.kem_encapsulation_key_length = 32,
 		.kem_ciphertext_length = 32,
 		.nike_key_length = 32,
 		.sign_length = 64,
@@ -136,7 +136,7 @@ static const struct edhoc_cipher_suite edhoc_cipher_suites_resp[] = {
 		.aead_iv_length = 13,
 		.hash_length = 32,
 		.mac_length = 8,
-		.kem_public_key_length = 32,
+		.kem_encapsulation_key_length = 32,
 		.kem_ciphertext_length = 32,
 		.nike_key_length = 32,
 		.sign_length = 64,
@@ -297,22 +297,22 @@ static int mocked_decapsulate_init(void *user_ctx, const void *decaps_key_id,
 }
 
 static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred)
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
-	auth_cred->key_id.cred = CRED_I_cborised;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_I_cborised);
-	auth_cred->key_id.cred_is_cbor = true;
+	auth_cred->key_id.credential = CRED_I_cborised;
+	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_I_cborised);
+	auth_cred->key_id.is_credential_cbor_encoded = true;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_I_raw_cborised,
+	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_I_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_I_raw_cborised));
-	auth_cred->key_id.key_id_bstr_length =
+	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
 
 	const int res = import_dh_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					   auth_cred->priv_key_id);
+					   auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -321,23 +321,23 @@ static int auth_cred_fetch_init(void *user_ctx,
 }
 
 static int auth_cred_fetch_init_any(void *user_ctx,
-				    struct edhoc_auth_creds *auth_cred)
+				    struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
-	auth_cred->label = EDHOC_COSE_ANY;
-	auth_cred->any.id_cred = ID_CRED_I_cborised;
-	auth_cred->any.id_cred_len = ARRAY_SIZE(ID_CRED_I_cborised);
-	auth_cred->any.is_id_cred_comp_enc = true;
-	auth_cred->any.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	auth_cred->any.id_cred_comp_enc = ID_CRED_I_raw_cborised;
-	auth_cred->any.id_cred_comp_enc_length =
+	auth_cred->label = EDHOC_COSE_HEADER_CUSTOM;
+	auth_cred->custom.id_credential = ID_CRED_I_cborised;
+	auth_cred->custom.id_credential_length = ARRAY_SIZE(ID_CRED_I_cborised);
+	auth_cred->custom.is_id_credential_compact_encoded = true;
+	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->custom.id_credential_compact = ID_CRED_I_raw_cborised;
+	auth_cred->custom.id_credential_compact_length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
-	auth_cred->any.cred = CRED_I_cborised;
-	auth_cred->any.cred_len = ARRAY_SIZE(CRED_I_cborised);
+	auth_cred->custom.credential = CRED_I_cborised;
+	auth_cred->custom.credential_length = ARRAY_SIZE(CRED_I_cborised);
 
 	const int res = import_dh_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					   auth_cred->priv_key_id);
+					   auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -346,22 +346,22 @@ static int auth_cred_fetch_init_any(void *user_ctx,
 }
 
 static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_creds *auth_cred)
+				struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
-	auth_cred->key_id.cred = CRED_R_cborised;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_R_cborised);
-	auth_cred->key_id.cred_is_cbor = true;
+	auth_cred->key_id.credential = CRED_R_cborised;
+	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_R_cborised);
+	auth_cred->key_id.is_credential_cbor_encoded = true;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_R_raw_cborised,
+	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_R_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_R_raw_cborised));
-	auth_cred->key_id.key_id_bstr_length =
+	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
 
 	const int res = import_dh_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					   auth_cred->priv_key_id);
+					   auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -370,23 +370,23 @@ static int auth_cred_fetch_resp(void *user_ctx,
 }
 
 static int auth_cred_fetch_resp_any(void *user_ctx,
-				    struct edhoc_auth_creds *auth_cred)
+				    struct edhoc_auth_credentials *auth_cred)
 {
 	(void)user_ctx;
 
-	auth_cred->label = EDHOC_COSE_ANY;
-	auth_cred->any.id_cred = ID_CRED_R_cborised;
-	auth_cred->any.id_cred_len = ARRAY_SIZE(ID_CRED_R_cborised);
-	auth_cred->any.is_id_cred_comp_enc = true;
-	auth_cred->any.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	auth_cred->any.id_cred_comp_enc = ID_CRED_R_raw_cborised;
-	auth_cred->any.id_cred_comp_enc_length =
+	auth_cred->label = EDHOC_COSE_HEADER_CUSTOM;
+	auth_cred->custom.id_credential = ID_CRED_R_cborised;
+	auth_cred->custom.id_credential_length = ARRAY_SIZE(ID_CRED_R_cborised);
+	auth_cred->custom.is_id_credential_compact_encoded = true;
+	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->custom.id_credential_compact = ID_CRED_R_raw_cborised;
+	auth_cred->custom.id_credential_compact_length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
-	auth_cred->any.cred = CRED_R_cborised;
-	auth_cred->any.cred_len = ARRAY_SIZE(CRED_R_cborised);
+	auth_cred->custom.credential = CRED_R_cborised;
+	auth_cred->custom.credential_length = ARRAY_SIZE(CRED_R_cborised);
 
 	const int res = import_dh_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					   auth_cred->priv_key_id);
+					   auth_cred->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -395,7 +395,7 @@ static int auth_cred_fetch_resp_any(void *user_ctx,
 }
 
 static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key_ref,
 				 size_t *pub_key_len)
 {
@@ -414,14 +414,14 @@ static int auth_cred_verify_init(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	auth_cred->key_id.key_id_bstr_length =
+	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_R_raw_cborised,
+	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_R_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_R_raw_cborised));
 
-	auth_cred->key_id.cred = CRED_R_cborised;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_R_cborised);
-	auth_cred->key_id.cred_is_cbor = true;
+	auth_cred->key_id.credential = CRED_R_cborised;
+	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_R_cborised);
+	auth_cred->key_id.is_credential_cbor_encoded = true;
 
 	*pub_key_ref = PK_R;
 	*pub_key_len = ARRAY_SIZE(PK_R);
@@ -430,7 +430,7 @@ static int auth_cred_verify_init(void *user_ctx,
 }
 
 static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_creds *auth_cred,
+				 struct edhoc_auth_credentials *auth_cred,
 				 const uint8_t **pub_key_ref,
 				 size_t *pub_key_len)
 {
@@ -449,14 +449,14 @@ static int auth_cred_verify_resp(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
-	auth_cred->key_id.key_id_bstr_length =
+	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
-	memcpy(auth_cred->key_id.key_id_bstr, ID_CRED_I_raw_cborised,
+	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_I_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_I_raw_cborised));
 
-	auth_cred->key_id.cred = CRED_I_cborised;
-	auth_cred->key_id.cred_len = ARRAY_SIZE(CRED_I_cborised);
-	auth_cred->key_id.cred_is_cbor = true;
+	auth_cred->key_id.credential = CRED_I_cborised;
+	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_I_cborised);
+	auth_cred->key_id.is_credential_cbor_encoded = true;
 
 	*pub_key_ref = PK_I;
 	*pub_key_len = ARRAY_SIZE(PK_I);
@@ -486,12 +486,12 @@ TEST_SETUP(rfc9529_chapter3)
 	const enum edhoc_method methods[] = { METHOD };
 
 	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = (int8_t)C_I[0],
 	};
 
 	const struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 		.int_value = (int8_t)C_R[0],
 	};
 
@@ -598,7 +598,7 @@ TEST(rfc9529_chapter3, message_1_process)
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, resp_ctx->state.prk_state);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
@@ -622,7 +622,7 @@ TEST(rfc9529_chapter3, message_2_compose)
 	memcpy(resp_ctx->ephemeral.peer.value, G_X, ARRAY_SIZE(G_X));
 
 	resp_ctx->negotiation.peer_connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	resp_ctx->negotiation.peer_connection_id.int_value = (int8_t)C_I[0];
 
 	size_t msg_2_len = 0;
@@ -671,7 +671,7 @@ TEST(rfc9529_chapter3, message_2_compose_any)
 	memcpy(resp_ctx->ephemeral.peer.value, G_X, ARRAY_SIZE(G_X));
 
 	resp_ctx->negotiation.peer_connection_id.encode_type =
-		EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	resp_ctx->negotiation.peer_connection_id.int_value = (int8_t)C_I[0];
 
 	size_t msg_2_len = 0;
@@ -736,7 +736,7 @@ TEST(rfc9529_chapter3, message_2_process)
 				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
 				     ARRAY_SIZE(PRK_3e2m));
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_R[0],
 			  init_ctx->negotiation.peer_connection_id.int_value);
@@ -1001,7 +1001,7 @@ TEST(rfc9529_chapter3, handshake)
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, resp_ctx->state.prk_state);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
@@ -1060,7 +1060,7 @@ TEST(rfc9529_chapter3, handshake)
 				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
 				     ARRAY_SIZE(PRK_3e2m));
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_R[0],
 			  init_ctx->negotiation.peer_connection_id.int_value);
@@ -1394,7 +1394,7 @@ TEST(rfc9529_chapter3, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  resp_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_I[0],
 			  resp_ctx->negotiation.peer_connection_id.int_value);
@@ -1429,7 +1429,7 @@ TEST(rfc9529_chapter3, handshake_real_crypto)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
 
-	TEST_ASSERT_EQUAL(EDHOC_CID_TYPE_ONE_BYTE_INTEGER,
+	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
 			  init_ctx->negotiation.peer_connection_id.encode_type);
 	TEST_ASSERT_EQUAL((int8_t)C_R[0],
 			  init_ctx->negotiation.peer_connection_id.int_value);

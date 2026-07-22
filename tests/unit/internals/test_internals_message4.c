@@ -55,7 +55,7 @@ TEST(internals_message4, comp_th_4_bad_state)
 
 TEST(internals_message4, comp_giy_null)
 {
-	struct edhoc_auth_creds ac = { 0 };
+	struct edhoc_auth_credentials ac = { 0 };
 	int ret = comp_giy(NULL, &ac, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
@@ -69,7 +69,7 @@ TEST(internals_message4, comp_giy_invalid_role)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 
-	struct edhoc_auth_creds ac = { 0 };
+	struct edhoc_auth_credentials ac = { 0 };
 	int ret = comp_giy(&ctx, &ac, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
@@ -185,7 +185,7 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_label)
 
 	struct edhoc_ead_token tok = { .label = 70000,
 				       .value = NULL,
-				       .value_len = 0 };
+				       .value_length = 0 };
 	ctx.ead.count = 1;
 	ctx.ead.token[0] = tok;
 
@@ -203,7 +203,7 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_value)
 
 	struct edhoc_ead_token tok = { .label = 1,
 				       .value = NULL,
-				       .value_len = 60000 };
+				       .value_length = 60000 };
 	ctx.ead.count = 1;
 	ctx.ead.token[0] = tok;
 
@@ -221,7 +221,7 @@ TEST(internals_message4, compute_plaintext_4_len_very_large_ead_value)
 
 	struct edhoc_ead_token tok = { .label = 1,
 				       .value = NULL,
-				       .value_len = 70000 };
+				       .value_length = 70000 };
 	ctx.ead.count = 1;
 	ctx.ead.token[0] = tok;
 

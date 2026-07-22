@@ -7,7 +7,7 @@
  *          the recommended entry point: a single pair of functions keyed by
  *          \ref edhoc_cipher_suite_id.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  *
  */
 

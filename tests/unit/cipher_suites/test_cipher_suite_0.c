@@ -200,7 +200,7 @@ TEST(cipher_suite_0_positive, enum_getters)
 	 * (X25519 / EdDSA / AES-CCM-16-64-128 / SHA-256). */
 	TEST_ASSERT_EQUAL_INT32(0, edhoc_suite->value);
 	TEST_ASSERT_TRUE(edhoc_suite->supports_dh_nike);
-	TEST_ASSERT_EQUAL(32, edhoc_suite->kem_public_key_length);
+	TEST_ASSERT_EQUAL(32, edhoc_suite->kem_encapsulation_key_length);
 	TEST_ASSERT_EQUAL(32, edhoc_suite->kem_ciphertext_length);
 	TEST_ASSERT_EQUAL(32, edhoc_suite->nike_key_length);
 	TEST_ASSERT_EQUAL(64, edhoc_suite->sign_length);

@@ -3,7 +3,7 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC API.
  *
- * \copyright Copyright (c) 2025
+ * \copyright Copyright (c) 2026
  *
  */
 
@@ -32,13 +32,13 @@
  * @{
  */
 
-/** The major version of this implementation of the EDHOC API. */
+/** Major version of the EDHOC API. */
 #define EDHOC_API_VERSION_MAJOR 2
 
-/** The minor version of this implementation of the EDHOC API. */
+/** Minor version of the EDHOC API. */
 #define EDHOC_API_VERSION_MINOR 0
 
-/** The patch version of this implementation of the EDHOC API. */
+/** Patch version of the EDHOC API. */
 #define EDHOC_API_VERSION_PATCH 0
 
 /**@}*/
@@ -48,13 +48,10 @@
 /**
  * \brief EDHOC context (opaque).
  *
- * The layout is library-internal and intentionally hidden from consumers.
- * Allocate storage sized by \ref edhoc_context_size (stack VLA or heap), then
- * drive the context through the public API. The full definition lives in
- * \c library/internal/edhoc_context_internal.h and is available to the library
- * core and to white-box tests only.
+ * Allocate storage of \ref edhoc_context_size bytes and drive it through the
+ * public API; the layout is library-internal.
  *
- * \ingroup edhoc-context
+ * \ingroup edhoc-types
  */
 struct edhoc_context;
 
@@ -66,8 +63,7 @@ struct edhoc_context;
  *
  * After \ref edhoc_context_init, a context must be fully configured before the
  * message-processing API will run. A message compose or process call made
- * before every **mandatory** input is present returns
- * \ref EDHOC_ERROR_BAD_STATE.
+ * before every **mandatory** input is present returns \ref EDHOC_ERROR_BAD_STATE.
  *
  * **Mandatory** inputs:
  *   - \ref edhoc_set_methods "method(s)"
@@ -90,18 +86,16 @@ struct edhoc_context;
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Input parameter is invalid.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_context_init(struct edhoc_context *edhoc_context);
 
 /**
  * \brief Size in bytes of an EDHOC context for this build.
  *
- * The context is opaque; its size depends on the Kconfig configuration and is
- * not a compile-time constant. Allocate storage of at least this many bytes
- * (stack VLA or heap, suitably aligned for \ref edhoc_context) and pass it to
- * \ref edhoc_context_init.
+ * The size depends on the build-time configuration, so it is a run-time value.
+ * Allocate at least this many bytes (on the stack or heap) for the
+ * \ref edhoc_context passed to \ref edhoc_context_init.
  *
  * \return Size in bytes of \ref edhoc_context.
  */
@@ -114,153 +108,145 @@ size_t edhoc_context_size(void);
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         Input parameter is invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_context_deinit(struct edhoc_context *edhoc_context);
 
 /**
- * \brief Set EDHOC methods.
+ * \brief Set EDHOC method(s) (mandatory).
  *
- * According to RFC 9528: 3.2. Method. At least one method must be set,
- * but no more than \c CONFIG_LIBEDHOC_MAX_NR_OF_METHODS.
- *
- * Behavior depends on the role:
- * - Initiator always uses the first value (method[0]) when composing message 1.
- * - Responder iterates over all methods to find a match when processing message 1.
+ * Configures the authentication method(s) the context may use (RFC 9528: 3.2).
+ * At least one and at most \c CONFIG_LIBEDHOC_MAX_NR_OF_METHODS methods must be
+ * provided. The role selects how the list is used:
+ * - the Initiator uses the first method when composing message 1;
+ * - the Responder accepts message 1 if its method matches any provided entry.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] method                    EDHOC method.
- * \param method_length			Number of entries in the \p method array.
+ * \param method_count                  Number of entries in the \p method array.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_set_methods(struct edhoc_context *edhoc_context,
-		      const enum edhoc_method *method, size_t method_length);
+		      const enum edhoc_method *method, size_t method_count);
 
 /**
- * \brief Set EDHOC cipher suites.
+ * \brief Set EDHOC cipher suite(s) (mandatory).
+ *
+ * Configures the cipher suite(s) the context supports (RFC 9528: 3.6). The
+ * Initiator offers them in SUITES_I and the Responder checks the selected suite
+ * against those it supports (RFC 9528: 5.2.1).
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] cipher_suite              EDHOC cipher suites.
- * \param cipher_suite_length           Number of entries in the \p cipher_suite array.
+ * \param cipher_suite_count            Number of entries in the \p cipher_suite array.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
 			    const struct edhoc_cipher_suite *cipher_suite,
-			    size_t cipher_suite_length);
+			    size_t cipher_suite_count);
 
 /**
- * \brief Set EDHOC connection identifier.
+ * \brief Set EDHOC connection identifier (mandatory).
+ *
+ * Sets the connection identifier the peer uses to reference this endpoint in
+ * the session: C_I for the Initiator (sent in message 1) or C_R for the
+ * Responder (sent in message 2) (RFC 9528: 3.3).
+ *
+ * \note  C_I and C_R are chosen independently; the library does not require
+ *        them to differ.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] connection_id             EDHOC connection identifier.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_set_connection_id(struct edhoc_context *edhoc_context,
 			    const struct edhoc_connection_id *connection_id);
 
 /**
- * \brief Set user context.
+ * \brief Set user context (optional).
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] user_context              User context.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_set_user_context(struct edhoc_context *edhoc_context,
 			   void *user_context);
 
 /**
- * \brief Bind EDHOC external authorization data (EAD) callbacks.
+ * \brief Bind the cryptographic operations interface (mandatory).
  *
- * \param[in,out] edhoc_context         EDHOC context.
- * \param[in] ead                       EDHOC EAD structure with callbacks.
- *
- * \retval #EDHOC_SUCCESS
- *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- */
-int edhoc_bind_ead(struct edhoc_context *edhoc_context,
-		   const struct edhoc_ead *ead);
-
-/**
- * \brief Bind EDHOC cryptographic operations callbacks.
+ * Provides the crypto primitives the library uses: key exchange, AEAD, hash,
+ * signature/MAC and key derivation.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] crypto                    EDHOC cryptographic operations structure with callbacks.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
 		      const struct edhoc_crypto *crypto);
 
 /**
- * \brief Bind EDHOC authentication credentials callbacks.
+ * \brief Bind the authentication credentials interface (mandatory).
+ *
+ * Provides the fetch/verify callbacks the library uses to obtain the local
+ * authentication credentials and to verify the peer's (RFC 9528: 3.5).
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] credentials               EDHOC authentication credentials structure with callbacks.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_bind_credentials(struct edhoc_context *edhoc_context,
 			   const struct edhoc_credentials *credentials);
 
 /**
- * \brief Bind EDHOC platform services callbacks.
+ * \brief Bind the platform services interface (mandatory).
  *
- * Mandatory. The message-processing API refuses to run until a platform with a
- * valid \p zeroize callback is bound to the context.
+ * Provides the platform services the library uses.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] platform                  EDHOC platform structure with callbacks.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_bind_platform(struct edhoc_context *edhoc_context,
 			const struct edhoc_platform *platform);
+
+/**
+ * \brief Bind the external authorization data (EAD) interface (optional).
+ *
+ * Provides the compose/process callbacks for the EAD items carried in the
+ * EDHOC messages (RFC 9528: 3.8). Optional; bind it only if the application
+ * sends or receives EAD.
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param[in] ead                       EDHOC EAD structure with callbacks.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
+ */
+int edhoc_bind_ead(struct edhoc_context *edhoc_context,
+		   const struct edhoc_ead *ead);
 
 /**@}*/
 
@@ -271,6 +257,10 @@ int edhoc_bind_platform(struct edhoc_context *edhoc_context,
 /**
  * \brief Compose EDHOC message 1.
  *
+ *        The Initiator composes message 1: it proposes the method (METHOD) and
+ *        cipher suites (SUITES_I) and carries the ephemeral public key G_X, the
+ *        connection identifier C_I and optional EAD_1 (RFC 9528: 5.2.1).
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] message_1                Buffer where the generated message 1 is to be written.
  * \param message_1_size                Size of the \p message_1 buffer in bytes.
@@ -278,22 +268,7 @@ int edhoc_bind_platform(struct edhoc_context *edhoc_context,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
- *         Ephemeral Diffie-Hellman operation failed.
- * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         EAD compose callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_1_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_1, size_t message_1_size,
@@ -302,34 +277,29 @@ int edhoc_message_1_compose(struct edhoc_context *edhoc_context,
 /**
  * \brief Process EDHOC message 1.
  *
+ *        The Responder processes message 1: it reads and verifies that it
+ *        supports the proposed method (METHOD) and cipher suites (SUITES_I),
+ *        then reads the Initiator's ephemeral public key G_X, the connection
+ *        identifier C_I and optional EAD_1 (RFC 9528: 5.2.3).
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_1                 Buffer containing the message 1.
  * \param message_1_length              Length of the \p message_1 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_MSG_1_PROCESS_FAILURE
- *         EDHOC message processing failed.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR decoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         EAD process callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_1_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_1, size_t message_1_length);
 
 /**
  * \brief Compose EDHOC message 2.
+ *
+ *        The Responder composes message 2: it carries G_Y (completing the
+ *        ephemeral key exchange) and, encrypted, authenticates the Responder to
+ *        the Initiator with ID_CRED_R and Signature_or_MAC_2 (plus C_R and
+ *        optional EAD_2) (RFC 9528: 5.3.1).
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] message_2                Buffer where the generated message 2 is to be written.
@@ -338,28 +308,7 @@ int edhoc_message_1_process(struct edhoc_context *edhoc_context,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Transcript hash computation failed.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
- * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
- *         Ephemeral Diffie-Hellman operation failed.
- * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials operation failed.
- * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         EAD compose callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_2_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_2, size_t message_2_size,
@@ -368,46 +317,28 @@ int edhoc_message_2_compose(struct edhoc_context *edhoc_context,
 /**
  * \brief Process EDHOC message 2.
  *
+ *        The Initiator processes message 2: it completes the ephemeral key
+ *        exchange from G_Y and verifies the Responder's authentication
+ *        (ID_CRED_R, Signature_or_MAC_2, optional EAD_2) (RFC 9528: 5.3.3).
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_2                 Buffer containing the message 2.
  * \param message_2_length              Length of the \p message_2 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_MSG_2_PROCESS_FAILURE
- *         EDHOC message processing failed.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR decoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Transcript hash computation failed.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
- * \retval #EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE
- *         Ephemeral Diffie-Hellman operation failed.
- * \retval #EDHOC_ERROR_INVALID_MAC_2
- *         MAC_2 verification failed.
- * \retval #EDHOC_ERROR_INVALID_SIGN_OR_MAC_2
- *         Signature_or_MAC_2 verification failed.
- * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials operation failed.
- * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         EAD process callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_2_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_2, size_t message_2_length);
 
 /**
  * \brief Compose EDHOC message 3.
+ *
+ *        The Initiator composes message 3: it authenticates the Initiator to
+ *        the Responder with the AEAD-encrypted ID_CRED_I and Signature_or_MAC_3
+ *        (plus optional EAD_3), completing mutual authentication
+ *        (RFC 9528: 5.4.1).
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] message_3                Buffer where the generated message 3 is to be written.
@@ -416,26 +347,7 @@ int edhoc_message_2_process(struct edhoc_context *edhoc_context,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Transcript hash computation failed.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
- * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials operation failed.
- * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         EAD compose callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_3_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_3, size_t message_3_size,
@@ -444,44 +356,27 @@ int edhoc_message_3_compose(struct edhoc_context *edhoc_context,
 /**
  * \brief Process EDHOC message 3.
  *
+ *        The Responder processes message 3: it verifies the Initiator's
+ *        authentication (ID_CRED_I, Signature_or_MAC_3, optional EAD_3),
+ *        completing mutual authentication (RFC 9528: 5.4.3).
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_3                 Buffer containing the message 3.
  * \param message_3_length              Length of the \p message_3 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_MSG_3_PROCESS_FAILURE
- *         EDHOC message processing failed.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR decoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE
- *         Transcript hash computation failed.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
- * \retval #EDHOC_ERROR_INVALID_MAC_3
- *         MAC_3 verification failed.
- * \retval #EDHOC_ERROR_INVALID_SIGN_OR_MAC_3
- *         Signature_or_MAC_3 verification failed.
- * \retval #EDHOC_ERROR_CREDENTIALS_FAILURE
- *         Authentication credentials operation failed.
- * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         EAD process callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_3_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_3, size_t message_3_length);
 
 /**
  * \brief Compose EDHOC message 4.
+ *
+ *        The Responder composes the optional message 4, giving the Initiator
+ *        explicit key confirmation; it may carry optional EAD_4
+ *        (RFC 9528: 5.5.1).
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] message_4                Buffer where the generated message 4 is to be written.
@@ -490,16 +385,7 @@ int edhoc_message_3_process(struct edhoc_context *edhoc_context,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_EAD_COMPOSE_FAILURE
- *         EAD compose callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_4_compose(struct edhoc_context *edhoc_context,
 			    uint8_t *message_4, size_t message_4_size,
@@ -508,30 +394,27 @@ int edhoc_message_4_compose(struct edhoc_context *edhoc_context,
 /**
  * \brief Process EDHOC message 4.
  *
+ *        The Initiator processes the optional message 4, obtaining explicit key
+ *        confirmation from the Responder; it may carry optional EAD_4
+ *        (RFC 9528: 5.5.3).
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] message_4                 Buffer containing the message 4.
  * \param message_4_length              Length of the \p message_4 in bytes.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_MSG_4_PROCESS_FAILURE
- *         EDHOC message 4 processing failed.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR decoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_EAD_PROCESS_FAILURE
- *         EAD process callback failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_4_process(struct edhoc_context *edhoc_context,
 			    const uint8_t *message_4, size_t message_4_length);
 
 /**
- * \brief Compose EDHOC message error.
+ * \brief Compose an EDHOC error message.
+ *
+ *        Either party may reply to any EDHOC message with an error message; it
+ *        is fatal and aborts the session (RFC 9528: 6). It carries an error
+ *        code and matching error information.
  *
  * \param[out] message_error            Buffer where the generated message error is to be written.
  * \param message_error_size            Size of the \p message_error buffer in bytes.
@@ -541,16 +424,7 @@ int edhoc_message_4_process(struct edhoc_context *edhoc_context,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_error_compose(uint8_t *message_error,
 				size_t message_error_size,
@@ -559,7 +433,11 @@ int edhoc_message_error_compose(uint8_t *message_error,
 				const struct edhoc_error_info *error_info);
 
 /**
- * \brief Process EDHOC message error.
+ * \brief Process a received EDHOC error message.
+ *
+ *        Decodes a received error message into its error code and error
+ *        information; receiving one indicates the peer aborted the session
+ *        (RFC 9528: 6).
  *
  * \param[in] message_error             Buffer containing the message error.
  * \param message_error_length          Length of the \p message_error in bytes.
@@ -568,16 +446,7 @@ int edhoc_message_error_compose(uint8_t *message_error,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR decoding failure.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_message_error_process(const uint8_t *message_error,
 				size_t message_error_length,
@@ -587,34 +456,32 @@ int edhoc_message_error_process(const uint8_t *message_error,
 /**@}*/
 
 /** \defgroup edhoc-api-exporters EDHOC exporters API
+ *
+ * Derive application keying material from a completed EDHOC session with the
+ * EDHOC_Exporter (RFC 9528: 4.2.1). Each exporter comes in two forms: a
+ * raw-bytes form (\c _raw) that writes the secret into a caller buffer, and a
+ * key-handle form that returns it as an opaque key reference kept inside the
+ * bound crypto backend, so the bytes never leave it (e.g. a TrustZone or
+ * secure element).
+ *
+ * Permitted exporter labels (RFC 9528: 10.1) are 0 (OSCORE Master Secret),
+ * 1 (OSCORE Master Salt) and the private-use range
+ * #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM ..
+ * #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM; any other label is rejected with
+ * #EDHOC_ERROR_NOT_PERMITTED.
  * @{
  */
 
 /**
- * \brief Export application keying material as a key-store handle.
+ * \brief Export application keying material as a key handle.
  *
- *        Implements RFC 9528: 4.2.1. EDHOC_Exporter(label, context, length),
- *        deriving a key from PRK_exporter and returning it as an opaque
- *        key-store handle (a key reference) rather than raw bytes. Prefer this
- *        form when the derived key must never be exposed as bytes (for example
- *        a TrustZone or secure element); use \ref edhoc_export_raw() when the
- *        caller needs the raw bytes.
+ *        Returns the derived key as an opaque key handle. The derived length is
+ *        set by \p usage: #EDHOC_KEY_USAGE_KDF yields the cipher suite hash
+ *        length and #EDHOC_KEY_USAGE_AEAD the cipher suite AEAD key length.
  *
- *        The derived length is governed by \p usage, not chosen by the caller:
- *        #EDHOC_KEY_USAGE_KDF yields a derivation key of the cipher suite hash
- *        length; #EDHOC_KEY_USAGE_AEAD yields an AEAD key of the cipher suite
- *        AEAD key length. Because the length is bound into the KDF info, the
- *        material differs from \ref edhoc_export_raw() unless the raw
- *        \p secret_length equals the length implied by \p usage.
- *
- *        Permitted labels (RFC 9528: 10.1) are 0 (OSCORE Master Secret), 1
- *        (OSCORE Master Salt) and the private-use range 32768-65535; any other
- *        label is rejected with #EDHOC_ERROR_NOT_PERMITTED.
- *
- * \note  The returned handle is owned by the caller: this library neither
- *        tracks it in the EDHOC context nor releases it in
- *        \ref edhoc_context_deinit(). The caller must destroy it, for example
- *        through the \c destroy_key entry of the bound \ref edhoc_crypto vtable.
+ * \note  The returned handle is owned by the caller: the library neither tracks
+ *        it nor releases it in \ref edhoc_context_deinit(). Destroy it through
+ *        the \c destroy_key entry of the bound \ref edhoc_crypto vtable.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param label                         EDHOC exporter label (RFC 9528: 10.1).
@@ -625,18 +492,7 @@ int edhoc_message_error_process(const uint8_t *message_error,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         The exporter label is not permitted.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_export(struct edhoc_context *edhoc_context, size_t label,
 		 const uint8_t *context, size_t context_length,
@@ -645,11 +501,8 @@ int edhoc_export(struct edhoc_context *edhoc_context, size_t label,
 /**
  * \brief Export application keying material as raw bytes.
  *
- *        Implements RFC 9528: 4.2.1. EDHOC_Exporter(label, context, length),
- *        deriving \p secret_length bytes from PRK_exporter and writing them to
- *        \p secret. Use \ref edhoc_export() when the derived key should remain
- *        an opaque handle instead of raw bytes. Permitted labels are the same
- *        as for \ref edhoc_export().
+ *        Derives \p secret_length bytes (RFC 9528: 4.2.1) and writes them to
+ *        \p secret.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param label                         EDHOC exporter label (RFC 9528: 10.1).
@@ -660,18 +513,7 @@ int edhoc_export(struct edhoc_context *edhoc_context, size_t label,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         The exporter label is not permitted.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_export_raw(struct edhoc_context *edhoc_context, size_t label,
 		     const uint8_t *context, size_t context_length,
@@ -690,36 +532,22 @@ int edhoc_export_raw(struct edhoc_context *edhoc_context, size_t label,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_export_key_update(struct edhoc_context *edhoc_context,
 			    const uint8_t *context, size_t context_length);
 
 /**
- * \brief Export the OSCORE security session with the master secret as a handle.
+ * \brief Export the OSCORE security context with the master secret as a handle.
  *
  *        Derives the OSCORE Master Secret (RFC 9528: A.1, exporter label 0) and
- *        returns it as an opaque key-store handle, while the Master Salt
- *        (label 1) and the sender / recipient identifiers are returned as raw
- *        bytes. Use \ref edhoc_export_oscore_session_raw() to obtain the master
- *        secret as raw bytes instead.
+ *        returns it as an opaque AEAD key handle of the cipher suite AEAD key
+ *        length; the Master Salt (exporter label 1) is returned as raw bytes
+ *        and the OSCORE Sender and Recipient IDs are copied out.
  *
- *        The master secret handle is derived with #EDHOC_KEY_USAGE_KDF (a
- *        derivation key of the cipher suite hash length), suitable as input
- *        keying material to the OSCORE HKDF.
- *
- * \note  The returned handle is owned by the caller (see \ref edhoc_export()).
+ * \note  The returned handle is owned by the caller: the library neither tracks
+ *        it nor releases it in \ref edhoc_context_deinit(). Destroy it through
+ *        the \c destroy_key entry of the bound \ref edhoc_crypto vtable.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] master_secret_key_id     Buffer holding a key handle (\c CONFIG_LIBEDHOC_KEY_ID_LEN bytes) that receives the master secret.
@@ -734,20 +562,7 @@ int edhoc_export_key_update(struct edhoc_context *edhoc_context,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
 				void *master_secret_key_id,
@@ -758,12 +573,11 @@ int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
 				size_t *recipient_id_length);
 
 /**
- * \brief Export the OSCORE security session as raw bytes.
+ * \brief Export the OSCORE security context as raw bytes.
  *
  *        Derives the OSCORE Master Secret and Master Salt (exporter labels 0
- *        and 1) and copies the sender / recipient identifiers, all as raw
- *        bytes. Use \ref edhoc_export_oscore_session() to obtain the master
- *        secret as an opaque handle instead.
+ *        and 1) as raw bytes and copies out the OSCORE Sender and Recipient
+ *        IDs.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] master_secret            Buffer where the exported master secret is to be written.
@@ -779,20 +593,7 @@ int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_NOT_PERMITTED
- *         Operation not permitted in the current configuration.
- * \retval #EDHOC_ERROR_CBOR_FAILURE
- *         CBOR encoding failure.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
- * \retval #EDHOC_ERROR_CRYPTO_FAILURE
- *         Cryptographic operation failure.
- * \retval #EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE
- *         Pseudorandom key derivation failed.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_export_oscore_session_raw(
 	struct edhoc_context *edhoc_context, uint8_t *master_secret,
@@ -808,48 +609,49 @@ int edhoc_export_oscore_session_raw(
  */
 
 /**
- * \brief EDHOC error getter.
+ * \brief Get the EDHOC error code recorded for the session.
+ *
+ * Returns the EDHOC error code (RFC 9528: 6) recorded in the context.
  *
  * \param[in] edhoc_context             EDHOC context.
  * \param[out] error_code               EDHOC error code.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_error_get_code(const struct edhoc_context *edhoc_context,
 			 enum edhoc_error_code *error_code);
 
 /**
- * \brief Retrieve own and peer cipher suites after \p EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE.
+ * \brief Retrieve the own and peer cipher suites after a cipher suite
+ *        negotiation error.
  *
- * \param[in] edhoc_context             	EDHOC context.
- * \param[out] cipher_suites			Buffer where the own cipher suite values are written.
- * \param cipher_suites_size            	Size of the \p cipher_suites buffer in entries.
- * \param[out] cipher_suites_length     	On success, the number of entries written to \p cipher_suites.
- * \param[out] peer_cipher_suites		Buffer where the peer cipher suite values are written.
- * \param peer_cipher_suites_size		Size of the \p peer_cipher_suites buffer in entries.
- * \param[out] peer_cipher_suites_length	On success, the number of entries written to \p peer_cipher_suites.
+ * After the peer replies to message 1 with error code
+ * #EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE (RFC 9528: 6.3), this returns
+ * the local supported suites (SUITES_I) and the peer's supported suites
+ * (SUITES_R) so the Initiator can reselect a mutually supported suite for the
+ * next message 1 (RFC 9528: 6.3.1).
+ *
+ * \param[in] edhoc_context             EDHOC context.
+ * \param[out] cipher_suites            Buffer where the own cipher suite values are written.
+ * \param cipher_suites_size            Size of the \p cipher_suites buffer in entries.
+ * \param[out] cipher_suites_count      On success, the number of entries written to \p cipher_suites.
+ * \param[out] peer_cipher_suites       Buffer where the peer cipher suite values are written.
+ * \param peer_cipher_suites_size       Size of the \p peer_cipher_suites buffer in entries.
+ * \param[out] peer_cipher_suites_count On success, the number of entries written to \p peer_cipher_suites.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
- * \retval #EDHOC_ERROR_INVALID_ARGUMENT
- *         One or more input parameters are invalid.
- * \retval #EDHOC_ERROR_BAD_STATE
- *         Internal context state is incorrect.
- * \retval #EDHOC_ERROR_BUFFER_TOO_SMALL
- *         Output buffer is too small.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_error_get_cipher_suites(const struct edhoc_context *edhoc_context,
 				  int32_t *cipher_suites,
 				  size_t cipher_suites_size,
-				  size_t *cipher_suites_length,
+				  size_t *cipher_suites_count,
 				  int32_t *peer_cipher_suites,
 				  size_t peer_cipher_suites_size,
-				  size_t *peer_cipher_suites_length);
+				  size_t *peer_cipher_suites_count);
 
 /**@}*/
 

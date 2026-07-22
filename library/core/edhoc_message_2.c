@@ -2,9 +2,9 @@
  * \file    edhoc_message_2.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 2 compose & process.
- * 
- * \copyright Copyright (c) 2025
- * 
+ *
+ * \copyright Copyright (c) 2026
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -17,6 +17,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
@@ -49,60 +50,60 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
 
-/** 
+/**
  * \brief KEM encapsulate to the peer's G_X (Responder): produce the KEM
  *        ciphertext G_Y (into \p ctx->ephemeral.own.value) and the ephemeral
  *        shared-secret handle.
  *
  * \param[in,out] ctx		EDHOC context.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure. 
+ * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_encapsulate(struct edhoc_context *ctx);
 
-/** 
+/**
  * \brief KEM decapsulate the peer's G_Y (Initiator): derive the ephemeral
  *        shared-secret handle from the message-1 ephemeral private key.
  *
  * \param[in,out] ctx		EDHOC context.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure. 
+ * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_decapsulate(struct edhoc_context *ctx);
 
-/** 
+/**
  * \brief Compute transcript hash 2 (TH_2).
  *
  * \param[in,out] ctx		EDHOC context.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure. 
+ * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_th_2(struct edhoc_context *ctx);
 
-/** 
+/**
  * \brief Compute pseudorandom key (PRK_2e).
  *
  * \param[in,out] ctx		EDHOC context.
  *
- * \return EDHOC_SUCCESS on success, otherwise failure. 
+ * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_prk_2e(struct edhoc_context *ctx);
 
-/** 
+/**
  * \brief Compute pseudorandom key (PRK_3e2m).
  *
  * \param[in,out] ctx		EDHOC context.
  * \param[in] auth_cred         Authentication credentials.
- * \param[in] pub_key           Peer public static DH key. 
+ * \param[in] pub_key           Peer public static DH key.
  * \param pub_key_len           Size of the \p pub_key buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_creds *auth_cred,
+			 const struct edhoc_auth_credentials *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len);
 
-/** 
+/**
  * \brief Compute required PLAINTEXT_2 length.
  *
  * \param[in] ctx		EDHOC context.
@@ -116,7 +117,7 @@ STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_2_len);
 
-/** 
+/**
  * \brief Prepare PLAINTEXT_2.
  *
  * \param[in] ctx		EDHOC context.
@@ -135,7 +136,7 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 			       uint8_t *ptxt, size_t ptxt_size,
 			       size_t *ptxt_len);
 
-/** 
+/**
  * \brief Compute KEYSTREAM_2 from the context PRK_2e handle (or PRK_3e2m for
  *        methods 0/2, into which PRK_2e was moved).
  *
@@ -148,7 +149,7 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 			  size_t keystream_len);
 
-/** 
+/**
  * \brief Compute CIPHERTEXT_2.
  *
  * \param[out] dst		Memory location to XOR to.
@@ -158,7 +159,7 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 STATIC void xor_arrays(uint8_t *restrict dst, const uint8_t *restrict src,
 		       size_t count);
 
-/** 
+/**
  * \brief Prepare MESSAGE_2.
  *
  * \param[in] ctx		EDHOC context.
@@ -175,7 +176,7 @@ STATIC int prepare_message_2(const struct edhoc_context *ctx,
 			     uint8_t *msg_2, size_t msg_2_size,
 			     size_t *msg_2_len);
 
-/** 
+/**
  * \brief Compute from cborised message 2 length of ciphertext 2.
  *
  * \param[in] ctx		EDHOC context.
@@ -189,7 +190,7 @@ STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 				 const uint8_t *msg_2, size_t msg_2_len,
 				 size_t *len);
 
-/** 
+/**
  * \brief Decode message 2 and save into context and buffer.
  *
  * \param[in] ctx		EDHOC context.
@@ -203,7 +204,7 @@ STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
 STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len);
 
-/** 
+/**
  * \brief Parsed cborised PLAINTEXT_2 for separate buffers.
  *
  * \param[in] ctx		EDHOC context.
@@ -216,7 +217,7 @@ STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 			     size_t ptxt_len, struct plaintext *parsed_ptxt);
 
-/** 
+/**
  * \brief Compute transcript hash 3.
  *
  * \param[in,out] ctx		EDHOC context.
@@ -232,7 +233,7 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
 
 /**
  * \brief Compute SALT_3e2m.
- * 
+ *
  * \param[in] ctx               EDHOC context.
  * \param[out] salt             Buffer where the generated salt is to be written.
  * \param salt_len              Size of the \p salt buffer in bytes.
@@ -244,7 +245,7 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 
 /**
  * \brief Compute G_RX for PRK_3e2m into its context key slot.
- * 
+ *
  * \param[in,out] ctx           EDHOC context.
  * \param[in] auth_cred         Authentication credentials.
  * \param[in] pub_key           Peer public key.
@@ -253,7 +254,7 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_grx(struct edhoc_context *ctx,
-		    const struct edhoc_auth_creds *auth_cred,
+		    const struct edhoc_auth_credentials *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len);
 
 /* Static function definitions --------------------------------------------- */
@@ -423,7 +424,7 @@ STATIC int comp_prk_2e(struct edhoc_context *ctx)
 }
 
 STATIC int comp_prk_3e2m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_creds *auth_cred,
+			 const struct edhoc_auth_credentials *auth_cred,
 			 const uint8_t *pub_key, size_t pub_key_len)
 {
 	if (NULL == ctx) {
@@ -527,11 +528,11 @@ STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 	size_t len = 0;
 
 	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		len += edhoc_cbor_int_mem_req(
 			ctx->negotiation.connection_id.int_value);
 		break;
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		len += ctx->negotiation.connection_id.bstr_length;
 		len += edhoc_cbor_bstr_oh(
 			ctx->negotiation.connection_id.bstr_length);
@@ -571,7 +572,7 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 	size_t offset = 0;
 
 	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER: {
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER: {
 		size_t len = 0;
 		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
 		const int32_t value = ctx->negotiation.connection_id.int_value;
@@ -586,7 +587,7 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 		offset += len;
 		break;
 	}
-	case EDHOC_CID_TYPE_BYTE_STRING: {
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING: {
 		size_t len = 0;
 		const struct zcbor_string input = {
 			.value = ctx->negotiation.connection_id.bstr_value,
@@ -895,7 +896,7 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 		}
 
 		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CID_TYPE_ONE_BYTE_INTEGER;
+			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 		ctx->negotiation.peer_connection_id.int_value =
 			(int8_t)cbor_ptxt_2.plaintext_2_C_R_int;
 		break;
@@ -909,7 +910,7 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 		}
 
 		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CID_TYPE_BYTE_STRING;
+			EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
 		ctx->negotiation.peer_connection_id.bstr_length =
 			cbor_ptxt_2.plaintext_2_C_R_bstr.len;
 		memcpy(ctx->negotiation.peer_connection_id.bstr_value,
@@ -937,9 +938,9 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 		parsed_ptxt->auth_cred.label = EDHOC_COSE_HEADER_KID;
 		parsed_ptxt->auth_cred.key_id.encode_type =
 			EDHOC_ENCODE_TYPE_BYTE_STRING;
-		parsed_ptxt->auth_cred.key_id.key_id_bstr_length =
+		parsed_ptxt->auth_cred.key_id.key_id_bstr.length =
 			cbor_ptxt_2.plaintext_2_ID_CRED_R_bstr.len;
-		memcpy(parsed_ptxt->auth_cred.key_id.key_id_bstr,
+		memcpy(parsed_ptxt->auth_cred.key_id.key_id_bstr.value,
 		       cbor_ptxt_2.plaintext_2_ID_CRED_R_bstr.value,
 		       cbor_ptxt_2.plaintext_2_ID_CRED_R_bstr.len);
 		break;
@@ -957,16 +958,19 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 			switch (cose_x509->COSE_X509_choice) {
 			case COSE_X509_bstr_c:
-				parsed_ptxt->auth_cred.x509_chain.nr_of_certs =
-					1;
-				parsed_ptxt->auth_cred.x509_chain.cert[0] =
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate_count = 1;
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate[0] =
 					cose_x509->COSE_X509_bstr.value;
-				parsed_ptxt->auth_cred.x509_chain.cert_len[0] =
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate_length[0] =
 					cose_x509->COSE_X509_bstr.len;
 				break;
 			case COSE_X509_certs_l_c: {
 				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_chain
-						       .cert) <
+						       .certificate) -
+					    1 <
 				    cose_x509->COSE_X509_certs_l_certs_count) {
 					EDHOC_LOG_ERR(
 						"X.509 certificate chain too large: %zu (max %zu)",
@@ -974,11 +978,13 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 						ARRAY_SIZE(
 							parsed_ptxt->auth_cred
 								.x509_chain
-								.cert));
+								.certificate) -
+							1);
 					return EDHOC_ERROR_BUFFER_TOO_SMALL;
 				}
 
-				parsed_ptxt->auth_cred.x509_chain.nr_of_certs =
+				parsed_ptxt->auth_cred.x509_chain
+					.certificate_count =
 					cose_x509->COSE_X509_certs_l_certs_count;
 
 				for (size_t i = 0;
@@ -986,13 +992,13 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 				     cose_x509->COSE_X509_certs_l_certs_count;
 				     ++i) {
 					parsed_ptxt->auth_cred.x509_chain
-						.cert[i] =
+						.certificate[i] =
 						cose_x509
 							->COSE_X509_certs_l_certs
 								[i]
 							.value;
 					parsed_ptxt->auth_cred.x509_chain
-						.cert_len[i] =
+						.certificate_length[i] =
 						cose_x509
 							->COSE_X509_certs_l_certs
 								[i]
@@ -1015,21 +1021,23 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 			const struct COSE_CertHash *cose_x509 =
 				&cbor_map->map_x5t.map_x5t;
 
-			parsed_ptxt->auth_cred.x509_hash.cert_fp =
+			parsed_ptxt->auth_cred.x509_hash
+				.certificate_fingerprint =
 				cose_x509->COSE_CertHash_hashValue.value;
-			parsed_ptxt->auth_cred.x509_hash.cert_fp_len =
+			parsed_ptxt->auth_cred.x509_hash
+				.certificate_fingerprint_length =
 				cose_x509->COSE_CertHash_hashValue.len;
 
 			switch (cose_x509->COSE_CertHash_hashAlg_choice) {
 			case COSE_CertHash_hashAlg_int_c:
 				parsed_ptxt->auth_cred.x509_hash.encode_type =
 					EDHOC_ENCODE_TYPE_INTEGER;
-				parsed_ptxt->auth_cred.x509_hash.alg_int =
+				parsed_ptxt->auth_cred.x509_hash.algorithm_int =
 					cose_x509->COSE_CertHash_hashAlg_int;
 				break;
 			case COSE_CertHash_hashAlg_tstr_c:
 				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_hash
-						       .alg_bstr) <
+						       .algorithm_bstr.value) <
 				    cose_x509->COSE_CertHash_hashAlg_tstr.len) {
 					EDHOC_LOG_ERR(
 						"X.509 hash alg bstr too large: %zu",
@@ -1041,11 +1049,12 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 				parsed_ptxt->auth_cred.x509_hash.encode_type =
 					EDHOC_ENCODE_TYPE_BYTE_STRING;
-				parsed_ptxt->auth_cred.x509_hash
-					.alg_bstr_length =
+				parsed_ptxt->auth_cred.x509_hash.algorithm_bstr
+					.length =
 					cose_x509->COSE_CertHash_hashAlg_tstr
 						.len;
-				memcpy(parsed_ptxt->auth_cred.x509_hash.alg_bstr,
+				memcpy(parsed_ptxt->auth_cred.x509_hash
+					       .algorithm_bstr.value,
 				       cose_x509->COSE_CertHash_hashAlg_tstr
 					       .value,
 				       cose_x509->COSE_CertHash_hashAlg_tstr
@@ -1080,7 +1089,7 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 			ctx->ead.token[i].value =
 				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
 					.ead_y_ead_value.value;
-			ctx->ead.token[i].value_len =
+			ctx->ead.token[i].value_length =
 				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
 					.ead_y_ead_value.len;
 		}
@@ -1197,7 +1206,7 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 }
 
 STATIC int comp_grx(struct edhoc_context *ctx,
-		    const struct edhoc_auth_creds *auth_cred,
+		    const struct edhoc_auth_credentials *auth_cred,
 		    const uint8_t *pub_key, size_t pub_key_len)
 {
 	if (NULL == ctx || NULL == auth_cred) {
@@ -1222,7 +1231,7 @@ STATIC int comp_grx(struct edhoc_context *ctx,
 		/* G_RX = key_agreement(R's static private key, peer's ephemeral
 		 * public key G_X). */
 		ret = edhoc_crypto(ctx)->key_agreement(
-			ctx->user_context, auth_cred->priv_key_id,
+			ctx->user_context, auth_cred->private_key_id,
 			ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
 			grx_key_id);
 		break;
@@ -1289,7 +1298,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_2;
+	ctx->state.message = EDHOC_MESSAGE_2;
 	ctx->state.role = EDHOC_ROLE_RESPONDER;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -1300,7 +1309,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Encapsulate: %d", ret);
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+		return EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(ctx->ephemeral.own.value,
@@ -1326,7 +1335,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 4. Fetch authentication credentials. */
-	struct edhoc_auth_creds auth_cred = { 0 };
+	struct edhoc_auth_credentials auth_cred = { 0 };
 	ret = ctx->interfaces.cred.fetch(ctx->user_context, &auth_cred);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1355,10 +1364,10 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_2 compose label");
 
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_2 compose value");
 			}
 		}
@@ -1612,7 +1621,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	ctx->state.machine = EDHOC_SM_ABORTED;
 	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	ctx->state.message = EDHOC_MSG_2;
+	ctx->state.message = EDHOC_MESSAGE_2;
 	ctx->state.role = EDHOC_ROLE_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -1651,7 +1660,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decapsulate: %d", ret);
 		EDHOC_MEM_FREE(ciphertext_2);
-		return EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE;
+		return EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE;
 	}
 
 	/* 4. Compute Transcript Hash 2 (TH_2). */
@@ -1714,14 +1723,14 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	}
 
 	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CID_TYPE_ONE_BYTE_INTEGER:
+	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
 		EDHOC_LOG_HEXDUMP_DBG(
 			(const uint8_t *)&ctx->negotiation.peer_connection_id
 				.int_value,
 			sizeof(ctx->negotiation.peer_connection_id.int_value),
 			"C_R");
 		break;
-	case EDHOC_CID_TYPE_BYTE_STRING:
+	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
 		EDHOC_LOG_HEXDUMP_DBG(
 			ctx->negotiation.peer_connection_id.bstr_value,
 			ctx->negotiation.peer_connection_id.bstr_length, "C_R");
@@ -1754,10 +1763,10 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_2 process label");
 
-			if (0 != ctx->ead.token[i].value_len) {
+			if (0 != ctx->ead.token[i].value_length) {
 				EDHOC_LOG_HEXDUMP_DBG(
 					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_len,
+					ctx->ead.token[i].value_length,
 					"EAD_2 process value");
 			}
 		}
