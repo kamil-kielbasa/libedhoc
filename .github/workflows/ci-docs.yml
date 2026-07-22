@@ -21,7 +21,14 @@ jobs:
       - name: Install apt dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y doxygen graphviz"
+          command: "sudo apt-get update && sudo apt-get install -y graphviz"
+      - name: Install doxygen 1.17.0
+        # Ubuntu's apt ships doxygen 1.9.8, whose parser mis-handles the
+        # anonymous unions in credentials.h and breaks the -W docs build.
+        # Pin a newer release that parses them correctly.
+        run: |
+          curl -fsSL --retry 3 https://www.doxygen.nl/files/doxygen-1.17.0.linux.bin.tar.gz | sudo tar -xz -C /opt
+          echo "/opt/doxygen-1.17.0/bin" >> "$GITHUB_PATH"
       - name: Install Python dependencies
         run: pip install -r doc/requirements.txt
       - name: Sphinx build
