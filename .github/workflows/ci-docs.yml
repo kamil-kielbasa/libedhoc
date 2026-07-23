@@ -26,8 +26,11 @@ jobs:
         # Ubuntu's apt ships doxygen 1.9.8, whose parser mis-handles the
         # anonymous unions in credentials.h and breaks the -W docs build.
         # Pin a newer release that parses them correctly.
+        #
+        # Fetch the binary from the official GitHub release: the doxygen.nl
+        # mirror rejects the runners' requests with HTTP 415.
         run: |
-          curl -fsSL --retry 3 https://www.doxygen.nl/files/doxygen-1.17.0.linux.bin.tar.gz | sudo tar -xz -C /opt
+          curl -fsSL --retry 3 https://github.com/doxygen/doxygen/releases/download/Release_1_17_0/doxygen-1.17.0.linux.bin.tar.gz | sudo tar -xz -C /opt
           echo "/opt/doxygen-1.17.0/bin" >> "$GITHUB_PATH"
       - name: Install Python dependencies
         run: pip install -r doc/requirements.txt
