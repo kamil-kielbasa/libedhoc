@@ -3,7 +3,7 @@ Protocol Flow
 
 This page shows the canonical EDHOC handshake as it travels over
 :term:`CoAP`. The diagram is reproduced from RFC 9528 and annotated with the
-libedhoc API calls the :term:`Initiator` and :term:`Responder` make at each
+*libedhoc* API calls the :term:`Initiator` and :term:`Responder` make at each
 step.
 
 For a code-level walkthrough see :doc:`../getting_started/quick_start`; for
@@ -66,9 +66,7 @@ CoAP + EDHOC message exchange
   |                                                                   |
   | edhoc_message_4_process()                                         |
   |                                                                   |
-  | edhoc_export_oscore_session()       edhoc_export_oscore_session() |
-  | edhoc_export_key_update()               edhoc_export_key_update() |
-  | edhoc_export_oscore_session()       edhoc_export_oscore_session() |
+  | edhoc_export_oscore_context()       edhoc_export_oscore_context() |
   | edhoc_context_deinit()                     edhoc_context_deinit() |
   |                                                                   |
 
@@ -78,9 +76,9 @@ Notes
 * ``message_4`` is optional; it is composed and processed only when the
   selected :term:`authentication method` requires it or when the application
   asks for it explicitly.
-* The diagram shows a single :term:`PRK exporter` round followed by a
-  ``KEY_UPDATE`` and a second export — the second export is only needed if
-  the application performs a key update.
+* After completion, both peers export the :term:`OSCORE` Security Context
+  (see :doc:`../api/exporters`) and deinitialise; an optional
+  ``EDHOC-KeyUpdate`` refreshes it before a later export.
 * The CoAP framing (``POST`` to ``/.well-known/edhoc``,
-  ``application/edhoc+cbor-seq``) follows RFC 9528 Appendix A.2; libedhoc
+  ``application/edhoc+cbor-seq``) follows RFC 9528 Appendix A.2; *libedhoc*
   itself only produces and consumes the inner CBOR-sequence payload.

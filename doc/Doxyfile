@@ -866,9 +866,7 @@ WARN_LOGFILE           =
 
 INPUT                  = ../include \
                          ../library/internal \
-                         ../library/cipher_suites \
-                         ../backends/memory/include \
-                         ../backends/log/include
+                         ../library/cipher_suites
 #../samples ../snippets
 
 # This tag can be used to specify the character encoding of the source files

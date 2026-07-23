@@ -1,6 +1,10 @@
 Configuration
 =============
 
+*libedhoc* is configured at compile time. On Zephyr the options below are
+ordinary ``CONFIG_*`` Kconfig symbols; on other targets they are passed as
+compiler defines (see `Supported targets`_).
+
 Kconfig library configuration
 *****************************
 
@@ -9,7 +13,7 @@ Kconfig library configuration
   :class: highlight
 
 :C:`LIBEDHOC_ENABLE`
-    | Enable building libedhoc for Zephyr target.
+    | Enable building *libedhoc* for the Zephyr target.
 
 :C:`LIBEDHOC_KEY_ID_LEN`
     | Key identifier length in bytes.
@@ -24,7 +28,7 @@ Kconfig library configuration
 :C:`LIBEDHOC_MAX_LEN_OF_CONN_ID`
     | Maximum length of connection identifier in bytes.
 
-:C:`LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY`
+:C:`LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY`
     | Maximum length of the KEM encapsulation key (``G_X``) in bytes.
 
 :C:`LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT`
@@ -50,74 +54,57 @@ Kconfig library configuration
 :C:`LIBEDHOC_MAX_LEN_OF_HASH_ALG`
     | Maximum length of authentication credentials hash algorithm in bytes.
 
-Linux target
-************
-
-| All configuration parameters listed above must be passed as compiler defines during the build.
-| Each must be prefixed with :C:`CONFIG_`.
-
-| The build generates a :file:`edhoc_config.h` header (from
-  :file:`cmake/edhoc_config.h.in`) on the public include path, capturing the
-  values the library was built with. Each value is guarded with ``#ifndef``, so
-  a command-line :C:`-DCONFIG_LIBEDHOC_*` still wins. This header is installed
-  next to the public headers, so a consumer compiling against an installed
-  libedhoc (or via :C:`find_package(libedhoc)`) inherits the exact build-time
-  configuration without re-passing any defines.
-
-Zephyr target
-*************
-
-| The library can be used as a Zephyr module. A west manifest is provided for easy integration.
-
-**Initialize workspace:**
-
-.. code-block:: bash
-
-   west init -l libedhoc
-   west update
-
-**Build sample application:**
-
-.. code-block:: bash
-
-   west build -b native_sim libedhoc/sample/benchmark
-
-| All Kconfig options are automatically prefixed with :C:`CONFIG_` by the Zephyr build system.
-| Dependencies (zcbor, mbedtls) are automatically pulled via the west manifest.
-
 Logging
 *******
 
-The logging module provides compile-time configurable log levels via
-``CONFIG_LIBEDHOC_LOG_LEVEL``. It is a single, self-contained backend header:
-
-* :file:`backends/log/include/edhoc_backend_log.h`
+Set the compile-time log level with ``CONFIG_LIBEDHOC_LOG_LEVEL``; each level
+enables the ones below it:
 
 .. list-table::
    :header-rows: 1
 
    * - Level
-     - Macro
      - Value
-   * - None
-     - ``EDHOC_LOG_LEVEL_NONE``
+   * - ``EDHOC_LOG_LEVEL_NONE`` (default)
      - 0
-   * - Error
-     - ``EDHOC_LOG_LEVEL_ERR``
+   * - ``EDHOC_LOG_LEVEL_ERR``
      - 1
-   * - Warning
-     - ``EDHOC_LOG_LEVEL_WRN``
+   * - ``EDHOC_LOG_LEVEL_WRN``
      - 2
-   * - Info
-     - ``EDHOC_LOG_LEVEL_INF``
+   * - ``EDHOC_LOG_LEVEL_INF``
      - 3
-   * - Debug
-     - ``EDHOC_LOG_LEVEL_DBG``
+   * - ``EDHOC_LOG_LEVEL_DBG``
      - 4
 
-Set ``CONFIG_LIBEDHOC_LOG_LEVEL`` to the desired level during compilation.
-Each level enables all levels below it. The backend selects its
-implementation at compile time with the ``__ZEPHYR__`` preprocessor macro:
-on Zephyr it delegates to the Zephyr logging subsystem, and on every other
-build it outputs timestamped, colour-coded messages to ``stdout`` /
-``stderr``.
+Memory backend
+**************
+
+*libedhoc* allocates its handshake working buffers through a compile-time
+selectable backend, chosen with ``CONFIG_LIBEDHOC_MEM_BACKEND``:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Backend
+     - Value
+     - Notes
+   * - Stack
+     - ``0``
+     - C99 variable-length arrays; no heap, zero static RAM (default).
+   * - Heap
+     - ``1``
+     - ``calloc`` / ``k_calloc``; needs a heap sized for the working set.
+   * - Custom
+     - ``2``
+     - Application-provided ``edhoc_mem_alloc`` / ``edhoc_mem_free``.
+
+Supported targets
+*****************
+
+*libedhoc* is portable C and is regularly built and tested on:
+
+* **Linux** — via CMake. Pass the options above as ``-DCONFIG_LIBEDHOC_*``, or
+  consume an installed build through ``find_package(libedhoc)`` (the generated
+  :file:`edhoc_config.h` carries the build-time configuration).
+* **Zephyr RTOS** — as a west module. The options above are ordinary Kconfig
+  symbols and the dependencies (zcbor, mbedTLS) are pulled by the manifest.

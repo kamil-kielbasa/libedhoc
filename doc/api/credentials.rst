@@ -2,7 +2,7 @@ Authentication Credentials
 ==========================
 
 The credentials interface lets the application supply its own credential
-(``CRED_I`` or ``CRED_R``) and verify the peer's credential. libedhoc does
+(``CRED_I`` or ``CRED_R``) and verify the peer's credential. *libedhoc* does
 not embed credential storage or validation logic: the user controls how
 credentials are looked up, verified (including :term:`CRL` checks) and
 persisted in the application context.

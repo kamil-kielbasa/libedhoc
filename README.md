@@ -8,51 +8,38 @@
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://kamil-kielbasa.github.io/libedhoc/)
 [![Release](https://img.shields.io/endpoint?url=https://kamil-kielbasa.github.io/libedhoc/release.json)](https://github.com/kamil-kielbasa/libedhoc/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 [![RFC](https://img.shields.io/badge/RFC-9528-informational)](https://datatracker.ietf.org/doc/html/rfc9528)
 [![RFC](https://img.shields.io/badge/RFC-9529-informational)](https://datatracker.ietf.org/doc/rfc9529/)
+[![draft](https://img.shields.io/badge/draft-lake--pqsuites-orange)](https://datatracker.ietf.org/doc/draft-ietf-lake-pqsuites/)
 
-A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol — a lightweight authenticated key exchange designed for constrained devices. EDHOC provides mutual authentication, forward secrecy, and identity protection, and is intended for usage in constrained scenarios; a main use case is to establish an Object Security for Constrained RESTful Environments (OSCORE) security context. Standardised by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/rfc9528), verified against [RFC 9529](https://datatracker.ietf.org/doc/html/rfc9529) test vectors.
+A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol — a lightweight authenticated key exchange designed for constrained devices. EDHOC provides mutual authentication, forward secrecy, and identity protection, and is intended for usage in constrained scenarios; a main use case is to establish an Object Security for Constrained RESTful Environments (OSCORE) Security Context. Standardised by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/rfc9528), verified against [RFC 9529](https://datatracker.ietf.org/doc/html/rfc9529) test vectors.
 
 ## Features
 
-- Context-based API with safe access control using context handles
-- CoAP-friendly message composition and processing
-- OSCORE session export for establishing secure communication channels
-- Separate interfaces for cryptographic keys, operations, credentials, and EAD
-- Private keys accessible only by identifier; raw key material never exposed
-- All CBOR encoding/decoding encapsulated and hidden from the user
-- Pluggable memory backend: stack via VLA (default, no heap), heap (calloc / k_calloc), or a custom allocator
-- Native Zephyr RTOS support with west manifest integration
-- Verified with cppcheck, clang-tidy, ASan, UBSan, Valgrind, and LibFuzzer
+- **Handle-only key material** — private keys and derived secrets are held by reference in the backend key store (a software keystore, TrustZone or a secure element); a leaked context exposes nothing.
+- **Post-quantum ready** — the ephemeral key exchange is modelled as a KEM, so post-quantum KEM algorithms drop straight in; classical NIKE schemes (Diffie-Hellman) plug into the same interface through a thin shim, with no change on the wire.
+- **Bring your own crypto** — every primitive is reached through a small vtable; use the bundled production-ready cipher suites or drive your own secure element / accelerator.
+- **Clean interfaces** — separate callback groups for cryptography, credentials, platform and optional EAD, keeping your application code cleanly separated from the protocol engine.
+- **Transport-agnostic** — the library only produces and consumes CBOR message buffers, so you carry them over CoAP or any transport; all CBOR encoding/decoding is hidden.
+- **Predictable footprint** — handshake buffers come from a stack (VLA, default, no heap), heap or custom memory backend, and the protocol core keeps no static state, so RAM use is bounded and known up front.
+- **Portable** — builds with GCC and Clang; runs on Linux and Zephyr RTOS (as a west module).
+- **Quality-gated** — cppcheck, clang-tidy, ASan, UBSan, Valgrind and LibFuzzer in CI.
 
 ### Cipher Suites
 
-| Suite | AEAD               | Hash     | Key exchange | Signature |
-|-------|--------------------|----------|--------------|-----------|
-| 0     | AES-CCM-16-64-128  | SHA-256  | X25519       | EdDSA     |
-| 2     | AES-CCM-16-64-128  | SHA-256  | P-256        | ES256     |
-| 4     | ChaCha20/Poly1305  | SHA-256  | X25519       | EdDSA     |
-| 24    | A256GCM            | SHA-384  | P-384        | ES384     |
-| TBD1  | AES-CCM-16-128-128 | SHAKE256 | ML-KEM-512   | ML-DSA-44 |
+| Suite | Key exchange | Signature | AEAD               | Hash     |
+|-------|--------------|-----------|--------------------|----------|
+| 0     | X25519       | EdDSA     | AES-CCM-16-64-128  | SHA-256  |
+| 2     | P-256        | ES256     | AES-CCM-16-64-128  | SHA-256  |
+| 4     | X25519       | EdDSA     | ChaCha20/Poly1305  | SHA-256  |
+| 24    | P-384        | ES384     | A256GCM            | SHA-384  |
+| -24   | ML-KEM-512   | ML-DSA-44 | AES-CCM-16-128-128 | SHAKE256 |
 
-Suite TBD1 is post-quantum (ML-KEM-512 / ML-DSA-44, KMAC256 KDF); its value is
-provisional pending IANA assignment ([draft-ietf-lake-pqsuites-00](https://datatracker.ietf.org/doc/html/draft-ietf-lake-pqsuites-00)).
-
-### Authentication Methods
-
-All four EDHOC authentication methods (0–3) are supported, combining Signature Keys and Static DH Keys for initiator and responder.
-
-## Metrics
-
-| Metric                   | Value                                                          |
-|--------------------------|----------------------------------------------------------------|
-| Line coverage            | 92.8%                                                          |
-| Function coverage        | 100%                                                           |
-| Test count               | 706+ (unit, integration, fuzz)                                 |
-| Library flash footprint  | ~20 KiB (cipher suite 2, P-256/ES256, native_sim)              |
-| Static RAM (data + bss)  | 0 bytes (default stack backend; all state on stack)            |
-
-Coverage details on the [Codecov dashboard](https://codecov.io/gh/kamil-kielbasa/libedhoc). Memory and timing benchmarks are available as [CI artifacts](../../actions/workflows/ci-zephyr.yml).
+Suite `-24` is an experimental post-quantum suite on a private-use code point,
+tracking [draft-ietf-lake-pqsuites](https://datatracker.ietf.org/doc/draft-ietf-lake-pqsuites/).
+All four authentication methods (0–3) are supported, in any combination of
+signature and static-DH keys for the Initiator and Responder.
 
 ## Documentation
 
@@ -62,27 +49,20 @@ Full documentation is hosted on GitHub Pages: <https://kamil-kielbasa.github.io/
 |---------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
 | [Introduction](https://kamil-kielbasa.github.io/libedhoc/getting_started/introduction.html)                         | What EDHOC and libedhoc are, supported methods and cipher suites                |
 | [Quick Start](https://kamil-kielbasa.github.io/libedhoc/getting_started/quick_start.html)                           | Smallest working build & handshake skeleton                                     |
-| [Concepts at a Glance](https://kamil-kielbasa.github.io/libedhoc/getting_started/concepts.html)                     | The EDHOC mental model — roles, methods, cipher suites, exporters              |
 | [Protocol Flow](https://kamil-kielbasa.github.io/libedhoc/guide/protocol_flow.html)                                 | Full CoAP + EDHOC message-exchange diagram                                      |
-| [Configuration](https://kamil-kielbasa.github.io/libedhoc/guide/configuration.html)                                 | Kconfig / compile-time options and logging                                      |
+| [Security & Key Handling](https://kamil-kielbasa.github.io/libedhoc/guide/security.html)                            | How keys are held (handles / key store) and the KEM/DH model                    |
+| [Configuration](https://kamil-kielbasa.github.io/libedhoc/guide/configuration.html)                                 | Kconfig / compile-time options, memory backend and logging                      |
 | [API Reference](https://kamil-kielbasa.github.io/libedhoc/api/index.html)                                           | Lifecycle, error model, and per-module API pages                                |
-| [Error Codes](https://kamil-kielbasa.github.io/libedhoc/reference/error_codes.html)                                 | `enum edhoc_error_code` and the runtime error-getter API                        |
-| [Values](https://kamil-kielbasa.github.io/libedhoc/reference/values.html)                                           | CBOR shortcut constants and extract/expand labels                               |
+| [Error Codes](https://kamil-kielbasa.github.io/libedhoc/api/errors.html)                                            | `enum edhoc_error_code` and the runtime error-getter API                        |
 | [Glossary](https://kamil-kielbasa.github.io/libedhoc/reference/glossary.html)                                       | Definitions of every EDHOC / libedhoc term used in the docs                     |
-| [Testing](https://kamil-kielbasa.github.io/libedhoc/project/testing.html)                                           | Test architecture and how to run the suites                                     |
-| [Contributing](https://kamil-kielbasa.github.io/libedhoc/project/contributing.html)                                 | Workflow for submitting changes                                                 |
 
 ## Contributing
 
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) (or the hosted [Contributing](https://kamil-kielbasa.github.io/libedhoc/project/contributing.html) page) for the full workflow.
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
 
 ## Security
 
 For vulnerability reporting and the supported-version policy, see [SECURITY.md](SECURITY.md).
-
-## License
-
-MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Related Projects
 

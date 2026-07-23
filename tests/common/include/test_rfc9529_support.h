@@ -378,7 +378,7 @@ static inline void tv_assert_slot_equals_vector(
  *        fixed input with each handle through the suite's crypto vtable
  *        (aead_encrypt) and comparing the ciphertexts: they match iff the
  *        underlying keys match. Used to check that two peers derived the same
- *        OSCORE master-secret handle from \c edhoc_export_oscore_session.
+ *        OSCORE master-secret handle from \c edhoc_export_oscore_context.
  *
  * \param suite                         Cipher suite of the handles.
  * \param[in] key_id_a                  First caller-owned key handle buffer.

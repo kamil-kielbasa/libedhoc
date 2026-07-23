@@ -62,7 +62,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* ML-KEM-512 sizes. Wrapping the liboqs macros keeps a KEM backend swap a
  * define-only change. */
-#define EDHOC_CIPHER_SUITE_PQC_1_KEM_PUBLIC_KEY_LEN \
+#define EDHOC_CIPHER_SUITE_PQC_1_KEM_ENCAPSULATION_KEY_LEN \
 	OQS_KEM_ml_kem_512_length_public_key
 #define EDHOC_CIPHER_SUITE_PQC_1_KEM_SECRET_KEY_LEN \
 	OQS_KEM_ml_kem_512_length_secret_key
@@ -657,7 +657,7 @@ static int generate_key_pair(void *user_context, void *decapsulation_key_id,
 	}
 
 	if (encapsulation_key_size <
-	    EDHOC_CIPHER_SUITE_PQC_1_KEM_PUBLIC_KEY_LEN) {
+	    EDHOC_CIPHER_SUITE_PQC_1_KEM_ENCAPSULATION_KEY_LEN) {
 		EDHOC_LOG_ERR("Encapsulation key buffer too small: %zu",
 			      encapsulation_key_size);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
@@ -702,7 +702,8 @@ static int generate_key_pair(void *user_context, void *decapsulation_key_id,
 	}
 
 	store_key_id(decapsulation_key_id, handle);
-	*encapsulation_key_length = EDHOC_CIPHER_SUITE_PQC_1_KEM_PUBLIC_KEY_LEN;
+	*encapsulation_key_length =
+		EDHOC_CIPHER_SUITE_PQC_1_KEM_ENCAPSULATION_KEY_LEN;
 
 	return EDHOC_SUCCESS;
 }
@@ -723,7 +724,7 @@ static int encapsulate(void *user_context, const uint8_t *encapsulation_key,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_CIPHER_SUITE_PQC_1_KEM_PUBLIC_KEY_LEN !=
+	if (EDHOC_CIPHER_SUITE_PQC_1_KEM_ENCAPSULATION_KEY_LEN !=
 	    encapsulation_key_length) {
 		EDHOC_LOG_ERR("Invalid encapsulation key length: %zu",
 			      encapsulation_key_length);
@@ -1269,7 +1270,7 @@ const struct edhoc_cipher_suite *edhoc_cipher_suite_pqc_1_get_suite(void)
 		.value = EDHOC_CIPHER_SUITE_PQC_1_VALUE,
 		.supports_dh_nike = false,
 		.kem_encapsulation_key_length =
-			EDHOC_CIPHER_SUITE_PQC_1_KEM_PUBLIC_KEY_LEN,
+			EDHOC_CIPHER_SUITE_PQC_1_KEM_ENCAPSULATION_KEY_LEN,
 		.kem_ciphertext_length =
 			EDHOC_CIPHER_SUITE_PQC_1_KEM_CIPHERTEXT_LEN,
 		.nike_key_length = 0,

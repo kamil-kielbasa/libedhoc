@@ -1036,7 +1036,7 @@ static void run_full_handshake(enum edhoc_method method)
 	 * those retained handles before they are released at deinit. */
 	TEST_ASSERT_GREATER_THAN_UINT(0, state.tracker.key_count);
 
-	/* Export the OSCORE session on both sides and require agreement. */
+	/* Export the OSCORE Security Context on both sides and require agreement. */
 	uint8_t init_secret[OSCORE_MASTER_SECRET_LENGTH] = { 0 };
 	uint8_t init_salt[OSCORE_MASTER_SALT_LENGTH] = { 0 };
 	uint8_t init_sender_id[8] = { 0 };
@@ -1044,7 +1044,7 @@ static void run_full_handshake(enum edhoc_method method)
 	uint8_t init_recipient_id[8] = { 0 };
 	size_t init_recipient_id_len = 0;
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&init_ctx, init_secret, sizeof(init_secret), init_salt,
 		sizeof(init_salt), init_sender_id, sizeof(init_sender_id),
 		&init_sender_id_len, init_recipient_id,
@@ -1058,7 +1058,7 @@ static void run_full_handshake(enum edhoc_method method)
 	uint8_t resp_recipient_id[8] = { 0 };
 	size_t resp_recipient_id_len = 0;
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, resp_secret, sizeof(resp_secret), resp_salt,
 		sizeof(resp_salt), resp_sender_id, sizeof(resp_sender_id),
 		&resp_sender_id_len, resp_recipient_id,
@@ -1088,7 +1088,7 @@ static void run_full_handshake(enum edhoc_method method)
 	uint8_t init_secret_upd[OSCORE_MASTER_SECRET_LENGTH] = { 0 };
 	uint8_t init_salt_upd[OSCORE_MASTER_SALT_LENGTH] = { 0 };
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&init_ctx, init_secret_upd, sizeof(init_secret_upd),
 		init_salt_upd, sizeof(init_salt_upd), init_sender_id,
 		sizeof(init_sender_id), &init_sender_id_len, init_recipient_id,
@@ -1098,7 +1098,7 @@ static void run_full_handshake(enum edhoc_method method)
 	uint8_t resp_secret_upd[OSCORE_MASTER_SECRET_LENGTH] = { 0 };
 	uint8_t resp_salt_upd[OSCORE_MASTER_SALT_LENGTH] = { 0 };
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, resp_secret_upd, sizeof(resp_secret_upd),
 		resp_salt_upd, sizeof(resp_salt_upd), resp_sender_id,
 		sizeof(resp_sender_id), &resp_sender_id_len, resp_recipient_id,

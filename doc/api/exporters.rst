@@ -2,17 +2,32 @@ Exporters
 =========
 
 After a successful handshake the EDHOC key schedule yields ``PRK_out``, from
-which application keys are derived using the :term:`PRK exporter`. The most
-common consumer is :term:`OSCORE` — :c:func:`edhoc_export_oscore_session`
-returns the Master Secret, Master Salt and the two Sender/Recipient IDs
-required to bootstrap an OSCORE security context.
+which application keys are derived with the :term:`PRK exporter`. Each exporter
+comes in two forms: a raw-bytes form (``_raw``) that writes the secret into a
+caller buffer, and a key-handle form that returns it as an opaque
+:term:`handle` kept inside the crypto backend, so the bytes never leave it.
 
-A key update (``KEY_UPDATE``) can be performed on an established context to
-re-derive ``PRK_out`` from fresh entropy without running a new handshake; the
-OSCORE export must then be re-run to obtain refreshed keys.
+*libedhoc* also provides a dedicated export of the :term:`OSCORE` Security
+Context (in both forms) — the Master Secret, Master Salt and Sender/Recipient
+IDs needed to establish OSCORE. A key update (RFC 9528, Section 4.4)
+rotates ``PRK_out`` from an application-supplied context — identical on both
+peers — so a later export gives fresh keys without a new handshake.
 
 | Header file: :file:`include/edhoc/edhoc.h`
 
+Exporter API
+------------
+
 .. doxygengroup:: edhoc-api-exporters
+   :project: libedhoc
+   :members:
+
+Exporter labels
+---------------
+
+The permitted exporter labels and the private-use range are defined in
+:file:`include/edhoc/values.h`.
+
+.. doxygengroup:: edhoc-exporter-labels
    :project: libedhoc
    :members:

@@ -80,7 +80,7 @@ TEST(coverage_exporters, oscore_export_raw_wrong_status)
 	size_t sid_len, rid_len;
 
 	coverage_mock_reset(0);
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
@@ -143,7 +143,7 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid)
 	size_t sid_len, rid_len;
 
 	coverage_mock_reset(0);
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
@@ -203,7 +203,7 @@ TEST(coverage_exporters, oscore_export_raw_failure_sweep)
 		size_t sid_len, rid_len;
 
 		coverage_mock_reset(fail_pt);
-		int ret = edhoc_export_oscore_session_raw(
+		int ret = edhoc_export_oscore_context_raw(
 			&ctx, ms, sizeof(ms), salt, sizeof(salt), sid,
 			sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
 		TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
@@ -243,7 +243,7 @@ TEST(coverage_exporters, exporter_failure_sweep_extended)
 		uint8_t sender_id[16] = { 0 };
 		uint8_t recipient_id[16] = { 0 };
 		size_t sender_id_len, recipient_id_len;
-		ret = edhoc_export_oscore_session_raw(
+		ret = edhoc_export_oscore_context_raw(
 			&init_ctx, master_secret, sizeof(master_secret),
 			master_salt, sizeof(master_salt), sender_id,
 			sizeof(sender_id), &sender_id_len, recipient_id,
@@ -276,7 +276,7 @@ TEST(coverage_exporters, oscore_export_raw_after_bstr_cid_handshake)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
 		sizeof(master_salt), sender_id, sizeof(sender_id),
 		&sender_id_len, recipient_id, sizeof(recipient_id),
@@ -308,7 +308,7 @@ TEST(coverage_exporters, oscore_export_raw_invalid_cid_type)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
 		sizeof(master_salt), sender_id, sizeof(sender_id),
 		&sender_id_len, recipient_id, sizeof(recipient_id),
@@ -340,7 +340,7 @@ TEST(coverage_exporters, oscore_export_raw_invalid_own_cid_type)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
 		sizeof(master_salt), sender_id, sizeof(sender_id),
 		&sender_id_len, recipient_id, sizeof(recipient_id),
@@ -369,7 +369,7 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid_sid_too_small)
 	uint8_t sender_id[1] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
 		sizeof(master_salt), sender_id, sizeof(sender_id),
 		&sender_id_len, recipient_id, sizeof(recipient_id),
@@ -398,7 +398,7 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid_rid_too_small)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[1] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
 		sizeof(master_salt), sender_id, sizeof(sender_id),
 		&sender_id_len, recipient_id, sizeof(recipient_id),
@@ -486,7 +486,7 @@ TEST(coverage_exporters, oscore_export_raw_prk_state_4e3m)
 	uint8_t sender_id[16] = { 0 };
 	uint8_t recipient_id[16] = { 0 };
 	size_t sender_id_len, recipient_id_len;
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
 		sizeof(master_salt), sender_id, sizeof(sender_id),
 		&sender_id_len, recipient_id, sizeof(recipient_id),
@@ -531,7 +531,7 @@ TEST(coverage_exporters, oscore_export_raw_failure_sweep_4e3m)
 		uint8_t sender_id[16] = { 0 };
 		uint8_t recipient_id[16] = { 0 };
 		size_t sender_id_len, recipient_id_len;
-		ret = edhoc_export_oscore_session_raw(
+		ret = edhoc_export_oscore_context_raw(
 			&resp_ctx, master_secret, sizeof(master_secret),
 			master_salt, sizeof(master_salt), sender_id,
 			sizeof(sender_id), &sender_id_len, recipient_id,
@@ -578,7 +578,7 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid_failure_sweep)
 		uint8_t sender_id[16] = { 0 };
 		uint8_t recipient_id[16] = { 0 };
 		size_t sender_id_len, recipient_id_len;
-		ret = edhoc_export_oscore_session_raw(
+		ret = edhoc_export_oscore_context_raw(
 			&resp_ctx, master_secret, sizeof(master_secret),
 			master_salt, sizeof(master_salt), sender_id,
 			sizeof(sender_id), &sender_id_len, recipient_id,

@@ -646,7 +646,7 @@ TEST(handshake_x5chain_dh_suite2, one_cert_in_chain_with_single_ead_token)
 	size_t init_recipient_id_len = 0;
 	uint8_t init_recipient_id[ARRAY_SIZE(C_I)] = { 0 };
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -665,7 +665,7 @@ TEST(handshake_x5chain_dh_suite2, one_cert_in_chain_with_single_ead_token)
 	size_t resp_recipient_id_len = 0;
 	uint8_t resp_recipient_id[ARRAY_SIZE(C_R)] = { 0 };
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
@@ -720,7 +720,7 @@ TEST(handshake_x5chain_dh_suite2, one_cert_in_chain_with_single_ead_token)
 	init_recipient_id_len = 0;
 	memset(init_recipient_id, 0, sizeof(init_recipient_id));
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -739,7 +739,7 @@ TEST(handshake_x5chain_dh_suite2, one_cert_in_chain_with_single_ead_token)
 	resp_recipient_id_len = 0;
 	memset(resp_recipient_id, 0, sizeof(resp_recipient_id));
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,

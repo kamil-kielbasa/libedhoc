@@ -4,8 +4,9 @@
 
 | Version           | Supported                              |
 | ----------------- | -------------------------------------- |
-| 1.0.0 and later   | :white_check_mark:                     |
-| 0.x (any)         | :x: — pre-1.0, do not deploy           |
+| Latest release    | :white_check_mark:                     |
+| Older releases    | :x: — please upgrade                   |
+| 0.x (pre-release) | :x: — do not deploy                    |
 
 ## Reporting a vulnerability
 

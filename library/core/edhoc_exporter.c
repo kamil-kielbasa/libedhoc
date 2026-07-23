@@ -1,7 +1,7 @@
 /**
  * \file    edhoc_exporter.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC exporter for PRK exporter, key update or OSCORE session.
+ * \brief   EDHOC exporter for PRK exporter, key update or OSCORE Security Context.
  *
  * \copyright Copyright (c) 2026
  *
@@ -117,7 +117,7 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 				  void *output, size_t output_length);
 
 /**
- * \brief Validate that an OSCORE session export may run in the current state.
+ * \brief Validate that an OSCORE Security Context export may run in the current state.
  *
  * \param[in] ctx		EDHOC context.
  *
@@ -751,12 +751,12 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
 }
 
 /*
- * Steps for exporting the OSCORE session (master secret as a handle):
+ * Steps for exporting the OSCORE Security Context (master secret as a handle):
  *      1. Check that an OSCORE export may run.
  *      2. Derive OSCORE master salt and copy the sender/recipient IDs.
  *      3. Derive OSCORE master secret (caller-owned key handle).
  */
-int edhoc_export_oscore_session(struct edhoc_context *ctx,
+int edhoc_export_oscore_context(struct edhoc_context *ctx,
 				void *master_secret_key_id, uint8_t *salt,
 				size_t salt_len, uint8_t *sid, size_t sid_size,
 				size_t *sid_len, uint8_t *rid, size_t rid_size,
@@ -806,12 +806,12 @@ int edhoc_export_oscore_session(struct edhoc_context *ctx,
 }
 
 /*
- * Steps for exporting the OSCORE session (raw master secret):
+ * Steps for exporting the OSCORE Security Context (raw master secret):
  *      1. Check that an OSCORE export may run.
  *      2. Derive OSCORE master salt and copy the sender/recipient IDs.
  *      3. Derive OSCORE master secret (raw bytes).
  */
-int edhoc_export_oscore_session_raw(struct edhoc_context *ctx, uint8_t *secret,
+int edhoc_export_oscore_context_raw(struct edhoc_context *ctx, uint8_t *secret,
 				    size_t secret_len, uint8_t *salt,
 				    size_t salt_len, uint8_t *sid,
 				    size_t sid_size, size_t *sid_len,

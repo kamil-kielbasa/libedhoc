@@ -1,8 +1,7 @@
 # Contributing to libedhoc
 
 Thanks for your interest in contributing! The steps below describe the
-standard workflow. The same content is also published in the
-[hosted contributing page](https://kamil-kielbasa.github.io/libedhoc/project/contributing.html).
+standard workflow.
 
 ## 1. Clone, fork, and branch
 
@@ -77,8 +76,12 @@ If you touch a public API or a header documented by Doxygen, rebuild the
 docs locally and confirm there are no warnings:
 
 ```bash
+pip install -r doc/requirements.txt
 sphinx-build -W -b html doc doc/_build/html
 ```
+
+The docs need Doxygen ≥ 1.17.0; older versions mis-parse the anonymous unions
+in `credentials.h` and fail the `-W` build.
 
 ## 7. Changelog
 

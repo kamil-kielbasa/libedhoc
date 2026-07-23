@@ -47,7 +47,7 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
 /**
  * \brief Drive a full M1->M2->M3->M4 handshake and cross-check OSCORE.
  *
- * Runs the four message steps, then exports and cross-checks the OSCORE session
+ * Runs the four message steps, then exports and cross-checks the OSCORE Security Context
  * of both peers. The helper performs no assertions of its own: it is
  * intentionally rc-returning so the out-of-memory tests can inject an
  * allocation failure and observe the first failing step, while the calling
@@ -56,7 +56,7 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
  * \param[in,out] initiator  Provisioned initiator context.
  * \param[in,out] responder  Provisioned responder context.
  *
- * \return EDHOC_SUCCESS when the handshake completes and both OSCORE sessions
+ * \return EDHOC_SUCCESS when the handshake completes and both OSCORE Security Contexts
  *         match, otherwise the first non-success code reported by any step.
  */
 int test_mem_custom_drive_handshake(struct edhoc_context *initiator,

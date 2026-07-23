@@ -324,9 +324,9 @@ TEST(exporters, key_update_bad_state_not_completed)
 	edhoc_context_deinit(&ctx);
 }
 
-/* -- edhoc_export_oscore_session error paths -- */
+/* -- edhoc_export_oscore_context error paths -- */
 
-TEST(exporters, oscore_session_raw_not_allowed)
+TEST(exporters, oscore_context_raw_not_allowed)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -337,7 +337,7 @@ TEST(exporters, oscore_session_raw_not_allowed)
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
 
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
@@ -346,7 +346,7 @@ TEST(exporters, oscore_session_raw_not_allowed)
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, oscore_session_raw_bad_state_not_completed)
+TEST(exporters, oscore_context_raw_bad_state_not_completed)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -357,7 +357,7 @@ TEST(exporters, oscore_session_raw_bad_state_not_completed)
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
 
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
@@ -418,7 +418,7 @@ TEST(exporters, export_raw_bad_state)
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, oscore_session_raw_sender_id_encode_fail)
+TEST(exporters, oscore_context_raw_sender_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -449,7 +449,7 @@ TEST(exporters, oscore_session_raw_sender_id_encode_fail)
 	uint8_t rid[8] = { 0 };
 	size_t rid_len = 0;
 
-	int ret = edhoc_export_oscore_session_raw(&ctx, secret, sizeof(secret),
+	int ret = edhoc_export_oscore_context_raw(&ctx, secret, sizeof(secret),
 						  salt, sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
@@ -458,7 +458,7 @@ TEST(exporters, oscore_session_raw_sender_id_encode_fail)
 	edhoc_context_deinit(&ctx);
 }
 
-TEST(exporters, oscore_session_raw_recipient_id_encode_fail)
+TEST(exporters, oscore_context_raw_recipient_id_encode_fail)
 {
 	struct edhoc_context ctx = { 0 };
 	setup_basic_context(&ctx);
@@ -489,7 +489,7 @@ TEST(exporters, oscore_session_raw_recipient_id_encode_fail)
 	uint8_t rid[1] = { 0 };
 	size_t rid_len = 0;
 
-	int ret = edhoc_export_oscore_session_raw(&ctx, secret, sizeof(secret),
+	int ret = edhoc_export_oscore_context_raw(&ctx, secret, sizeof(secret),
 						  salt, sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
@@ -630,22 +630,22 @@ TEST(exporters, export_aead_handle_success)
 	edhoc_context_deinit(&ctx);
 }
 
-/* -- edhoc_export_oscore_session (master secret handle) tests -- */
+/* -- edhoc_export_oscore_context (master secret handle) tests -- */
 
-TEST(exporters, oscore_session_null_master_secret_key_id)
+TEST(exporters, oscore_context_null_master_secret_key_id)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
-	int ret = edhoc_export_oscore_session(&ctx, NULL, salt, sizeof(salt),
+	int ret = edhoc_export_oscore_context(&ctx, NULL, salt, sizeof(salt),
 					      sid, sizeof(sid), &sid_len, rid,
 					      sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(exporters, oscore_session_handle_matches_raw)
+TEST(exporters, oscore_context_handle_matches_raw)
 {
-	/* Two identical contexts export the OSCORE session: one fully raw, one
+	/* Two identical contexts export the OSCORE Security Context: one fully raw, one
 	 * with the master secret as an AEAD key handle. Salt/IDs must match and
 	 * the handle must hold exactly the raw master secret. */
 	struct edhoc_context ctx_raw = { 0 };
@@ -665,7 +665,7 @@ TEST(exporters, oscore_session_handle_matches_raw)
 	uint8_t rid_raw[8] = { 0 };
 	size_t sid_raw_len = 0;
 	size_t rid_raw_len = 0;
-	int ret = edhoc_export_oscore_session_raw(
+	int ret = edhoc_export_oscore_context_raw(
 		&ctx_raw, ms_raw, ms_len, salt_raw, sizeof(salt_raw), sid_raw,
 		sizeof(sid_raw), &sid_raw_len, rid_raw, sizeof(rid_raw),
 		&rid_raw_len);
@@ -677,7 +677,7 @@ TEST(exporters, oscore_session_handle_matches_raw)
 	uint8_t rid_h[8] = { 0 };
 	size_t sid_h_len = 0;
 	size_t rid_h_len = 0;
-	ret = edhoc_export_oscore_session(&ctx_handle, ms_kid, salt_h,
+	ret = edhoc_export_oscore_context(&ctx_handle, ms_kid, salt_h,
 					  sizeof(salt_h), sid_h, sizeof(sid_h),
 					  &sid_h_len, rid_h, sizeof(rid_h),
 					  &rid_h_len);
@@ -720,16 +720,16 @@ TEST_GROUP_RUNNER(exporters)
 	RUN_TEST_CASE(exporters, key_update_zero_entropy_length);
 	RUN_TEST_CASE(exporters, key_update_bad_state_not_completed);
 
-	RUN_TEST_CASE(exporters, oscore_session_raw_not_allowed);
-	RUN_TEST_CASE(exporters, oscore_session_raw_bad_state_not_completed);
+	RUN_TEST_CASE(exporters, oscore_context_raw_not_allowed);
+	RUN_TEST_CASE(exporters, oscore_context_raw_bad_state_not_completed);
 
 	RUN_TEST_CASE(exporters, export_raw_null_secret);
 	RUN_TEST_CASE(exporters, export_raw_zero_length);
 	RUN_TEST_CASE(exporters, export_raw_invalid_label);
 	RUN_TEST_CASE(exporters, export_raw_bad_state);
 	/* OSCORE CID CBOR encode failures */
-	RUN_TEST_CASE(exporters, oscore_session_raw_sender_id_encode_fail);
-	RUN_TEST_CASE(exporters, oscore_session_raw_recipient_id_encode_fail);
+	RUN_TEST_CASE(exporters, oscore_context_raw_sender_id_encode_fail);
+	RUN_TEST_CASE(exporters, oscore_context_raw_recipient_id_encode_fail);
 
 	/* edhoc_export (key handle) */
 	RUN_TEST_CASE(exporters, export_null_ctx);
@@ -741,7 +741,7 @@ TEST_GROUP_RUNNER(exporters)
 	RUN_TEST_CASE(exporters, export_kdf_handle_matches_raw);
 	RUN_TEST_CASE(exporters, export_aead_handle_success);
 
-	/* edhoc_export_oscore_session (master secret handle) */
-	RUN_TEST_CASE(exporters, oscore_session_null_master_secret_key_id);
-	RUN_TEST_CASE(exporters, oscore_session_handle_matches_raw);
+	/* edhoc_export_oscore_context (master secret handle) */
+	RUN_TEST_CASE(exporters, oscore_context_null_master_secret_key_id);
+	RUN_TEST_CASE(exporters, oscore_context_handle_matches_raw);
 }

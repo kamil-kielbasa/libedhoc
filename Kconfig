@@ -9,57 +9,125 @@ config LIBEDHOC_ENABLE
 if LIBEDHOC_ENABLE
     config LIBEDHOC_KEY_ID_LEN
         int "Key identifier length in bytes."
+        range 1 32
         default 4
-
-    config LIBEDHOC_MAX_NR_OF_CIPHER_SUITES
-        int "Maximum number of cipher suites in chain for negotiation."
-        default 3
-
-    config LIBEDHOC_MAX_NR_OF_METHODS
-        int "Maximum number of authentication methods for negotiation."
-        default 4
-
-    config LIBEDHOC_MAX_LEN_OF_CONN_ID
-        int "Maximum length of connection identifier in bytes."
-        default 1
-
-    config LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY
-        int "Maximum length of KEM encapsulation key (G_X) in bytes."
-        default 32
         help
-            DH suites: 32 (P-256 / X25519) or 65; ML-KEM-512: 800.
+            Size, in bytes, of the opaque key handle the library stores in its
+            context to reference a key inside the crypto backend's key store.
+            Must match the handle size of the bound backend.
 
-    config LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT
-        int "Maximum length of KEM ciphertext (G_Y) in bytes."
-        default 32
-        help
-            DH suites: 32 (P-256 / X25519) or 65; ML-KEM-512: 768.
+    menu "Negotiation"
+        config LIBEDHOC_MAX_NR_OF_METHODS
+            int "Maximum number of authentication methods for negotiation."
+            range 1 4
+            default 1
+            help
+                Capacity of the method list a peer may offer or accept during
+                negotiation. EDHOC defines four methods (0-3); the minimal
+                default holds a single method, raise it to the number you
+                actually negotiate (up to 4).
 
-    config LIBEDHOC_MAX_LEN_OF_NIKE_KEY
-        int "Maximum length of static Diffie-Hellman (NIKE) key in bytes."
-        default 32
-        help
-            Static-DH authentication key length; 0 on KEM-only builds.
+        config LIBEDHOC_MAX_NR_OF_CIPHER_SUITES
+            int "Maximum number of cipher suites for negotiation."
+            range 1 3
+            default 1
+            help
+                Capacity of the cipher-suite list a peer may offer or accept;
+                the minimal default holds a single suite, raise it to the
+                number you actually negotiate. The bundled CBOR backend is
+                generated for up to 3 suites; using more requires regenerating
+                it (see cddl/) and raising this range.
 
-    config LIBEDHOC_MAX_LEN_OF_MAC
-        int "Maximum length of hash in bytes."
-        default 32
+        config LIBEDHOC_MAX_LEN_OF_CONN_ID
+            int "Maximum length of a connection identifier in bytes."
+            range 1 32
+            default 1
+            help
+                Maximum length, in bytes, of a connection identifier (C_I /
+                C_R). One byte holds the common single-byte integer form
+                (RFC 9528: 3.3.2); raise it for longer byte-string identifiers.
+    endmenu
 
-    config LIBEDHOC_MAX_NR_OF_EAD_TOKENS
-        int "Maximum number of EAD (External Authorization Data) tokens."
-        default 3
+    menu "Cryptographic buffer sizes"
+        config LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY
+            int "Maximum length of the KEM encapsulation key (G_X) in bytes."
+            range 32 1568
+            default 32
+            help
+                Size of the buffer holding the ephemeral encapsulation key G_X.
+                Set it to the largest suite you build in: 32 for X25519, 65 for
+                P-256, 800 for ML-KEM-512.
 
-    config LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
-        int "Maximum number of certificates in X.509 chain."
-        default 2
+        config LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT
+            int "Maximum length of the KEM ciphertext (G_Y) in bytes."
+            range 32 1568
+            default 32
+            help
+                Size of the buffer holding the ephemeral ciphertext G_Y. Set it
+                to the largest suite you build in: 32 for X25519, 65 for P-256,
+                768 for ML-KEM-512.
 
-    config LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
-        int "Maximum length of authentication credentials key identifier in bytes."
-        default 1
+        config LIBEDHOC_MAX_LEN_OF_NIKE_KEY
+            int "Maximum length of the static Diffie-Hellman (NIKE) key in bytes."
+            range 0 133
+            default 32
+            help
+                Size of the static Diffie-Hellman public key used for
+                authentication methods 1/2/3 (32 for X25519, 65 for P-256, 133
+                for P-521). Set to 0 on KEM-only builds that never use static
+                DH.
 
-    config LIBEDHOC_MAX_LEN_OF_HASH_ALG
-        int "Maximum length of authentication credentials hash algorithm in bytes."
-        default 1
+        config LIBEDHOC_MAX_LEN_OF_MAC
+            int "Maximum length of a hash / MAC in bytes."
+            range 16 64
+            default 32
+            help
+                Size of the buffers holding a transcript hash or MAC. Set it to
+                the suite hash length: 32 for SHA-256, 48 for SHA-384, 64 for
+                SHA-512 / SHAKE256.
+    endmenu
+
+    menu "Authentication credentials"
+        config LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
+            int "Maximum number of certificates in an X.509 chain."
+            range 0 3
+            default 2
+            help
+                Capacity of the x5chain certificate list. Set to 0 if you never
+                authenticate with x5chain. The bundled CBOR backend is
+                generated for up to 3 certificates; more requires regenerating
+                it (see cddl/).
+
+        config LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
+            int "Maximum length of a credential key identifier in bytes."
+            range 0 64
+            default 1
+            help
+                Size of the buffer holding a byte-string credential key
+                identifier (COSE 'kid'). Set to 0 if you only use integer kids,
+                or never use kid credentials.
+
+        config LIBEDHOC_MAX_LEN_OF_HASH_ALG
+            int "Maximum length of a credential hash-algorithm identifier in bytes."
+            range 0 64
+            default 1
+            help
+                Size of the buffer holding a byte-string hash-algorithm
+                identifier for x5t credentials. Set to 0 if you only use
+                integer algorithm ids, or never use x5t.
+    endmenu
+
+    menu "External Authorization Data (EAD)"
+        config LIBEDHOC_MAX_NR_OF_EAD_TOKENS
+            int "Maximum number of EAD tokens per message."
+            range 0 3
+            default 3
+            help
+                Capacity of the External Authorization Data token list carried
+                in each message (EAD_1 .. EAD_4). Set to 0 to disable EAD. The
+                bundled CBOR backend is generated for up to 3 tokens; more
+                requires regenerating it (see cddl/).
+    endmenu
 
     menu "Cipher suites"
 
@@ -68,8 +136,9 @@ if LIBEDHOC_ENABLE
             default y
             help
                 Build the reference implementation of cipher suite 0.
-                External libraries: compact25519 (X25519 / Ed25519) and PSA
-                crypto (mbedTLS) for AES-CCM and SHA-256.
+                External libraries: PSA crypto (mbedTLS) for the X25519 key
+                exchange, AES-CCM and SHA-256; compact25519 for Ed25519
+                signatures.
 
         config LIBEDHOC_CIPHER_SUITE_2_ENABLE
             bool "Cipher suite 2 (P-256 / ES256 / AES-CCM-16-64-128 / SHA-256)."
@@ -84,8 +153,9 @@ if LIBEDHOC_ENABLE
             default y
             help
                 Build the reference implementation of cipher suite 4.
-                External libraries: compact25519 (X25519 / Ed25519) and PSA
-                crypto (mbedTLS) for ChaCha20/Poly1305 and SHA-256.
+                External libraries: PSA crypto (mbedTLS) for the X25519 key
+                exchange, ChaCha20/Poly1305 and SHA-256; compact25519 for
+                Ed25519 signatures.
 
         config LIBEDHOC_CIPHER_SUITE_24_ENABLE
             bool "Cipher suite 24 (P-384 / ES384 / A256GCM / SHA-384)."
@@ -114,9 +184,6 @@ if LIBEDHOC_ENABLE
                 KMAC256 KDF (XKCP) is built from source by libedhoc's own
                 Zephyr module and needs no extra symbol.
 
-                liboqs supports ARM, ARM64, x86, RISC-V and native_sim;
-                disable this suite on other architectures.
-
     endmenu
 
     choice LIBEDHOC_MEM_BACKEND_CHOICE
@@ -125,13 +192,25 @@ if LIBEDHOC_ENABLE
 
         config LIBEDHOC_MEM_BACKEND_STACK
             bool "Stack (C99 variable-length arrays)"
+            help
+                Allocate working buffers on the stack as C99 variable-length
+                arrays: no heap and zero static RAM, but the stack must fit the
+                handshake working set, which grows with the cipher suite
+                (post-quantum suites need the most).
+
         config LIBEDHOC_MEM_BACKEND_HEAP
             bool "Heap"
             help
-                Allocate working buffers from the heap. The platform must
-                provide a heap large enough for the handshake working set.
+                Allocate working buffers from the heap (malloc / k_calloc). The
+                platform must provide a heap large enough for the handshake
+                working set.
+
         config LIBEDHOC_MEM_BACKEND_CUSTOM
             bool "Custom (user-provided edhoc_mem_alloc / edhoc_mem_free)"
+            help
+                Allocate working buffers through application-provided
+                edhoc_mem_alloc / edhoc_mem_free, so you decide where the
+                working set lives (static pool, secure region, etc.).
     endchoice
 
     config LIBEDHOC_MEM_BACKEND

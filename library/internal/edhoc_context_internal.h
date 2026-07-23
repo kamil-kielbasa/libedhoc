@@ -49,9 +49,9 @@
  *        of the two (they are equal for the classical NIKE-as-KEM suites).
  */
 #define EDHOC_MAX_LEN_OF_EPHEMERAL_KEY                               \
-	(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY >                 \
+	(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY >          \
 			 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT ? \
-		 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_PUBLIC_KEY :         \
+		 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY :  \
 		 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT)
 
 /* Types and type definitions ---------------------------------------------- */

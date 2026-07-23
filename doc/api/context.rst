@@ -1,16 +1,13 @@
 EDHOC Context
 =============
 
-The EDHOC :term:`context` is the central state object of the library. A
-context is initialised, configured with methods and cipher suites, bound to a
-set of callbacks (keys, crypto, credentials, platform, optionally EAD), driven
+The EDHOC :term:`context` is the central state object of *libedhoc*. It is
+initialised, configured and bound to the application's callbacks, driven
 through the message-exchange phase, and finally torn down. See the lifecycle
 section of :doc:`index` for the strict call order.
 
-The context is **opaque**: its layout is internal to the library. Allocate
-storage sized by ``edhoc_context_size()`` — on the stack (a VLA) or on the heap
-— and drive it through the API; do not declare a ``struct edhoc_context`` by
-value.
+The context is **opaque** and forward-declared, so it must be allocated through
+``edhoc_context_size()`` — on the stack (a :term:`VLA`) or on the heap.
 
 | Header file: :file:`include/edhoc/types.h`
 
@@ -35,8 +32,8 @@ Setters
 
 The setters configure a freshly-initialised context with the local
 :term:`authentication method`\ (s), :term:`cipher suite`\ (s) and the local
-:term:`connection identifier`. They may be called in any order, but must all
-run before any binder or message-exchange call.
+:term:`connection identifier`. They may be called in any order, and must all
+run before the message-exchange phase.
 
 | Header file: :file:`include/edhoc/edhoc.h`
 

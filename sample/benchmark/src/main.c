@@ -490,7 +490,7 @@ int main(void)
 		record_phase(&results[phase], t0, t1, &total_iter_us);
 		phase++;
 
-		/* Phase 6: OSCORE session export (both sides).  Both contexts
+		/* Phase 6: OSCORE Security Context export (both sides).  Both contexts
 		 * must agree on master secret / salt; the connection-id roles
 		 * are swapped between peers (initiator's Sender ID equals the
 		 * responder's Recipient ID and vice versa). */
@@ -511,14 +511,14 @@ int main(void)
 
 			t0 = clock_now();
 
-			ret = edhoc_export_oscore_session_raw(
+			ret = edhoc_export_oscore_context_raw(
 				init_ctx, init_secret, OSCORE_SECRET_LEN,
 				init_salt, OSCORE_SALT_LEN, init_sid,
 				sizeof(init_sid), &init_sid_len, init_rid,
 				sizeof(init_rid), &init_rid_len);
 
 			if (EDHOC_SUCCESS == ret) {
-				ret = edhoc_export_oscore_session_raw(
+				ret = edhoc_export_oscore_context_raw(
 					resp_ctx, resp_secret,
 					OSCORE_SECRET_LEN, resp_salt,
 					OSCORE_SALT_LEN, resp_sid,

@@ -1,19 +1,25 @@
 Cryptographic Interface
 =======================
 
-libedhoc never touches raw key material directly: every cryptographic
-primitive is reached through a single user-supplied callback interface, the
-**operations interface**, covering key generation, encapsulation and
-decapsulation, static Diffie-Hellman key agreement, AEAD, hash, HKDF, signing
-and verification. Keys never cross the interface boundary as raw bytes — they
-live inside the backend key store and are referenced by an opaque handle only.
-Private :term:`signature key`\ s and :term:`static DH key`\ s are referenced by
-identifier only, and a derived key handle carries the key-usage policy it will
-serve.
+*libedhoc* computes no cryptography itself: every primitive is reached through a
+single user-supplied callback interface, the **operations interface**:
 
-A set of ready-made bindings for :term:`cipher suite` 0, 2 and 24 against
-mbed TLS / PSA Crypto lives under ``library/cipher_suites/`` and is documented
-on :doc:`helpers`.
+* **Ephemeral key exchange** — a :term:`KEM`: ``generate_key_pair`` /
+  ``encapsulate`` / ``decapsulate``.
+* **Static Diffie-Hellman** — ``key_agreement`` (:term:`NIKE` suites, methods
+  1/2/3).
+* **AEAD** — ``aead_encrypt`` / ``aead_decrypt``.
+* **Hash** — multipart ``hash_init`` / ``hash_update`` / ``hash_finish``.
+* **Key derivation** — :term:`HKDF` ``extract`` / ``expand`` (handle and raw
+  forms).
+* **Signature** — ``sign`` / ``verify``.
+
+Keys never cross the boundary as raw bytes: they live in the backend
+:term:`key store` and are passed by opaque :term:`handle` only, and each
+derived handle carries the key-usage policy it will serve.
+
+Ready-made, production-ready bindings for every supported suite live under
+``library/cipher_suites/``; see :doc:`cipher_suites`.
 
 | Header file: :file:`include/edhoc/crypto.h`
 

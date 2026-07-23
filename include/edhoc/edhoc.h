@@ -520,7 +520,7 @@ int edhoc_export_raw(struct edhoc_context *edhoc_context, size_t label,
 		     uint8_t *secret, size_t secret_length);
 
 /**
- * \brief Perform key update for subsequent OSCORE session exports.
+ * \brief Perform key update for subsequent OSCORE Security Context exports.
  *
  *        Implements RFC 9528: 4.4. EDHOC-KeyUpdate(context): rotates PRK_out so
  *        that later OSCORE exports derive fresh keying material bound to the
@@ -564,7 +564,7 @@ int edhoc_export_key_update(struct edhoc_context *edhoc_context,
  *         Success.
  * \return Negative error code on failure (\ref edhoc-error-codes).
  */
-int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
+int edhoc_export_oscore_context(struct edhoc_context *edhoc_context,
 				void *master_secret_key_id,
 				uint8_t *master_salt, size_t master_salt_length,
 				uint8_t *sender_id, size_t sender_id_size,
@@ -595,7 +595,7 @@ int edhoc_export_oscore_session(struct edhoc_context *edhoc_context,
  *         Success.
  * \return Negative error code on failure (\ref edhoc-error-codes).
  */
-int edhoc_export_oscore_session_raw(
+int edhoc_export_oscore_context_raw(
 	struct edhoc_context *edhoc_context, uint8_t *master_secret,
 	size_t master_secret_length, uint8_t *master_salt,
 	size_t master_salt_length, uint8_t *sender_id, size_t sender_id_size,

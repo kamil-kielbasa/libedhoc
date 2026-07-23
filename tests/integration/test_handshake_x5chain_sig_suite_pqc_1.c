@@ -10,7 +10,7 @@
  *          The suite has no RFC 9529 test vector, so both peers run real
  *          crypto (real ML-KEM key encapsulation, real ML-DSA signatures, real
  *          KMAC256 KDF and AES-CCM) through message_1..4 and must agree on the
- *          derived PRKs and the exported OSCORE session.
+ *          derived PRKs and the exported OSCORE Security Context.
  *
  * \copyright Copyright (c) 2026
  *
@@ -404,7 +404,7 @@ TEST(handshake_x5chain_sig_suite_pqc_1, full_handshake)
 	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_4, init_ctx->state.th.stage);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->state.prk_state);
 
-	/* --- OSCORE session export: both peers must agree. */
+	/* --- OSCORE Security Context export: both peers must agree. */
 	uint8_t init_master_secret[OSCORE_MASTER_SECRET_LENGTH] = { 0 };
 	uint8_t init_master_salt[OSCORE_MASTER_SALT_LENGTH] = { 0 };
 	uint8_t init_sender_id[ARRAY_SIZE(C_R)] = { 0 };
@@ -412,7 +412,7 @@ TEST(handshake_x5chain_sig_suite_pqc_1, full_handshake)
 	size_t init_sender_id_len = 0;
 	size_t init_recipient_id_len = 0;
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
 		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
 		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
@@ -430,7 +430,7 @@ TEST(handshake_x5chain_sig_suite_pqc_1, full_handshake)
 	size_t resp_sender_id_len = 0;
 	size_t resp_recipient_id_len = 0;
 
-	ret = edhoc_export_oscore_session_raw(
+	ret = edhoc_export_oscore_context_raw(
 		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
 		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
 		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,

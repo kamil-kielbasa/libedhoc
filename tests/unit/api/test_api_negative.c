@@ -580,82 +580,82 @@ TEST(api_negative, export_raw_null_ctx)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, export_oscore_session_raw_null_ctx)
+TEST(api_negative, export_oscore_context_raw_null_ctx)
 {
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
-	int ret = edhoc_export_oscore_session_raw(NULL, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(NULL, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, export_oscore_session_raw_null_ms)
+TEST(api_negative, export_oscore_context_raw_null_ms)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t salt[8], sid[8], rid[8];
 	size_t sid_len, rid_len;
-	int ret = edhoc_export_oscore_session_raw(&ctx, NULL, 16, salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, NULL, 16, salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, export_oscore_session_raw_null_salt)
+TEST(api_negative, export_oscore_context_raw_null_salt)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t ms[16], sid[8], rid[8];
 	size_t sid_len, rid_len;
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), NULL, 8,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), NULL, 8,
 						  sid, sizeof(sid), &sid_len,
 						  rid, sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, export_oscore_session_raw_null_sid)
+TEST(api_negative, export_oscore_context_raw_null_sid)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t ms[16], salt[8], rid[8];
 	size_t sid_len, rid_len;
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), NULL, 8,
 						  &sid_len, rid, sizeof(rid),
 						  &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, export_oscore_session_raw_null_sid_len)
+TEST(api_negative, export_oscore_context_raw_null_sid_len)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t rid_len;
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), NULL, rid,
 						  sizeof(rid), &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, export_oscore_session_raw_null_rid)
+TEST(api_negative, export_oscore_context_raw_null_rid)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t ms[16], salt[8], sid[8];
 	size_t sid_len, rid_len;
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, NULL,
 						  8, &rid_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, export_oscore_session_raw_null_rid_len)
+TEST(api_negative, export_oscore_context_raw_null_rid_len)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t ms[16], salt[8], sid[8], rid[8];
 	size_t sid_len;
-	int ret = edhoc_export_oscore_session_raw(&ctx, ms, sizeof(ms), salt,
+	int ret = edhoc_export_oscore_context_raw(&ctx, ms, sizeof(ms), salt,
 						  sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), NULL);
@@ -762,13 +762,13 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, message_error_process_null_buf);
 
 	RUN_TEST_CASE(api_negative, export_raw_null_ctx);
-	RUN_TEST_CASE(api_negative, export_oscore_session_raw_null_ctx);
-	RUN_TEST_CASE(api_negative, export_oscore_session_raw_null_ms);
-	RUN_TEST_CASE(api_negative, export_oscore_session_raw_null_salt);
-	RUN_TEST_CASE(api_negative, export_oscore_session_raw_null_sid);
-	RUN_TEST_CASE(api_negative, export_oscore_session_raw_null_sid_len);
-	RUN_TEST_CASE(api_negative, export_oscore_session_raw_null_rid);
-	RUN_TEST_CASE(api_negative, export_oscore_session_raw_null_rid_len);
+	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_ctx);
+	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_ms);
+	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_salt);
+	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_sid);
+	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_sid_len);
+	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_rid);
+	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_rid_len);
 	RUN_TEST_CASE(api_negative, message_1_compose_null_len);
 	RUN_TEST_CASE(api_negative, message_1_compose_null_buf);
 	RUN_TEST_CASE(api_negative, message_1_process_null_buf);
