@@ -20,18 +20,22 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y lcov clang clang-tidy cppcheck ninja-build valgrind xsltproc"
+          command: "sudo apt-get update && sudo apt-get install -y gcovr clang clang-tidy cppcheck ninja-build valgrind"
+
+      - name: Check matrix (anti-skip)
+        run: bash scripts/ci.sh check-matrix
+
+      - name: Full functional matrix
+        run: bash scripts/ci.sh matrix
 
       - name: GCC + Coverage
         run: bash scripts/ci.sh coverage
 
       - name: Clang build + test
-        run: |
-          bash scripts/ci.sh build --clang
-          bash scripts/ci.sh test
+        run: bash scripts/ci.sh ci clang
 
       - name: ASan + UBSan
-        run: bash scripts/ci.sh sanitizers asan-ubsan
+        run: bash scripts/ci.sh sanitizers
 
       - name: Valgrind
         run: bash scripts/ci.sh valgrind

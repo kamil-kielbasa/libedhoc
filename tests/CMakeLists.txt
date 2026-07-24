@@ -1,10 +1,30 @@
 # =============================================================================
-# libedhoc_module_tests — standalone module test executable.
+# tests/ — libedhoc Linux test tree.
+#
+#   * tests/linux/  : migrated, standalone per-suite/per-scenario Unity binaries
+#                     (cipher_suites, integration, rfc9529), each sized by the
+#                     active preset — this is what solves the single-binary
+#                     buffer-inflation problem.
+#   * libedhoc_module_tests : the TRANSITIONAL monolith holding the not-yet-
+#                     migrated unit tier. It is cross-suite (test_api binds
+#                     suites 0/2/24 together) and only builds when all three are
+#                     enabled (the `legacy` preset and the default all-suites
+#                     build); it is removed when the unit tier is migrated to a
+#                     suite-agnostic form under tests/linux/unit.
 # =============================================================================
 
-project(libedhoc_module_tests)
-
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/sources.cmake)
+
+add_subdirectory(linux)
+
+# --- Transitional unit monolith ----------------------------------------------
+# test_api exercises suites 0, 2 and 24 in one binary, so this only builds when
+# all three are enabled (the `legacy` preset and the default all-suites build).
+if (CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE AND
+    CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE AND
+    CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
+
+project(libedhoc_module_tests)
 
 # --- Test sources (tier lists) -----------------------------------------------
 
@@ -18,11 +38,6 @@ set(TEST_COMMON_SOURCES
 set(TEST_UNIT_SOURCES
     unit/api/test_api.c
     unit/api/test_api_negative.c
-    unit/cipher_suites/test_cipher_suite_0.c
-    unit/cipher_suites/test_cipher_suite_2.c
-    unit/cipher_suites/test_cipher_suite_4.c
-    unit/cipher_suites/test_cipher_suite_24.c
-    unit/cipher_suites/test_cipher_suite_pqc_1.c
     unit/error/test_error_message.c
     unit/exporters/test_exporters.c
     unit/coap/test_coap.c
@@ -48,19 +63,6 @@ set(TEST_UNIT_SOURCES
     unit/internals/test_internals_api.c
     unit/message/test_message_paths.c)
 
-set(TEST_INTEGRATION_SOURCES
-    integration/test_handshake_x5chain_sig_suite0.c
-    integration/test_handshake_x5chain_sig_suite2.c
-    integration/test_handshake_x5chain_sig_suite24.c
-    integration/test_handshake_x5chain_dh_suite2.c
-    integration/test_handshake_x5t_sig_suite2.c
-    integration/test_handshake_auth_methods.c
-    integration/test_handshake_handle_balance.c
-    integration/test_rfc9528_negotiation.c
-    integration/test_rfc9529_chapter2.c
-    integration/test_rfc9529_chapter3.c
-    integration/test_handshake_x5chain_sig_suite_pqc_1.c)
-
 # --- Custom memory backend sources -------------------------------------------
 
 # Custom memory backend tests are only meaningful when the library is built with
@@ -72,8 +74,7 @@ if (DEFINED CONFIG_LIBEDHOC_MEM_BACKEND AND CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
     set(TEST_MEM_CUSTOM_SOURCES
         common/src/test_mem_custom.c
         common/src/test_mem_custom_handshake.c
-        unit/mem/test_mem_custom.c
-        integration/test_mem_custom.c)
+        unit/mem/test_mem_custom.c)
 endif()
 
 set(TEST_HELPER_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES})
@@ -87,7 +88,6 @@ add_executable(${PROJECT_NAME}
                ${TEST_MAIN}
                ${TEST_COMMON_SOURCES}
                ${TEST_UNIT_SOURCES}
-               ${TEST_INTEGRATION_SOURCES}
                ${TEST_MEM_CUSTOM_SOURCES}
                ${TEST_HELPER_SOURCES})
 
@@ -100,7 +100,6 @@ endif()
 # --- Include directories -----------------------------------------------------
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-                           ${CMAKE_CURRENT_SOURCE_DIR}/include
                            ${CMAKE_CURRENT_SOURCE_DIR}/common/include
                            ${LIBEDHOC_INTERNAL_INCLUDE_DIR})
 
@@ -144,4 +143,6 @@ if (LIBEDHOC_ENABLE_SANITIZERS)
                         -fsanitize=address,undefined)
 endif()
 
-add_test(${PROJECT_NAME} libedhoc_module_tests)
+add_test(NAME ${PROJECT_NAME} COMMAND libedhoc_module_tests)
+
+endif()

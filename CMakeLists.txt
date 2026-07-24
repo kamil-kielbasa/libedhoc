@@ -40,10 +40,11 @@ add_subdirectory(backends)
 add_subdirectory(library)
 
 if(LIBEDHOC_ENABLE_TESTS)
+    enable_testing()
     add_subdirectory(tests)
 endif()
 if(LIBEDHOC_ENABLE_FUZZING)
-    add_subdirectory(tests/fuzz)
+    add_subdirectory(tests/linux/fuzz)
 endif()
 
 # --- Install / packaging -----------------------------------------------------

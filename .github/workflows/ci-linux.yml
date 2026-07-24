@@ -2,146 +2,163 @@ name: CI / Linux
 
 on: [push, pull_request]
 
+# Everything is driven by CMake presets (CMakePresets.json + tests/cmake/
+# presets-linux.json) through scripts/ci.sh, so each job below is reproducible
+# locally with the exact same one-liner.
+#
+# Fast-fail ordering via needs::
+#   check-matrix  ->  matrix (functional)  ->  valgrind, fuzz (heavy)
+#                 \->  coverage, sanitizers, static-analysis (parallel)
+
 jobs:
-  build-gcc:
-    name: GCC + Coverage
+  # Anti-silent-skip net #2: every test_*.c must be built by >= 1 preset.
+  # Configure-only, no compilation, so it is a fast first gate.
+  check-matrix:
+    name: Check matrix (anti-skip)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Fetch submodules (with retry)
         uses: ./.github/actions/retry
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
-
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y lcov xsltproc"
+          command: "sudo apt-get update && sudo apt-get install -y ninja-build"
+      - name: Reconcile test files against presets
+        run: bash scripts/ci.sh check-matrix
 
-      - name: Build, test, and generate coverage
-        # Use the custom allocator backend: its fault-injecting out-of-memory
-        # tests are the only ones that exercise the EDHOC_ERROR_NOT_ENOUGH_MEMORY
-        # branches, and it runs a superset of the stack/heap test suite, so it
-        # yields the most representative coverage of the new code.
-        run: bash scripts/ci.sh coverage --mem-backend custom
+  # The functional matrix: one runner per (eph suite family × backend), plus the
+  # all-suites legacy (unit monolith) and a clang smoke build.
+  matrix:
+    name: ${{ matrix.preset }}
+    needs: check-matrix
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        preset:
+          - x25519_stack
+          - x25519_heap
+          - x25519_custom
+          - p256_stack
+          - p256_heap
+          - p256_custom
+          - p384_stack
+          - p384_heap
+          - p384_custom
+          - mlkem512_stack
+          - mlkem512_heap
+          - mlkem512_custom
+          - legacy
+          - clang
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y clang ninja-build"
+      - name: Build and test
+        run: bash scripts/ci.sh ci ${{ matrix.preset }}
 
+  coverage:
+    name: Coverage (gcovr)
+    needs: check-matrix
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y gcovr ninja-build"
+      - name: Build, test, report coverage
+        run: bash scripts/ci.sh coverage
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          files: build/coverage.info
+          files: build/coverage/report/coverage.xml
           flags: unittests
           fail_ci_if_error: false
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  build-clang:
-    name: Clang
+  sanitizers:
+    name: Sanitizers (ASan/UBSan)
+    needs: check-matrix
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Fetch submodules (with retry)
         uses: ./.github/actions/retry
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
-
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y clang ninja-build xsltproc"
-
-      - name: Build and test
-        run: |
-          bash scripts/ci.sh build --clang
-          bash scripts/ci.sh test
-
-  mem-backends:
-    name: Memory backend (${{ matrix.backend }})
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        # Exercise every memory backend through the same build + test +
-        # sanitizer pipeline: stack (default), heap and custom allocator.
-        backend: [stack, heap, custom]
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Fetch submodules (with retry)
-        uses: ./.github/actions/retry
-        with:
-          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
-
-      - name: Install dependencies (with retry)
-        uses: ./.github/actions/retry
-        with:
-          command: "sudo apt-get update && sudo apt-get install -y xsltproc"
-
-      - name: Build and test
-        run: |
-          bash scripts/ci.sh build --gcc --mem-backend ${{ matrix.backend }}
-          bash scripts/ci.sh test
-
-      - name: Build and test (GCC + ASan + UBSan)
-        run: bash scripts/ci.sh sanitizers asan-ubsan --mem-backend ${{ matrix.backend }}
-
-  valgrind:
-    name: Valgrind
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Fetch submodules (with retry)
-        uses: ./.github/actions/retry
-        with:
-          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
-
-      - name: Install dependencies (with retry)
-        uses: ./.github/actions/retry
-        with:
-          command: "sudo apt-get update && sudo apt-get install -y valgrind xsltproc"
-
-      - name: Build and run valgrind
-        run: bash scripts/ci.sh valgrind
+          command: "sudo apt-get update && sudo apt-get install -y ninja-build"
+      - name: Build and test under sanitizers
+        run: bash scripts/ci.sh sanitizers
 
   static-analysis:
     name: Static Analysis
+    needs: check-matrix
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Fetch submodules (with retry)
         uses: ./.github/actions/retry
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
-
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang ninja-build xsltproc"
-
+          command: "sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang ninja-build"
       - name: Run cppcheck
         run: bash scripts/ci.sh cppcheck
-
       - name: Run clang-tidy
         run: bash scripts/ci.sh clang-tidy
 
-  fuzz:
-    name: Fuzz
+  # Heavy jobs are gated on the functional matrix passing, to avoid burning
+  # runner time when the basics are already broken.
+  valgrind:
+    name: Valgrind
+    needs: matrix
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-
       - name: Fetch submodules (with retry)
         uses: ./.github/actions/retry
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y valgrind ninja-build"
+      - name: Memcheck + DRD (all suites incl. PQC)
+        run: bash scripts/ci.sh valgrind
 
+  fuzz:
+    name: Fuzz
+    needs: matrix
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
           command: "sudo apt-get update && sudo apt-get install -y clang ninja-build"
-
-      - name: Build and fuzz (Clang + LibFuzzer, 60s per target)
+      - name: Build and fuzz (60s per target)
         run: bash scripts/ci.sh fuzz 60

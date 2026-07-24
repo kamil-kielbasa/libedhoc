@@ -2,7 +2,7 @@
 # Single source of truth for source and include lists, shared by:
 #   * the standalone build: library/, library/cipher_suites/, backends/ CMakeLists.txt
 #   * the Zephyr build:     zephyr/CMakeLists.txt
-#   * tests and samples:    tests/, tests/fuzz/, sample/benchmark/
+#   * tests and samples:    tests/ (+ tests/linux/, tests/linux/fuzz/), sample/benchmark/
 # Keeping one list keeps both builds in sync.
 # All paths are absolute (CMAKE_CURRENT_LIST_DIR is this file's directory).
 # =============================================================================

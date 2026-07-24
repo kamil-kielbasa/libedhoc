@@ -1,324 +1,189 @@
-#!/bin/bash
+#!/usr/bin/env bash
+#
+# libedhoc CI helper — a thin wrapper around CMake presets.
+#
+# Every build/test config lives in CMakePresets.json (+ tests/cmake/presets-linux.json),
+# so a CI step and a local reproduction are the SAME one-liner:
+#
+#     scripts/ci.sh ci p256_stack       # configure + build + test one preset
+#     cmake --preset p256_stack && cmake --build --preset p256_stack && ctest --preset p256_stack
+#
+# List every preset with:  scripts/ci.sh list   (or  cmake --list-presets)
+#
 set -euo pipefail
 
-# -----------------------------------------------------------------------------
-# libedhoc unified CI script
-# Single entry point for all build, test, analysis, and benchmark tasks.
-# Every CI job calls this script — nothing should be duplicated in YAML.
-# -----------------------------------------------------------------------------
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "${PROJECT_DIR}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-BUILD_DIR="${PROJECT_DIR}/build"
-
-# --------------- Shared CMake configuration (single source of truth) ---------
-KCONFIG_OPTIONS=(
-    -DCONFIG_LIBEDHOC_ENABLE=1
-    -DCONFIG_LIBEDHOC_KEY_ID_LEN=4
-    -DCONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES=3
-    -DCONFIG_LIBEDHOC_MAX_NR_OF_METHODS=4
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID=7
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY=800
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT=768
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_NIKE_KEY=48
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_MAC=64
-    -DCONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS=3
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID=1
-    -DCONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG=1
-    -DCONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN=2
-    -DCONFIG_LIBEDHOC_LOG_LEVEL=4
+# The functional test matrix: one entry per (eph suite family × memory backend).
+# Single source of truth for `matrix` and `check-matrix`.
+MATRIX_PRESETS=(
+    x25519_stack   x25519_heap   x25519_custom
+    p256_stack     p256_heap     p256_custom
+    p384_stack     p384_heap     p384_custom
+    mlkem512_stack mlkem512_heap mlkem512_custom
 )
 
-MBEDTLS_OPTIONS=(
-    -DENABLE_PROGRAMS=OFF
-    -DENABLE_TESTING=OFF
-)
-
-# --------------- Terminal colours --------------------------------------------
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-BLUE='\033[0;34m'; NC='\033[0m'
-
-section() { echo -e "\n${BLUE}=== $* ===${NC}\n"; }
+RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; NC='\033[0m'
+section() { echo -e "\n${BLUE}=== $* ===${NC}"; }
 ok()      { echo -e "${GREEN}$*${NC}"; }
 err()     { echo -e "${RED}$*${NC}" >&2; }
+require() { command -v "$1" >/dev/null 2>&1 || { err "Error: '$1' is not installed"; exit 1; }; }
 
-require_cmd() {
-    command -v "$1" >/dev/null 2>&1 || { err "Error: $1 is not installed"; exit 1; }
+# ctest wrapper: fail if a preset unexpectedly has zero tests, and disable ASLR
+# for the sanitizer preset (ASan cannot initialise under high mmap_rnd_bits).
+run_ctest() {
+    local preset="$1"; shift || true
+    local wrap=()
+    if [[ "$preset" == "asan" ]] && command -v setarch >/dev/null 2>&1; then
+        wrap=(setarch -R)
+    fi
+    CTEST_NO_TESTS_ACTION=error "${wrap[@]}" ctest --preset "$preset" --output-on-failure "$@"
 }
 
-# --------------- Helpers -----------------------------------------------------
-cmake_configure() {
-    local extra_args=("$@")
-    rm -rf "${BUILD_DIR}"
-    mkdir -p "${BUILD_DIR}"
-    cmake -B "${BUILD_DIR}" -S "${PROJECT_DIR}" \
-        "${KCONFIG_OPTIONS[@]}" \
-        "${MBEDTLS_OPTIONS[@]}" \
-        -DCMAKE_BUILD_TYPE=Debug \
-        "${extra_args[@]}"
-}
+cmd_build() { section "build ${1}"; cmake --preset "$1" >/dev/null; cmake --build --preset "$1" -j"$(nproc)"; ok "built ${1}"; }
+cmd_test()  { section "test ${1}";  run_ctest "$1"; }
+cmd_ci()    { cmd_build "$1"; cmd_test "$1"; ok "ci ${1} passed"; }
 
-cmake_build() {
-    cmake --build "${BUILD_DIR}" -j"$(nproc)"
-}
-
-test_binary() {
-    echo "${BUILD_DIR}/tests/libedhoc_module_tests"
-}
-
-# ============================================================================
-# Subcommands
-# ============================================================================
-
-# --------------- build -------------------------------------------------------
-cmd_build() {
-    local compiler="gcc"
-    local coverage=false sanitizers=false fuzz=false
-    local mem_backend=""
-
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --gcc)        compiler="gcc" ;;
-            --clang)      compiler="clang" ;;
-            --coverage)   coverage=true ;;
-            --sanitizers) sanitizers=true ;;
-            --fuzz)       fuzz=true ;;
-            --mem-backend) shift; mem_backend="${1:-}" ;;
-            *) err "Unknown build option: $1"; exit 1 ;;
-        esac
-        shift
+# --- matrix: build + test every functional preset ----------------------------
+cmd_matrix() {
+    for p in "${MATRIX_PRESETS[@]}" legacy; do
+        cmd_build "$p"
+        cmd_test "$p"
     done
-
-    section "Build (${compiler}${mem_backend:+, mem=${mem_backend}})"
-
-    # PQC (cipher suite 1) builds and runs by default like the classic suites:
-    # the shared KCONFIG_OPTIONS size the ephemeral-key buffers for ML-KEM-512,
-    # so the full post-quantum handshake runs in every build and backend.
-    local cmake_args=(-DLIBEDHOC_ENABLE_TESTS=ON)
-
-    if [[ "$compiler" == "gcc" ]]; then
-        cmake_args+=(-DCMAKE_C_COMPILER=gcc)
-    else
-        cmake_args+=(-DCMAKE_C_COMPILER=clang
-                      -G Ninja)
-    fi
-
-    [[ "$coverage" == true ]]   && cmake_args+=(-DLIBEDHOC_ENABLE_COVERAGE=ON)
-    [[ "$sanitizers" == true ]] && cmake_args+=(-DLIBEDHOC_ENABLE_SANITIZERS=ON)
-
-    if [[ -n "$mem_backend" ]]; then
-        # Translate the friendly name to the integer CONFIG_LIBEDHOC_MEM_BACKEND:
-        # 0 stack, 1 heap, 2 custom.
-        local mem_backend_value
-        case "$mem_backend" in
-            stack)  mem_backend_value=0 ;;
-            heap)   mem_backend_value=1 ;;
-            custom) mem_backend_value=2 ;;
-            *) err "Unknown memory backend: ${mem_backend} (use stack|heap|custom)"; exit 1 ;;
-        esac
-        cmake_args+=(-DCONFIG_LIBEDHOC_MEM_BACKEND="${mem_backend_value}")
-    fi
-
-    if [[ "$fuzz" == true ]]; then
-        # Fuzzing targets the core message parser, not the PQC crypto, so keep
-        # the PQC suite (liboqs / XKCP) out of the fuzz build. The module test
-        # binary is not built or run here (LIBEDHOC_ENABLE_TESTS=OFF): it is not
-        # needed for fuzzing, and its unconditional PQC test sources would not
-        # link against a PQC-disabled library.
-        cmake_args=(-DCMAKE_C_COMPILER=clang
-                     -DLIBEDHOC_ENABLE_FUZZING=ON -G Ninja
-                     -DLIBEDHOC_ENABLE_TESTS=OFF
-                     -DCONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE=0)
-    fi
-
-    cmake_configure "${cmake_args[@]}"
-    cmake_build
-    ok "Build complete: ${BUILD_DIR}"
+    ok "\nFull matrix passed (${#MATRIX_PRESETS[@]} preset(s) + legacy)."
 }
 
-# --------------- test --------------------------------------------------------
-cmd_test() {
-    section "Running tests"
-    local bin
-    bin="$(test_binary)"
-    [[ -x "$bin" ]] || { err "Test binary not found. Run '$0 build' first."; exit 1; }
-    "$bin"
-    ok "All tests passed."
+# --- check-matrix: anti-silent-skip net #2 -----------------------------------
+# Every test_*.c under tests/linux must be built (and thus run) by AT LEAST one
+# preset. A file that no preset builds would silently never run. We only
+# configure each preset (add_test is a configure-time step), then diff the union
+# of ctest names against the on-disk test files — no compilation needed, so this
+# is fast.
+cmd_check_matrix() {
+    section "check-matrix: every test file runs in >= 1 preset"
+    local union
+    union="$(
+        for p in "${MATRIX_PRESETS[@]}" legacy; do
+            cmake --preset "$p" >/dev/null 2>&1 || { err "configure failed: $p"; exit 1; }
+            ctest --preset "$p" -N 2>/dev/null | sed -n 's/.*Test #[0-9]*: //p'
+        done | sort -u
+    )"
+
+    local missing=0 f t count=0
+    while IFS= read -r f; do
+        count=$((count + 1))
+        t="$(basename "$f" .c)"
+        grep -qxF "$t" <<<"$union" \
+            || { err "  '$t' is built by NO preset — it would silently never run"; missing=1; }
+    done < <(find tests/linux -name 'test_*.c' -not -path '*/support/*' | sort -u)
+
+    if [[ $missing -ne 0 ]]; then
+        err "check-matrix FAILED: orphaned test file(s) above."
+        exit 1
+    fi
+    ok "check-matrix passed: ${count} test file(s) each run in >= 1 preset."
 }
 
-# --------------- coverage ----------------------------------------------------
+# --- coverage (gcovr) --------------------------------------------------------
 cmd_coverage() {
-    local open_report=false
-    local mem_args=()
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --open)        open_report=true ;;
-            --mem-backend) shift; mem_args+=(--mem-backend "${1:-}") ;;
-            *) err "Unknown coverage option: $1 (use [--mem-backend X] [--open])"; exit 1 ;;
-        esac
-        shift
-    done
-
-    require_cmd lcov; require_cmd genhtml
-
-    section "Coverage: build → test → report"
-    cmd_build --gcc --coverage "${mem_args[@]}"
-    cmd_test
-
-    cd "${BUILD_DIR}"
-
-    # lcov 2.0 (Ubuntu 24.04) changed --rc syntax and geninfo is much
-    # stricter about gcov data from GCC 13+.  Build options that work for
-    # both lcov 1.x and 2.x.
-    # NOTE: genhtml accepts a smaller set of --ignore-errors types than
-    # lcov/geninfo, so we keep separate arrays.
-    local lcov_ver
-    lcov_ver=$(lcov --version 2>&1 | sed -n 's/.*LCOV version \([0-9]*\).*/\1/p')
-    lcov_ver="${lcov_ver:-1}"
-    local lcov_rc=(--rc lcov_branch_coverage=1)
-    local lcov_ignore=()
-    local genhtml_ignore=()
-    if [[ "$lcov_ver" -ge 2 ]]; then
-        lcov_rc=(--rc branch_coverage=1)
-        lcov_ignore=(--ignore-errors mismatch
-                     --ignore-errors inconsistent
-                     --ignore-errors gcov
-                     --ignore-errors unused
-                     --ignore-errors empty
-                     --ignore-errors negative
-                     --ignore-errors count
-                     --ignore-errors source)
-        genhtml_ignore=(--ignore-errors source
-                        --ignore-errors unmapped
-                        --ignore-errors unused)
-    fi
-
-    lcov --capture --directory . --output-file coverage_raw.info \
-         "${lcov_rc[@]}" "${lcov_ignore[@]}"
-    lcov --remove coverage_raw.info \
-         '*/externals/*' '*/tests/*' '*/backends/cbor/src/*' '/usr/*' \
-         --output-file coverage.info "${lcov_rc[@]}" "${lcov_ignore[@]}"
-
-    genhtml coverage.info --output-directory coverage_html \
-            --branch-coverage --title "libedhoc code coverage" \
-            "${genhtml_ignore[@]}"
-
-    echo ""
-    echo "=== Coverage Summary ==="
-    lcov --summary coverage.info "${lcov_rc[@]}" "${lcov_ignore[@]}"
-    ok "\nHTML report: ${BUILD_DIR}/coverage_html/index.html"
-
-    if [[ "$open_report" == true ]]; then
-        xdg-open "${BUILD_DIR}/coverage_html/index.html" 2>/dev/null \
-            || open "${BUILD_DIR}/coverage_html/index.html" 2>/dev/null \
-            || echo "Open the report manually."
-    fi
+    require gcovr
+    cmd_build coverage
+    cmd_test coverage
+    section "coverage report (gcovr)"
+    mkdir -p build/coverage/report
+    gcovr --root "${PROJECT_DIR}" \
+          --exclude '.*/externals/.*' \
+          --exclude '.*/tests/.*' \
+          --exclude '.*/backends/cbor/src/.*' \
+          --print-summary \
+          --cobertura build/coverage/report/coverage.xml --cobertura-pretty \
+          --html-details build/coverage/report/index.html \
+          build/coverage
+    ok "HTML report:      build/coverage/report/index.html"
+    ok "Cobertura report: build/coverage/report/coverage.xml"
 }
 
-# --------------- sanitizers --------------------------------------------------
-cmd_sanitizers() {
-    local variant="asan-ubsan"
-    local mem_args=()
+# --- sanitizers (ASan + UBSan) ----------------------------------------------
+cmd_sanitizers() { cmd_build asan; cmd_test asan; }
 
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            asan-ubsan|asan) variant="$1" ;;
-            --mem-backend)   shift; mem_args+=(--mem-backend "${1:-}") ;;
-            *) err "Unknown sanitizer option: $1 (use asan-ubsan [--mem-backend X])"; exit 1 ;;
-        esac
-        shift
-    done
-
-    case "$variant" in
-        asan-ubsan|asan)
-            section "Sanitizers: ASan + UBSan (GCC)"
-            cmd_build --gcc --sanitizers "${mem_args[@]}"
-            ;;
-        *) err "Unknown sanitizer variant: $variant (use asan-ubsan)"; exit 1 ;;
-    esac
-    cmd_test
-}
-
-# --------------- valgrind ----------------------------------------------------
+# --- valgrind (memcheck + DRD over a preset's binaries) ----------------------
 cmd_valgrind() {
-    require_cmd valgrind
-    section "Valgrind memcheck + DRD"
+    require valgrind
+    # The `valgrind` preset enables ALL suites and rebuilds liboqs as portable C
+    # (OQS_OPT_TARGET=generic) so Valgrind can decode the ML-KEM / ML-DSA paths —
+    # i.e. the post-quantum suite IS covered here, not skipped. (-gdwarf-4 keeps
+    # older Valgrind happy with GCC's DWARF-5 default.) Pass another preset name
+    # to memcheck a lighter, classic-only config.
+    local preset="${1:-valgrind}"
+    section "valgrind memcheck + DRD (${preset})"
+    cmake --preset "$preset" >/dev/null
+    cmake --build --preset "$preset" -j"$(nproc)"
 
-    # Valgrind <= 3.19 does not support DWARF5 (GCC 11+ default).
-    rm -rf "${BUILD_DIR}"
-    mkdir -p "${BUILD_DIR}"
-    # PQC stays ENABLED here, but liboqs is built as portable C
-    # (OQS_OPT_TARGET=generic) rather than its hand-written AVX2/AVX-512 ML-KEM
-    # code: Valgrind cannot decode some of those SIMD opcodes (SIGILL / exit 132
-    # on AVX-capable runners). Generic liboqs lets memcheck + DRD cover the full
-    # ML-KEM-512 / ML-DSA-44 handshake and primitives as well.
-    cmake -B "${BUILD_DIR}" -S "${PROJECT_DIR}" \
-        "${KCONFIG_OPTIONS[@]}" \
-        "${MBEDTLS_OPTIONS[@]}" \
-        -DLIBEDHOC_ENABLE_TESTS=ON \
-        -DOQS_OPT_TARGET=generic \
-        -DCMAKE_C_COMPILER=gcc \
-        -DCMAKE_BUILD_TYPE=Debug \
-        "-DCMAKE_C_FLAGS=-gdwarf-4"
-    cmake_build
-
-    local bin
-    bin="$(test_binary)"
-
-    valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
-             --error-exitcode=1 -s "$bin"
-    ok "Memcheck passed."
-
-    valgrind --tool=drd --show-stack-usage=yes \
-             --error-exitcode=1 -s "$bin"
-    ok "DRD passed."
+    local found=0 bin
+    while IFS= read -r bin; do
+        found=1
+        echo "--- memcheck $(basename "$bin") ---"
+        valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
+                 --error-exitcode=1 -s "$bin"
+    done < <(find "build/${preset}/tests" -type f -perm -u+x \( -name 'test_*' -o -name 'libedhoc_module_tests' \) ! -name '*.o')
+    [[ $found -eq 1 ]] || { err "No test binaries found under build/${preset}/tests"; exit 1; }
+    ok "valgrind passed (${preset})."
 }
 
-# --------------- cppcheck ----------------------------------------------------
+# --- fuzz --------------------------------------------------------------------
+cmd_fuzz() {
+    local duration="${1:-60}"
+    section "fuzz (${duration}s per target)"
+    cmd_build fuzz
+    local found=0 target
+    for target in build/fuzz/tests/linux/fuzz/fuzz_*; do
+        [[ -x "$target" && ! "$target" == *.o ]] || continue
+        found=1
+        echo "--- $(basename "$target") ---"
+        timeout "$duration" "$target" -max_total_time=$((duration - 5)) || true
+    done
+    [[ $found -eq 1 ]] || { err "No fuzz targets in build/fuzz/tests/linux/fuzz/"; exit 1; }
+    ok "fuzz complete."
+}
+
+# --- format ------------------------------------------------------------------
+cmd_format() {
+    require clang-format; require git
+    local check=false
+    [[ "${1:-}" == "--check" ]] && check=true
+    local files=()
+    mapfile -t files < <(git ls-files '*.c' '*.h' ':!:backends/**')
+    [[ ${#files[@]} -gt 0 ]] || { err "No source files found."; exit 1; }
+    if [[ "$check" == true ]]; then
+        section "format --check"
+        clang-format --dry-run --Werror --style=file "${files[@]}"
+        ok "formatting OK."
+    else
+        section "format"
+        clang-format -i --style=file "${files[@]}"
+        ok "formatted ${#files[@]} file(s)."
+    fi
+}
+
+# --- cppcheck ----------------------------------------------------------------
 cmd_cppcheck() {
-    require_cmd cppcheck
-    section "Cppcheck"
-    cd "${PROJECT_DIR}"
+    require cppcheck
+    section "cppcheck"
     cppcheck --enable=warning,style --inline-suppr --error-exitcode=1 \
         -I include/ -I library/internal/ -I backends/cbor/include/ \
         library/core/*.c
-    ok "Cppcheck passed."
+    ok "cppcheck passed."
 }
 
-# --------------- clang-tidy --------------------------------------------------
+# --- clang-tidy --------------------------------------------------------------
 cmd_clang_tidy() {
-    local ct
-    ct=$(command -v clang-tidy 2>/dev/null \
-         || command -v clang-tidy-18 2>/dev/null \
-         || command -v clang-tidy-17 2>/dev/null \
-         || command -v clang-tidy-16 2>/dev/null \
-         || command -v clang-tidy-15 2>/dev/null \
-         || command -v clang-tidy-14 2>/dev/null) \
-        || { err "clang-tidy not found"; exit 1; }
-    section "Clang-tidy ($(basename "$ct"))"
-
-    if [[ ! -f "${BUILD_DIR}/compile_commands.json" ]] \
-       || ! grep -q '"clang"' "${BUILD_DIR}/compile_commands.json" 2>/dev/null; then
-        echo "Building with Clang compile_commands.json..."
-        cmake_configure \
-            -DLIBEDHOC_ENABLE_TESTS=ON \
-            -DCMAKE_C_COMPILER=clang \
-            -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-            -G Ninja
-        cmake_build
-    fi
-
-    cd "${PROJECT_DIR}"
-    "$ct" -p "${BUILD_DIR}" \
-        library/core/edhoc.c \
-        library/core/edhoc_message_1.c \
-        library/core/edhoc_message_2.c \
-        library/core/edhoc_message_3.c \
-        library/core/edhoc_message_4.c \
-        library/core/edhoc_message_error.c \
-        library/core/edhoc_exporter.c \
-        library/core/edhoc_common.c \
-        library/core/edhoc_coap.c \
+    require clang-tidy
+    section "clang-tidy"
+    # A dedicated clang configure gives clang-tidy a matching compile database.
+    cmake --preset legacy -B build/tidy -DCMAKE_C_COMPILER=clang >/dev/null
+    clang-tidy -p build/tidy \
+        library/core/*.c \
         library/cipher_suites/edhoc_cipher_suite.c \
         library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c \
         library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c \
@@ -326,147 +191,78 @@ cmd_clang_tidy() {
         library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c \
         library/cipher_suites/cipher_suite_pqc_1/edhoc_cipher_suite_pqc_1.c \
         library/cipher_suites/common/edhoc_kdf_kmac256_xkcp.c
-    ok "Clang-tidy passed."
+    ok "clang-tidy passed."
 }
 
-# --------------- fuzz --------------------------------------------------------
-cmd_fuzz() {
-    local duration="${1:-60}"
-    section "Fuzzing (${duration}s per target)"
-    cmd_build --fuzz
-    local found=0
-    for target in "${BUILD_DIR}"/tests/fuzz/fuzz_*; do
-        [[ -x "$target" ]] || continue
-        found=1
-        echo "--- Fuzzing $(basename "$target") ---"
-        timeout "$duration" "$target" -max_total_time=$((duration - 5)) || true
-    done
-    [[ $found -eq 1 ]] || { err "No fuzz targets found in ${BUILD_DIR}/tests/fuzz/"; exit 1; }
-    ok "Fuzzing complete."
-}
-
-# --------------- format ------------------------------------------------------
-cmd_format() {
-    require_cmd clang-format
-    require_cmd git
-    cd "${PROJECT_DIR}"
-
-    local check=false
-    for arg in "$@"; do
-        case "$arg" in
-            --check) check=true ;;
-            *) err "Unknown format option: $arg"; exit 1 ;;
-        esac
-    done
-
-    local files=()
-    mapfile -t files < <(git ls-files '*.c' '*.h' ':!:backends/**')
-    [[ ${#files[@]} -gt 0 ]] || { err "No source files found."; exit 1; }
-
-    if [[ "$check" == true ]]; then
-        section "Checking source code formatting"
-        clang-format --dry-run --Werror --style=file "${files[@]}"
-        ok "Formatting check passed."
-    else
-        section "Formatting source code"
-        clang-format -i --style=file "${files[@]}"
-        ok "Formatting complete."
-    fi
-}
-
-# --------------- benchmark ---------------------------------------------------
-# Benchmarking has moved to the Zephyr sample/benchmark app (native_sim).
-# Build and run locally with:
-#   west build -b native_sim sample/benchmark -p always
-#   ./build/zephyr/zephyr.exe
-
-# --------------- header hygiene ----------------------------------------------
+# --- check-headers -----------------------------------------------------------
 # Installed public headers must never include a private *_internal.h header.
 cmd_check_headers() {
-    section "Public header hygiene"
-    cd "${PROJECT_DIR}"
+    section "public header hygiene"
     local offenders
     offenders=$(grep -rEn '#[[:space:]]*include[[:space:]]*[<"][^">]*_internal\.h[">]' include/ || true)
-    if [[ -n "$offenders" ]]; then
-        err "Installed public headers must not include *_internal.h:"
-        err "$offenders"
-        exit 1
-    fi
-    ok "No public header includes a private *_internal.h header."
+    [[ -z "$offenders" ]] || { err "Public headers must not include *_internal.h:"; err "$offenders"; exit 1; }
+    ok "no public header includes a private *_internal.h header."
 }
 
-# --------------- all (full local CI) -----------------------------------------
-cmd_all() {
-    section "Full CI pipeline"
-    cmd_check_headers
-    cmd_coverage
-    cmd_cppcheck
-    cmd_clang_tidy
-    cmd_valgrind
-    ok "\nAll CI steps completed successfully."
-}
+cmd_list() { cmake --list-presets; }
 
-# --------------- help --------------------------------------------------------
 show_help() {
     cat <<'EOF'
-Usage: scripts/ci.sh <command> [options]
+Usage: scripts/ci.sh <command> [args]
 
-Build & Test:
-  build [--gcc|--clang] [--coverage] [--sanitizers] [--fuzz] [--mem-backend X]
-  test                    Run test binary
-  coverage [--mem-backend X] [--open]
-                          Build with gcov, run tests, generate HTML report
+Per-preset (see `scripts/ci.sh list`):
+  build <preset>        cmake --preset <p> && cmake --build --preset <p>
+  test  <preset>        ctest --preset <p>   (CTEST_NO_TESTS_ACTION=error)
+  ci    <preset>        build + test
 
-Analysis:
-  cppcheck                Static analysis with cppcheck
-  clang-tidy              Static analysis with clang-tidy
-  check-headers           Public headers must not include *_internal.h
-  valgrind                Memcheck + DRD
-  sanitizers [asan-ubsan] [--mem-backend X]  Build + test under sanitizers
-  fuzz [seconds]          Build + run fuzz targets (default: 60s each)
+Matrix:
+  matrix                build + test every functional preset + legacy
+  check-matrix          fail if any test_*.c is built by no preset (anti-skip net)
+
+Instrumentation:
+  coverage              coverage preset + gcovr HTML report
+  sanitizers            asan preset (ASan/UBSan; ASLR auto-disabled locally)
+  valgrind [preset]     memcheck + DRD over a preset's binaries
+                        (default: valgrind preset = all suites incl. PQC)
+  fuzz [seconds]        build + run libFuzzer targets (default: 60s each)
 
 Quality:
-  format [--check]        Run clang-format on all tracked sources
-                          (--check = dry-run mirroring the CI / Format job)
+  format [--check]      clang-format all tracked sources
+  cppcheck              static analysis (library core)
+  clang-tidy            static analysis (library, clang compile db)
+  check-headers         public headers must not include *_internal.h
 
-Memory backend (--mem-backend), maps to -DCONFIG_LIBEDHOC_MEM_BACKEND=N:
-  stack                   0: C99 VLA / _alloca (default when omitted)
-  heap                    1: calloc / free
-  custom                  2: link-time edhoc_mem_alloc / edhoc_mem_free hooks
-                          (module tests provide an instrumented allocator)
-
-Pipeline:
-  all                     Run full CI: coverage, cppcheck, clang-tidy, valgrind
+  list                  list all CMake presets
+  help                  this message
 
 Examples:
-  scripts/ci.sh build --gcc              # GCC debug build
-  scripts/ci.sh build --gcc --sanitizers    # GCC + ASan/UBSan
-  scripts/ci.sh build --gcc --mem-backend heap   # GCC, heap allocator
-  scripts/ci.sh sanitizers --mem-backend custom  # ASan/UBSan, custom allocator
-  scripts/ci.sh coverage --open          # Coverage with browser
-  scripts/ci.sh coverage --mem-backend custom  # Coverage incl. OOM paths
-  scripts/ci.sh all                      # Full local CI
+  scripts/ci.sh ci p256_stack           # one preset, end to end
+  scripts/ci.sh matrix                  # the whole functional matrix
+  scripts/ci.sh coverage                # gcov + gcovr report
+  scripts/ci.sh valgrind p256_stack     # memcheck a lighter (classic) preset
 EOF
 }
 
-# --------------- main --------------------------------------------------------
 main() {
     [[ $# -eq 0 ]] && { show_help; exit 0; }
-
-    case "$1" in
-        build)       shift; cmd_build "$@" ;;
-        test)        cmd_test ;;
-        coverage)    shift; cmd_coverage "$@" ;;
-        sanitizers)  shift; cmd_sanitizers "$@" ;;
-        valgrind)    cmd_valgrind ;;
-        cppcheck)    cmd_cppcheck ;;
-        clang-tidy)  cmd_clang_tidy ;;
+    local cmd="$1"; shift || true
+    case "$cmd" in
+        build)         cmd_build "${1:?preset required}" ;;
+        test)          cmd_test "${1:?preset required}" ;;
+        ci)            cmd_ci "${1:?preset required}" ;;
+        matrix)        cmd_matrix ;;
+        check-matrix)  cmd_check_matrix ;;
+        coverage)      cmd_coverage ;;
+        sanitizers)    cmd_sanitizers ;;
+        valgrind)      cmd_valgrind "$@" ;;
+        fuzz)          cmd_fuzz "${1:-60}" ;;
+        format)        cmd_format "${1:-}" ;;
+        cppcheck)      cmd_cppcheck ;;
+        clang-tidy)    cmd_clang_tidy ;;
         check-headers) cmd_check_headers ;;
-        fuzz)        shift; cmd_fuzz "$@" ;;
-        format)      shift; cmd_format "$@" ;;
-        all)         cmd_all ;;
-        --help|-h)   show_help ;;
-        *)           err "Unknown command: $1"; show_help; exit 1 ;;
+        list)          cmd_list ;;
+        help|--help|-h) show_help ;;
+        *)             err "Unknown command: $cmd"; show_help; exit 1 ;;
     esac
 }
 

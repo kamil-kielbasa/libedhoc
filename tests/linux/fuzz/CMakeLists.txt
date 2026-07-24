@@ -4,14 +4,15 @@
 
 project(libedhoc_fuzz)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/sources.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/warnings.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/sources.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/warnings.cmake)
 
 # --- Fuzz sources ------------------------------------------------------------
 
 set(FUZZ_COMMON_SOURCES
     ${LIBEDHOC_FUZZ_CIPHER_SUITE_SOURCES}
-    ${LIBEDHOC_TEST_COMMON_SOURCES})
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/test_ead.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/support/test_credentials.c)
 
 set(FUZZ_TARGETS
     fuzz_message_1_process
@@ -28,7 +29,7 @@ foreach(target ${FUZZ_TARGETS})
                    ${FUZZ_COMMON_SOURCES})
 
     target_include_directories(${target} PRIVATE
-                               ${LIBEDHOC_TESTS_DIR}/common/include
+                               ${CMAKE_CURRENT_SOURCE_DIR}/support
                                ${LIBEDHOC_INTERNAL_INCLUDE_DIR})
 
     target_link_libraries(${target} PRIVATE

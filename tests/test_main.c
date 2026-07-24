@@ -1,12 +1,14 @@
 /**
  * \file    test_main.c
  * \author  Kamil Kielbasa
- * \brief   Test runner entry point for all libedhoc tests.
+ * \brief   Transitional runner for the not-yet-migrated unit tests.
  *
- *          Tests are organized in a 3-tier architecture:
- *          - Unit tests:        Isolated function-level testing.
- *          - Integration tests: Full EDHOC handshake and protocol flows.
- *          - Fuzz tests:        Built separately (see fuzz/ directory).
+ *          The cipher-suite, integration and RFC 9529 tests now live under
+ *          tests/linux/ as standalone per-suite/per-scenario binaries. What
+ *          remains here is the unit tier, which is cross-suite (test_api binds
+ *          suites 0/2/24 together) and is migrated in its own PR to a
+ *          suite-agnostic form. Until then this binary builds only under the
+ *          transitional `legacy` preset (all suites enabled).
  *
  * \copyright Copyright (c) 2026
  */
@@ -18,17 +20,6 @@
 
 static void run_all_test_groups(void)
 {
-	/* ---- Unit tests ---- */
-	RUN_TEST_GROUP(cipher_suite_0_positive);
-	RUN_TEST_GROUP(cipher_suite_0_negative);
-	RUN_TEST_GROUP(cipher_suite_2_positive);
-	RUN_TEST_GROUP(cipher_suite_2_negative);
-	RUN_TEST_GROUP(cipher_suite_4_positive);
-	RUN_TEST_GROUP(cipher_suite_4_negative);
-	RUN_TEST_GROUP(cipher_suite_24_positive);
-	RUN_TEST_GROUP(cipher_suite_24_negative);
-	RUN_TEST_GROUP(cipher_suite_pqc_1_positive);
-	RUN_TEST_GROUP(cipher_suite_pqc_1_negative);
 	RUN_TEST_GROUP(api);
 	RUN_TEST_GROUP(api_negative);
 	RUN_TEST_GROUP(error_message);
@@ -55,22 +46,6 @@ static void run_all_test_groups(void)
 	RUN_TEST_GROUP(message_paths);
 #if CONFIG_LIBEDHOC_MEM_BACKEND == EDHOC_MEM_BACKEND_CUSTOM
 	RUN_TEST_GROUP(mem_custom);
-#endif
-
-	/* ---- Integration tests ---- */
-	RUN_TEST_GROUP(rfc9529_chapter2);
-	RUN_TEST_GROUP(rfc9529_chapter3);
-	RUN_TEST_GROUP(rfc9528_negotiation);
-	RUN_TEST_GROUP(handshake_x5chain_sig_suite0);
-	RUN_TEST_GROUP(handshake_x5chain_sig_suite2);
-	RUN_TEST_GROUP(handshake_x5chain_sig_suite24);
-	RUN_TEST_GROUP(handshake_x5chain_dh_suite2);
-	RUN_TEST_GROUP(handshake_x5t_sig_suite2);
-	RUN_TEST_GROUP(handshake_auth_methods);
-	RUN_TEST_GROUP(handshake_handle_balance);
-	RUN_TEST_GROUP(handshake_x5chain_sig_suite_pqc_1);
-#if CONFIG_LIBEDHOC_MEM_BACKEND == EDHOC_MEM_BACKEND_CUSTOM
-	RUN_TEST_GROUP(mem_custom_handshake);
 #endif
 }
 
