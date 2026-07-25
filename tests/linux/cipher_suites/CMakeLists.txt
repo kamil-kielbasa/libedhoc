@@ -11,22 +11,12 @@
 # ${LIBEDHOC_CIPHER_SUITE_SOURCES}.
 # =============================================================================
 
-# When the post-quantum suite is enabled its source lands in
-# ${LIBEDHOC_CIPHER_SUITE_SOURCES}, so binaries compiling that list need liboqs +
-# XKCP. In the single-suite matrix pqc is enabled alone; this only ever bloats
-# the default all-suites build.
-set(_pqc "")
-if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
-    set(_pqc PQC)
-endif()
-
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE)
     edhoc_add_unity_test(
         NAME          test_cipher_suite_0
         SOURCES       cipher_suite_0/test_cipher_suite_0.c
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
-        GROUPS        cipher_suite_0_positive cipher_suite_0_negative
-        ${_pqc})
+        GROUPS        cipher_suite_0_positive cipher_suite_0_negative)
 endif()
 
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
@@ -34,8 +24,7 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
         NAME          test_cipher_suite_2
         SOURCES       cipher_suite_2/test_cipher_suite_2.c
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
-        GROUPS        cipher_suite_2_positive cipher_suite_2_negative
-        ${_pqc})
+        GROUPS        cipher_suite_2_positive cipher_suite_2_negative)
 endif()
 
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
@@ -43,8 +32,7 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
         NAME          test_cipher_suite_4
         SOURCES       cipher_suite_4/test_cipher_suite_4.c
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
-        GROUPS        cipher_suite_4_positive cipher_suite_4_negative
-        ${_pqc})
+        GROUPS        cipher_suite_4_positive cipher_suite_4_negative)
 endif()
 
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
@@ -52,8 +40,7 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
         NAME          test_cipher_suite_24
         SOURCES       cipher_suite_24/test_cipher_suite_24.c
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
-        GROUPS        cipher_suite_24_positive cipher_suite_24_negative
-        ${_pqc})
+        GROUPS        cipher_suite_24_positive cipher_suite_24_negative)
 endif()
 
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
@@ -63,6 +50,5 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
         NAME          test_cipher_suite_pqc_1
         SOURCES       cipher_suite_pqc_1/test_cipher_suite_pqc_1.c
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
-        GROUPS        cipher_suite_pqc_1_positive cipher_suite_pqc_1_negative
-        PQC)
+        GROUPS        cipher_suite_pqc_1_positive cipher_suite_pqc_1_negative)
 endif()

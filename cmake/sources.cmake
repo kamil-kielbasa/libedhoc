@@ -60,27 +60,45 @@ set(LIBEDHOC_BACKEND_CBOR_SOURCES
 set(LIBEDHOC_CIPHER_SUITE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/edhoc_cipher_suite.c)
 
+# Crypto backend link targets (standalone build), assembled the same way as the
+# reference sources: each enabled suite contributes exactly the libraries its
+# implementation needs, so the link line follows the configuration instead of
+# relying on an always-on default.
+#   * tfpsacrypto (mbed TLS PSA): AEAD + hash, used by every reference suite.
+#   * compact25519:               X25519 + Ed25519, suites 0 and 4.
+#   * oqs + xkcp:                 ML-KEM / ML-DSA (liboqs) and SHAKE256 (XKCP).
+# REMOVE_DUPLICATES collapses the tfpsacrypto every suite appends.
+set(LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS "")
+
 if (CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c)
+    list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto compact25519)
 endif()
 if (CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c)
+    list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto)
 endif()
 if (CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_4/edhoc_cipher_suite_4.c)
+    list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto compact25519)
 endif()
 if (CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c)
+    list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto)
 endif()
-
 if (CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_pqc_1/edhoc_cipher_suite_pqc_1.c
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/common/edhoc_kdf_kmac256_xkcp.c)
+    list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto oqs xkcp)
+endif()
+
+if (LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS)
+    list(REMOVE_DUPLICATES LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS)
 endif()
 
 set(LIBEDHOC_PUBLIC_INCLUDE_DIR       ${LIBEDHOC_ROOT_DIR}/include)
@@ -104,10 +122,13 @@ set(LIBEDHOC_TEST_COMMON_SOURCES
     ${LIBEDHOC_TESTS_DIR}/common/src/test_ead.c
     ${LIBEDHOC_TESTS_DIR}/common/src/test_credentials.c)
 
-# Fuzz compiles a subset of the cipher-suite reference sources (no suite 24).
+# Fuzz compiles a subset of the cipher-suite reference sources (no suite 24), so
+# it links the matching crypto backends directly (suites 0 + 2 -> PSA +
+# compact25519), independent of the preset's CONFIG_..._ENABLE selection.
 set(LIBEDHOC_FUZZ_CIPHER_SUITE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c
     ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c)
+set(LIBEDHOC_FUZZ_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto compact25519)
 
 # Zephyr benchmark sample: cipher suite 2 reference source.
 set(LIBEDHOC_BENCHMARK_CIPHER_SUITE_SOURCES

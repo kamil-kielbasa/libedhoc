@@ -171,6 +171,20 @@
         "LIBEDHOC_ENABLE_TESTS": "OFF",
         "LIBEDHOC_ENABLE_FUZZING": "ON"
       }
+    },
+    {
+      "name": "no_cipher_suites",
+      "displayName": "Library build with every cipher suite disabled (compile check)",
+      "inherits": "base",
+      "binaryDir": "${sourceDir}/build/no_cipher_suites",
+      "cacheVariables": {
+        "LIBEDHOC_ENABLE_TESTS": "OFF",
+        "CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE": "0",
+        "CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE": "0",
+        "CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE": "0",
+        "CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE": "0",
+        "CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE": "0"
+      }
     }
   ],
 
@@ -192,7 +206,8 @@
     { "name": "coverage",        "configurePreset": "coverage" },
     { "name": "valgrind",        "configurePreset": "valgrind" },
     { "name": "asan",            "configurePreset": "asan" },
-    { "name": "fuzz",            "configurePreset": "fuzz" }
+    { "name": "fuzz",            "configurePreset": "fuzz" },
+    { "name": "no_cipher_suites", "configurePreset": "no_cipher_suites" }
   ],
 
   "testPresets": [

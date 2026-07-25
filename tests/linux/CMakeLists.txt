@@ -15,6 +15,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/edhoc_tests.cmake)
 add_subdirectory(cipher_suites)
 add_subdirectory(integration)
 add_subdirectory(rfc9529)
+add_subdirectory(robustness)
 
 # Anti-silent-skip net #1: a tests-enabled preset that registered nothing means
 # no suite was enabled — fail the configure loudly rather than pass vacuously.

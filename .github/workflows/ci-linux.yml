@@ -127,6 +127,26 @@ jobs:
       - name: Run clang-tidy
         run: bash scripts/ci.sh clang-tidy
 
+  # Compile the library with every cipher suite disabled. The crypto backends
+  # are assembled per enabled suite, so this proves the empty configuration
+  # (no suite -> no crypto backend linked) still builds.
+  library-no-suites:
+    name: Library (no cipher suites)
+    needs: check-matrix
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+      - name: Install dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y ninja-build"
+      - name: Build the library with no cipher suites enabled
+        run: bash scripts/ci.sh build no_cipher_suites libedhoc
+
   # Heavy jobs are gated on the functional matrix passing, to avoid burning
   # runner time when the basics are already broken.
   valgrind:

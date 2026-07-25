@@ -40,11 +40,12 @@ test_*.c by edhoc_reconcile_linux_tree() to catch orphans.")
 #     [SUITE_SOURCES <reference suite .c, compiled with relaxed warnings>]
 #     [INCLUDE       <extra include dirs>]
 #     [LINK          <extra link libraries>]
-#     [DEFINES       <extra compile definitions>]
-#     [PQC]          <wire liboqs + XKCP for the post-quantum suite pqc_1>)
+#     [DEFINES       <extra compile definitions>])
+#
+# liboqs + XKCP are linked automatically when the post-quantum suite is enabled.
 # -----------------------------------------------------------------------------
 function(edhoc_add_unity_test)
-    cmake_parse_arguments(T "PQC" "NAME"
+    cmake_parse_arguments(T "" "NAME"
         "SOURCES;GROUPS;SUITE_SOURCES;INCLUDE;LINK;DEFINES" ${ARGN})
 
     if(NOT T_NAME)
@@ -92,12 +93,14 @@ function(edhoc_add_unity_test)
         target_compile_definitions(${T_NAME} PRIVATE TEST_TRACES)
     endif()
 
-    # --- Post-quantum suite (liboqs + XKCP) ----------------------------------
-    # These targets only exist when the pqc suite is enabled, which is exactly
-    # when a PQC binary is added. XKCP's generated SP800-185.h comes from
-    # xkcp_build, so make the target wait for it.
-    if(T_PQC)
-        target_link_libraries(${T_NAME} PRIVATE oqs xkcp)
+    # --- Post-quantum suite: XKCP's generated header -------------------------
+    # liboqs + XKCP are linked compositionally via libedhoc::edhoc (assembled in
+    # sources.cmake as LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS). What cannot ride
+    # on a link target is XKCP's SP800-185.h: the xkcp_build ExternalProject
+    # generates it, so a binary that compiles the pqc reference source must add
+    # its include path and wait for that build. liboqs's in-tree headers, which
+    # its target does not export, are added the same way.
+    if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
         target_include_directories(${T_NAME} PRIVATE
             ${CMAKE_BINARY_DIR}/externals/liboqs/include
             ${LIBEDHOC_ROOT_DIR}/externals/liboqs/src
@@ -151,15 +154,15 @@ endfunction()
 # edhoc_reconcile_linux_tree(<root>)
 #
 # Anti-silent-skip net #1 (configure time): in an ALL-SUITES build every
-# test_*.c under <root> (excluding support/ helpers) must have been consumed by
-# some edhoc_add_unity_test(). A file present on disk but wired into no binary
-# would otherwise silently never run.
+# test_*.c under <root> (excluding support/ helpers and the robustness/ module)
+# must have been consumed by some edhoc_add_unity_test(). A file present on disk
+# but wired into no binary would otherwise silently never run.
 #
 # Runs only when all suites are enabled — under a single-suite preset most test
 # files are legitimately skipped (their suite is off). The CI check-matrix job
 # (net #2) covers the per-preset union across the whole matrix. Backend-only
-# tests (mem_custom needs the custom backend) are excluded: the default build
-# uses the stack backend.
+# tests (the robustness mem_custom test needs the custom backend) are excluded:
+# the default build uses the stack backend.
 # -----------------------------------------------------------------------------
 function(edhoc_reconcile_linux_tree root)
     if(NOT (CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE AND
@@ -172,7 +175,7 @@ function(edhoc_reconcile_linux_tree root)
 
     file(GLOB_RECURSE _files ${root}/test_*.c)
     list(FILTER _files EXCLUDE REGEX "/support/")
-    list(FILTER _files EXCLUDE REGEX "test_handshake_mem_custom\\.c$")
+    list(FILTER _files EXCLUDE REGEX "/robustness/")
 
     get_property(_consumed GLOBAL PROPERTY EDHOC_TEST_CONSUMED_SOURCES)
 

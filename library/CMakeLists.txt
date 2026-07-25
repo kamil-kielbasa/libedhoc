@@ -28,13 +28,14 @@ target_link_libraries(libedhoc
 # applications, not by the crypto-agnostic core. Kept BUILD_INTERFACE-only so
 # they are absent from the install export.
 #
-# mbedTLS 4.x (TF-PSA-Crypto) exposes the PSA crypto implementation as the
-# `tfpsacrypto` target (the former `mbedcrypto`); the reference cipher suites
-# only use PSA + the low-level ECP primitives it carries, never the TLS/X.509
-# layers, so we link that target directly.
+# They are assembled per enabled cipher suite in sources.cmake
+# (LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS): every suite adds exactly what its
+# reference implementation needs -- PSA (tfpsacrypto) for AEAD/hash, compact25519
+# for X25519/Ed25519, liboqs + XKCP for the post-quantum suite -- so the link
+# line follows the configuration instead of always pulling a fixed default.
+# zcbor (the CBOR backend) is unconditional.
 target_link_libraries(libedhoc PUBLIC
-    $<BUILD_INTERFACE:tfpsacrypto>
-    $<BUILD_INTERFACE:compact25519>
+    $<BUILD_INTERFACE:${LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS}>
     $<BUILD_INTERFACE:zcbor>)
 
 # --- Strict warnings (PRIVATE: never inflicted on consumers) -----------------

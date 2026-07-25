@@ -41,7 +41,10 @@ run_ctest() {
     CTEST_NO_TESTS_ACTION=error "${wrap[@]}" ctest --preset "$preset" --output-on-failure "$@"
 }
 
-cmd_build() { section "build ${1}"; cmake --preset "$1" >/dev/null; cmake --build --preset "$1" -j"$(nproc)"; ok "built ${1}"; }
+# cmd_build <preset> [target]: configure, then build the whole tree — or just
+# one target when given (e.g. `build no_cipher_suites libedhoc` compiles only the
+# library, skipping the externals it does not link).
+cmd_build() { section "build ${1}${2:+ (target ${2})}"; cmake --preset "$1" >/dev/null; cmake --build --preset "$1" -j"$(nproc)" ${2:+--target "$2"}; ok "built ${1}"; }
 cmd_test()  { section "test ${1}";  run_ctest "$1"; }
 cmd_ci()    { cmd_build "$1"; cmd_test "$1"; ok "ci ${1} passed"; }
 
@@ -76,7 +79,7 @@ cmd_check_matrix() {
         t="$(basename "$f" .c)"
         grep -qxF "$t" <<<"$union" \
             || { err "  '$t' is built by NO preset — it would silently never run"; missing=1; }
-    done < <(find tests/linux -name 'test_*.c' -not -path '*/support/*' | sort -u)
+    done < <(find tests/linux -name 'test_*.c' -not -path '*/support/*' -not -path '*/robustness/*' | sort -u)
 
     if [[ $missing -ne 0 ]]; then
         err "check-matrix FAILED: orphaned test file(s) above."
@@ -247,7 +250,7 @@ main() {
     [[ $# -eq 0 ]] && { show_help; exit 0; }
     local cmd="$1"; shift || true
     case "$cmd" in
-        build)         cmd_build "${1:?preset required}" ;;
+        build)         cmd_build "${1:?preset required}" "${2:-}" ;;
         test)          cmd_test "${1:?preset required}" ;;
         ci)            cmd_ci "${1:?preset required}" ;;
         matrix)        cmd_matrix ;;

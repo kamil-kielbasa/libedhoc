@@ -9,11 +9,6 @@
 
 set(_sup ${CMAKE_CURRENT_SOURCE_DIR}/support)
 
-set(_pqc "")
-if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
-    set(_pqc PQC)
-endif()
-
 # Under the custom backend every binary must supply edhoc_mem_alloc/free.
 set(_memhook "")
 if(CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
@@ -28,8 +23,7 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE)
                       ${_memhook}
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
         INCLUDE       ${_sup}
-        GROUPS        rfc9529_chapter2
-        ${_pqc})
+        GROUPS        rfc9529_chapter2)
 endif()
 
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
@@ -38,8 +32,7 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
         SOURCES       test_rfc9529_chapter3.c ${_memhook}
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
         INCLUDE       ${_sup}
-        GROUPS        rfc9529_chapter3
-        ${_pqc})
+        GROUPS        rfc9529_chapter3)
 
     edhoc_add_unity_test(
         NAME          test_rfc9528_negotiation
@@ -48,6 +41,5 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
                       ${_memhook}
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
         INCLUDE       ${_sup}
-        GROUPS        rfc9528_negotiation
-        ${_pqc})
+        GROUPS        rfc9528_negotiation)
 endif()

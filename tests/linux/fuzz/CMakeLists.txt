@@ -36,7 +36,8 @@ foreach(target ${FUZZ_TARGETS})
                           libedhoc::edhoc
                           libedhoc::cipher_suites
                           libedhoc::backend_memory
-                          unity)
+                          unity
+                          ${LIBEDHOC_FUZZ_CIPHER_SUITE_CRYPTO_BACKENDS})
 
     # Same shared warning policy as the library and module tests (TEST profile:
     # tolerates Unity macros and CBOR test-vector casts).
