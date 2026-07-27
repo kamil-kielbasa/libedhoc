@@ -185,6 +185,10 @@ cmd_clang_tidy() {
     section "clang-tidy"
     # A dedicated clang configure gives clang-tidy a matching compile database.
     cmake --preset legacy -B build/tidy -DCMAKE_C_COMPILER=clang >/dev/null
+    # XKCP publishes its headers as a build byproduct (generated from XML via
+    # xsltproc), so build that target first — otherwise clang-tidy cannot find
+    # them and aborts edhoc_kdf_kmac256_xkcp.c with "error while processing".
+    cmake --build build/tidy --target xkcp_build >/dev/null
     clang-tidy -p build/tidy \
         library/core/*.c \
         library/cipher_suites/edhoc_cipher_suite.c \

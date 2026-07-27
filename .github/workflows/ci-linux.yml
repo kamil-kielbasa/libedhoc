@@ -62,7 +62,7 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y clang ninja-build"
+          command: "sudo apt-get update && sudo apt-get install -y clang xsltproc ninja-build"
       - name: Build and test
         run: bash scripts/ci.sh ci ${{ matrix.preset }}
 
@@ -79,7 +79,7 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y gcovr ninja-build"
+          command: "sudo apt-get update && sudo apt-get install -y gcovr xsltproc ninja-build"
       - name: Build, test, report coverage
         run: bash scripts/ci.sh coverage
       - name: Upload coverage to Codecov
@@ -104,7 +104,7 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y ninja-build"
+          command: "sudo apt-get update && sudo apt-get install -y xsltproc ninja-build"
       - name: Build and test under sanitizers
         run: bash scripts/ci.sh sanitizers
 
@@ -121,7 +121,7 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang ninja-build"
+          command: "sudo apt-get update && sudo apt-get install -y cppcheck clang-tidy clang xsltproc ninja-build"
       - name: Run cppcheck
         run: bash scripts/ci.sh cppcheck
       - name: Run clang-tidy
@@ -162,7 +162,7 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y valgrind ninja-build"
+          command: "sudo apt-get update && sudo apt-get install -y valgrind xsltproc ninja-build"
       - name: Memcheck + DRD (all suites incl. PQC)
         run: bash scripts/ci.sh valgrind
 
