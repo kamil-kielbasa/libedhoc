@@ -1181,7 +1181,7 @@ static int hash_update(void *user_context, void *operation,
 {
 	(void)user_context;
 
-	if (NULL == operation || NULL == input) {
+	if (NULL == operation || NULL == input || 0 == input_length) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}

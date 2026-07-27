@@ -3,9 +3,9 @@
  * \author  Kamil Kielbasa
  * \brief   Implementation of cipher suite 2
  *          (P-256 / ES256 / AES-CCM-16-64-128 / SHA-256).
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -276,7 +276,7 @@ static int mbedtls_ecp_decompress(const mbedtls_ecp_group *grp,
 	/* r = x^3 + ax + b */
 	MBEDTLS_MPI_CHK(mbedtls_mpi_add_mpi(&r, &r, &grp->B));
 
-	/* 
+	/*
 	 * Calculate square root of r over finite field P:
 	 *   r = sqrt(x^3 + ax + b) = (x^3 + ax + b) ^ ((P + 1) / 4) (mod P)
 	 */
@@ -631,9 +631,9 @@ static int sign(void *user_context, const void *priv_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN != sign_size) {
-		EDHOC_LOG_ERR("Invalid signature size: %zu", sign_size);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+	if (sign_size < EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN) {
+		EDHOC_LOG_ERR("Signature buffer too small: %zu", sign_size);
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	const psa_key_id_t psa_priv = load_key_id(priv_key_id);
@@ -680,9 +680,14 @@ static int verify(void *user_context, const uint8_t *pub_key,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	if (EDHOC_CIPHER_SUITE_2_ECC_UNCOMP_KEY_LEN != pub_key_len) {
+		EDHOC_LOG_ERR("Invalid public key length: %zu", pub_key_len);
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
 	if (EDHOC_CIPHER_SUITE_2_ECC_ECDSA_SIGN_LEN != sign_len) {
 		EDHOC_LOG_ERR("Invalid signature length: %zu", sign_len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	uint8_t digest[PSA_HASH_LENGTH(EDHOC_CIPHER_SUITE_2_HASH_ALG)] = { 0 };
@@ -1156,7 +1161,9 @@ static int hash_finish(void *user_context, void *op, uint8_t *hash,
 
 	if (PSA_SUCCESS != status) {
 		EDHOC_LOG_ERR("Hash finish: %d", status);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		return PSA_ERROR_BUFFER_TOO_SMALL == status ?
+			       EDHOC_ERROR_BUFFER_TOO_SMALL :
+			       EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
 	return EDHOC_SUCCESS;
@@ -1167,7 +1174,8 @@ static int hash_abort(void *user_context, void *op)
 	(void)user_context;
 
 	if (NULL == op) {
-		return EDHOC_SUCCESS;
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	const psa_status_t status = psa_hash_abort((psa_hash_operation_t *)op);
