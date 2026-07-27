@@ -12,6 +12,7 @@
 include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/sources.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/edhoc_tests.cmake)
 
+add_subdirectory(unit)
 add_subdirectory(cipher_suites)
 add_subdirectory(integration)
 add_subdirectory(rfc9529)

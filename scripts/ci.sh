@@ -63,6 +63,11 @@ cmd_matrix() {
 # configure each preset (add_test is a configure-time step), then diff the union
 # of ctest names against the on-disk test files — no compilation needed, so this
 # is fast.
+#
+# Bundled tiers whose many test_*.c compile into ONE ctest entry (unit/ ->
+# test_unit, robustness/ -> test_mem_custom) can't be matched file-to-name here,
+# so they are excluded and instead guarded by net #1 (edhoc_reconcile_linux_tree),
+# which fails the configure if any of their files is wired into no binary.
 cmd_check_matrix() {
     section "check-matrix: every test file runs in >= 1 preset"
     local union
@@ -79,7 +84,7 @@ cmd_check_matrix() {
         t="$(basename "$f" .c)"
         grep -qxF "$t" <<<"$union" \
             || { err "  '$t' is built by NO preset — it would silently never run"; missing=1; }
-    done < <(find tests/linux -name 'test_*.c' -not -path '*/support/*' -not -path '*/robustness/*' | sort -u)
+    done < <(find tests/linux -name 'test_*.c' -not -path '*/support/*' -not -path '*/unit/*' -not -path '*/robustness/*' | sort -u)
 
     if [[ $missing -ne 0 ]]; then
         err "check-matrix FAILED: orphaned test file(s) above."
@@ -129,7 +134,7 @@ cmd_valgrind() {
         echo "--- memcheck $(basename "$bin") ---"
         valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
                  --error-exitcode=1 -s "$bin"
-    done < <(find "build/${preset}/tests" -type f -perm -u+x \( -name 'test_*' -o -name 'libedhoc_module_tests' \) ! -name '*.o')
+    done < <(find "build/${preset}/tests" -type f -perm -u+x -name 'test_*' ! -name '*.o')
     [[ $found -eq 1 ]] || { err "No test binaries found under build/${preset}/tests"; exit 1; }
     ok "valgrind passed (${preset})."
 }

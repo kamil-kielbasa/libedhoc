@@ -14,7 +14,7 @@
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
-#include "edhoc_cipher_suite_0.h"
+#include <edhoc/cipher_suite.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -265,7 +265,8 @@ TEST(api_negative, bind_ead_not_initialized)
 
 TEST(api_negative, bind_crypto_null_ctx)
 {
-	int ret = edhoc_bind_crypto(NULL, edhoc_cipher_suite_0_get_crypto());
+	int ret = edhoc_bind_crypto(
+		NULL, edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -292,7 +293,8 @@ TEST(api_negative, bind_crypto_not_initialized)
 {
 	struct edhoc_context ctx;
 	memset(&ctx, 0, sizeof(ctx));
-	int ret = edhoc_bind_crypto(&ctx, edhoc_cipher_suite_0_get_crypto());
+	int ret = edhoc_bind_crypto(
+		&ctx, edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 }
 

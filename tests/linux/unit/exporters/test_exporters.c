@@ -16,7 +16,7 @@
 #include <edhoc/edhoc.h>
 
 /* Cipher suite 0 header: */
-#include "edhoc_cipher_suite_0.h"
+#include <edhoc/cipher_suite.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -111,7 +111,7 @@ static void import_aead_ref(const uint8_t *like_key_id, const uint8_t *key,
 static size_t aead_probe(const uint8_t *key_id, uint8_t *out, size_t out_size)
 {
 	const struct edhoc_cipher_suite *params =
-		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_0);
+		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_2);
 	TEST_ASSERT_NOT_NULL(params);
 
 	uint8_t nonce[16] = { 0 };
@@ -157,8 +157,10 @@ static void setup_basic_context(struct edhoc_context *ctx)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_init(ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_methods(ctx, method, 1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_set_cipher_suites(
-				  ctx, edhoc_cipher_suite_0_get_suite(), 1));
+			  edhoc_set_cipher_suites(ctx,
+						  edhoc_cipher_suite_get_params(
+							  EDHOC_CIPHER_SUITE_2),
+						  1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_connection_id(ctx, &cid));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_bind_crypto(ctx, crypto));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
@@ -199,7 +201,7 @@ TEST_GROUP(exporters);
 TEST_SETUP(exporters)
 {
 	psa_crypto_init();
-	crypto = edhoc_cipher_suite_0_get_crypto();
+	crypto = edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
 }
 
 TEST_TEAR_DOWN(exporters)
@@ -655,7 +657,7 @@ TEST(exporters, oscore_context_handle_matches_raw)
 
 	/* The OSCORE master secret has the application AEAD key length. */
 	const size_t ms_len =
-		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_0)
+		edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_2)
 			->aead_key_length;
 
 	uint8_t ms_raw[16] = { 0 };

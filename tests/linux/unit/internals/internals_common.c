@@ -37,8 +37,10 @@ void internals_setup_crypto_context(struct edhoc_context *ctx)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_init(ctx));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_methods(ctx, method, 1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_set_cipher_suites(
-				  ctx, edhoc_cipher_suite_0_get_suite(), 1));
+			  edhoc_set_cipher_suites(ctx,
+						  edhoc_cipher_suite_get_params(
+							  EDHOC_CIPHER_SUITE_2),
+						  1));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_set_connection_id(ctx, &cid));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
 			  edhoc_bind_crypto(ctx, internals_crypto));
@@ -76,11 +78,38 @@ void internals_inject_ecdh_key(uint8_t *key_id, const uint8_t *priv,
 	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DERIVE);
 	psa_set_key_algorithm(&attr, PSA_ALG_ECDH);
 	psa_set_key_type(&attr,
-			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_MONTGOMERY));
+			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
 
 	psa_key_id_t kid = PSA_KEY_ID_NULL;
 	TEST_ASSERT_EQUAL(PSA_SUCCESS,
 			  psa_import_key(&attr, priv, priv_len, &kid));
 
 	memcpy(key_id, &kid, sizeof(kid));
+}
+
+void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
+				  size_t *out_len)
+{
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_type(&attr,
+			 PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+	psa_set_key_bits(&attr, 256);
+	psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_EXPORT);
+	psa_set_key_algorithm(&attr, PSA_ALG_ECDH);
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	TEST_ASSERT_EQUAL(PSA_SUCCESS, psa_generate_key(&attr, &kid));
+
+	/* Uncompressed point is 0x04 | X | Y; EDHOC transports the 32-byte X. */
+	uint8_t uncomp[65] = { 0 };
+	size_t uncomp_len = 0;
+	TEST_ASSERT_EQUAL(PSA_SUCCESS,
+			  psa_export_public_key(kid, uncomp, sizeof(uncomp),
+						&uncomp_len));
+	TEST_ASSERT_EQUAL(PSA_SUCCESS, psa_destroy_key(kid));
+	TEST_ASSERT_EQUAL(65, uncomp_len);
+	TEST_ASSERT_TRUE(out_size >= 32);
+
+	memcpy(out, &uncomp[1], 32);
+	*out_len = 32;
 }

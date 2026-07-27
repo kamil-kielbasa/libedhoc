@@ -391,7 +391,8 @@ int coverage_setup_mock_context(struct edhoc_context *ctx,
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 
-	ret = edhoc_set_cipher_suites(ctx, edhoc_cipher_suite_2_get_suite(), 1);
+	ret = edhoc_set_cipher_suites(
+		ctx, edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_2), 1);
 	if (EDHOC_SUCCESS != ret)
 		return ret;
 

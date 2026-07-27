@@ -1,0 +1,75 @@
+# =============================================================================
+# tests/linux/unit — the library's suite-independent logic in one binary.
+#
+# Exercises the public API, message compose/process paths, internals, exporters,
+# CoAP helpers and the coverage sweep. What these assert does not depend on the
+# ephemeral/signature primitive, so the binary is pinned to a single reference
+# suite (cipher suite 2, P-256 / SHA-256) and builds under any preset that
+# enables it. Per-suite crypto and descriptors are validated separately by the
+# cipher_suites tier, so nothing is lost by not repeating them here.
+# =============================================================================
+
+if(NOT CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
+    return()
+endif()
+
+set(_sup ${CMAKE_CURRENT_SOURCE_DIR}/support)
+
+set(_unit_sources
+    api/test_api.c
+    api/test_api_negative.c
+    coap/test_coap.c
+    error/test_error_message.c
+    exporters/test_exporters.c
+    message/test_message_paths.c
+    coverage/coverage_common.c
+    coverage/test_coverage_msg1.c
+    coverage/test_coverage_msg2.c
+    coverage/test_coverage_msg3.c
+    coverage/test_coverage_msg4.c
+    coverage/test_coverage_exporters.c
+    coverage/test_coverage_error.c
+    coverage/test_coverage_cbor.c
+    coverage/test_coverage_handshake.c
+    coverage/test_coverage_sweep_validate.c
+    internals/internals_common.c
+    internals/test_internals_common.c
+    internals/test_internals_mac.c
+    internals/test_internals_message1.c
+    internals/test_internals_message2.c
+    internals/test_internals_message3.c
+    internals/test_internals_message4.c
+    internals/test_internals_error.c
+    internals/test_internals_coap.c
+    internals/test_internals_api.c
+    ${_sup}/test_ead.c
+    ${_sup}/test_credentials.c)
+
+# Kept in test_main.c execution order; the runner is generated from this list.
+set(_unit_groups
+    api api_negative error_message exporters coap
+    coverage_msg1 coverage_msg2 coverage_msg3 coverage_msg4
+    coverage_exporters coverage_error coverage_cbor coverage_handshake
+    coverage_sweep_validate
+    internals_common internals_mac internals_message2 internals_message3
+    internals_message4 internals_error internals_message1 internals_coap
+    internals_api
+    message_paths)
+
+# Custom memory backend: the instrumented allocator both supplies the
+# edhoc_mem_alloc/free hooks the library links against and is exercised by its
+# own allocator unit tests. Compiled only here (never under stack/heap), so the
+# orphan reconcile excludes tests/linux/**/mem/ the way it excludes robustness/.
+if(CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
+    list(APPEND _unit_sources ${_sup}/test_mem_custom.c mem/test_mem_custom.c)
+    list(APPEND _unit_groups mem_custom)
+endif()
+
+edhoc_add_unity_test(
+    NAME          test_unit
+    SOURCES       ${_unit_sources}
+    GROUPS        ${_unit_groups}
+    SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
+    INCLUDE       ${_sup}
+                  ${CMAKE_CURRENT_SOURCE_DIR}/coverage
+                  ${CMAKE_CURRENT_SOURCE_DIR}/internals)

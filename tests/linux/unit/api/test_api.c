@@ -17,9 +17,7 @@
 #include "edhoc_macros_internal.h"
 
 /* Cipher suite headers: */
-#include "edhoc_cipher_suite_0.h"
-#include "edhoc_cipher_suite_2.h"
-#include "edhoc_cipher_suite_24.h"
+#include <edhoc/cipher_suite.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -354,41 +352,36 @@ TEST(api, bindings)
 	TEST_ASSERT_EQUAL(test_ead_stubs.compose, ctx.interfaces.ead.compose);
 	TEST_ASSERT_EQUAL(test_ead_stubs.process, ctx.interfaces.ead.process);
 
-	ret = edhoc_bind_crypto(&ctx, edhoc_cipher_suite_2_get_crypto());
+	const struct edhoc_crypto *crypto =
+		edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
+	ret = edhoc_bind_crypto(&ctx, crypto);
 	edhoc_bind_platform(&ctx, test_get_platform());
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->destroy_key,
+	TEST_ASSERT_EQUAL(crypto->destroy_key,
 			  ctx.interfaces.crypto.destroy_key);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->generate_key_pair,
+	TEST_ASSERT_EQUAL(crypto->generate_key_pair,
 			  ctx.interfaces.crypto.generate_key_pair);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->encapsulate,
+	TEST_ASSERT_EQUAL(crypto->encapsulate,
 			  ctx.interfaces.crypto.encapsulate);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->decapsulate,
+	TEST_ASSERT_EQUAL(crypto->decapsulate,
 			  ctx.interfaces.crypto.decapsulate);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->key_agreement,
+	TEST_ASSERT_EQUAL(crypto->key_agreement,
 			  ctx.interfaces.crypto.key_agreement);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->sign,
-			  ctx.interfaces.crypto.sign);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->verify,
-			  ctx.interfaces.crypto.verify);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->extract,
-			  ctx.interfaces.crypto.extract);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->expand,
-			  ctx.interfaces.crypto.expand);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->expand_raw,
-			  ctx.interfaces.crypto.expand_raw);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->aead_encrypt,
+	TEST_ASSERT_EQUAL(crypto->sign, ctx.interfaces.crypto.sign);
+	TEST_ASSERT_EQUAL(crypto->verify, ctx.interfaces.crypto.verify);
+	TEST_ASSERT_EQUAL(crypto->extract, ctx.interfaces.crypto.extract);
+	TEST_ASSERT_EQUAL(crypto->expand, ctx.interfaces.crypto.expand);
+	TEST_ASSERT_EQUAL(crypto->expand_raw, ctx.interfaces.crypto.expand_raw);
+	TEST_ASSERT_EQUAL(crypto->aead_encrypt,
 			  ctx.interfaces.crypto.aead_encrypt);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->aead_decrypt,
+	TEST_ASSERT_EQUAL(crypto->aead_decrypt,
 			  ctx.interfaces.crypto.aead_decrypt);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_init,
-			  ctx.interfaces.crypto.hash_init);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_update,
+	TEST_ASSERT_EQUAL(crypto->hash_init, ctx.interfaces.crypto.hash_init);
+	TEST_ASSERT_EQUAL(crypto->hash_update,
 			  ctx.interfaces.crypto.hash_update);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_finish,
+	TEST_ASSERT_EQUAL(crypto->hash_finish,
 			  ctx.interfaces.crypto.hash_finish);
-	TEST_ASSERT_EQUAL(edhoc_cipher_suite_2_get_crypto()->hash_abort,
-			  ctx.interfaces.crypto.hash_abort);
+	TEST_ASSERT_EQUAL(crypto->hash_abort, ctx.interfaces.crypto.hash_abort);
 
 	ret = edhoc_bind_credentials(&ctx, &test_cred_stubs);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -399,56 +392,6 @@ TEST(api, bindings)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(api, get_cipher_suite_descriptors)
-{
-	const struct edhoc_cipher_suite *suite;
-
-	suite = edhoc_cipher_suite_0_get_suite();
-	TEST_ASSERT_NOT_NULL(suite);
-	TEST_ASSERT_EQUAL(0, suite->value);
-	TEST_ASSERT_TRUE(suite->supports_dh_nike);
-	TEST_ASSERT_EQUAL(16, suite->aead_key_length);
-	TEST_ASSERT_EQUAL(8, suite->aead_tag_length);
-	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
-	TEST_ASSERT_EQUAL(32, suite->hash_length);
-	TEST_ASSERT_EQUAL(8, suite->mac_length);
-	TEST_ASSERT_EQUAL(32, suite->kem_encapsulation_key_length);
-	TEST_ASSERT_EQUAL(32, suite->kem_ciphertext_length);
-	TEST_ASSERT_EQUAL(32, suite->nike_key_length);
-	TEST_ASSERT_EQUAL(64, suite->sign_length);
-	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_0_get_suite());
-
-	suite = edhoc_cipher_suite_2_get_suite();
-	TEST_ASSERT_NOT_NULL(suite);
-	TEST_ASSERT_EQUAL(2, suite->value);
-	TEST_ASSERT_TRUE(suite->supports_dh_nike);
-	TEST_ASSERT_EQUAL(16, suite->aead_key_length);
-	TEST_ASSERT_EQUAL(8, suite->aead_tag_length);
-	TEST_ASSERT_EQUAL(13, suite->aead_iv_length);
-	TEST_ASSERT_EQUAL(32, suite->hash_length);
-	TEST_ASSERT_EQUAL(8, suite->mac_length);
-	TEST_ASSERT_EQUAL(32, suite->kem_encapsulation_key_length);
-	TEST_ASSERT_EQUAL(32, suite->kem_ciphertext_length);
-	TEST_ASSERT_EQUAL(32, suite->nike_key_length);
-	TEST_ASSERT_EQUAL(64, suite->sign_length);
-	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_2_get_suite());
-
-	suite = edhoc_cipher_suite_24_get_suite();
-	TEST_ASSERT_NOT_NULL(suite);
-	TEST_ASSERT_EQUAL(24, suite->value);
-	TEST_ASSERT_TRUE(suite->supports_dh_nike);
-	TEST_ASSERT_EQUAL(32, suite->aead_key_length);
-	TEST_ASSERT_EQUAL(16, suite->aead_tag_length);
-	TEST_ASSERT_EQUAL(12, suite->aead_iv_length);
-	TEST_ASSERT_EQUAL(48, suite->hash_length);
-	TEST_ASSERT_EQUAL(16, suite->mac_length);
-	TEST_ASSERT_EQUAL(48, suite->kem_encapsulation_key_length);
-	TEST_ASSERT_EQUAL(48, suite->kem_ciphertext_length);
-	TEST_ASSERT_EQUAL(48, suite->nike_key_length);
-	TEST_ASSERT_EQUAL(96, suite->sign_length);
-	TEST_ASSERT_EQUAL(suite, edhoc_cipher_suite_24_get_suite());
-}
-
 TEST_GROUP_RUNNER(api)
 {
 	RUN_TEST_CASE(api, context_init);
@@ -457,5 +400,4 @@ TEST_GROUP_RUNNER(api)
 	RUN_TEST_CASE(api, set_cipher_suites);
 	RUN_TEST_CASE(api, set_connection_id);
 	RUN_TEST_CASE(api, bindings);
-	RUN_TEST_CASE(api, get_cipher_suite_descriptors);
 }

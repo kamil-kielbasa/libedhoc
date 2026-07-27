@@ -154,15 +154,17 @@ endfunction()
 # edhoc_reconcile_linux_tree(<root>)
 #
 # Anti-silent-skip net #1 (configure time): in an ALL-SUITES build every
-# test_*.c under <root> (excluding support/ helpers and the robustness/ module)
-# must have been consumed by some edhoc_add_unity_test(). A file present on disk
-# but wired into no binary would otherwise silently never run.
+# test_*.c under <root> (excluding support/ helpers, backend-only mem/ tests and
+# the robustness/ module) must have been consumed by some edhoc_add_unity_test().
+# A file present on disk but wired into no binary would otherwise silently never
+# run.
 #
 # Runs only when all suites are enabled — under a single-suite preset most test
 # files are legitimately skipped (their suite is off). The CI check-matrix job
 # (net #2) covers the per-preset union across the whole matrix. Backend-only
-# tests (the robustness mem_custom test needs the custom backend) are excluded:
-# the default build uses the stack backend.
+# tests (the unit custom-allocator tests under mem/ and the robustness OOM sweep
+# need the custom backend) are excluded: the default build uses the stack
+# backend.
 # -----------------------------------------------------------------------------
 function(edhoc_reconcile_linux_tree root)
     if(NOT (CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE AND
@@ -175,6 +177,7 @@ function(edhoc_reconcile_linux_tree root)
 
     file(GLOB_RECURSE _files ${root}/test_*.c)
     list(FILTER _files EXCLUDE REGEX "/support/")
+    list(FILTER _files EXCLUDE REGEX "/mem/")
     list(FILTER _files EXCLUDE REGEX "/robustness/")
 
     get_property(_consumed GLOBAL PROPERTY EDHOC_TEST_CONSUMED_SOURCES)

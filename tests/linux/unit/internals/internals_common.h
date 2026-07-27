@@ -13,7 +13,7 @@
 
 /* Include files ----------------------------------------------------------- */
 #include "test_common.h"
-#include "edhoc_cipher_suite_0.h"
+#include <edhoc/cipher_suite.h>
 #include "edhoc_common_internal.h"
 #include "edhoc_context_internal.h"
 #include <edhoc/coap.h>
@@ -33,11 +33,19 @@ extern void internals_inject_prk(struct edhoc_context *ctx,
 				 const uint8_t *prk, size_t prk_len);
 
 /*
- * Import a raw scalar as an X25519 ECDH private-key handle (suite 0) and store
+ * Import a raw scalar as a P-256 ECDH private-key handle (suite 2) and store
  * the handle in \p key_id, for auth_cred.private_key_id in the static-DH tests.
  */
 extern void internals_inject_ecdh_key(uint8_t *key_id, const uint8_t *priv,
 				      size_t priv_len);
+
+/*
+ * Generate a fresh, valid P-256 (suite 2) ephemeral public key into \p out and
+ * report its length. The static-DH tests use it for ctx.ephemeral.peer, whose
+ * key-agreement peer must be a real on-curve point.
+ */
+extern void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
+					 size_t *out_len);
 
 /* Extern variables and constant declarations ------------------------------ */
 

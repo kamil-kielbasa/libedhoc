@@ -22,7 +22,7 @@ TEST_GROUP(internals_message1);
 TEST_SETUP(internals_message1)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_crypto = edhoc_cipher_suite_0_get_crypto();
+	internals_crypto = edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
 }
 
 TEST_TEAR_DOWN(internals_message1)

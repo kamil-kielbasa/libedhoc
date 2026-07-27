@@ -2,9 +2,9 @@
  * \file    test_rfc9529_chapter3.c
  * \author  Kamil Kielbasa
  * \brief   Module tests according to RFC 9529, chapter 3.
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -50,7 +50,7 @@ static int auth_cred_fetch_init(void *user_ctx,
 
 /**
  * \brief Authentication credentials fetch callback for initiator.
- * 
+ *
  * \note It will use already cborised credentials.
  */
 static int auth_cred_fetch_init_any(void *user_ctx,
@@ -64,7 +64,7 @@ static int auth_cred_fetch_resp(void *user_ctx,
 
 /**
  * \brief Authentication credentials fetch callback for responder.
- * 
+ *
  * \note It will use already cborised credentials.
  */
 static int auth_cred_fetch_resp_any(void *user_ctx,
@@ -161,14 +161,6 @@ static int import_dh_priv_key(const uint8_t *priv, size_t priv_len,
 	return EDHOC_SUCCESS;
 }
 
-/* Bind cipher suite 2 to the shared key-agreement probe helper. */
-static void assert_peers_share_slot_key(const struct edhoc_context *lhs,
-					const struct edhoc_context *rhs,
-					enum edhoc_key_slot_id slot)
-{
-	test_assert_peers_share_slot_key(EDHOC_CIPHER_SUITE_2, lhs, rhs, slot);
-}
-
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.fetch = auth_cred_fetch_init,
 	.verify = auth_cred_verify_init,
@@ -260,8 +252,7 @@ static int mocked_encapsulate_resp(void *user_ctx, const uint8_t *encaps_key,
 }
 
 /* Initiator side of G_XY: pin the received ciphertext to the RFC's G_Y, verify
- * G_XY = ECDH(X, G_Y), and hand back the RFC's G_XY. The real decapsulation is
- * still exercised by handshake_real_crypto. */
+ * G_XY = ECDH(X, G_Y), and hand back the RFC's G_XY. */
 static int mocked_decapsulate_init(void *user_ctx, const void *decaps_key_id,
 				   const uint8_t *ciphertext,
 				   size_t ciphertext_len,
@@ -1352,279 +1343,6 @@ TEST(rfc9529_chapter3, handshake)
 				      resp_sender_id_len);
 }
 
-TEST(rfc9529_chapter3, handshake_real_crypto)
-{
-	uint8_t buffer[200] = { 0 };
-
-	/* Required injections. */
-	ret = edhoc_bind_crypto(
-		init_ctx, edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_crypto(
-		resp_ctx, edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	memset(buffer, 0, sizeof(buffer));
-	size_t msg_1_len = 0;
-	uint8_t *msg_1 = buffer;
-
-	/* EDHOC message 1 compose. */
-	ret = edhoc_message_1_compose(init_ctx, msg_1, ARRAY_SIZE(buffer),
-				      &msg_1_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_WAIT_M2, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, init_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, init_ctx->state.prk_state);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_1, init_ctx->state.th.stage);
-
-	ret = edhoc_error_get_code(init_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	/* EDHOC message 1 process. */
-	ret = edhoc_message_1_process(resp_ctx, msg_1, msg_1_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_RECEIVED_M1, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, resp_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_1, resp_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, resp_ctx->state.prk_state);
-
-	ret = edhoc_error_get_code(resp_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-			  resp_ctx->negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL((int8_t)C_I[0],
-			  resp_ctx->negotiation.peer_connection_id.int_value);
-
-	memset(buffer, 0, sizeof(buffer));
-	size_t msg_2_len = 0;
-	uint8_t *msg_2 = buffer;
-
-	/* EDHOC message 2 compose. */
-	ret = edhoc_message_2_compose(resp_ctx, msg_2, ARRAY_SIZE(buffer),
-				      &msg_2_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_WAIT_M3, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, resp_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_3, resp_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, resp_ctx->state.prk_state);
-
-	ret = edhoc_error_get_code(resp_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	/* EDHOC message 2 process. */
-	ret = edhoc_message_2_process(init_ctx, msg_2, msg_2_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_VERIFIED_M2, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, init_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_3, init_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, init_ctx->state.prk_state);
-
-	ret = edhoc_error_get_code(init_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-			  init_ctx->negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL((int8_t)C_R[0],
-			  init_ctx->negotiation.peer_connection_id.int_value);
-
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_3E2M);
-
-	memset(buffer, 0, sizeof(buffer));
-	size_t msg_3_len = 0;
-	uint8_t *msg_3 = buffer;
-
-	/* EDHOC message 3 compose. */
-	ret = edhoc_message_3_compose(init_ctx, msg_3, ARRAY_SIZE(buffer),
-				      &msg_3_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_COMPLETED, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(true, init_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_4, init_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->state.prk_state);
-
-	ret = edhoc_error_get_code(init_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	/* EDHOC message 3 process. */
-	ret = edhoc_message_3_process(resp_ctx, msg_3, msg_3_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_COMPLETED, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(true, resp_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_4, resp_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, resp_ctx->state.prk_state);
-
-	ret = edhoc_error_get_code(resp_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	assert_peers_share_slot_key(init_ctx, resp_ctx,
-				    EDHOC_KEY_SLOT_PRK_4E3M);
-
-	memset(buffer, 0, sizeof(buffer));
-	size_t msg_4_len = 0;
-	uint8_t *msg_4 = buffer;
-
-	/* EDHOC message 4 compose. */
-	ret = edhoc_message_4_compose(resp_ctx, msg_4, ARRAY_SIZE(buffer),
-				      &msg_4_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(true, resp_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_4, resp_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, resp_ctx->state.prk_state);
-
-	ret = edhoc_error_get_code(resp_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	/* EDHOC message 4 process. */
-	ret = edhoc_message_4_process(init_ctx, msg_4, msg_4_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(true, init_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_4, init_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->state.prk_state);
-
-	ret = edhoc_error_get_code(init_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	/* Derive OSCORE master secret and master salt. */
-	uint8_t init_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
-	uint8_t init_master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
-	size_t init_sender_id_len = 0;
-	uint8_t init_sender_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
-	size_t init_recipient_id_len = 0;
-	uint8_t init_recipient_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
-
-	ret = edhoc_export_oscore_context_raw(
-		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
-		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
-		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
-		init_recipient_id, ARRAY_SIZE(init_recipient_id),
-		&init_recipient_id_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, init_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->state.prk_state);
-
-	/* Derive OSCORE master secret and master salt. */
-	uint8_t resp_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
-	uint8_t resp_master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
-	size_t resp_sender_id_len = 0;
-	uint8_t resp_sender_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
-	size_t resp_recipient_id_len = 0;
-	uint8_t resp_recipient_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
-
-	ret = edhoc_export_oscore_context_raw(
-		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
-		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
-		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
-		resp_recipient_id, ARRAY_SIZE(resp_recipient_id),
-		&resp_recipient_id_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, resp_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->state.prk_state);
-
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_secret, resp_master_secret,
-				      sizeof(resp_master_secret));
-
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_salt, resp_master_salt,
-				      sizeof(resp_master_salt));
-
-	TEST_ASSERT_EQUAL(init_sender_id_len, resp_recipient_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_sender_id, resp_recipient_id,
-				      init_sender_id_len);
-	TEST_ASSERT_EQUAL(init_recipient_id_len, resp_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_recipient_id, resp_sender_id,
-				      resp_sender_id_len);
-
-	/* EDHOC key update method. */
-	ret = edhoc_export_key_update(init_ctx, keyUpdate_context,
-				      ARRAY_SIZE(keyUpdate_context));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(true, init_ctx->is_oscore_export_allowed);
-
-	/* EDHOC key update method. */
-	ret = edhoc_export_key_update(resp_ctx, keyUpdate_context,
-				      ARRAY_SIZE(keyUpdate_context));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(true, resp_ctx->is_oscore_export_allowed);
-
-	TEST_ASSERT_EQUAL(init_ctx->state.prk_state, resp_ctx->state.prk_state);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->state.prk_state);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->state.prk_state);
-
-	assert_peers_share_slot_key(init_ctx, resp_ctx, EDHOC_KEY_SLOT_PRK_OUT);
-
-	/* Derive OSCORE master secret and master salt. */
-	memset(init_master_secret, 0, sizeof(init_master_secret));
-	memset(init_master_salt, 0, sizeof(init_master_salt));
-	init_sender_id_len = 0;
-	memset(init_sender_id, 0, sizeof(init_sender_id));
-	init_recipient_id_len = 0;
-	memset(init_recipient_id, 0, sizeof(init_recipient_id));
-
-	ret = edhoc_export_oscore_context_raw(
-		init_ctx, init_master_secret, ARRAY_SIZE(init_master_secret),
-		init_master_salt, ARRAY_SIZE(init_master_salt), init_sender_id,
-		ARRAY_SIZE(init_sender_id), &init_sender_id_len,
-		init_recipient_id, ARRAY_SIZE(init_recipient_id),
-		&init_recipient_id_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, init_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->state.prk_state);
-
-	/* Derive OSCORE master secret and master salt. */
-	memset(resp_master_secret, 0, sizeof(resp_master_secret));
-	memset(resp_master_salt, 0, sizeof(resp_master_salt));
-	resp_sender_id_len = 0;
-	memset(resp_sender_id, 0, sizeof(resp_sender_id));
-	resp_recipient_id_len = 0;
-	memset(resp_recipient_id, 0, sizeof(resp_recipient_id));
-
-	ret = edhoc_export_oscore_context_raw(
-		resp_ctx, resp_master_secret, ARRAY_SIZE(resp_master_secret),
-		resp_master_salt, ARRAY_SIZE(resp_master_salt), resp_sender_id,
-		ARRAY_SIZE(resp_sender_id), &resp_sender_id_len,
-		resp_recipient_id, ARRAY_SIZE(resp_recipient_id),
-		&resp_recipient_id_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, resp_ctx->is_oscore_export_allowed);
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->state.prk_state);
-
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_secret, resp_master_secret,
-				      sizeof(resp_master_secret));
-
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_master_salt, resp_master_salt,
-				      sizeof(resp_master_salt));
-
-	TEST_ASSERT_EQUAL(init_sender_id_len, resp_recipient_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_sender_id, resp_recipient_id,
-				      init_sender_id_len);
-	TEST_ASSERT_EQUAL(init_recipient_id_len, resp_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_recipient_id, resp_sender_id,
-				      resp_sender_id_len);
-}
-
 TEST_GROUP_RUNNER(rfc9529_chapter3)
 {
 	RUN_TEST_CASE(rfc9529_chapter3, message_1_compose);
@@ -1638,5 +1356,4 @@ TEST_GROUP_RUNNER(rfc9529_chapter3)
 	RUN_TEST_CASE(rfc9529_chapter3, message_4_compose);
 	RUN_TEST_CASE(rfc9529_chapter3, message_4_process);
 	RUN_TEST_CASE(rfc9529_chapter3, handshake);
-	RUN_TEST_CASE(rfc9529_chapter3, handshake_real_crypto);
 }

@@ -21,7 +21,7 @@ TEST_GROUP(internals_common);
 TEST_SETUP(internals_common)
 {
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_crypto = edhoc_cipher_suite_0_get_crypto();
+	internals_crypto = edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
 }
 
 TEST_TEAR_DOWN(internals_common)
@@ -637,9 +637,9 @@ TEST(internals_common, comp_prk_3e2m_method_1)
 			     sizeof(prk_2e));
 
 	/* Responder G_RX = key_agreement(its static key, peer ephemeral G_X). */
-	for (size_t i = 0; i < 32; i++)
-		ctx.ephemeral.peer.value[i] = (uint8_t)(i + 0x60);
-	ctx.ephemeral.peer.length = 32;
+	internals_make_ecdh_peer_pub(ctx.ephemeral.peer.value,
+				     sizeof(ctx.ephemeral.peer.value),
+				     &ctx.ephemeral.peer.length);
 
 	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;
@@ -719,10 +719,9 @@ TEST(internals_common, comp_prk_4e3m_method_2)
 			     sizeof(prk_3e2m));
 
 	/* Initiator G_IY = key_agreement(its static key, peer ephemeral G_Y). */
-	for (size_t i = 0; i < 32; i++)
-		ctx.ephemeral.peer.value[i] = (uint8_t)(i + 0x60);
-
-	ctx.ephemeral.peer.length = 32;
+	internals_make_ecdh_peer_pub(ctx.ephemeral.peer.value,
+				     sizeof(ctx.ephemeral.peer.value),
+				     &ctx.ephemeral.peer.length);
 
 	struct edhoc_auth_credentials auth_cred = { 0 };
 	auth_cred.label = EDHOC_COSE_HEADER_KID;

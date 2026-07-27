@@ -15,7 +15,7 @@
 #include "test_common.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_context_internal.h"
-#include "edhoc_cipher_suite_2.h"
+#include <edhoc/cipher_suite.h>
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
