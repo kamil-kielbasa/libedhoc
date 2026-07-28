@@ -21,6 +21,7 @@
 
 /* EDHOC headers: */
 #include <edhoc/cipher_suite.h>
+#include <edhoc/values.h>
 #include "edhoc_macros_internal.h"
 
 /* PSA crypto header: */
@@ -123,6 +124,10 @@ static const uint8_t shake256_expected[] = {
  * header. */
 extern int edhoc_cipher_suite_pqc_1_import_signing_key(
 	const uint8_t *signing_key, size_t signing_key_length, void *key_id);
+
+/* Bulk keystore reset (releases every credential key between repeated
+ * handshakes); also intentionally not part of the public suite header. */
+extern void edhoc_cipher_suite_pqc_1_keystore_release_all(void);
 
 static const struct cipher_suite_descriptor suite = {
 	.id = EDHOC_CIPHER_SUITE_PQC_1,
@@ -440,6 +445,41 @@ TEST(cipher_suite_pqc_1_negative, import_signing_key_keystore_full)
 	cipher_suite_test_import_signing_key_keystore_full(&suite);
 }
 
+TEST(cipher_suite_pqc_1_negative, keystore_release_all_frees_slots)
+{
+	psa_key_id_t key_ids[16] = { 0 };
+	size_t filled = 0;
+	int last = EDHOC_SUCCESS;
+
+	/* Fill every software-keystore slot. */
+	for (size_t i = 0; i < ARRAY_SIZE(key_ids); ++i) {
+		last = edhoc_cipher_suite_pqc_1_import_signing_key(
+			ml_dsa_44_secret_key, ARRAY_SIZE(ml_dsa_44_secret_key),
+			&key_ids[i]);
+
+		if (EDHOC_SUCCESS != last) {
+			break;
+		}
+
+		++filled;
+	}
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, last);
+	TEST_ASSERT_GREATER_THAN(0, filled);
+
+	/* A bulk release frees every slot, so the next import succeeds again. */
+	edhoc_cipher_suite_pqc_1_keystore_release_all();
+
+	psa_key_id_t key_id = 0;
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_cipher_suite_pqc_1_import_signing_key(
+				  ml_dsa_44_secret_key,
+				  ARRAY_SIZE(ml_dsa_44_secret_key), &key_id));
+
+	/* Leave the keystore clean for subsequent tests. */
+	edhoc_cipher_suite_pqc_1_keystore_release_all();
+}
+
 TEST_GROUP_RUNNER(cipher_suite_pqc_1_negative)
 {
 	/* Argument validation. */
@@ -491,4 +531,6 @@ TEST_GROUP_RUNNER(cipher_suite_pqc_1_negative)
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, expand_destroyed_key);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative,
 		      import_signing_key_keystore_full);
+	RUN_TEST_CASE(cipher_suite_pqc_1_negative,
+		      keystore_release_all_frees_slots);
 }
