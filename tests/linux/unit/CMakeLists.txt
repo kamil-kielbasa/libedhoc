@@ -42,6 +42,7 @@ set(_unit_sources
     internals/support/internals_common.c
     internals/test_internals_common.c
     internals/test_internals_mac.c
+    internals/test_internals_message1.c
     internals/test_internals_message2.c
     internals/test_internals_message3.c
     internals/test_internals_message4.c)
@@ -52,8 +53,8 @@ set(_unit_groups
     coverage_msg1 coverage_msg2 coverage_msg3 coverage_msg4
     coverage_exporters coverage_error coverage_cbor coverage_handshake
     coverage_sweep_validate
-    internals_common internals_mac internals_message2 internals_message3
-    internals_message4
+    internals_common internals_mac internals_message1 internals_message2
+    internals_message3 internals_message4
     message_paths)
 
 edhoc_add_unity_test(
