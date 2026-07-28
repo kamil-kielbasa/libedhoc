@@ -680,6 +680,31 @@ TEST(api_negative, error_get_cipher_suites_buffer_too_small)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(api_negative, error_get_cipher_suites_peer_buffer_too_small)
+{
+	struct edhoc_context ctx = { 0 };
+	int32_t cs[3] = { 0 };
+	int32_t peer_cs[1] = { 0 };
+	size_t cs_len = 0;
+	size_t peer_cs_len = 0;
+	int ret = edhoc_context_init(&ctx);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ctx.error_code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
+	ctx.negotiation.cipher_suite.count = 1;
+	ctx.negotiation.cipher_suite.entry[0].value = 0;
+	ctx.negotiation.peer_cipher_suite.count = 3;
+
+	ret = edhoc_error_get_cipher_suites(&ctx, cs, ARRAY_SIZE(cs), &cs_len,
+					    peer_cs, ARRAY_SIZE(peer_cs),
+					    &peer_cs_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST(api_negative, message_1_compose_null_ctx)
 {
 	uint8_t buf[256] = { 0 };
@@ -979,6 +1004,8 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, error_get_cipher_suites_not_initialized);
 	RUN_TEST_CASE(api_negative, error_get_cipher_suites_wrong_error_code);
 	RUN_TEST_CASE(api_negative, error_get_cipher_suites_buffer_too_small);
+	RUN_TEST_CASE(api_negative,
+		      error_get_cipher_suites_peer_buffer_too_small);
 
 	RUN_TEST_CASE(api_negative, message_1_compose_null_ctx);
 	RUN_TEST_CASE(api_negative, message_1_process_null_ctx);

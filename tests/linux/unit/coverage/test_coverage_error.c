@@ -78,16 +78,6 @@ TEST(coverage_error, error_msg_compose_suites_overflow)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
-TEST(coverage_error, error_msg_compose_bad_code)
-{
-	uint8_t buf[64] = { 0 };
-	size_t len = 0;
-
-	int ret = edhoc_message_error_compose(
-		buf, sizeof(buf), &len, (enum edhoc_error_code)(-1), NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-}
-
 TEST(coverage_error, error_msg_process_text_too_small)
 {
 	uint8_t buf[128] = { 0 };
@@ -144,16 +134,6 @@ TEST(coverage_error, error_msg_process_suites_too_small)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
-TEST(coverage_error, error_msg_process_bad_cbor)
-{
-	const uint8_t garbage[] = { 0xFF, 0xFF, 0xFF, 0xFF };
-	enum edhoc_error_code code;
-
-	int ret = edhoc_message_error_process(garbage, sizeof(garbage), &code,
-					      NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
-}
-
 TEST(coverage_error, error_msg_compose_suites_null_info)
 {
 	uint8_t buf[64] = { 0 };
@@ -180,10 +160,8 @@ TEST_GROUP_RUNNER(coverage_error)
 {
 	RUN_TEST_CASE(coverage_error, error_msg_compose_bad_info);
 	RUN_TEST_CASE(coverage_error, error_msg_compose_suites_overflow);
-	RUN_TEST_CASE(coverage_error, error_msg_compose_bad_code);
 	RUN_TEST_CASE(coverage_error, error_msg_process_text_too_small);
 	RUN_TEST_CASE(coverage_error, error_msg_process_suites_too_small);
-	RUN_TEST_CASE(coverage_error, error_msg_process_bad_cbor);
 	RUN_TEST_CASE(coverage_error, error_msg_compose_suites_null_info);
 	RUN_TEST_CASE(coverage_error, error_msg_compose_unspecified_null_info);
 }

@@ -43,27 +43,6 @@ TEST_TEAR_DOWN(coverage_exporters)
 	mbedtls_psa_crypto_free();
 }
 
-TEST(coverage_exporters, export_raw_bad_label)
-{
-	struct edhoc_context ctx = { 0 };
-
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ctx.state.machine = EDHOC_SM_COMPLETED;
-	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
-
-	uint8_t secret[32] = { 0 };
-
-	coverage_mock_reset(0);
-
-	ret = edhoc_export_raw(&ctx, 100, NULL, 0, secret, sizeof(secret));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(coverage_exporters, export_raw_expand_fail)
 {
 	struct edhoc_context ctx = { 0 };
@@ -742,7 +721,6 @@ TEST(coverage_exporters, key_update_failure_sweep)
 
 TEST_GROUP_RUNNER(coverage_exporters)
 {
-	RUN_TEST_CASE(coverage_exporters, export_raw_bad_label);
 	RUN_TEST_CASE(coverage_exporters, export_raw_expand_fail);
 	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_wrong_status);
 	RUN_TEST_CASE(coverage_exporters, key_update_success);

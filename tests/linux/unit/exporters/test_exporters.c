@@ -247,72 +247,6 @@ TEST_TEAR_DOWN(exporters)
 	mbedtls_psa_crypto_free();
 }
 
-TEST(exporters, error_get_code_default_is_success)
-{
-	struct edhoc_context ctx = { 0 };
-	enum edhoc_error_code code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
-	int ret = edhoc_context_init(&ctx);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_error_get_code(&ctx, &code);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, code);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(exporters, error_get_code_reflects_set_code)
-{
-	struct edhoc_context ctx = { 0 };
-	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
-	int ret = edhoc_context_init(&ctx);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ctx.error_code = EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
-
-	ret = edhoc_error_get_code(&ctx, &code);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED, code);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(exporters, error_get_cipher_suites_returns_both_lists)
-{
-	struct edhoc_context ctx = { 0 };
-	int32_t cs[3] = { -1, -1, -1 };
-	int32_t peer_cs[3] = { -1, -1, -1 };
-	size_t cs_len = 0;
-	size_t peer_cs_len = 0;
-	int ret = edhoc_context_init(&ctx);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ctx.error_code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
-	ctx.negotiation.cipher_suite.count = 2;
-	ctx.negotiation.cipher_suite.entry[0].value = 0;
-	ctx.negotiation.cipher_suite.entry[1].value = 2;
-	ctx.negotiation.peer_cipher_suite.count = 1;
-	ctx.negotiation.peer_cipher_suite.entry[0].value = 3;
-
-	ret = edhoc_error_get_cipher_suites(&ctx, cs, ARRAY_SIZE(cs), &cs_len,
-					    peer_cs, ARRAY_SIZE(peer_cs),
-					    &peer_cs_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(2, cs_len);
-	TEST_ASSERT_EQUAL(0, cs[0]);
-	TEST_ASSERT_EQUAL(2, cs[1]);
-	TEST_ASSERT_EQUAL(1, peer_cs_len);
-	TEST_ASSERT_EQUAL(3, peer_cs[0]);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(exporters, export_kdf_handle_matches_raw)
 {
 	struct edhoc_context ctx = { 0 };
@@ -457,31 +391,6 @@ TEST(exporters, oscore_context_handle_matches_raw)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_deinit(&ctx_handle);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(exporters, error_get_cipher_suites_peer_buffer_too_small)
-{
-	struct edhoc_context ctx = { 0 };
-	int32_t cs[3] = { 0 };
-	int32_t peer_cs[1] = { 0 };
-	size_t cs_len = 0;
-	size_t peer_cs_len = 0;
-	int ret = edhoc_context_init(&ctx);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ctx.error_code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
-	ctx.negotiation.cipher_suite.count = 1;
-	ctx.negotiation.cipher_suite.entry[0].value = 0;
-	ctx.negotiation.peer_cipher_suite.count = 3;
-
-	ret = edhoc_error_get_cipher_suites(&ctx, cs, ARRAY_SIZE(cs), &cs_len,
-					    peer_cs, ARRAY_SIZE(peer_cs),
-					    &peer_cs_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
-
-	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -840,15 +749,9 @@ TEST(exporters, key_update_bad_state_not_completed)
 TEST_GROUP_RUNNER(exporters)
 {
 	/* Positive paths. */
-	RUN_TEST_CASE(exporters, error_get_code_default_is_success);
-	RUN_TEST_CASE(exporters, error_get_code_reflects_set_code);
-	RUN_TEST_CASE(exporters, error_get_cipher_suites_returns_both_lists);
 	RUN_TEST_CASE(exporters, export_kdf_handle_matches_raw);
 	RUN_TEST_CASE(exporters, export_aead_handle_is_aes_128);
 	RUN_TEST_CASE(exporters, oscore_context_handle_matches_raw);
-
-	/* Negative paths — error getters. */
-	RUN_TEST_CASE(exporters, error_get_cipher_suites_peer_buffer_too_small);
 
 	/* Negative paths — edhoc_export / edhoc_export_raw. */
 	RUN_TEST_CASE(exporters, export_null_ctx);

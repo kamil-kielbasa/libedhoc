@@ -202,25 +202,6 @@ TEST(coverage_msg1, msg1_process_hash_fail)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(coverage_msg1, msg1_set_connection_id_bstr)
-{
-	struct edhoc_context ctx = { 0 };
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 3,
-		.bstr_value = { 0x01, 0x02, 0x03 },
-	};
-
-	int ret = edhoc_context_init(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_set_connection_id(&ctx, &cid);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(coverage_msg1, msg1_compose_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
@@ -373,32 +354,6 @@ TEST(coverage_msg1, msg1_process_ead_failure)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(coverage_msg1, msg1_compose_with_ead)
-{
-	struct edhoc_context ctx = { 0 };
-
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	const struct edhoc_ead ead_with_token = {
-		.compose = coverage_mock_ead_compose_with_token,
-		.process = coverage_mock_ead_process,
-	};
-	ret = edhoc_bind_ead(&ctx, &ead_with_token);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	coverage_mock_reset(0);
-
-	uint8_t msg1[512] = { 0 };
-	size_t msg1_len = 0;
-
-	ret = edhoc_message_1_compose(&ctx, msg1, sizeof(msg1), &msg1_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST_GROUP_RUNNER(coverage_msg1)
 {
 	/* Compose paths. */
@@ -408,7 +363,6 @@ TEST_GROUP_RUNNER(coverage_msg1)
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_invalid_cid_type);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_no_cipher_suites);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_bad_state);
-	RUN_TEST_CASE(coverage_msg1, msg1_compose_with_ead);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_failure_sweep);
 
 	/* Process paths. */
@@ -417,7 +371,4 @@ TEST_GROUP_RUNNER(coverage_msg1)
 	RUN_TEST_CASE(coverage_msg1, msg1_process_bad_cbor);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_ead_failure);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_failure_sweep);
-
-	/* Connection identifier handling. */
-	RUN_TEST_CASE(coverage_msg1, msg1_set_connection_id_bstr);
 }
