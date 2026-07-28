@@ -9,7 +9,15 @@
 
 /* Include files ----------------------------------------------------------- */
 
+/* Internal headers: */
 #include "coverage_common.h"
+
+/* Standard library headers: */
+#include <stdint.h>
+
+/* Unity headers: */
+#include <unity.h>
+#include <unity_fixture.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -20,12 +28,10 @@ TEST_GROUP(coverage_cbor);
 
 TEST_SETUP(coverage_cbor)
 {
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 }
 
 TEST_TEAR_DOWN(coverage_cbor)
 {
-	mbedtls_psa_crypto_free();
 }
 
 TEST(coverage_cbor, cbor_int_mem_req_ranges)
@@ -51,6 +57,42 @@ TEST(coverage_cbor, cbor_bstr_oh_ranges)
 	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_oh(256));
 	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_oh(65535));
 	TEST_ASSERT_EQUAL(4, edhoc_cbor_bstr_oh(65536));
+}
+
+TEST(coverage_cbor, cbor_bstr_header_ranges)
+{
+	uint8_t header[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
+
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_header(header, 0));
+	TEST_ASSERT_EQUAL(0x40, header[0]);
+
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_header(header, 23));
+	TEST_ASSERT_EQUAL(0x57, header[0]);
+
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_header(header, 24));
+	TEST_ASSERT_EQUAL(0x58, header[0]);
+	TEST_ASSERT_EQUAL(24, header[1]);
+
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_header(header, 255));
+	TEST_ASSERT_EQUAL(0x58, header[0]);
+	TEST_ASSERT_EQUAL(255, header[1]);
+
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_header(header, 256));
+	TEST_ASSERT_EQUAL(0x59, header[0]);
+	TEST_ASSERT_EQUAL(0x01, header[1]);
+	TEST_ASSERT_EQUAL(0x00, header[2]);
+
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_header(header, 65535));
+	TEST_ASSERT_EQUAL(0x59, header[0]);
+	TEST_ASSERT_EQUAL(0xFF, header[1]);
+	TEST_ASSERT_EQUAL(0xFF, header[2]);
+
+	TEST_ASSERT_EQUAL(5, edhoc_cbor_bstr_header(header, 65536));
+	TEST_ASSERT_EQUAL(0x5A, header[0]);
+	TEST_ASSERT_EQUAL(0x00, header[1]);
+	TEST_ASSERT_EQUAL(0x01, header[2]);
+	TEST_ASSERT_EQUAL(0x00, header[3]);
+	TEST_ASSERT_EQUAL(0x00, header[4]);
 }
 
 TEST(coverage_cbor, cbor_tstr_oh_ranges)
@@ -82,6 +124,7 @@ TEST_GROUP_RUNNER(coverage_cbor)
 {
 	RUN_TEST_CASE(coverage_cbor, cbor_int_mem_req_ranges);
 	RUN_TEST_CASE(coverage_cbor, cbor_bstr_oh_ranges);
+	RUN_TEST_CASE(coverage_cbor, cbor_bstr_header_ranges);
 	RUN_TEST_CASE(coverage_cbor, cbor_tstr_oh_ranges);
 	RUN_TEST_CASE(coverage_cbor, cbor_map_oh);
 	RUN_TEST_CASE(coverage_cbor, cbor_array_oh_ranges);

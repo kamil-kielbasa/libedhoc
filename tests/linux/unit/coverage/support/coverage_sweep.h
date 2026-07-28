@@ -12,8 +12,11 @@
 #define COVERAGE_SWEEP_H
 
 /* Include files ----------------------------------------------------------- */
+
+/* Standard library header: */
 #include <stdbool.h>
 
+/* Test framework header: */
 #include <unity.h>
 
 /* Defines ----------------------------------------------------------------- */

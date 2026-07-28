@@ -12,42 +12,37 @@
 #define INTERNALS_COMMON_H
 
 /* Include files ----------------------------------------------------------- */
-#include "test_common.h"
-#include <edhoc/cipher_suite.h>
-#include "edhoc_common_internal.h"
+
+/* EDHOC headers: */
+#include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
-#include <edhoc/coap.h>
+#include "edhoc_common_internal.h"
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
+/* Module interface function declarations ---------------------------------- */
 
-extern const struct edhoc_crypto *internals_crypto;
+/** \brief Test platform interface (memory wipe) shared by internals tests. */
+const struct edhoc_platform *internals_get_platform(void);
 
-/*
- * Publish a known PRK (raw bytes) as a key-store handle in the given slot so the
- * white-box tests can drive the internal KDF helpers without a full handshake.
- */
-extern void internals_inject_prk(struct edhoc_context *ctx,
-				 enum edhoc_key_slot_id slot,
-				 const uint8_t *prk, size_t prk_len);
+/** \brief Init a suite-2 context bound to crypto, credentials and platform. */
+void internals_setup_crypto_context(struct edhoc_context *ctx);
 
-/*
- * Import a raw scalar as a P-256 ECDH private-key handle (suite 2) and store
- * the handle in \p key_id, for auth_cred.private_key_id in the static-DH tests.
- */
-extern void internals_inject_ecdh_key(uint8_t *key_id, const uint8_t *priv,
-				      size_t priv_len);
+/** \brief Publish a raw PRK as a key-store handle in \p slot (white-box KDF). */
+void internals_inject_prk(struct edhoc_context *ctx,
+			  enum edhoc_key_slot_id slot, const uint8_t *prk,
+			  size_t prk_len);
 
-/*
- * Generate a fresh, valid P-256 (suite 2) ephemeral public key into \p out and
- * report its length. The static-DH tests use it for ctx.ephemeral.peer, whose
- * key-agreement peer must be a real on-curve point.
- */
-extern void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
-					 size_t *out_len);
+/** \brief Import a raw P-256 scalar as an ECDH private-key handle in \p key_id. */
+void internals_inject_ecdh_key(uint8_t *key_id, const uint8_t *priv,
+			       size_t priv_len);
 
-/* Extern variables and constant declarations ------------------------------ */
+/** \brief Generate a valid P-256 ephemeral public key (32-byte X) into \p out. */
+void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
+				  size_t *out_len);
+
+/* Library-internal functions under test (white-box) ----------------------- */
 
 extern int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
 extern int comp_id_cred_len(const struct edhoc_auth_credentials *cred,
@@ -141,9 +136,5 @@ extern int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
 extern int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 			     size_t ptxt_len);
-
-/* Module interface function declarations ---------------------------------- */
-
-void internals_setup_crypto_context(struct edhoc_context *ctx);
 
 #endif /* INTERNALS_COMMON_H */

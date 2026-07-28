@@ -164,7 +164,7 @@
     {
       "name": "fuzz",
       "displayName": "Clang + libFuzzer",
-      "inherits": "base",
+      "inherits": "eph-p256",
       "binaryDir": "${sourceDir}/build/fuzz",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "clang",

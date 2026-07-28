@@ -1,15 +1,15 @@
 /**
  * \file    test_error_message.c
  * \author  Kamil Kielbasa
- * \brief   Module tests for EDHOC error message.
- * 
+ * \brief   Unit tests for EDHOC error message.
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
 
-/* EDHOC header: */
+/* EDHOC headers: */
 #include <edhoc/edhoc.h>
 #include "edhoc_macros_internal.h"
 
@@ -205,6 +205,7 @@ TEST(error_message, compose_cipher_suite_written_gt_total)
 		.entries_size = 2,
 		.entries_length = 5,
 	};
+
 	ret = edhoc_message_error_compose(
 		buffer, sizeof(buffer), &buffer_len,
 		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE, &info);
@@ -215,6 +216,7 @@ TEST(error_message, compose_tiny_buffer)
 {
 	uint8_t buffer[1] = { 0 };
 	size_t buffer_len = 0;
+
 	ret = edhoc_message_error_compose(
 		buffer, sizeof(buffer), &buffer_len,
 		EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED, NULL);
@@ -224,6 +226,7 @@ TEST(error_message, compose_tiny_buffer)
 TEST(error_message, compose_null_buffer)
 {
 	size_t buffer_len = 0;
+
 	ret = edhoc_message_error_compose(NULL, 100, &buffer_len,
 					  EDHOC_ERROR_CODE_SUCCESS, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
@@ -231,7 +234,8 @@ TEST(error_message, compose_null_buffer)
 
 TEST(error_message, process_null_buffer)
 {
-	enum edhoc_error_code code;
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+
 	ret = edhoc_message_error_process(NULL, 10, &code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
@@ -239,7 +243,8 @@ TEST(error_message, process_null_buffer)
 TEST(error_message, process_invalid_cbor)
 {
 	uint8_t garbage[] = { 0xFF, 0xFF, 0xFF };
-	enum edhoc_error_code code;
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+
 	ret = edhoc_message_error_process(garbage, sizeof(garbage), &code,
 					  NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
@@ -249,6 +254,7 @@ TEST(error_message, process_unknown_code)
 {
 	uint8_t msg[32];
 	size_t msg_len = 0;
+
 	ret = edhoc_message_error_compose(msg, sizeof(msg), &msg_len,
 					  EDHOC_ERROR_CODE_SUCCESS, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -259,7 +265,8 @@ TEST(error_message, process_unknown_code)
 	 * CBOR uint 99 = 0x18 0x63. Overwrite the first bytes.
 	 */
 	uint8_t patched[] = { 0x18, 0x63 };
-	enum edhoc_error_code code;
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+
 	ret = edhoc_message_error_process(patched, sizeof(patched), &code,
 					  NULL);
 	/* The decoder may accept code 99 (hitting default) or reject it */

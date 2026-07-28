@@ -9,7 +9,20 @@
 
 /* Include files ----------------------------------------------------------- */
 
+/* Internal headers: */
 #include "internals_common.h"
+#include "edhoc_macros_internal.h"
+
+/* PSA crypto header: */
+#include <psa/crypto.h>
+
+/* Standard library headers: */
+#include <stdint.h>
+#include <stddef.h>
+
+/* Unity headers: */
+#include <unity.h>
+#include <unity_fixture.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -20,8 +33,9 @@ TEST_GROUP(internals_message3);
 
 TEST_SETUP(internals_message3)
 {
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
-	internals_crypto = edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
+	const psa_status_t status = psa_crypto_init();
+
+	TEST_ASSERT_EQUAL(PSA_SUCCESS, status);
 }
 
 TEST_TEAR_DOWN(internals_message3)
@@ -39,24 +53,30 @@ TEST(internals_message3, comp_th_3_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+
 	ctx.state.th.stage = EDHOC_TH_STATE_1;
 
 	uint8_t buf[512] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
 	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
+
 	mc->th_len = 32;
 
 	uint8_t ptxt[32] = { 0 };
-	int ret = comp_th_3(&ctx, mc, ptxt, sizeof(ptxt));
+	int ret = comp_th_3(&ctx, mc, ptxt, ARRAY_SIZE(ptxt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_message3, comp_key_iv_aad_3_null)
 {
-	uint8_t key[16], iv[13], aad[256];
-	int ret = comp_key_iv_aad_3(NULL, key, 16, iv, 13, aad, 256);
+	uint8_t key[16] = { 0 };
+	uint8_t iv[13] = { 0 };
+	uint8_t aad[256] = { 0 };
+	int ret = comp_key_iv_aad_3(NULL, key, ARRAY_SIZE(key), iv,
+				    ARRAY_SIZE(iv), aad, ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -64,34 +84,46 @@ TEST(internals_message3, comp_key_iv_aad_3_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+
 	ctx.state.th.stage = EDHOC_TH_STATE_1;
 	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
-	uint8_t key[16], iv[13], aad[256];
-	int ret = comp_key_iv_aad_3(&ctx, key, 16, iv, 13, aad, 256);
+	uint8_t key[16] = { 0 };
+	uint8_t iv[13] = { 0 };
+	uint8_t aad[256] = { 0 };
+	int ret = comp_key_iv_aad_3(&ctx, key, ARRAY_SIZE(key), iv,
+				    ARRAY_SIZE(iv), aad, ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_message3, comp_plaintext_3_len_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+
 	uint8_t buf[256] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
 	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
+
 	size_t len = 0;
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  comp_plaintext_3_len(NULL, mc, 8, &len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  comp_plaintext_3_len(&ctx, NULL, 8, &len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  comp_plaintext_3_len(&ctx, mc, 0, &len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  comp_plaintext_3_len(&ctx, mc, 8, NULL));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+	int ret = comp_plaintext_3_len(NULL, mc, 8, &len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = comp_plaintext_3_len(&ctx, NULL, 8, &len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = comp_plaintext_3_len(&ctx, mc, 0, &len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = comp_plaintext_3_len(&ctx, mc, 8, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_message3, prepare_plaintext_3_null)
@@ -99,137 +131,185 @@ TEST(internals_message3, prepare_plaintext_3_null)
 	uint8_t buf[256] = { 0 };
 	struct mac_context *mc = (struct mac_context *)buf;
 	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
-	uint8_t sign[8] = { 0 };
-	uint8_t ptxt[256];
-	size_t ptxt_len;
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  prepare_plaintext_3(NULL, sign, 8, ptxt, 256,
-					      &ptxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  prepare_plaintext_3(mc, NULL, 8, ptxt, 256,
-					      &ptxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  prepare_plaintext_3(mc, sign, 0, ptxt, 256,
-					      &ptxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  prepare_plaintext_3(mc, sign, 8, NULL, 256,
-					      &ptxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  prepare_plaintext_3(mc, sign, 8, ptxt, 0, &ptxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  prepare_plaintext_3(mc, sign, 8, ptxt, 256, NULL));
+	uint8_t sign[8] = { 0 };
+	uint8_t ptxt[256] = { 0 };
+	size_t ptxt_len = 0;
+
+	int ret = prepare_plaintext_3(NULL, sign, ARRAY_SIZE(sign), ptxt,
+				      ARRAY_SIZE(ptxt), &ptxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = prepare_plaintext_3(mc, NULL, ARRAY_SIZE(sign), ptxt,
+				  ARRAY_SIZE(ptxt), &ptxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = prepare_plaintext_3(mc, sign, 0, ptxt, ARRAY_SIZE(ptxt),
+				  &ptxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = prepare_plaintext_3(mc, sign, ARRAY_SIZE(sign), NULL,
+				  ARRAY_SIZE(ptxt), &ptxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = prepare_plaintext_3(mc, sign, ARRAY_SIZE(sign), ptxt, 0,
+				  &ptxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = prepare_plaintext_3(mc, sign, ARRAY_SIZE(sign), ptxt,
+				  ARRAY_SIZE(ptxt), NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message3, comp_aad_3_len_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+
 	size_t len = 0;
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  comp_aad_3_len(NULL, &len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  comp_aad_3_len(&ctx, NULL));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+	int ret = comp_aad_3_len(NULL, &len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = comp_aad_3_len(&ctx, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_message3, gen_msg_3_null)
 {
-	uint8_t ctxt[] = { 0x40 };
-	uint8_t msg[64];
-	size_t msg_len;
+	const uint8_t ctxt[] = { 0x40 };
+	uint8_t msg[64] = { 0 };
+	size_t msg_len = 0;
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  gen_msg_3(NULL, 1, msg, 64, &msg_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  gen_msg_3(ctxt, 0, msg, 64, &msg_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  gen_msg_3(ctxt, 1, NULL, 64, &msg_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  gen_msg_3(ctxt, 1, msg, 0, &msg_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  gen_msg_3(ctxt, 1, msg, 64, NULL));
+	int ret = gen_msg_3(NULL, ARRAY_SIZE(ctxt), msg, ARRAY_SIZE(msg),
+			    &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = gen_msg_3(ctxt, 0, msg, ARRAY_SIZE(msg), &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = gen_msg_3(ctxt, ARRAY_SIZE(ctxt), NULL, ARRAY_SIZE(msg),
+			&msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = gen_msg_3(ctxt, ARRAY_SIZE(ctxt), msg, 0, &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = gen_msg_3(ctxt, ARRAY_SIZE(ctxt), msg, ARRAY_SIZE(msg), NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message3, parse_msg_3_null)
 {
-	uint8_t msg[] = { 0x40 };
-	const uint8_t *ctxt;
-	size_t ctxt_len;
+	const uint8_t msg[] = { 0x40 };
+	const uint8_t *ctxt = NULL;
+	size_t ctxt_len = 0;
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_msg_3(NULL, 1, &ctxt, &ctxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_msg_3(msg, 0, &ctxt, &ctxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_msg_3(msg, 1, NULL, &ctxt_len));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_msg_3(msg, 1, &ctxt, NULL));
+	int ret = parse_msg_3(NULL, ARRAY_SIZE(msg), &ctxt, &ctxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_msg_3(msg, 0, &ctxt, &ctxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_msg_3(msg, ARRAY_SIZE(msg), NULL, &ctxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_msg_3(msg, ARRAY_SIZE(msg), &ctxt, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message3, decrypt_ciphertext_3_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	uint8_t iv[13] = { 0 }, aad[32] = { 0 };
-	uint8_t ctxt[16] = { 0 }, ptxt[16] = { 0 };
+	uint8_t iv[13] = { 0 };
+	uint8_t aad[32] = { 0 };
+	uint8_t ctxt[16] = { 0 };
+	uint8_t ptxt[16] = { 0 };
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(NULL, iv, 13, aad, 32, ctxt, 16,
-					       ptxt, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, NULL, 13, aad, 32, ctxt,
-					       16, ptxt, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, iv, 0, aad, 32, ctxt, 16,
-					       ptxt, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, iv, 13, NULL, 32, ctxt, 16,
-					       ptxt, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 0, ctxt, 16,
-					       ptxt, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 32, ctxt, 0,
-					       ptxt, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 32, ctxt, 16,
-					       NULL, 16));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  decrypt_ciphertext_3(&ctx, iv, 13, aad, 32, ctxt, 16,
-					       ptxt, 0));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+	int ret = decrypt_ciphertext_3(NULL, iv, ARRAY_SIZE(iv), aad,
+				       ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
+				       ptxt, ARRAY_SIZE(ptxt));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = decrypt_ciphertext_3(&ctx, NULL, ARRAY_SIZE(iv), aad,
+				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
+				   ptxt, ARRAY_SIZE(ptxt));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = decrypt_ciphertext_3(&ctx, iv, 0, aad, ARRAY_SIZE(aad), ctxt,
+				   ARRAY_SIZE(ctxt), ptxt, ARRAY_SIZE(ptxt));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), NULL,
+				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
+				   ptxt, ARRAY_SIZE(ptxt));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad, 0, ctxt,
+				   ARRAY_SIZE(ctxt), ptxt, ARRAY_SIZE(ptxt));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad,
+				   ARRAY_SIZE(aad), ctxt, 0, ptxt,
+				   ARRAY_SIZE(ptxt));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad,
+				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
+				   NULL, ARRAY_SIZE(ptxt));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad,
+				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
+				   ptxt, 0);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_message3, parse_plaintext_3_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+
 	uint8_t ptxt[] = { 0x40 };
 	struct plaintext parsed = { 0 };
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_plaintext_3(NULL, ptxt, 1, &parsed));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_plaintext_3(&ctx, NULL, 1, &parsed));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_plaintext_3(&ctx, ptxt, 0, &parsed));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  parse_plaintext_3(&ctx, ptxt, 1, NULL));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+	int ret = parse_plaintext_3(NULL, ptxt, ARRAY_SIZE(ptxt), &parsed);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_plaintext_3(&ctx, NULL, ARRAY_SIZE(ptxt), &parsed);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_plaintext_3(&ctx, ptxt, 0, &parsed);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_plaintext_3(&ctx, ptxt, ARRAY_SIZE(ptxt), NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_message3, parse_plaintext_3_garbage)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
-	uint8_t garbage[] = { 0xFF, 0xFE, 0xFD };
+
+	const uint8_t garbage[] = { 0xFF, 0xFE, 0xFD };
 	struct plaintext parsed = { 0 };
 
-	int ret = parse_plaintext_3(&ctx, garbage, sizeof(garbage), &parsed);
+	int ret =
+		parse_plaintext_3(&ctx, garbage, ARRAY_SIZE(garbage), &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST_GROUP_RUNNER(internals_message3)

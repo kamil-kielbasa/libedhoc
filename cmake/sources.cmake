@@ -122,13 +122,16 @@ set(LIBEDHOC_TEST_COMMON_SOURCES
     ${LIBEDHOC_TESTS_DIR}/common/src/test_ead.c
     ${LIBEDHOC_TESTS_DIR}/common/src/test_credentials.c)
 
-# Fuzz compiles a subset of the cipher-suite reference sources (no suite 24), so
-# it links the matching crypto backends directly (suites 0 + 2 -> PSA +
-# compact25519), independent of the preset's CONFIG_..._ENABLE selection.
+# Fuzz targets cipher suite 2 only: they compile the enum-based getters
+# (edhoc_cipher_suite.c) and the suite 2 reference implementation, and link
+# suite 2's crypto backend (PSA via tfpsacrypto). The harnesses select the suite
+# through the public <edhoc/cipher_suite.h> getters; the fuzz preset enables
+# suite 2 and disables the rest so the dispatcher routes to it and references no
+# other suite's getters.
 set(LIBEDHOC_FUZZ_CIPHER_SUITE_SOURCES
-    ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c
+    ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/edhoc_cipher_suite.c
     ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c)
-set(LIBEDHOC_FUZZ_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto compact25519)
+set(LIBEDHOC_FUZZ_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto)
 
 # Zephyr benchmark sample: cipher suite 2 reference source.
 set(LIBEDHOC_BENCHMARK_CIPHER_SUITE_SOURCES

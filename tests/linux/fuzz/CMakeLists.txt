@@ -10,9 +10,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../../../cmake/warnings.cmake)
 # --- Fuzz sources ------------------------------------------------------------
 
 set(FUZZ_COMMON_SOURCES
-    ${LIBEDHOC_FUZZ_CIPHER_SUITE_SOURCES}
-    ${CMAKE_CURRENT_SOURCE_DIR}/support/test_ead.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/support/test_credentials.c)
+    ${LIBEDHOC_FUZZ_CIPHER_SUITE_SOURCES})
 
 set(FUZZ_TARGETS
     fuzz_message_1_process
@@ -29,18 +27,16 @@ foreach(target ${FUZZ_TARGETS})
                    ${FUZZ_COMMON_SOURCES})
 
     target_include_directories(${target} PRIVATE
-                               ${CMAKE_CURRENT_SOURCE_DIR}/support
                                ${LIBEDHOC_INTERNAL_INCLUDE_DIR})
 
     target_link_libraries(${target} PRIVATE
                           libedhoc::edhoc
                           libedhoc::cipher_suites
                           libedhoc::backend_memory
-                          unity
                           ${LIBEDHOC_FUZZ_CIPHER_SUITE_CRYPTO_BACKENDS})
 
     # Same shared warning policy as the library and module tests (TEST profile:
-    # tolerates Unity macros and CBOR test-vector casts).
+    # tolerates CBOR test-vector casts in the linked cipher-suite sources).
     libedhoc_target_warnings(${target} TEST)
 
     # Fuzz-specific: LLVMFuzzerTestOneInput is the libFuzzer entry point, called

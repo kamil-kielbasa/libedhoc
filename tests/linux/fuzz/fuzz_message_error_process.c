@@ -1,7 +1,8 @@
 /**
  * \file    fuzz_message_error_process.c
  * \author  Kamil Kielbasa
- * \brief   libFuzzer harness for edhoc_message_error_process().
+ * \brief   libFuzzer harness feeding arbitrary input to
+ *          edhoc_message_error_process().
  *
  * \copyright Copyright (c) 2026
  *
@@ -9,13 +10,13 @@
 
 /* Include files ----------------------------------------------------------- */
 
+/* EDHOC headers: */
+#include <edhoc/edhoc.h>
+#include "edhoc_macros_internal.h"
+
 /* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>
-
-/* EDHOC header: */
-#include <edhoc/edhoc.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -37,14 +38,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		.entries_length = 0,
 	};
 
-	edhoc_message_error_process(data, size, &error_code, &error_info);
+	(void)edhoc_message_error_process(data, size, &error_code, &error_info);
 
 	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE == error_code) {
 		error_info.cipher_suites = cipher_suites;
-		error_info.entries_size = 8;
+		error_info.entries_size = ARRAY_SIZE(cipher_suites);
 		error_info.entries_length = 0;
-		edhoc_message_error_process(data, size, &error_code,
-					    &error_info);
+		(void)edhoc_message_error_process(data, size, &error_code,
+						  &error_info);
 	}
 
 	return 0;

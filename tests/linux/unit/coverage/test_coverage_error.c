@@ -9,7 +9,17 @@
 
 /* Include files ----------------------------------------------------------- */
 
+/* Internal headers: */
 #include "coverage_common.h"
+#include "edhoc_macros_internal.h"
+
+/* Standard library headers: */
+#include <stdint.h>
+#include <stddef.h>
+
+/* Unity headers: */
+#include <unity.h>
+#include <unity_fixture.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -20,12 +30,10 @@ TEST_GROUP(coverage_error);
 
 TEST_SETUP(coverage_error)
 {
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, psa_crypto_init());
 }
 
 TEST_TEAR_DOWN(coverage_error)
 {
-	mbedtls_psa_crypto_free();
 }
 
 TEST(coverage_error, error_msg_compose_bad_info)
@@ -34,6 +42,7 @@ TEST(coverage_error, error_msg_compose_bad_info)
 	size_t len = 0;
 
 	const char text[] = "error";
+
 	struct edhoc_error_info info = {
 		.text_string = (char *)text,
 		.entries_size = 2,
@@ -51,9 +60,11 @@ TEST(coverage_error, error_msg_compose_suites_overflow)
 	uint8_t buf[256] = { 0 };
 	size_t len = 0;
 
-	int32_t suites[100];
-	for (size_t i = 0; i < 100; i++)
+	int32_t suites[100] = { 0 };
+
+	for (size_t i = 0; i < ARRAY_SIZE(suites); i++) {
 		suites[i] = (int32_t)i;
+	}
 
 	struct edhoc_error_info info = {
 		.cipher_suites = suites,
@@ -99,7 +110,8 @@ TEST(coverage_error, error_msg_process_text_too_small)
 		.text_string = recv_text,
 		.entries_size = 1,
 	};
-	enum edhoc_error_code code;
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+
 	ret = edhoc_message_error_process(buf, len, &code, &recv_info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
@@ -126,7 +138,8 @@ TEST(coverage_error, error_msg_process_suites_too_small)
 		.cipher_suites = recv_suites,
 		.entries_size = 1,
 	};
-	enum edhoc_error_code code;
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+
 	ret = edhoc_message_error_process(buf, len, &code, &recv_info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }

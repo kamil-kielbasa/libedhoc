@@ -13,7 +13,14 @@ if(NOT CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
     return()
 endif()
 
-set(_sup ${CMAKE_CURRENT_SOURCE_DIR}/support)
+# The custom memory backend requires each test binary to supply its own
+# edhoc_mem_alloc/free. This tier's asserts are allocator-agnostic and the
+# custom backend is already exercised end-to-end by robustness/oom_sweep and
+# rfc9529 under p256_custom, so the tier is skipped here rather than carrying a
+# link-time allocator of its own.
+if(CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
+    return()
+endif()
 
 set(_unit_sources
     api/test_api.c
@@ -22,7 +29,7 @@ set(_unit_sources
     error/test_error_message.c
     exporters/test_exporters.c
     message/test_message_paths.c
-    coverage/coverage_common.c
+    coverage/support/coverage_common.c
     coverage/test_coverage_msg1.c
     coverage/test_coverage_msg2.c
     coverage/test_coverage_msg3.c
@@ -32,18 +39,12 @@ set(_unit_sources
     coverage/test_coverage_cbor.c
     coverage/test_coverage_handshake.c
     coverage/test_coverage_sweep_validate.c
-    internals/internals_common.c
+    internals/support/internals_common.c
     internals/test_internals_common.c
     internals/test_internals_mac.c
-    internals/test_internals_message1.c
     internals/test_internals_message2.c
     internals/test_internals_message3.c
-    internals/test_internals_message4.c
-    internals/test_internals_error.c
-    internals/test_internals_coap.c
-    internals/test_internals_api.c
-    ${_sup}/test_ead.c
-    ${_sup}/test_credentials.c)
+    internals/test_internals_message4.c)
 
 # Kept in test_main.c execution order; the runner is generated from this list.
 set(_unit_groups
@@ -52,24 +53,13 @@ set(_unit_groups
     coverage_exporters coverage_error coverage_cbor coverage_handshake
     coverage_sweep_validate
     internals_common internals_mac internals_message2 internals_message3
-    internals_message4 internals_error internals_message1 internals_coap
-    internals_api
+    internals_message4
     message_paths)
-
-# Custom memory backend: the instrumented allocator both supplies the
-# edhoc_mem_alloc/free hooks the library links against and is exercised by its
-# own allocator unit tests. Compiled only here (never under stack/heap), so the
-# orphan reconcile excludes tests/linux/**/mem/ the way it excludes robustness/.
-if(CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
-    list(APPEND _unit_sources ${_sup}/test_mem_custom.c mem/test_mem_custom.c)
-    list(APPEND _unit_groups mem_custom)
-endif()
 
 edhoc_add_unity_test(
     NAME          test_unit
     SOURCES       ${_unit_sources}
     GROUPS        ${_unit_groups}
     SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
-    INCLUDE       ${_sup}
-                  ${CMAKE_CURRENT_SOURCE_DIR}/coverage
-                  ${CMAKE_CURRENT_SOURCE_DIR}/internals)
+    INCLUDE       ${CMAKE_CURRENT_SOURCE_DIR}/coverage/support
+                  ${CMAKE_CURRENT_SOURCE_DIR}/internals/support)
