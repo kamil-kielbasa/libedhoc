@@ -25,6 +25,13 @@ if(CONFIG_LIBEDHOC_ENABLE)
         ${LIBEDHOC_BACKEND_MEM_INCLUDE_DIR}
         ${LIBEDHOC_BACKEND_LOG_INCLUDE_DIR})
 
+    # Classic suites 0 and 4 use compact25519 for Ed25519 signatures; it has no
+    # upstream Zephyr module, so libedhoc builds it (like XKCP for pqc_1 below).
+    if(CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE OR
+       CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
+        include(${CMAKE_CURRENT_LIST_DIR}/../cmake/compact25519_zephyr.cmake)
+    endif()
+
     # Post-quantum cipher suite 1: build the portable XKCP KMAC256 KDF backend
     # as a companion library (liboqs ships its own Zephyr module). The suite and
     # KDF sources are compiled by the application, like the classic suites.

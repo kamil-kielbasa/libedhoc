@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   twister:
-    name: Twister (native_sim samples)
+    name: Twister (native_sim benchmark)
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/zephyrproject-rtos/ci-base:v0.29.2
@@ -27,18 +27,21 @@ jobs:
         run: |
           pip install -r zephyr/scripts/requirements-base.txt
 
-      # Build + run every sample.yaml under sample/ on native_sim. Twister checks
-      # each sample's console harness (the benchmark emits its JSON report). The
-      # benchmark runs in both libedhoc memory backends (stack + heap, the latter
-      # via overlays/overlay-heap.conf) as separate scenarios.
-      - name: Twister - build + run libedhoc samples (native_sim)
+      # Build + run the ZTEST benchmark under tests/zephyr on native_sim. It
+      # runs the full EDHOC handshake under every enabled cipher suite, once per
+      # libedhoc memory backend (stack / heap / custom) as separate scenarios.
+      # --disable-warnings-as-errors: the post-quantum suite links liboqs, whose
+      # sources do not build clean under Zephyr's -Werror (libedhoc's own code
+      # is warning-checked by the Linux CI matrix).
+      - name: Twister - build + run libedhoc benchmark (native_sim)
         env:
           ZEPHYR_TOOLCHAIN_VARIANT: host
         run: |
           ./zephyr/scripts/twister \
-            --testsuite-root libedhoc/sample \
+            --testsuite-root libedhoc/tests/zephyr \
             --platform native_sim \
             --outdir twister-out \
+            --disable-warnings-as-errors \
             --inline-logs --verbose
 
       # The benchmark's real payload is the linked flash / RAM footprint and the
@@ -49,7 +52,7 @@ jobs:
         run: |
           report=twister-out/flash_report.txt
           : > "$report"
-          for variant in stack heap; do
+          for variant in stack heap custom; do
             exe=$(find twister-out -type f -name zephyr.exe \
                     -path "*benchmark*${variant}*" | head -n1)
             if [ -z "$exe" ]; then

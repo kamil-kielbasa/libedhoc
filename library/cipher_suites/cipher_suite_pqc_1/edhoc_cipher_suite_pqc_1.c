@@ -133,9 +133,10 @@ struct key_slot {
 
 /* One mutex guards both the software keystore and the hash operation pool. */
 #ifdef __ZEPHYR__
-K_MUTEX_DEFINE(edhoc_mutex);
+K_MUTEX_DEFINE(edhoc_cipher_suite_pqc_1_mutex);
 #else /* __ZEPHYR__ */
-static pthread_mutex_t edhoc_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t edhoc_cipher_suite_pqc_1_mutex =
+	PTHREAD_MUTEX_INITIALIZER;
 #endif /* __ZEPHYR__ */
 
 /** Software keystore for the oversized ML-KEM / ML-DSA keys. */
@@ -292,23 +293,35 @@ int edhoc_cipher_suite_pqc_1_import_signing_key(const uint8_t *signing_key,
 						size_t signing_key_length,
 						void *key_id);
 
+/**
+ * \brief Release every software-keystore slot.
+ *
+ *        Wipes and frees all ML-KEM / ML-DSA key material held in the suite's
+ *        software keystore, including credential keys the EDHOC context does
+ *        not own. Deliberately absent from the public suite header (like
+ *        \ref edhoc_cipher_suite_pqc_1_import_signing_key); callers that need
+ *        it, such as a benchmark repeating handshakes, reach it through an
+ *        \c extern prototype of their own.
+ */
+void edhoc_cipher_suite_pqc_1_keystore_release_all(void);
+
 /* Static function definitions --------------------------------------------- */
 
 static int mutex_lock(void)
 {
 #ifdef __ZEPHYR__
-	return k_mutex_lock(&edhoc_mutex, K_FOREVER);
+	return k_mutex_lock(&edhoc_cipher_suite_pqc_1_mutex, K_FOREVER);
 #else /* __ZEPHYR__ */
-	return pthread_mutex_lock(&edhoc_mutex);
+	return pthread_mutex_lock(&edhoc_cipher_suite_pqc_1_mutex);
 #endif /* __ZEPHYR__ */
 }
 
 static int mutex_unlock(void)
 {
 #ifdef __ZEPHYR__
-	return k_mutex_unlock(&edhoc_mutex);
+	return k_mutex_unlock(&edhoc_cipher_suite_pqc_1_mutex);
 #else /* __ZEPHYR__ */
-	return pthread_mutex_unlock(&edhoc_mutex);
+	return pthread_mutex_unlock(&edhoc_cipher_suite_pqc_1_mutex);
 #endif /* __ZEPHYR__ */
 }
 
@@ -1312,4 +1325,24 @@ int edhoc_cipher_suite_pqc_1_import_signing_key(const uint8_t *signing_key,
 	store_key_id(key_id, handle);
 
 	return EDHOC_SUCCESS;
+}
+
+void edhoc_cipher_suite_pqc_1_keystore_release_all(void)
+{
+	if (0 != mutex_lock()) {
+		EDHOC_LOG_ERR("Mutex lock failed");
+		return;
+	}
+
+	for (size_t index = 0; index < EDHOC_CIPHER_SUITE_PQC_1_KEYSTORE_SLOTS;
+	     ++index) {
+		mbedtls_platform_zeroize(keystore[index].material,
+					 sizeof(keystore[index].material));
+		keystore[index].material_len = 0;
+		keystore[index].in_use = false;
+	}
+
+	if (0 != mutex_unlock()) {
+		EDHOC_LOG_ERR("Mutex unlock failed");
+	}
 }

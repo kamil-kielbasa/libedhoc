@@ -71,9 +71,9 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static variables and constants ------------------------------------------ */
 
 #ifdef __ZEPHYR__
-K_MUTEX_DEFINE(edhoc_mutex);
+K_MUTEX_DEFINE(edhoc_cipher_suite_0_mutex);
 #else /* __ZEPHYR__ */
-static pthread_mutex_t edhoc_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t edhoc_cipher_suite_0_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif /* __ZEPHYR__ */
 
 static psa_hash_operation_t hash_op_pool[EDHOC_CIPHER_SUITE_0_HASH_OP_POOL_SIZE];
@@ -844,18 +844,18 @@ static int aead_decrypt(void *user_context, const void *key_id,
 static int edhoc_mutex_lock(void)
 {
 #ifdef __ZEPHYR__
-	return k_mutex_lock(&edhoc_mutex, K_FOREVER);
+	return k_mutex_lock(&edhoc_cipher_suite_0_mutex, K_FOREVER);
 #else /* __ZEPHYR__ */
-	return pthread_mutex_lock(&edhoc_mutex);
+	return pthread_mutex_lock(&edhoc_cipher_suite_0_mutex);
 #endif /* __ZEPHYR__ */
 }
 
 static int edhoc_mutex_unlock(void)
 {
 #ifdef __ZEPHYR__
-	return k_mutex_unlock(&edhoc_mutex);
+	return k_mutex_unlock(&edhoc_cipher_suite_0_mutex);
 #else /* __ZEPHYR__ */
-	return pthread_mutex_unlock(&edhoc_mutex);
+	return pthread_mutex_unlock(&edhoc_cipher_suite_0_mutex);
 #endif /* __ZEPHYR__ */
 }
 

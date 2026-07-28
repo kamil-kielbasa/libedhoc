@@ -1,0 +1,14 @@
+# =============================================================================
+# EDHOC handshake benchmark (ZTEST) — application Kconfig.
+# =============================================================================
+
+config EDHOC_BENCHMARK_ITERATIONS
+	int "Number of timed EDHOC handshakes per cipher suite"
+	default 10
+	range 1 1000
+	help
+	  Each cipher-suite benchmark runs the full EDHOC handshake this many
+	  times and reports the average / minimum / maximum per protocol phase.
+	  More iterations smooth out per-run jitter at the cost of a longer run.
+
+source "Kconfig.zephyr"

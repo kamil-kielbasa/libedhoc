@@ -1,0 +1,23 @@
+common:
+  tags:
+    - libedhoc
+    - benchmark
+    - edhoc
+  harness: ztest
+  platform_allow:
+    - native_sim
+  integration_platforms:
+    - native_sim
+  # The full handshake runs under every enabled cipher suite (0, 2, 24, pqc_1),
+  # each averaged over several iterations; keep a generous cap.
+  timeout: 300
+tests:
+  # Runs the benchmark under every enabled cipher suite, once per libedhoc
+  # memory backend (stack / heap / custom).
+  libedhoc.benchmark.stack: {}
+  libedhoc.benchmark.heap:
+    extra_args:
+      - EXTRA_CONF_FILE=overlays/heap.conf
+  libedhoc.benchmark.custom:
+    extra_args:
+      - EXTRA_CONF_FILE=overlays/custom.conf
