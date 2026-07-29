@@ -102,6 +102,14 @@ jobs:
       - uses: ./.github/actions/retry
         with:
           command: "wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && sudo bash /tmp/llvm.sh"
+      # llvm.sh installs clang-<N>; /usr/bin/clang still points at the distro
+      # version, so put the newest one first on PATH.
+      - name: Select the newest clang
+        run: |
+          ver=$(ls -1 /usr/bin/clang-* | grep -oE 'clang-[0-9]+$' | cut -d- -f2 |
+                sort -n | tail -1)
+          sudo ln -sf "/usr/bin/clang-${ver}" /usr/local/bin/clang
+          clang --version
       - uses: ./.github/actions/retry
         with:
           command: "sudo apt-get update && sudo apt-get install -y xsltproc ninja-build"

@@ -37,11 +37,13 @@ function(libedhoc_target_warnings target profile)
                                                   # the backend's read and write roles
                 -Wno-covered-switch-default       # contradicts -Wswitch-default
                 -Wno-declaration-after-statement  # the project is C11
-                -Wno-format-signedness            # enums are logged with %d
                 -Wno-padded                       # informational; struct layout
                 -Wno-switch-default
                 -Wno-unsafe-buffer-usage          # C has no bounds-safe alternative
                 -Wno-vla)                         # the stack backend allocates VLAs
+            if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 20)
+                list(APPEND extra_clang -Wno-format-signedness)
+            endif()
         endif()
     elseif(profile STREQUAL "TEST")
         # Unity declares tests via macros; test vectors store negative CBOR ints.
