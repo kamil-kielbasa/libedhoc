@@ -661,7 +661,8 @@ static inline int
 edhoc_key_slot_release_up_to(struct edhoc_context *ctx,
 			     enum edhoc_key_slot_id up_to_slot)
 {
-	for (enum edhoc_key_slot_id slot = 0; slot < up_to_slot; ++slot) {
+	for (enum edhoc_key_slot_id slot = EDHOC_KEY_SLOT_SHARED_SECRET;
+	     slot < up_to_slot; ++slot) {
 		const int ret = edhoc_key_slot_release(ctx, slot);
 
 		if (EDHOC_SUCCESS != ret) {
