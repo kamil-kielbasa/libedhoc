@@ -2,6 +2,13 @@ name: CI / Zephyr
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   twister:
     name: Twister (native_sim benchmark)
@@ -27,12 +34,8 @@ jobs:
         run: |
           pip install -r zephyr/scripts/requirements-base.txt
 
-      # Build + run the ZTEST benchmark under tests/zephyr on native_sim. It
-      # runs the full EDHOC handshake under every enabled cipher suite, once per
-      # libedhoc memory backend (stack / heap / custom) as separate scenarios.
-      # --disable-warnings-as-errors: the post-quantum suite links liboqs, whose
-      # sources do not build clean under Zephyr's -Werror (libedhoc's own code
-      # is warning-checked by the Linux CI matrix).
+      # -W: liboqs (third-party) isn't -Werror-clean; our code is checked by the
+      # Linux matrix.
       - name: Twister - build + run libedhoc benchmark (native_sim)
         env:
           ZEPHYR_TOOLCHAIN_VARIANT: host
@@ -44,33 +47,23 @@ jobs:
             --disable-warnings-as-errors \
             --inline-logs --verbose
 
-      # The benchmark's real payload is the linked flash / RAM footprint and the
-      # per-phase timing JSON - twister only asserts it ran, so re-run the
-      # binaries it built and analyse them here.
+      # Re-run each benchmark binary (one per cipher suite x memory backend, e.g.
+      # cipher_suite_2.stack) to capture its libedhoc flash footprint and
+      # per-phase timing JSON.
       - name: Benchmark flash / RAM + timing analysis
         if: always()
         run: |
           report=twister-out/flash_report.txt
           : > "$report"
-          for variant in stack heap custom; do
-            exe=$(find twister-out -type f -name zephyr.exe \
-                    -path "*benchmark*${variant}*" | head -n1)
-            if [ -z "$exe" ]; then
-              echo "WARNING: benchmark ${variant} binary not found" | tee -a "$report"
-              continue
-            fi
-            echo "=== libedhoc flash footprint (${variant}) - from nm ===" | tee -a "$report"
-            nm --print-size --size-sort --defined-only "$exe" \
-              | grep -i edhoc \
-              | awk '{printf "%6d  %s\n", strtonum("0x"$2), $4}' \
-              | sort -rn | tee -a "$report"
-            nm --print-size --size-sort --defined-only "$exe" \
-              | grep -i edhoc \
-              | awk -v v="$variant" '{sum += strtonum("0x"$2)} END {printf "libedhoc total (%s): %d bytes (%.1f KiB)\n", v, sum, sum/1024}' \
+          for exe in $(find twister-out -name zephyr.exe -path '*benchmark*' | sort); do
+            # .../<scenario>/zephyr/zephyr.exe -> scenario label
+            label=$(basename "$(dirname "$(dirname "$exe")")" | sed 's/^libedhoc\.benchmark\.//')
+            echo "=== ${label}: libedhoc flash footprint (bytes) ===" | tee -a "$report"
+            nm --print-size --size-sort --radix=d --defined-only "$exe" \
+              | awk '/edhoc/ { total += $2; printf "%8d  %s\n", $2, $4 }
+                     END     { printf "total: %d bytes (%.1f KiB)\n", total, total / 1024 }' \
               | tee -a "$report"
-            echo "--- timing (${variant}) ---" | tee -a "$report"
-            "$exe" 2>/dev/null | sed -n '/^{/,/^}/p' \
-              | tee "twister-out/benchmark_timing_${variant}.json"
+            "$exe" 2>/dev/null | sed -n '/^{/,/^}/p' > "twister-out/benchmark_timing_${label}.json"
           done
 
       - name: Upload Twister + benchmark artifacts

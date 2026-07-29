@@ -133,7 +133,7 @@ if LIBEDHOC_ENABLE
 
         config LIBEDHOC_CIPHER_SUITE_0_ENABLE
             bool "Cipher suite 0 (X25519 / EdDSA / AES-CCM-16-64-128 / SHA-256)."
-            default y
+            default n
             help
                 Build the reference implementation of cipher suite 0.
                 External libraries: PSA crypto (mbedTLS) for the X25519 key
@@ -142,7 +142,7 @@ if LIBEDHOC_ENABLE
 
         config LIBEDHOC_CIPHER_SUITE_2_ENABLE
             bool "Cipher suite 2 (P-256 / ES256 / AES-CCM-16-64-128 / SHA-256)."
-            default y
+            default n
             help
                 Build the reference implementation of cipher suite 2.
                 External libraries: PSA crypto (mbedTLS) for P-256 / ES256,
@@ -150,7 +150,7 @@ if LIBEDHOC_ENABLE
 
         config LIBEDHOC_CIPHER_SUITE_4_ENABLE
             bool "Cipher suite 4 (X25519 / EdDSA / ChaCha20/Poly1305 / SHA-256)."
-            default y
+            default n
             help
                 Build the reference implementation of cipher suite 4.
                 External libraries: PSA crypto (mbedTLS) for the X25519 key
@@ -159,7 +159,7 @@ if LIBEDHOC_ENABLE
 
         config LIBEDHOC_CIPHER_SUITE_24_ENABLE
             bool "Cipher suite 24 (P-384 / ES384 / A256GCM / SHA-384)."
-            default y
+            default n
             help
                 Build the reference implementation of cipher suite 24.
                 External libraries: PSA crypto (mbedTLS) for P-384 / ES384,
@@ -167,7 +167,7 @@ if LIBEDHOC_ENABLE
 
         config LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE
             bool "Post-quantum cipher suite 1 (ML-KEM-512 / ML-DSA-44)."
-            default y
+            default n
             help
                 Build the reference implementation of post-quantum cipher
                 suite 1 (cipher suite TBD1 of draft-ietf-lake-pqsuites-00):

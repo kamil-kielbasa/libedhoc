@@ -17,6 +17,7 @@ Start here
 - **Want code?** Follow the :doc:`getting_started/quick_start`.
 - **Integrating the library?** See :doc:`guide/protocol_flow`,
   :doc:`guide/security` and :doc:`guide/configuration`.
+- **Building or running the tests?** See :doc:`guide/building`.
 - **Looking up a function or type?** Open the :doc:`api/index`.
 
 .. toctree::
@@ -33,6 +34,7 @@ Start here
    guide/protocol_flow
    guide/security
    guide/configuration
+   guide/building
 
 .. toctree::
    :hidden:

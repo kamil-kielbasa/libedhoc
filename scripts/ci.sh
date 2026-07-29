@@ -1,22 +1,16 @@
 #!/usr/bin/env bash
 #
-# libedhoc CI helper — a thin wrapper around CMake presets.
-#
-# Every build/test config lives in CMakePresets.json (+ tests/cmake/presets-linux.json),
-# so a CI step and a local reproduction are the SAME one-liner:
-#
-#     scripts/ci.sh ci p256_stack       # configure + build + test one preset
-#     cmake --preset p256_stack && cmake --build --preset p256_stack && ctest --preset p256_stack
-#
-# List every preset with:  scripts/ci.sh list   (or  cmake --list-presets)
+# libedhoc Linux CI helper: a thin wrapper around the CMake presets. Every step
+# is one `scripts/ci.sh <cmd>`, reproducible locally. (Zephyr uses west/twister.)
 #
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${PROJECT_DIR}"
 
-# The functional test matrix: one entry per (eph suite family × memory backend).
-# Single source of truth for `matrix` and `check-matrix`.
+# Functional matrix: one entry per ephemeral family x memory backend. Each family
+# covers its suite(s): x25519 = suites 0 & 4, p256 = 2, p384 = 24, mlkem512 =
+# pqc_1. Single source of truth for `matrix` and `check-matrix`.
 MATRIX_PRESETS=(
     x25519_stack   x25519_heap   x25519_custom
     p256_stack     p256_heap     p256_custom
@@ -24,7 +18,10 @@ MATRIX_PRESETS=(
     mlkem512_stack mlkem512_heap mlkem512_custom
 )
 
-RED='\033[0;31m'; GREEN='\033[0;32m'; BLUE='\033[0;34m'; NC='\033[0m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+NC='\033[0m'
 section() { echo -e "\n${BLUE}=== $* ===${NC}"; }
 ok()      { echo -e "${GREEN}$*${NC}"; }
 err()     { echo -e "${RED}$*${NC}" >&2; }
@@ -41,12 +38,24 @@ run_ctest() {
     CTEST_NO_TESTS_ACTION=error "${wrap[@]}" ctest --preset "$preset" --output-on-failure "$@"
 }
 
-# cmd_build <preset> [target]: configure, then build the whole tree — or just
-# one target when given (e.g. `build no_cipher_suites libedhoc` compiles only the
-# library, skipping the externals it does not link).
-cmd_build() { section "build ${1}${2:+ (target ${2})}"; cmake --preset "$1" >/dev/null; cmake --build --preset "$1" -j"$(nproc)" ${2:+--target "$2"}; ok "built ${1}"; }
-cmd_test()  { section "test ${1}";  run_ctest "$1"; }
-cmd_ci()    { cmd_build "$1"; cmd_test "$1"; ok "ci ${1} passed"; }
+# --- build / test / ci (per preset) ------------------------------------------
+cmd_build() {
+    section "build ${1}${2:+ (target ${2})}"
+    cmake --preset "$1" >/dev/null
+    cmake --build --preset "$1" -j"$(nproc)" ${2:+--target "$2"}
+    ok "built ${1}"
+}
+
+cmd_test() {
+    section "test ${1}"
+    run_ctest "$1"
+}
+
+cmd_ci() {
+    cmd_build "$1"
+    cmd_test "$1"
+    ok "ci ${1} passed"
+}
 
 # --- matrix: build + test every functional preset ----------------------------
 cmd_matrix() {
@@ -57,17 +66,10 @@ cmd_matrix() {
     ok "\nFull matrix passed (${#MATRIX_PRESETS[@]} preset(s) + legacy)."
 }
 
-# --- check-matrix: anti-silent-skip net #2 -----------------------------------
-# Every test_*.c under tests/linux must be built (and thus run) by AT LEAST one
-# preset. A file that no preset builds would silently never run. We only
-# configure each preset (add_test is a configure-time step), then diff the union
-# of ctest names against the on-disk test files — no compilation needed, so this
-# is fast.
-#
-# Bundled tiers whose many test_*.c compile into ONE ctest entry (unit/ ->
-# test_unit, robustness/ -> test_mem_custom) can't be matched file-to-name here,
-# so they are excluded and instead guarded by net #1 (edhoc_reconcile_linux_tree),
-# which fails the configure if any of their files is wired into no binary.
+# --- check-matrix ------------------------------------------------------------
+# Fail if any test_*.c under tests/linux is built by no preset (it would
+# silently never run). Bundled tiers (unit/, robustness/) compile many files
+# into one binary, so they are excluded here.
 cmd_check_matrix() {
     section "check-matrix: every test file runs in >= 1 preset"
     local union
@@ -118,11 +120,8 @@ cmd_sanitizers() { cmd_build asan; cmd_test asan; }
 # --- valgrind (memcheck + DRD over a preset's binaries) ----------------------
 cmd_valgrind() {
     require valgrind
-    # The `valgrind` preset enables ALL suites and rebuilds liboqs as portable C
-    # (OQS_OPT_TARGET=generic) so Valgrind can decode the ML-KEM / ML-DSA paths —
-    # i.e. the post-quantum suite IS covered here, not skipped. (-gdwarf-4 keeps
-    # older Valgrind happy with GCC's DWARF-5 default.) Pass another preset name
-    # to memcheck a lighter, classic-only config.
+    # The valgrind preset builds all suites with portable liboqs; pass another
+    # preset for a lighter run.
     local preset="${1:-valgrind}"
     section "valgrind memcheck + DRD (${preset})"
     cmake --preset "$preset" >/dev/null
@@ -188,21 +187,14 @@ cmd_cppcheck() {
 cmd_clang_tidy() {
     require clang-tidy
     section "clang-tidy"
-    # A dedicated clang configure gives clang-tidy a matching compile database.
+    # Build XKCP's generated headers first, else clang-tidy aborts on the
+    # KMAC256 KDF source.
     cmake --preset legacy -B build/tidy -DCMAKE_C_COMPILER=clang >/dev/null
-    # XKCP publishes its headers as a build byproduct (generated from XML via
-    # xsltproc), so build that target first — otherwise clang-tidy cannot find
-    # them and aborts edhoc_kdf_kmac256_xkcp.c with "error while processing".
     cmake --build build/tidy --target xkcp_build >/dev/null
     clang-tidy -p build/tidy \
         library/core/*.c \
-        library/cipher_suites/edhoc_cipher_suite.c \
-        library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c \
-        library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c \
-        library/cipher_suites/cipher_suite_4/edhoc_cipher_suite_4.c \
-        library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c \
-        library/cipher_suites/cipher_suite_pqc_1/edhoc_cipher_suite_pqc_1.c \
-        library/cipher_suites/common/edhoc_kdf_kmac256_xkcp.c
+        library/cipher_suites/*.c \
+        library/cipher_suites/*/*.c
     ok "clang-tidy passed."
 }
 

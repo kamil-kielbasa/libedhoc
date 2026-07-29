@@ -52,6 +52,15 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
         GROUPS        cipher_suite_2_x509_hash)
 endif()
 
+if(CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
+    edhoc_add_unity_test(
+        NAME          test_cipher_suite_4_x509_chain
+        SOURCES       test_cipher_suite_4_x509_chain.c ${_driver} ${_memhook}
+        SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
+        INCLUDE       ${_drv} ${_vectors}
+        GROUPS        cipher_suite_4_x509_chain)
+endif()
+
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
     edhoc_add_unity_test(
         NAME          test_cipher_suite_24_x509_chain

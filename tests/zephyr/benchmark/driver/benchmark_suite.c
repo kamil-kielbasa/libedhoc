@@ -44,9 +44,11 @@
 /* The post-quantum suite keeps credential keys in a software keystore the EDHOC
  * context does not own. This library-internal hook releases them between
  * handshakes; it is declared here (not in a public header) exactly as the
- * suite's edhoc_cipher_suite_pqc_1.c exposes it. The benchmark always builds
- * the post-quantum suite, so this is unconditional (see prj.conf). */
+ * suite's edhoc_cipher_suite_pqc_1.c exposes it. Only referenced when the
+ * post-quantum suite is built (one benchmark scenario per suite). */
+#if defined(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
 extern void edhoc_cipher_suite_pqc_1_keystore_release_all(void);
+#endif
 
 /* Module defines ---------------------------------------------------------- */
 
@@ -295,11 +297,12 @@ static void benchmark_run_handshake(const struct benchmark_case *bench_case,
 
 	/* The post-quantum suite keeps credential keys in a software keystore
 	 * the EDHOC context does not own; release them so slots do not
-	 * accumulate across repeated handshakes (a no-op for the classic
-	 * suites). */
+	 * accumulate across repeated handshakes (only built for that suite). */
+#if defined(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
 	if (EDHOC_CIPHER_SUITE_PQC_1 == bench_case->suite_id) {
 		edhoc_cipher_suite_pqc_1_keystore_release_all();
 	}
+#endif
 }
 
 /* Module interface function definitions ----------------------------------- */

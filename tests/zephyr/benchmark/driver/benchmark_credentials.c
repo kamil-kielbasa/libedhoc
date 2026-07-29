@@ -32,10 +32,12 @@
 
 /* Library-internal: imports the post-quantum signing key into the suite's own
  * software keystore (not PSA). Declared here as edhoc_cipher_suite_pqc_1.c
- * exposes it. The benchmark always builds the post-quantum suite, so this is
- * unconditional (see prj.conf). */
+ * exposes it. Only referenced when the post-quantum suite is built (one
+ * benchmark scenario per suite). */
+#if defined(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
 extern int edhoc_cipher_suite_pqc_1_import_signing_key(
 	const uint8_t *signing_key, size_t signing_key_length, void *key_id);
+#endif
 
 /* Static function declarations -------------------------------------------- */
 
@@ -100,6 +102,7 @@ static int benchmark_import_private_key(enum benchmark_key_import key_import,
 		break;
 
 	case BENCHMARK_KEY_ML_DSA_44:
+#if defined(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
 		/* The post-quantum signing key is loaded into the suite's own
 		 * software keystore, not PSA. */
 		if (EDHOC_SUCCESS !=
@@ -109,6 +112,9 @@ static int benchmark_import_private_key(enum benchmark_key_import key_import,
 		}
 
 		return EDHOC_SUCCESS;
+#else
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+#endif
 
 	default:
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
