@@ -1,17 +1,12 @@
-# SPDX-License-Identifier: MIT
+# =============================================================================
+# compact25519 — Ed25519 signatures, as a Zephyr companion library.
 #
-# Build compact25519 (Ed25519 / X25519) as a Zephyr companion library for the
-# libedhoc classic cipher suites 0 and 4, which use it for Ed25519 signatures
-# (X25519 itself comes from PSA). compact25519 has no upstream Zephyr module, so
-# libedhoc builds it here, mirroring cmake/xkcp_zephyr.cmake for XKCP.
-#
-# Included from zephyr/CMakeLists.txt when
-# CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE=y or
-# CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE=y.
+# compact25519 has no upstream Zephyr module, so libedhoc builds it here.
+# Included from zephyr/CMakeLists.txt by the cipher suites that need it.
+# =============================================================================
 
-# Locate the compact25519 source tree: the west project (../modules/lib/
-# compact25519) or the libedhoc externals/ submodule. Override with
-# -DCOMPACT25519_ROOT=.
+# Source tree: the west project, or the libedhoc submodule. Override with
+# -DCOMPACT25519_ROOT=<path>.
 if(NOT DEFINED COMPACT25519_ROOT)
     foreach(_c25519_cand
             ${ZEPHYR_CURRENT_MODULE_DIR}/../modules/lib/compact25519
@@ -25,9 +20,7 @@ endif()
 
 if(NOT COMPACT25519_ROOT OR NOT EXISTS ${COMPACT25519_ROOT}/src/compact_ed25519.c)
     message(FATAL_ERROR
-            "libedhoc suites 0/4: compact25519 sources not found (looked in "
-            "../modules/lib/compact25519 and externals/compact25519). Pass "
-            "-DCOMPACT25519_ROOT=<path>.")
+            "compact25519 sources not found; pass -DCOMPACT25519_ROOT=<path>.")
 endif()
 
 zephyr_library_named(compact25519)
@@ -45,8 +38,8 @@ zephyr_library_sources(
 # Vendored third-party sources: do not fail the build on their warnings.
 zephyr_library_compile_options(-w)
 
-# Global include paths so the suite 0 / 4 reference sources (compiled by the
-# application) resolve "compact_ed25519.h" and the c25519 primitives.
+# Global, so the reference cipher-suite sources compiled by the application
+# resolve these headers too.
 zephyr_include_directories(
     ${COMPACT25519_ROOT}/src
     ${COMPACT25519_ROOT}/src/c25519)

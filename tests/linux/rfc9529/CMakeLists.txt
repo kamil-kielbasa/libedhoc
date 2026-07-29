@@ -1,10 +1,8 @@
 # =============================================================================
-# tests/linux/rfc9529 — RFC 9529 trace vectors + RFC 9528 suite negotiation.
+# tests/linux/rfc9529 — RFC 9529 trace vectors and RFC 9528 suite negotiation.
 #
-# rfc9528_negotiation is folded in here (it is a negotiation trace, suite 2).
-# chapter2 drives the dispatcher for suite 0, chapter3 for suite 2, so each
-# binary is guarded by the suite it replays and links the preset's enabled
-# cipher-suite sources.
+# chapter2 replays suite 0, chapter3 and the negotiation trace replay suite 2,
+# so each binary is guarded by the suite it needs.
 # =============================================================================
 
 set(_sup ${CMAKE_CURRENT_SOURCE_DIR}/support)

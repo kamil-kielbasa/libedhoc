@@ -2,9 +2,9 @@
  * \file    edhoc_macros_internal.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC utility macros.
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -56,13 +56,13 @@
 /**
  * \brief Internal linkage control for module-test builds.
  *
- * When ``LIBEDHOC_MODULE_TESTS`` is defined at library compile time, internal
+ * When ``LIBEDHOC_TESTS`` is defined at library compile time, internal
  * functions become externally visible so the test binary can link against them
  * via ``extern`` declarations.  Production builds keep ``static`` linkage.
  *
  * All internal functions in the library use ``STATIC`` instead of ``static``.
  */
-#if defined(LIBEDHOC_MODULE_TESTS)
+#if defined(LIBEDHOC_TESTS)
 #define STATIC
 #else
 #define STATIC static

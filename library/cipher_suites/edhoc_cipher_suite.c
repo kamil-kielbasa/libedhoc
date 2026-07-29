@@ -39,6 +39,12 @@
 #include "edhoc_cipher_suite_pqc_1.h"
 #endif
 
+/* Module defines ---------------------------------------------------------- */
+/* Module types and type definitiones -------------------------------------- */
+/* Module interface variables and constants -------------------------------- */
+/* Static variables and constants ------------------------------------------ */
+/* Static function declarations -------------------------------------------- */
+/* Static function definitions --------------------------------------------- */
 /* Module interface function definitions ----------------------------------- */
 
 const struct edhoc_cipher_suite *

@@ -77,10 +77,35 @@ jobs:
       - uses: ./.github/actions/retry
         with:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+      # clang-20 is not in the Ubuntu 24.04 repos. The version is pinned because
+      # -Weverything makes every new clang diagnostic a build error.
       - uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y clang xsltproc ninja-build"
+          command: "wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && sudo bash /tmp/llvm.sh 20"
+      - uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y xsltproc ninja-build"
       - run: bash scripts/ci.sh ci ${{ matrix.preset }}
+
+  # Non-blocking early warning: the same build with an unpinned clang, so a new
+  # -Weverything diagnostic surfaces here instead of on the next version bump.
+  clang-latest:
+    name: Clang (unpinned, non-blocking)
+    needs: build
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+      - uses: ./.github/actions/retry
+        with:
+          command: "wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && sudo bash /tmp/llvm.sh"
+      - uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y xsltproc ninja-build"
+      - run: bash scripts/ci.sh ci clang-latest
 
   coverage:
     name: Coverage
@@ -170,5 +195,8 @@ jobs:
           command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
       - uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y clang ninja-build"
+          command: "wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && sudo bash /tmp/llvm.sh 20"
+      - uses: ./.github/actions/retry
+        with:
+          command: "sudo apt-get update && sudo apt-get install -y ninja-build"
       - run: bash scripts/ci.sh fuzz 60

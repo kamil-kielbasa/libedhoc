@@ -39,8 +39,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* Module interface function definitions ----------------------------------- */
 
-/* Connection ID Utilities -------------------------------------------------- */
-
 bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
 				    const struct edhoc_connection_id *conn_id_2)
 {
@@ -64,8 +62,6 @@ bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
 		return false;
 	}
 }
-
-/* Buffer Utilities --------------------------------------------------------- */
 
 int edhoc_coap_prepend_flow(struct edhoc_coap_prepended_fields *prepended_fields)
 {
@@ -126,8 +122,7 @@ int edhoc_coap_prepend_connection_id(
 			cid_r = { .connection_identifier_choice =
 					  connection_identifier_bstr_c,
 				  .connection_identifier_bstr = {
-					  .value = (uint8_t *)
-							   conn_id->bstr_value,
+					  .value = conn_id->bstr_value,
 					  .len = conn_id->bstr_length } };
 
 		size_t cid_encoded_len = 0;

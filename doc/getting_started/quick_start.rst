@@ -3,8 +3,8 @@ Quick Start
 
 This page shows the smallest working EDHOC handshake with *libedhoc*. It assumes
 you have read the :doc:`introduction`. A complete, ready-to-run example lives
-in `sample/benchmark
-<https://github.com/kamil-kielbasa/libedhoc/tree/main/sample>`_.
+in `tests/zephyr/benchmark
+<https://github.com/kamil-kielbasa/libedhoc/tree/main/tests/zephyr/benchmark>`_.
 
 Build
 -----

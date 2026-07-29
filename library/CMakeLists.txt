@@ -1,7 +1,8 @@
 # =============================================================================
 # libedhoc::edhoc — the core EDHOC implementation (standalone build).
-# The Zephyr build creates its own library from the same source list
-# (cmake/sources.cmake), so this file is now Zephyr-free.
+#
+# The Zephyr build creates its own library from the same source list in
+# cmake/sources.cmake, so nothing here is Zephyr-specific.
 # =============================================================================
 
 include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/sources.cmake)
@@ -9,48 +10,36 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/sources.cmake)
 add_library(libedhoc STATIC ${LIBEDHOC_CORE_SOURCES})
 add_library(libedhoc::edhoc ALIAS libedhoc)
 
-# Private internal headers (library/internal/*_internal.h) — core only.
 target_include_directories(libedhoc PRIVATE ${LIBEDHOC_INTERNAL_INCLUDE_DIR})
 
-# --- Dependency surface ------------------------------------------------------
-# PUBLIC : the public headers are the API contract.
-# PRIVATE: backends are an implementation detail. Nothing in the public headers
-#          refers to them, so consumers must not inherit their header paths.
-#          For a static library, PRIVATE dependencies still propagate as
-#          link-only requirements, so downstream linking keeps working.
+# --- Dependencies ------------------------------------------------------------
+
+# The public headers are the API contract; the backends are an implementation
+# detail and must not leak their header paths to consumers.
 target_link_libraries(libedhoc
     PUBLIC  libedhoc::api
     PRIVATE libedhoc::backend_cbor
             libedhoc::backend_memory
             libedhoc::backend_log)
 
-# Crypto libraries are used by the crypto callbacks in tests, helpers and
-# applications, not by the crypto-agnostic core. Kept BUILD_INTERFACE-only so
-# they are absent from the install export.
-#
-# They are assembled per enabled cipher suite in sources.cmake
-# (LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS): every suite adds exactly what its
-# reference implementation needs -- PSA (tfpsacrypto) for AEAD/hash, compact25519
-# for X25519/Ed25519, liboqs + XKCP for the post-quantum suite -- so the link
-# line follows the configuration instead of always pulling a fixed default.
-# zcbor (the CBOR backend) is unconditional.
+# The core itself is crypto-agnostic; these serve the crypto callbacks in tests,
+# helpers and applications. BUILD_INTERFACE-only, so absent from the export.
 target_link_libraries(libedhoc PUBLIC
     $<BUILD_INTERFACE:${LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS}>
     $<BUILD_INTERFACE:zcbor>)
 
-# --- Strict warnings (PRIVATE: never inflicted on consumers) -----------------
+# --- Warnings and instrumentation --------------------------------------------
+
 libedhoc_target_warnings(libedhoc STRICT)
 
-# Stack hardening (disabled under sanitizers — conflicts with ASan)
+# Stack hardening conflicts with ASan.
 if(NOT LIBEDHOC_ENABLE_SANITIZERS)
     target_compile_options(libedhoc PRIVATE -fstack-protector-strong)
 endif()
 
-# --- Optional instrumentation ------------------------------------------------
-# LIBEDHOC_MODULE_TESTS makes internal STATIC functions externally visible so
-# module tests can link against them.  Enabled only when tests are built.
+# Makes internal static functions visible so module tests can link against them.
 if(LIBEDHOC_ENABLE_TESTS)
-    target_compile_definitions(libedhoc PRIVATE LIBEDHOC_MODULE_TESTS)
+    target_compile_definitions(libedhoc PRIVATE LIBEDHOC_TESTS)
 endif()
 
 if(LIBEDHOC_ENABLE_COVERAGE)
@@ -63,11 +52,6 @@ if(LIBEDHOC_ENABLE_SANITIZERS)
     target_link_options(libedhoc PUBLIC -fsanitize=address,undefined)
 endif()
 
-# The exported name matches the in-tree alias suffix, so find_package() and
-# add_subdirectory() consumers both write libedhoc::edhoc.
 set_target_properties(libedhoc PROPERTIES EXPORT_NAME edhoc)
 
-# --- Reference cipher-suite implementations ----------------------------------
-# The reference suites belong to the library, so their sub-tree is added here
-# rather than from the top-level CMakeLists.
 add_subdirectory(cipher_suites)

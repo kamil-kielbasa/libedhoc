@@ -35,12 +35,10 @@ foreach(target ${FUZZ_TARGETS})
                           libedhoc::backend_memory
                           ${LIBEDHOC_FUZZ_CIPHER_SUITE_CRYPTO_BACKENDS})
 
-    # Same shared warning policy as the library and module tests (TEST profile:
-    # tolerates CBOR test-vector casts in the linked cipher-suite sources).
+    # Same warning policy as the module tests.
     libedhoc_target_warnings(${target} TEST)
 
-    # Fuzz-specific: LLVMFuzzerTestOneInput is the libFuzzer entry point, called
-    # by the fuzzer runtime — it has no prototype in any header by design.
+    # LLVMFuzzerTestOneInput is the libFuzzer entry point and has no prototype.
     target_compile_options(${target} PRIVATE -Wno-missing-prototypes)
 
     target_compile_options(${target} PRIVATE

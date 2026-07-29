@@ -8,8 +8,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/sources.cmake)
 add_library(backend_cbor STATIC ${LIBEDHOC_BACKEND_CBOR_SOURCES})
 add_library(libedhoc::backend_cbor ALIAS backend_cbor)
 
-# zcbor types appear in the CBOR backend's public headers, so it is propagated
-# as a PUBLIC dependency: anyone including those headers needs zcbor's headers.
+# zcbor types appear in this backend's public headers, hence PUBLIC.
 target_link_libraries(backend_cbor PUBLIC zcbor)
 target_include_directories(backend_cbor SYSTEM PUBLIC
     $<BUILD_INTERFACE:${LIBEDHOC_BACKEND_CBOR_INCLUDE_DIR}>

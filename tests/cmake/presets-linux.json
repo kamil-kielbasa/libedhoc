@@ -135,6 +135,13 @@
       "displayName": "Clang + Ninja (all suites)",
       "inherits": "legacy",
       "binaryDir": "${sourceDir}/build/clang",
+      "cacheVariables": { "CMAKE_C_COMPILER": "clang-20" }
+    },
+    {
+      "name": "clang-latest",
+      "displayName": "Clang, unpinned (early warning, non-blocking in CI)",
+      "inherits": "clang",
+      "binaryDir": "${sourceDir}/build/clang-latest",
       "cacheVariables": { "CMAKE_C_COMPILER": "clang" }
     },
     {
@@ -167,7 +174,7 @@
       "inherits": "eph-p256",
       "binaryDir": "${sourceDir}/build/fuzz",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_C_COMPILER": "clang-20",
         "LIBEDHOC_ENABLE_TESTS": "OFF",
         "LIBEDHOC_ENABLE_FUZZING": "ON"
       }
@@ -203,6 +210,7 @@
     { "name": "mlkem512_custom", "configurePreset": "mlkem512_custom" },
     { "name": "legacy",          "configurePreset": "legacy" },
     { "name": "clang",           "configurePreset": "clang" },
+    { "name": "clang-latest",    "configurePreset": "clang-latest" },
     { "name": "coverage",        "configurePreset": "coverage" },
     { "name": "valgrind",        "configurePreset": "valgrind" },
     { "name": "asan",            "configurePreset": "asan" },
@@ -225,6 +233,7 @@
     { "name": "mlkem512_custom", "configurePreset": "mlkem512_custom", "output": { "outputOnFailure": true } },
     { "name": "legacy",          "configurePreset": "legacy",          "output": { "outputOnFailure": true } },
     { "name": "clang",           "configurePreset": "clang",           "output": { "outputOnFailure": true } },
+    { "name": "clang-latest",    "configurePreset": "clang-latest",    "output": { "outputOnFailure": true } },
     { "name": "coverage",        "configurePreset": "coverage",        "output": { "outputOnFailure": true } },
     { "name": "asan",            "configurePreset": "asan",            "output": { "outputOnFailure": true } }
   ]

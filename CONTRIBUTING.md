@@ -50,7 +50,7 @@ scripts/ci.sh build --clang
 **Zephyr (west):**
 
 ```bash
-west build -b native_sim libedhoc/sample/benchmark
+west build -b native_sim libedhoc/tests/zephyr/benchmark
 ```
 
 ## 4. Code style

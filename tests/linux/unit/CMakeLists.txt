@@ -1,23 +1,16 @@
 # =============================================================================
 # tests/linux/unit — the library's suite-independent logic in one binary.
 #
-# Exercises the public API, message compose/process paths, internals, exporters,
-# CoAP helpers and the coverage sweep. What these assert does not depend on the
-# ephemeral/signature primitive, so the binary is pinned to a single reference
-# suite (cipher suite 2, P-256 / SHA-256) and builds under any preset that
-# enables it. Per-suite crypto and descriptors are validated separately by the
-# cipher_suites tier, so nothing is lost by not repeating them here.
+# Covers the public API, message paths, internals, exporters and CoAP helpers.
+# None of it depends on the cipher suite, so the binary is pinned to suite 2.
 # =============================================================================
 
 if(NOT CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
     return()
 endif()
 
-# The custom memory backend requires each test binary to supply its own
-# edhoc_mem_alloc/free. This tier's asserts are allocator-agnostic and the
-# custom backend is already exercised end-to-end by robustness/oom_sweep and
-# rfc9529 under p256_custom, so the tier is skipped here rather than carrying a
-# link-time allocator of its own.
+# These asserts are allocator-agnostic, and the custom backend is already
+# covered by robustness/oom_sweep and rfc9529.
 if(CONFIG_LIBEDHOC_MEM_BACKEND EQUAL 2)
     return()
 endif()
@@ -47,7 +40,7 @@ set(_unit_sources
     internals/test_internals_message3.c
     internals/test_internals_message4.c)
 
-# Kept in test_main.c execution order; the runner is generated from this list.
+# Kept in execution order; the runner is generated from this list.
 set(_unit_groups
     api api_negative error_message exporters coap
     coverage_msg1 coverage_msg2 coverage_msg3 coverage_msg4

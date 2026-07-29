@@ -1,22 +1,20 @@
 # =============================================================================
-# Zephyr module entry point. Builds the library from the shared source lists
-# in cmake/sources.cmake, keeping the Zephyr-specific wiring in this one file.
+# Zephyr module entry point.
+#
+# Builds the library from the shared source lists in cmake/sources.cmake and
+# keeps all Zephyr-specific wiring in this directory.
 # =============================================================================
 
 if(CONFIG_LIBEDHOC_ENABLE)
     include(${CMAKE_CURRENT_LIST_DIR}/../cmake/sources.cmake)
 
-    # Core and CBOR backend compiled into the Zephyr module library. The
-    # CONFIG_LIBEDHOC_* macros come from Kconfig (autoconf.h), so there is no
-    # generated configuration header and no -D definitions here.
+    # CONFIG_LIBEDHOC_* comes from Kconfig, so there is no generated header here.
     zephyr_library_named(libedhoc)
     zephyr_library_sources(
         ${LIBEDHOC_CORE_SOURCES}
         ${LIBEDHOC_BACKEND_CBOR_SOURCES})
 
-    # Header search paths for the module and for applications that compile the
-    # helper sources. zephyr_include_directories() is global, which suits a
-    # module shipping public, helper and backend headers.
+    # Global, so applications compiling the reference suite sources resolve them too.
     zephyr_include_directories(
         ${LIBEDHOC_PUBLIC_INCLUDE_DIR}
         ${LIBEDHOC_INTERNAL_INCLUDE_DIR}
@@ -25,17 +23,12 @@ if(CONFIG_LIBEDHOC_ENABLE)
         ${LIBEDHOC_BACKEND_MEM_INCLUDE_DIR}
         ${LIBEDHOC_BACKEND_LOG_INCLUDE_DIR})
 
-    # Classic suites 0 and 4 use compact25519 for Ed25519 signatures; it has no
-    # upstream Zephyr module, so libedhoc builds it (like XKCP for pqc_1 below).
+    # Companion libraries for dependencies that have no upstream Zephyr module.
     if(CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE OR
        CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
-        include(${CMAKE_CURRENT_LIST_DIR}/../cmake/compact25519_zephyr.cmake)
+        include(${CMAKE_CURRENT_LIST_DIR}/cmake/compact25519.cmake)
     endif()
-
-    # Post-quantum cipher suite 1: build the portable XKCP KMAC256 KDF backend
-    # as a companion library (liboqs ships its own Zephyr module). The suite and
-    # KDF sources are compiled by the application, like the classic suites.
     if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
-        include(${CMAKE_CURRENT_LIST_DIR}/../cmake/xkcp_zephyr.cmake)
+        include(${CMAKE_CURRENT_LIST_DIR}/cmake/xkcp.cmake)
     endif()
 endif()

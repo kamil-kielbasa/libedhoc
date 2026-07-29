@@ -1,10 +1,8 @@
 # =============================================================================
-# Single source of truth for source and include lists, shared by:
-#   * the standalone build: library/, library/cipher_suites/, backends/ CMakeLists.txt
-#   * the Zephyr build:     zephyr/CMakeLists.txt
-#   * tests and samples:    tests/ (+ tests/linux/, tests/linux/fuzz/), sample/benchmark/
-# Keeping one list keeps both builds in sync.
-# All paths are absolute (CMAKE_CURRENT_LIST_DIR is this file's directory).
+# Source and include lists for libedhoc.
+#
+# Single source of truth shared by the standalone build, the Zephyr build
+# (zephyr/CMakeLists.txt) and the tests. All paths are absolute.
 # =============================================================================
 
 set(LIBEDHOC_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
@@ -20,9 +18,8 @@ set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_common.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_coap.c)
 
-# Explicit list (not file(GLOB)): a glob would not re-run when a file is
-# added/removed, which silently desyncs the two build paths this file exists
-# to keep in sync.
+# Explicit list, not file(GLOB): a glob would not re-run when a file is added or
+# removed, silently desyncing the builds this file keeps in sync.
 set(LIBEDHOC_BACKEND_CBOR_SOURCES
     ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_bstr_type_decode.c
     ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_bstr_type_encode.c
@@ -60,44 +57,38 @@ set(LIBEDHOC_BACKEND_CBOR_SOURCES
 set(LIBEDHOC_CIPHER_SUITE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/edhoc_cipher_suite.c)
 
-# Crypto backend link targets (standalone build), assembled the same way as the
-# reference sources: each enabled suite contributes exactly the libraries its
-# implementation needs, so the link line follows the configuration instead of
-# relying on an always-on default.
-#   * tfpsacrypto (mbed TLS PSA): AEAD + hash, used by every reference suite.
-#   * compact25519:               X25519 + Ed25519, suites 0 and 4.
-#   * oqs + xkcp:                 ML-KEM / ML-DSA (liboqs) and SHAKE256 (XKCP).
-# REMOVE_DUPLICATES collapses the tfpsacrypto every suite appends.
+# Each enabled suite contributes its reference source and the crypto libraries
+# that implementation needs, so both lists follow the configuration.
 set(LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS "")
 
-if (CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE)
+if(CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_0/edhoc_cipher_suite_0.c)
     list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto compact25519)
 endif()
-if (CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
+if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c)
     list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto)
 endif()
-if (CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
+if(CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_4/edhoc_cipher_suite_4.c)
     list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto compact25519)
 endif()
-if (CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
+if(CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_24/edhoc_cipher_suite_24.c)
     list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto)
 endif()
-if (CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
+if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
     list(APPEND LIBEDHOC_CIPHER_SUITE_SOURCES
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_pqc_1/edhoc_cipher_suite_pqc_1.c
          ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/common/edhoc_kdf_kmac256_xkcp.c)
     list(APPEND LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto oqs xkcp)
 endif()
 
-if (LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS)
+if(LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS)
     list(REMOVE_DUPLICATES LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS)
 endif()
 
@@ -114,25 +105,11 @@ set(LIBEDHOC_BACKEND_CBOR_INCLUDE_DIR ${LIBEDHOC_ROOT_DIR}/backends/cbor/include
 set(LIBEDHOC_BACKEND_MEM_INCLUDE_DIR  ${LIBEDHOC_ROOT_DIR}/backends/memory/include)
 set(LIBEDHOC_BACKEND_LOG_INCLUDE_DIR  ${LIBEDHOC_ROOT_DIR}/backends/log/include)
 
-# --- Test and sample sources -------------------------------------------------
+# --- Fuzz targets ------------------------------------------------------------
 
-set(LIBEDHOC_TESTS_DIR ${LIBEDHOC_ROOT_DIR}/tests)
-
-set(LIBEDHOC_TEST_COMMON_SOURCES
-    ${LIBEDHOC_TESTS_DIR}/common/src/test_ead.c
-    ${LIBEDHOC_TESTS_DIR}/common/src/test_credentials.c)
-
-# Fuzz targets cipher suite 2 only: they compile the enum-based getters
-# (edhoc_cipher_suite.c) and the suite 2 reference implementation, and link
-# suite 2's crypto backend (PSA via tfpsacrypto). The harnesses select the suite
-# through the public <edhoc/cipher_suite.h> getters; the fuzz preset enables
-# suite 2 and disables the rest so the dispatcher routes to it and references no
-# other suite's getters.
+# The harnesses select a suite through the public <edhoc/cipher_suite.h>
+# getters; the fuzz preset enables cipher suite 2 only.
 set(LIBEDHOC_FUZZ_CIPHER_SUITE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/edhoc_cipher_suite.c
     ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c)
 set(LIBEDHOC_FUZZ_CIPHER_SUITE_CRYPTO_BACKENDS tfpsacrypto)
-
-# Zephyr benchmark sample: cipher suite 2 reference source.
-set(LIBEDHOC_BENCHMARK_CIPHER_SUITE_SOURCES
-    ${LIBEDHOC_ROOT_DIR}/library/cipher_suites/cipher_suite_2/edhoc_cipher_suite_2.c)

@@ -1,14 +1,8 @@
 # =============================================================================
 # tests/linux/cipher_suites — one standalone Unity binary per reference suite.
 #
-# Each binary is guarded by its suite's CONFIG_..._ENABLE, so the active preset
-# decides which suites exist and each binary self-qualifies (capability model).
-# Buffer isolation (problem #1) comes from the preset's generated edhoc_config.h,
-# not from which sources link: a p256 preset sizes every binary for P-256, never
-# for ML-KEM-512. The tests call the suite dispatcher
-# (edhoc_cipher_suite_get_crypto/params), so each binary links the preset's
-# enabled cipher-suite sources (dispatcher + suites) via
-# ${LIBEDHOC_CIPHER_SUITE_SOURCES}.
+# Each binary is guarded by its suite's CONFIG_..._ENABLE and links the enabled
+# cipher-suite sources, because the tests go through the suite dispatcher.
 # =============================================================================
 
 # Shared driver: the cipher_suite_descriptor plus the cipher_suite_test_* crypto
@@ -60,8 +54,6 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_24_ENABLE)
 endif()
 
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
-    # The ML-DSA-44 vector header sits next to the test source; quote-include
-    # finds it automatically.
     edhoc_add_unity_test(
         NAME          test_cipher_suite_pqc_1
         SOURCES       cipher_suite_pqc_1/test_cipher_suite_pqc_1.c ${_driver}

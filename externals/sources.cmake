@@ -5,7 +5,7 @@
 # All paths are absolute.
 # =============================================================================
 
-set(LIBEDHOC_EXTERNALS_DIR ${CMAKE_CURRENT_LIST_DIR}/../externals)
+set(LIBEDHOC_EXTERNALS_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 set(LIBEDHOC_ZCBOR_SOURCES
     ${LIBEDHOC_EXTERNALS_DIR}/zcbor/src/zcbor_common.c

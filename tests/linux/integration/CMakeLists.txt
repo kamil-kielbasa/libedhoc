@@ -1,18 +1,16 @@
 # =============================================================================
-# tests/linux/integration — one standalone Unity binary per cipher suite and
-# credential type; each EDHOC method is a TEST case inside its binary.
+# tests/linux/integration — one Unity binary per cipher suite and credential
+# type; each EDHOC method is a test case inside its binary.
 #
-# Every scenario is a thin descriptor that drives the shared handshake driver
-# (driver/); its credentials are the real X.509 test vectors (test_vectors/).
-# Each binary is guarded by the cipher suite it exercises. liboqs + XKCP are
-# linked automatically for the post-quantum suite (see edhoc_add_unity_test).
+# Every scenario is a thin descriptor driving the shared handshake driver, with
+# the real X.509 test vectors as credentials.
 # =============================================================================
 
 # CONFIG_LIBEDHOC_MEM_BACKEND: 2 = custom.
 set(_mem_backend_custom 2)
 
-# The custom backend needs a link-time allocator (a no-op TU under stack/heap);
-# the instrumented one lives with the robustness tests.
+# The custom backend needs a link-time allocator; the instrumented one lives
+# with the robustness tests.
 set(_memhook "")
 if(CONFIG_LIBEDHOC_MEM_BACKEND EQUAL _mem_backend_custom)
     set(_memhook ${CMAKE_CURRENT_SOURCE_DIR}/driver/handshake_mem_default.c)

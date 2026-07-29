@@ -1,22 +1,17 @@
 # =============================================================================
-# edhoc_tests.cmake — helpers for the libedhoc Linux (Unity + CTest) test tree.
+# Helpers for the libedhoc Linux (Unity + CTest) test tree.
 #
-# Every category under tests/linux/ builds one or more small, standalone Unity
-# binaries via edhoc_add_unity_test(). Each binary:
-#
-#   * compiles only the sources it needs (its reference cipher-suite source(s)),
-#   * gets a generated main() that runs exactly its own TEST_GROUPs,
-#   * registers itself so the orphan reconcile (edhoc_reconcile_linux_tree) can
-#     fail the configure if a test .c is wired into no binary, and
-#   * is wired into CTest with add_test().
+# Every category under tests/linux/ builds standalone Unity binaries through
+# edhoc_add_unity_test(): each compiles only the sources it needs, gets a
+# generated main() running its own TEST_GROUPs, and registers itself with CTest
+# and with the orphan reconcile below.
 # =============================================================================
 
 set(EDHOC_TESTS_CMAKE_DIR ${CMAKE_CURRENT_LIST_DIR}
     CACHE INTERNAL "Directory holding the Unity runner template")
 
-# Reference cipher-suite sources are compiled INTO the test binaries that use
-# them. They lean on CBOR/format casts the strict TEST warning profile rejects,
-# so relax exactly the flags the old monolith used for the same sources.
+# Reference cipher-suite sources are compiled into the test binaries that use
+# them and lean on CBOR/format casts the TEST profile rejects.
 set(EDHOC_SUITE_SRC_WARN_FLAGS
     "-Wno-format -Wno-format-pedantic -Wno-sign-conversion -Wno-conversion -Wno-switch-enum"
     CACHE INTERNAL "Relaxed warnings for compiled reference cipher-suite sources")
@@ -89,17 +84,11 @@ function(edhoc_add_unity_test)
     if(T_DEFINES)
         target_compile_definitions(${T_NAME} PRIVATE ${T_DEFINES})
     endif()
-    if(LIBEDHOC_ENABLE_TESTS_TRACES)
-        target_compile_definitions(${T_NAME} PRIVATE TEST_TRACES)
-    endif()
 
     # --- Post-quantum suite: XKCP's generated header -------------------------
-    # liboqs + XKCP are linked compositionally via libedhoc::edhoc (assembled in
-    # sources.cmake as LIBEDHOC_CIPHER_SUITE_CRYPTO_BACKENDS). What cannot ride
-    # on a link target is XKCP's SP800-185.h: the xkcp_build ExternalProject
-    # generates it, so a binary that compiles the pqc reference source must add
-    # its include path and wait for that build. liboqs's in-tree headers, which
-    # its target does not export, are added the same way.
+    # liboqs and XKCP arrive via libedhoc::edhoc, but XKCP's SP800-185.h is a
+    # build byproduct, so a binary compiling the pqc source must add its include
+    # path and wait for that build. liboqs's in-tree headers are added likewise.
     if(CONFIG_LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE)
         target_include_directories(${T_NAME} PRIVATE
             ${CMAKE_BINARY_DIR}/externals/liboqs/include
@@ -153,18 +142,13 @@ endfunction()
 # -----------------------------------------------------------------------------
 # edhoc_reconcile_linux_tree(<root>)
 #
-# Anti-silent-skip net #1 (configure time): in an ALL-SUITES build every
-# test_*.c under <root> (excluding support/ helpers, backend-only mem/ tests and
-# the robustness/ module) must have been consumed by some edhoc_add_unity_test().
-# A file present on disk but wired into no binary would otherwise silently never
-# run.
+# Fails the configure if a test_*.c under <root> is wired into no binary and
+# would therefore silently never run.
 #
 # Runs only when all suites are enabled — under a single-suite preset most test
-# files are legitimately skipped (their suite is off). The CI check-matrix job
-# (net #2) covers the per-preset union across the whole matrix. Backend-only
-# tests (the unit custom-allocator tests under mem/ and the robustness OOM sweep
-# need the custom backend) are excluded: the default build uses the stack
-# backend.
+# files are legitimately skipped. Backend-only tests (mem/, robustness/) are
+# excluded because the default build uses the stack backend. The CI check-matrix
+# job covers the per-preset union across the whole matrix.
 # -----------------------------------------------------------------------------
 function(edhoc_reconcile_linux_tree root)
     if(NOT (CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE AND
