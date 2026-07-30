@@ -17,7 +17,9 @@ set(FUZZ_TARGETS
     fuzz_message_2_process
     fuzz_message_3_process
     fuzz_message_4_process
-    fuzz_message_error_process)
+    fuzz_message_error_process
+    fuzz_plaintext_2_parse
+    fuzz_plaintext_3_parse)
 
 # --- Fuzz executables --------------------------------------------------------
 

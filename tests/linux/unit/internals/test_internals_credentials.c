@@ -1,0 +1,520 @@
+/**
+ * \file    test_internals_credentials.c
+ * \author  Kamil Kielbasa
+ * \brief   Unit tests for ID_CRED_x decoding, driven through the PLAINTEXT
+ *          parsers of message_2 and message_3.
+ *
+ * \copyright Copyright (c) 2026
+ *
+ */
+
+/* Include files ----------------------------------------------------------- */
+
+/* Internal headers: */
+#include "internals_common.h"
+#include "edhoc_macros_internal.h"
+
+/* Standard library headers: */
+#include <stdint.h>
+#include <stddef.h>
+
+/* Unity headers: */
+#include <unity.h>
+#include <unity_fixture.h>
+
+/* Module defines ---------------------------------------------------------- */
+/* Module types and type definitiones -------------------------------------- */
+/* Module interface variables and constants -------------------------------- */
+/* Static function declarations -------------------------------------------- */
+
+/** \brief Run PLAINTEXT_2 through the parser on a throwaway context. */
+static int parse_ptxt_2(const uint8_t *ptxt, size_t ptxt_len,
+			struct plaintext *parsed);
+
+/** \brief Run PLAINTEXT_3 through the parser on a throwaway context. */
+static int parse_ptxt_3(const uint8_t *ptxt, size_t ptxt_len,
+			struct plaintext *parsed);
+
+/**
+ * \brief Assert that Signature_or_MAC is a view on \p expected. It follows
+ *        ID_CRED_x, so a wrong offset here means ID_CRED_x was mis-sized.
+ */
+static void assert_sign_or_mac(const struct plaintext *parsed,
+			       const uint8_t *expected);
+
+/** \brief Assert that a rejected ID_CRED_x left nothing behind. */
+static void assert_untouched(const struct plaintext *parsed);
+
+/* Static variables and constants ------------------------------------------ */
+
+/*
+ * PLAINTEXT_2 = ( C_R, ID_CRED_R, Signature_or_MAC_2, ? EAD_2 )
+ * PLAINTEXT_3 = (      ID_CRED_I, Signature_or_MAC_3, ? EAD_3 )
+ *
+ * C_R is the CBOR integer -8 (0x27) throughout. Signature_or_MAC is always the
+ * eight byte string 0xc0..0xc7, so where it lands doubles as a check that
+ * ID_CRED_x was consumed to exactly the right length.
+ */
+
+/** ID_CRED_I = -12: a 'kid' in the compact integer encoding. */
+static const uint8_t ptxt_3_kid_int[] = {
+	0x2b, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I = h'AA': a 'kid' in the compact byte string encoding. */
+static const uint8_t ptxt_3_kid_bstr[] = {
+	0x41, 0xaa, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I = h'AABB': one byte over the configured 'kid' capacity. */
+static const uint8_t ptxt_3_kid_bstr_two[] = {
+	0x42, 0xaa, 0xbb, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I as a 64 byte 'kid'. Byte 0 opens a byte string whose one byte
+ *  length follows, the payload stays zeroed, then Signature_or_MAC_3. */
+static const uint8_t ptxt_3_kid_bstr_64[2 + 64 + 1 + 8] = {
+	[0] = 0x58,
+	[1] = 64,
+	[66] = 0x48,
+};
+
+/** ID_CRED_I as a 255 byte 'kid'. Before the bound check this overflowed the
+ *  two byte destination buffer of the decoder. */
+static const uint8_t ptxt_3_kid_bstr_255[2 + 255 + 1 + 8] = {
+	[0] = 0x58,
+	[1] = 255,
+	[257] = 0x48,
+};
+
+/** ID_CRED_I = { 4 : h'AA' }: a 'kid' that skipped the compact encoding. */
+static const uint8_t ptxt_3_map_kid[] = {
+	0xa1, 0x04, 0x41, 0xaa, 0x48, 0xc0, 0xc1,
+	0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I = {}: no header parameter at all. */
+static const uint8_t ptxt_3_map_empty[] = {
+	0xa0, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I = { 33 : x5chain, 34 : x5t }: two competing header parameters. */
+static const uint8_t ptxt_3_map_two_labels[] = {
+	0xa2, 0x18, 0x21, 0x43, 0x30, 0x00, 0x01, 0x18, 0x22, 0x82,
+	0x2e, 0x48, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7,
+	0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I = { 33 : h'300001' }: a single certificate is a byte string, not
+ *  a one element array (RFC 9360: 2). */
+static const uint8_t ptxt_3_x5chain_one[] = {
+	0xa1, 0x18, 0x21, 0x43, 0x30, 0x00, 0x01, 0x48,
+	0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I = { 33 : [ h'300001', h'300002' ] }: two certificates. */
+static const uint8_t ptxt_3_x5chain_two[] = {
+	0xa1, 0x18, 0x21, 0x82, 0x43, 0x30, 0x00, 0x01, 0x43, 0x30, 0x00,
+	0x02, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I with three certificates: one over the configured chain capacity. */
+static const uint8_t ptxt_3_x5chain_three[] = {
+	0xa1, 0x18, 0x21, 0x83, 0x43, 0x30, 0x00, 0x01, 0x43,
+	0x30, 0x00, 0x02, 0x43, 0x30, 0x00, 0x03, 0x48, 0xc0,
+	0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I = { 34 : [ -15, h'F0..F7' ] }: x5t with an integer hashAlg. */
+static const uint8_t ptxt_3_x5t_alg_int[] = {
+	0xa1, 0x18, 0x22, 0x82, 0x2e, 0x48, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5,
+	0xf6, 0xf7, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I x5t with the text hashAlg "sha": one byte over its capacity. */
+static const uint8_t ptxt_3_x5t_alg_tstr[] = {
+	0xa1, 0x18, 0x22, 0x82, 0x63, 0x73, 0x68, 0x61, 0x48,
+	0xf0, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0x48,
+	0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** ID_CRED_I x5t with a 65 byte fingerprint: one byte over the SHA-512 bound.
+ *  Header is { 34 : [ -15, bstr(65) ] }, the fingerprint stays zeroed. */
+static const uint8_t ptxt_3_x5t_fingerprint_65[7 + 65 + 1 + 8] = {
+	[0] = 0xa1, [1] = 0x18, [2] = 0x22, [3] = 0x82,
+	[4] = 0x2e, [5] = 0x58, [6] = 65,   [72] = 0x48,
+};
+
+/** PLAINTEXT_2 with ID_CRED_R = -12. */
+static const uint8_t ptxt_2_kid_int[] = {
+	0x27, 0x2b, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** PLAINTEXT_2 with ID_CRED_R as a 255 byte 'kid'. */
+static const uint8_t ptxt_2_kid_bstr_255[1 + 2 + 255 + 1 + 8] = {
+	[0] = 0x27,
+	[1] = 0x58,
+	[2] = 255,
+	[258] = 0x48,
+};
+
+/** PLAINTEXT_2 with ID_CRED_R = { 4 : h'AA' }. */
+static const uint8_t ptxt_2_map_kid[] = {
+	0x27, 0xa1, 0x04, 0x41, 0xaa, 0x48, 0xc0,
+	0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** PLAINTEXT_2 with ID_CRED_R = { 33 : h'300001' }. */
+static const uint8_t ptxt_2_x5chain_one[] = {
+	0x27, 0xa1, 0x18, 0x21, 0x43, 0x30, 0x00, 0x01, 0x48,
+	0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** Signature_or_MAC value shared by every vector above. */
+static const uint8_t sign_or_mac[] = {
+	0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+};
+
+/** The first certificate of every x5chain vector above. */
+static const uint8_t first_certificate[] = { 0x30, 0x00, 0x01 };
+
+/** The x5t fingerprint of every COSE_CertHash vector above. */
+static const uint8_t fingerprint[] = { 0xf0, 0xf1, 0xf2, 0xf3,
+				       0xf4, 0xf5, 0xf6, 0xf7 };
+
+/* Static function definitions --------------------------------------------- */
+
+static int parse_ptxt_2(const uint8_t *ptxt, size_t ptxt_len,
+			struct plaintext *parsed)
+{
+	struct edhoc_context ctx = { 0 };
+
+	return parse_plaintext_2(&ctx, ptxt, ptxt_len, parsed);
+}
+
+static int parse_ptxt_3(const uint8_t *ptxt, size_t ptxt_len,
+			struct plaintext *parsed)
+{
+	struct edhoc_context ctx = { 0 };
+
+	return parse_plaintext_3(&ctx, ptxt, ptxt_len, parsed);
+}
+
+static void assert_sign_or_mac(const struct plaintext *parsed,
+			       const uint8_t *expected)
+{
+	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(sign_or_mac),
+				 parsed->sign_or_mac_len);
+	TEST_ASSERT_EQUAL_PTR(expected, parsed->sign_or_mac);
+	TEST_ASSERT_EQUAL_MEMORY(sign_or_mac, parsed->sign_or_mac,
+				 ARRAY_SIZE(sign_or_mac));
+}
+
+static void assert_untouched(const struct plaintext *parsed)
+{
+	const struct plaintext zeroed = { 0 };
+
+	TEST_ASSERT_EQUAL_MEMORY(&zeroed, parsed, sizeof(zeroed));
+}
+
+/* Module interface function definitions ----------------------------------- */
+
+TEST_GROUP(internals_credentials);
+
+TEST_SETUP(internals_credentials)
+{
+}
+
+TEST_TEAR_DOWN(internals_credentials)
+{
+}
+
+TEST(internals_credentials, kid_int)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_kid_int, ARRAY_SIZE(ptxt_3_kid_int),
+				     &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER,
+			  parsed.auth_cred.key_id.encode_type);
+	TEST_ASSERT_EQUAL_INT32(-12, parsed.auth_cred.key_id.key_id_int);
+	assert_sign_or_mac(&parsed, &ptxt_3_kid_int[2]);
+}
+
+TEST(internals_credentials, kid_bstr_within_capacity)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_kid_bstr,
+				     ARRAY_SIZE(ptxt_3_kid_bstr), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_BYTE_STRING,
+			  parsed.auth_cred.key_id.encode_type);
+	TEST_ASSERT_EQUAL_size_t(1, parsed.auth_cred.key_id.key_id_bstr.length);
+	TEST_ASSERT_EQUAL_MEMORY(&ptxt_3_kid_bstr[1],
+				 parsed.auth_cred.key_id.key_id_bstr.value, 1);
+	assert_sign_or_mac(&parsed, &ptxt_3_kid_bstr[3]);
+}
+
+TEST(internals_credentials, kid_bstr_over_capacity)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_kid_bstr_two,
+				     ARRAY_SIZE(ptxt_3_kid_bstr_two), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, kid_bstr_64_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_kid_bstr_64,
+				     ARRAY_SIZE(ptxt_3_kid_bstr_64), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, kid_bstr_255_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_kid_bstr_255,
+				     ARRAY_SIZE(ptxt_3_kid_bstr_255), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, map_kid_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_map_kid, ARRAY_SIZE(ptxt_3_map_kid),
+				     &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, map_empty_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_map_empty,
+				     ARRAY_SIZE(ptxt_3_map_empty), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, map_two_labels_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_map_two_labels,
+				     ARRAY_SIZE(ptxt_3_map_two_labels),
+				     &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, x5chain_single_certificate)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_x5chain_one,
+				     ARRAY_SIZE(ptxt_3_x5chain_one), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL_size_t(1,
+				 parsed.auth_cred.x509_chain.certificate_count);
+	TEST_ASSERT_EQUAL_size_t(
+		ARRAY_SIZE(first_certificate),
+		parsed.auth_cred.x509_chain.certificate_length[0]);
+	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_one[4],
+			      parsed.auth_cred.x509_chain.certificate[0]);
+	TEST_ASSERT_EQUAL_MEMORY(first_certificate,
+				 parsed.auth_cred.x509_chain.certificate[0],
+				 ARRAY_SIZE(first_certificate));
+	assert_sign_or_mac(&parsed, &ptxt_3_x5chain_one[8]);
+}
+
+TEST(internals_credentials, x5chain_two_certificates)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_x5chain_two,
+				     ARRAY_SIZE(ptxt_3_x5chain_two), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL_size_t(2,
+				 parsed.auth_cred.x509_chain.certificate_count);
+	TEST_ASSERT_EQUAL_size_t(
+		3, parsed.auth_cred.x509_chain.certificate_length[0]);
+	TEST_ASSERT_EQUAL_size_t(
+		3, parsed.auth_cred.x509_chain.certificate_length[1]);
+	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_two[5],
+			      parsed.auth_cred.x509_chain.certificate[0]);
+	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_two[9],
+			      parsed.auth_cred.x509_chain.certificate[1]);
+	assert_sign_or_mac(&parsed, &ptxt_3_x5chain_two[13]);
+}
+
+TEST(internals_credentials, x5chain_over_capacity_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_x5chain_three,
+				     ARRAY_SIZE(ptxt_3_x5chain_three), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, x5t_algorithm_int)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_x5t_alg_int,
+				     ARRAY_SIZE(ptxt_3_x5t_alg_int), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_HASH, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER,
+			  parsed.auth_cred.x509_hash.encode_type);
+	TEST_ASSERT_EQUAL_INT32(-15, parsed.auth_cred.x509_hash.algorithm_int);
+	TEST_ASSERT_EQUAL_size_t(
+		ARRAY_SIZE(fingerprint),
+		parsed.auth_cred.x509_hash.certificate_fingerprint_length);
+	TEST_ASSERT_EQUAL_PTR(
+		&ptxt_3_x5t_alg_int[6],
+		parsed.auth_cred.x509_hash.certificate_fingerprint);
+	TEST_ASSERT_EQUAL_MEMORY(
+		fingerprint, parsed.auth_cred.x509_hash.certificate_fingerprint,
+		ARRAY_SIZE(fingerprint));
+	assert_sign_or_mac(&parsed, &ptxt_3_x5t_alg_int[15]);
+}
+
+TEST(internals_credentials, x5t_algorithm_tstr_over_capacity_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_x5t_alg_tstr,
+				     ARRAY_SIZE(ptxt_3_x5t_alg_tstr), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, x5t_fingerprint_over_limit_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_3(ptxt_3_x5t_fingerprint_65,
+				     ARRAY_SIZE(ptxt_3_x5t_fingerprint_65),
+				     &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, msg2_kid_int)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_2(ptxt_2_kid_int, ARRAY_SIZE(ptxt_2_kid_int),
+				     &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER,
+			  parsed.auth_cred.key_id.encode_type);
+	TEST_ASSERT_EQUAL_INT32(-12, parsed.auth_cred.key_id.key_id_int);
+	assert_sign_or_mac(&parsed, &ptxt_2_kid_int[3]);
+}
+
+TEST(internals_credentials, msg2_kid_bstr_255_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_2(ptxt_2_kid_bstr_255,
+				     ARRAY_SIZE(ptxt_2_kid_bstr_255), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, msg2_map_kid_rejected)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_2(ptxt_2_map_kid, ARRAY_SIZE(ptxt_2_map_kid),
+				     &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	assert_untouched(&parsed);
+}
+
+TEST(internals_credentials, msg2_x5chain_single_certificate)
+{
+	struct plaintext parsed = { 0 };
+
+	const int ret = parse_ptxt_2(ptxt_2_x5chain_one,
+				     ARRAY_SIZE(ptxt_2_x5chain_one), &parsed);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL_size_t(1,
+				 parsed.auth_cred.x509_chain.certificate_count);
+	TEST_ASSERT_EQUAL_PTR(&ptxt_2_x5chain_one[5],
+			      parsed.auth_cred.x509_chain.certificate[0]);
+	TEST_ASSERT_EQUAL_MEMORY(first_certificate,
+				 parsed.auth_cred.x509_chain.certificate[0],
+				 ARRAY_SIZE(first_certificate));
+	assert_sign_or_mac(&parsed, &ptxt_2_x5chain_one[9]);
+}
+
+TEST_GROUP_RUNNER(internals_credentials)
+{
+	/* Compact 'kid': accepted forms and the length bound. */
+	RUN_TEST_CASE(internals_credentials, kid_int);
+	RUN_TEST_CASE(internals_credentials, kid_bstr_within_capacity);
+	RUN_TEST_CASE(internals_credentials, kid_bstr_over_capacity);
+	RUN_TEST_CASE(internals_credentials, kid_bstr_64_rejected);
+	RUN_TEST_CASE(internals_credentials, kid_bstr_255_rejected);
+
+	/* COSE header map without a usable header parameter. */
+	RUN_TEST_CASE(internals_credentials, map_kid_rejected);
+	RUN_TEST_CASE(internals_credentials, map_empty_rejected);
+	RUN_TEST_CASE(internals_credentials, map_two_labels_rejected);
+
+	/* x5chain: byte string and array forms, and the chain capacity. */
+	RUN_TEST_CASE(internals_credentials, x5chain_single_certificate);
+	RUN_TEST_CASE(internals_credentials, x5chain_two_certificates);
+	RUN_TEST_CASE(internals_credentials, x5chain_over_capacity_rejected);
+
+	/* x5t: hash algorithm forms and the fingerprint bound. */
+	RUN_TEST_CASE(internals_credentials, x5t_algorithm_int);
+	RUN_TEST_CASE(internals_credentials,
+		      x5t_algorithm_tstr_over_capacity_rejected);
+	RUN_TEST_CASE(internals_credentials,
+		      x5t_fingerprint_over_limit_rejected);
+
+	/* message_2 reaches the same decoder as message_3. */
+	RUN_TEST_CASE(internals_credentials, msg2_kid_int);
+	RUN_TEST_CASE(internals_credentials, msg2_kid_bstr_255_rejected);
+	RUN_TEST_CASE(internals_credentials, msg2_map_kid_rejected);
+	RUN_TEST_CASE(internals_credentials, msg2_x5chain_single_certificate);
+}

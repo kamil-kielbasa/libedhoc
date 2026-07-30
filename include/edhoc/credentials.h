@@ -45,6 +45,11 @@
 #error "Lack of defined length of private key identifier in bytes."
 #endif /* CONFIG_LIBEDHOC_KEY_ID_LEN */
 
+/** Upper bound of an X.509 certificate fingerprint ('x5t') in bytes. The
+ *  longest hash COSE defines for a certificate thumbprint is SHA-512. A
+ *  received fingerprint longer than this is rejected. */
+#define EDHOC_X509_HASH_FINGERPRINT_MAX_LEN (64)
+
 /* Types and type definitions ---------------------------------------------- */
 
 /** \defgroup edhoc-interface-credentials EDHOC authentication credentials interface

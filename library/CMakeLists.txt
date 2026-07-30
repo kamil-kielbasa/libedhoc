@@ -33,12 +33,13 @@ target_link_libraries(libedhoc PUBLIC
 libedhoc_target_warnings(libedhoc STRICT)
 
 # Stack hardening conflicts with ASan.
-if(NOT LIBEDHOC_ENABLE_SANITIZERS)
+if(NOT LIBEDHOC_ENABLE_SANITIZERS AND NOT LIBEDHOC_ENABLE_FUZZING)
     target_compile_options(libedhoc PRIVATE -fstack-protector-strong)
 endif()
 
-# Makes internal static functions visible so module tests can link against them.
-if(LIBEDHOC_ENABLE_TESTS)
+# Makes internal static functions visible so module tests and fuzz targets can
+# link against them.
+if(LIBEDHOC_ENABLE_TESTS OR LIBEDHOC_ENABLE_FUZZING)
     target_compile_definitions(libedhoc PRIVATE LIBEDHOC_TESTS)
 endif()
 
@@ -49,6 +50,16 @@ endif()
 
 if(LIBEDHOC_ENABLE_SANITIZERS)
     target_compile_options(libedhoc PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(libedhoc PUBLIC -fsanitize=address,undefined)
+endif()
+
+# The library has to carry SanitizerCoverage and the sanitizers itself. Without
+# it libFuzzer only sees the edges of the harness, so it mutates blindly and no
+# out-of-bounds access inside the library is ever reported.
+if(LIBEDHOC_ENABLE_FUZZING)
+    target_compile_options(libedhoc PRIVATE
+                           -fsanitize=fuzzer-no-link,address,undefined
+                           -fno-omit-frame-pointer)
     target_link_options(libedhoc PUBLIC -fsanitize=address,undefined)
 endif()
 

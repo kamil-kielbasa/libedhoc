@@ -16,6 +16,22 @@ target_include_directories(backend_cbor SYSTEM PUBLIC
 
 set_target_properties(backend_cbor PROPERTIES EXPORT_NAME backend_cbor)
 
+# Attacker-controlled bytes reach this backend first, so it has to carry the
+# same instrumentation as the core. Without it a decoder overrun goes unreported
+# and libFuzzer gets no coverage signal from the CBOR model.
+if(LIBEDHOC_ENABLE_SANITIZERS)
+    target_compile_options(backend_cbor PRIVATE
+                           -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(backend_cbor PUBLIC -fsanitize=address,undefined)
+endif()
+
+if(LIBEDHOC_ENABLE_FUZZING)
+    target_compile_options(backend_cbor PRIVATE
+                           -fsanitize=fuzzer-no-link,address,undefined
+                           -fno-omit-frame-pointer)
+    target_link_options(backend_cbor PUBLIC -fsanitize=address,undefined)
+endif()
+
 # --- Memory backend (header-only) --------------------------------------------
 add_library(backend_memory INTERFACE)
 add_library(libedhoc::backend_memory ALIAS backend_memory)

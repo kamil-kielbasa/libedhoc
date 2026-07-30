@@ -34,6 +34,7 @@ set(_unit_sources
     coverage/test_coverage_sweep_validate.c
     internals/support/internals_common.c
     internals/test_internals_common.c
+    internals/test_internals_credentials.c
     internals/test_internals_mac.c
     internals/test_internals_message1.c
     internals/test_internals_message2.c
@@ -48,6 +49,7 @@ set(_unit_groups
     coverage_sweep_validate
     internals_common internals_mac internals_message1 internals_message2
     internals_message3 internals_message4
+    internals_credentials
     message_paths)
 
 edhoc_add_unity_test(

@@ -486,6 +486,13 @@ STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
+	if (ARRAY_SIZE(ctx->ead.token) - 1 < ead_4.plaintext_4.EAD_4_count) {
+		EDHOC_LOG_ERR("EAD buffer too small: %zu, %zu",
+			      ead_4.plaintext_4.EAD_4_count,
+			      ARRAY_SIZE(ctx->ead.token) - 1);
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
+
 	ctx->ead.count = ead_4.plaintext_4.EAD_4_count;
 	for (size_t i = 0; i < ead_4.plaintext_4.EAD_4_count; ++i) {
 		ctx->ead.token[i].label =

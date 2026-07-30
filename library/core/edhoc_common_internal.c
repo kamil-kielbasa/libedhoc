@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_common.c
+ * \file    edhoc_common_internal.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC common implementations:
  *          - CBOR utilities.

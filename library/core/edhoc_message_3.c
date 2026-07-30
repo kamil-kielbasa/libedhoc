@@ -20,6 +20,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
+#include "edhoc_credentials_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -761,146 +762,34 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	/* ID_CRED_I */
 	switch (cbor_ptxt_3.plaintext_3_ID_CRED_I_choice) {
-	case plaintext_3_ID_CRED_I_int_c: {
-		parsed_ptxt->auth_cred.label = EDHOC_COSE_HEADER_KID;
-		parsed_ptxt->auth_cred.key_id.encode_type =
-			EDHOC_ENCODE_TYPE_INTEGER;
-		parsed_ptxt->auth_cred.key_id.key_id_int =
-			cbor_ptxt_3.plaintext_3_ID_CRED_I_int;
+	case plaintext_3_ID_CRED_I_int_c:
+		ret = edhoc_parse_id_cred_kid_int(
+			cbor_ptxt_3.plaintext_3_ID_CRED_I_int,
+			&parsed_ptxt->auth_cred);
 		break;
-	}
 
 	case plaintext_3_ID_CRED_I_bstr_c:
-		parsed_ptxt->auth_cred.label = EDHOC_COSE_HEADER_KID;
-		parsed_ptxt->auth_cred.key_id.encode_type =
-			EDHOC_ENCODE_TYPE_BYTE_STRING;
-		parsed_ptxt->auth_cred.key_id.key_id_bstr.length =
-			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.len;
-		memcpy(parsed_ptxt->auth_cred.key_id.key_id_bstr.value,
-		       cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.value,
-		       cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.len);
+		ret = edhoc_parse_id_cred_kid_bstr(
+			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.value,
+			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.len,
+			&parsed_ptxt->auth_cred);
 		break;
 
-	case plaintext_3_ID_CRED_I_map_m_c: {
-		const struct map *cbor_map =
-			&cbor_ptxt_3.plaintext_3_ID_CRED_I_map_m;
+	case plaintext_3_ID_CRED_I_map_m_c:
+		ret = edhoc_parse_id_cred_map(
+			&cbor_ptxt_3.plaintext_3_ID_CRED_I_map_m,
+			&parsed_ptxt->auth_cred);
+		break;
 
-		if (cbor_map->map_x5chain_present) {
-			const struct COSE_X509_r *cose_x509 =
-				&cbor_map->map_x5chain.map_x5chain;
-
-			parsed_ptxt->auth_cred.label =
-				EDHOC_COSE_HEADER_X509_CHAIN;
-
-			switch (cose_x509->COSE_X509_choice) {
-			case COSE_X509_bstr_c:
-				parsed_ptxt->auth_cred.x509_chain
-					.certificate_count = 1;
-				parsed_ptxt->auth_cred.x509_chain
-					.certificate[0] =
-					cose_x509->COSE_X509_bstr.value;
-				parsed_ptxt->auth_cred.x509_chain
-					.certificate_length[0] =
-					cose_x509->COSE_X509_bstr.len;
-				break;
-
-			case COSE_X509_certs_l_c: {
-				parsed_ptxt->auth_cred.x509_chain
-					.certificate_count =
-					cose_x509->COSE_X509_certs_l_certs_count;
-
-				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_chain
-						       .certificate) -
-					    1 <
-				    cose_x509->COSE_X509_certs_l_certs_count) {
-					EDHOC_LOG_ERR(
-						"X.509 certificate chain too large: %zu",
-						cose_x509
-							->COSE_X509_certs_l_certs_count);
-					return EDHOC_ERROR_BUFFER_TOO_SMALL;
-				}
-
-				for (size_t i = 0;
-				     i <
-				     cose_x509->COSE_X509_certs_l_certs_count;
-				     ++i) {
-					parsed_ptxt->auth_cred.x509_chain
-						.certificate[i] =
-						cose_x509
-							->COSE_X509_certs_l_certs
-								[i]
-							.value;
-					parsed_ptxt->auth_cred.x509_chain
-						.certificate_length[i] =
-						cose_x509
-							->COSE_X509_certs_l_certs
-								[i]
-							.len;
-				}
-
-				break;
-			}
-			}
-
-			break;
-		}
-
-		if (cbor_map->map_x5t_present) {
-			parsed_ptxt->auth_cred.label =
-				EDHOC_COSE_HEADER_X509_HASH;
-
-			const struct COSE_CertHash *cose_x509 =
-				&cbor_map->map_x5t.map_x5t;
-
-			parsed_ptxt->auth_cred.x509_hash
-				.certificate_fingerprint =
-				cose_x509->COSE_CertHash_hashValue.value;
-			parsed_ptxt->auth_cred.x509_hash
-				.certificate_fingerprint_length =
-				cose_x509->COSE_CertHash_hashValue.len;
-
-			switch (cose_x509->COSE_CertHash_hashAlg_choice) {
-			case COSE_CertHash_hashAlg_int_c:
-				parsed_ptxt->auth_cred.x509_hash.encode_type =
-					EDHOC_ENCODE_TYPE_INTEGER;
-				parsed_ptxt->auth_cred.x509_hash.algorithm_int =
-					cose_x509->COSE_CertHash_hashAlg_int;
-				break;
-			case COSE_CertHash_hashAlg_tstr_c:
-				if (ARRAY_SIZE(parsed_ptxt->auth_cred.x509_hash
-						       .algorithm_bstr.value) <
-				    cose_x509->COSE_CertHash_hashAlg_tstr.len) {
-					EDHOC_LOG_ERR(
-						"X.509 hash algorithm string too large: %zu",
-						cose_x509
-							->COSE_CertHash_hashAlg_tstr
-							.len);
-					return EDHOC_ERROR_BUFFER_TOO_SMALL;
-				}
-
-				parsed_ptxt->auth_cred.x509_hash.encode_type =
-					EDHOC_ENCODE_TYPE_BYTE_STRING;
-				parsed_ptxt->auth_cred.x509_hash.algorithm_bstr
-					.length =
-					cose_x509->COSE_CertHash_hashAlg_tstr
-						.len;
-				memcpy(parsed_ptxt->auth_cred.x509_hash
-					       .algorithm_bstr.value,
-				       cose_x509->COSE_CertHash_hashAlg_tstr
-					       .value,
-				       cose_x509->COSE_CertHash_hashAlg_tstr
-					       .len);
-				break;
-			default:
-				EDHOC_LOG_ERR(
-					"Invalid COSE_CertHash_hashAlg choice: %d",
-					cose_x509->COSE_CertHash_hashAlg_choice);
-				return EDHOC_ERROR_NOT_PERMITTED;
-			}
-
-			break;
-		}
+	default:
+		EDHOC_LOG_ERR("Invalid ID_CRED_I choice: %d",
+			      cbor_ptxt_3.plaintext_3_ID_CRED_I_choice);
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Parse ID_CRED_I: %d", ret);
+		return ret;
 	}
 
 	/* Sign_or_MAC_3 */
@@ -911,6 +800,15 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	/* EAD_3 if present */
 	if (cbor_ptxt_3.plaintext_3_EAD_3_m_present) {
+		if (ARRAY_SIZE(ctx->ead.token) - 1 <
+		    cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count) {
+			EDHOC_LOG_ERR(
+				"EAD buffer too small: %zu, %zu",
+				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count,
+				ARRAY_SIZE(ctx->ead.token) - 1);
+			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		}
+
 		ctx->ead.count = cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count;
 
 		for (size_t i = 0; i < ctx->ead.count; ++i) {
