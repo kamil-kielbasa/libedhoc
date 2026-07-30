@@ -232,6 +232,7 @@ static struct edhoc_auth_credentials make_valid_kid(void)
 {
 	return (struct edhoc_auth_credentials){
 		.label = EDHOC_COSE_HEADER_KID,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.key_id = {
 			.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 			.key_id_int = -12,
@@ -245,6 +246,7 @@ static struct edhoc_auth_credentials make_valid_x5chain(void)
 {
 	return (struct edhoc_auth_credentials){
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain = {
 			.certificate_count = 1,
 			.certificate = { first_certificate },
@@ -257,6 +259,7 @@ static struct edhoc_auth_credentials make_valid_x5t(void)
 {
 	return (struct edhoc_auth_credentials){
 		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_hash = {
 			.certificate = first_certificate,
 			.certificate_length = ARRAY_SIZE(first_certificate),
@@ -605,6 +608,96 @@ TEST(internals_credentials, validate_fetched_kid_bad_encode_type)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
+TEST(internals_credentials, validate_fetched_kid_format_unset)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.format = EDHOC_CREDENTIAL_FORMAT_NONE;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_fetched_kid_bad_format)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.format = (enum edhoc_credential_format)7;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_verified_kid_format_unset)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.format = EDHOC_CREDENTIAL_FORMAT_NONE;
+
+	const int ret = edhoc_validate_credential_verified(
+		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_fetched_kid_cbor_encoded)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5chain_cbor_encoded_rejected)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5chain();
+
+	credentials.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5t_cbor_encoded_rejected)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5t();
+
+	credentials.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5chain_format_unset)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5chain();
+
+	credentials.format = EDHOC_CREDENTIAL_FORMAT_NONE;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_verified_x5t_cbor_encoded_rejected)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5t();
+
+	credentials.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+
+	const int ret = edhoc_validate_credential_verified(
+		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
 TEST(internals_credentials, validate_fetched_kid_over_capacity)
 {
 	struct edhoc_auth_credentials credentials = make_valid_kid();
@@ -785,6 +878,19 @@ TEST_GROUP_RUNNER(internals_credentials)
 		      validate_fetched_kid_without_credential);
 	RUN_TEST_CASE(internals_credentials,
 		      validate_fetched_kid_bad_encode_type);
+	RUN_TEST_CASE(internals_credentials, validate_fetched_kid_format_unset);
+	RUN_TEST_CASE(internals_credentials, validate_fetched_kid_bad_format);
+	RUN_TEST_CASE(internals_credentials, validate_fetched_kid_cbor_encoded);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5chain_cbor_encoded_rejected);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5t_cbor_encoded_rejected);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5chain_format_unset);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_verified_kid_format_unset);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_verified_x5t_cbor_encoded_rejected);
 	RUN_TEST_CASE(internals_credentials,
 		      validate_fetched_kid_over_capacity);
 	RUN_TEST_CASE(internals_credentials, validate_fetched_x5chain_empty);

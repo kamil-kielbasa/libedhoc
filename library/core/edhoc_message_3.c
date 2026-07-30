@@ -1000,26 +1000,16 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 			ctx->user_context, &call_context, ctx->ead.token,
 			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
 
-		if (EDHOC_SUCCESS != ret ||
-		    ARRAY_SIZE(ctx->ead.token) - 1 < ctx->ead.count) {
-			EDHOC_LOG_ERR("Compose EAD_3: %d, %zu, %zu", ret,
-				      ARRAY_SIZE(ctx->ead.token) - 1,
-				      ctx->ead.count);
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("EAD_3 compose: %d", ret);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead.token[i].label,
-				sizeof(ctx->ead.token[i].label),
-				"EAD_3 token label:");
+		ret = edhoc_validate_ead_composed(ctx->ead.token,
+						  ctx->ead.count);
 
-			if (0 != ctx->ead.token[i].value.length) {
-				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value.value,
-					ctx->ead.token[i].value.length,
-					"EAD_3 token value:");
-			}
+		if (EDHOC_SUCCESS != ret) {
+			return ret;
 		}
 	}
 

@@ -173,6 +173,7 @@ int benchmark_credentials_fetch(void *user_context,
 	const struct benchmark_identity *identity = endpoint->own;
 
 	auth_credentials->label = identity->cose_header;
+	auth_credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 	switch (identity->cose_header) {
 	case EDHOC_COSE_HEADER_X509_CHAIN:

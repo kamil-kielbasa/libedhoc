@@ -11,6 +11,7 @@
 
 /* Internal headers: */
 #include "internals_common.h"
+#include "edhoc_macros_internal.h"
 
 /* PSA crypto header: */
 #include <psa/crypto.h>
@@ -134,6 +135,7 @@ TEST(internals_common, comp_id_cred_len_x509_chain_single)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = cert,
 		.x509_chain.certificate_length[0] = sizeof(cert),
@@ -152,6 +154,7 @@ TEST(internals_common, comp_id_cred_len_x509_chain_multi)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 2,
 		.x509_chain.certificate[0] = cert0,
 		.x509_chain.certificate_length[0] = sizeof(cert0),
@@ -171,6 +174,7 @@ TEST(internals_common, comp_id_cred_len_x509_hash_int)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 		.x509_hash.algorithm_int = -8,
 		.x509_hash.certificate_fingerprint = fingerprint,
@@ -189,6 +193,7 @@ TEST(internals_common, comp_id_cred_len_x509_hash_bstr)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.x509_hash.algorithm_bstr.length = 2,
 		.x509_hash.algorithm_bstr.value[0] = 'S',
@@ -221,6 +226,7 @@ TEST(internals_common, comp_id_cred_len_x509_hash_invalid_encode)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_hash.encode_type = 99,
 	};
 
@@ -272,20 +278,6 @@ TEST(internals_common, comp_th_len_zero)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(internals_common, comp_cred_len_any)
-{
-	size_t len = 0;
-
-	const struct edhoc_auth_credentials cred = {
-		.label = EDHOC_COSE_HEADER_CUSTOM,
-		.custom.credential_length = 50,
-	};
-
-	int ret = comp_cred_len(&cred, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(50, len);
-}
-
 TEST(internals_common, comp_cred_len_kid)
 {
 	size_t len = 0;
@@ -307,6 +299,7 @@ TEST(internals_common, comp_cred_len_x509_chain)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = cert,
 		.x509_chain.certificate_length[0] = sizeof(cert),
@@ -323,6 +316,7 @@ TEST(internals_common, comp_cred_len_x509_hash)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_hash.certificate_length = 150,
 	};
 
@@ -401,6 +395,41 @@ TEST(internals_common, comp_ead_len_with_tokens)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(internals_common, validate_ead_composed_accepts)
+{
+	static const uint8_t val[3] = { 0x01, 0x02, 0x03 };
+	const struct edhoc_ead_token tokens[] = {
+		{ .label = 1,
+		  .value = { .value = val, .length = sizeof(val) } },
+		{ .label = 2, .value = { .value = NULL, .length = 0 } },
+	};
+
+	const int ret = edhoc_validate_ead_composed(tokens, ARRAY_SIZE(tokens));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(internals_common, validate_ead_composed_no_tokens)
+{
+	const int ret = edhoc_validate_ead_composed(NULL, 0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(internals_common, validate_ead_composed_null_tokens)
+{
+	const int ret = edhoc_validate_ead_composed(NULL, 1);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(internals_common, validate_ead_composed_value_without_buffer)
+{
+	const struct edhoc_ead_token tokens[] = {
+		{ .label = 1, .value = { .value = NULL, .length = 4 } },
+	};
+
+	const int ret = edhoc_validate_ead_composed(tokens, ARRAY_SIZE(tokens));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_EAD_COMPOSE_FAILURE, ret);
+}
+
 TEST(internals_common, comp_ead_len_null_args)
 {
 	struct edhoc_context ctx = { 0 };
@@ -429,7 +458,7 @@ TEST(internals_common, kid_compact_enc_int_cbor)
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 		.key_id.key_id_int = 7,
-		.key_id.is_credential_cbor_encoded = true,
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 	};
 
 	int ret = kid_compact_encoding(&cred, mac_ctx);
@@ -449,7 +478,7 @@ TEST(internals_common, kid_compact_enc_int_non_cbor)
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 		.key_id.key_id_int = 5,
-		.key_id.is_credential_cbor_encoded = false,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 	};
 
 	int ret = kid_compact_encoding(&cred, mac_ctx);
@@ -466,7 +495,7 @@ TEST(internals_common, kid_compact_enc_bstr_cbor_one_byte)
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
-		.key_id.is_credential_cbor_encoded = true,
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 		.key_id.key_id_bstr.length = 1,
 		.key_id.key_id_bstr.value[0] = 0x05,
 	};
@@ -487,7 +516,7 @@ TEST(internals_common, kid_compact_enc_bstr_cbor_multi_byte)
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
-		.key_id.is_credential_cbor_encoded = true,
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 		.key_id.key_id_bstr.length = 2,
 		.key_id.key_id_bstr.value[0] = 0x18,
 		.key_id.key_id_bstr.value[1] = 0x64,
@@ -509,7 +538,7 @@ TEST(internals_common, kid_compact_enc_bstr_non_cbor)
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
-		.key_id.is_credential_cbor_encoded = false,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.key_id.key_id_bstr.length = 0,
 	};
 
@@ -1058,7 +1087,6 @@ TEST_GROUP_RUNNER(internals_common)
 	RUN_TEST_CASE(internals_common, comp_th_len_zero);
 
 	/* comp_cred_len */
-	RUN_TEST_CASE(internals_common, comp_cred_len_any);
 	RUN_TEST_CASE(internals_common, comp_cred_len_kid);
 	RUN_TEST_CASE(internals_common, comp_cred_len_x509_chain);
 	RUN_TEST_CASE(internals_common, comp_cred_len_x509_hash);
@@ -1068,6 +1096,11 @@ TEST_GROUP_RUNNER(internals_common)
 	/* comp_ead_len */
 	RUN_TEST_CASE(internals_common, comp_ead_len_no_tokens);
 	RUN_TEST_CASE(internals_common, comp_ead_len_with_tokens);
+	RUN_TEST_CASE(internals_common, validate_ead_composed_accepts);
+	RUN_TEST_CASE(internals_common, validate_ead_composed_no_tokens);
+	RUN_TEST_CASE(internals_common, validate_ead_composed_null_tokens);
+	RUN_TEST_CASE(internals_common,
+		      validate_ead_composed_value_without_buffer);
 	RUN_TEST_CASE(internals_common, comp_ead_len_null_args);
 
 	/* kid_compact_encoding */

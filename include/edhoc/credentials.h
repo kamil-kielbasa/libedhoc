@@ -77,9 +77,9 @@
  *        and how the credential is referenced or transported (RFC 9528: 3.5.3).
  */
 enum edhoc_cose_header {
-	/** User-defined identification; the application encodes and decodes
-	 *  ID_CRED itself (\ref edhoc_auth_credential_custom). */
-	EDHOC_COSE_HEADER_CUSTOM = -65537,
+	/** Not set. A zeroed structure holds this value, so leaving the label
+	 *  out is rejected instead of silently selecting a union member. */
+	EDHOC_COSE_HEADER_NONE = 0,
 	/** COSE 'kid' (label 4): the credential is referenced by a key
 	 *  identifier and is not transported; both parties must already hold it
 	 *  (\ref edhoc_auth_credential_key_id). */
@@ -93,6 +93,29 @@ enum edhoc_cose_header {
 	EDHOC_COSE_HEADER_X509_HASH = 34,
 };
 
+_Static_assert(0 == EDHOC_COSE_HEADER_NONE,
+	       "A zeroed credential must not name an identification method");
+
+/**
+ * \brief How a credential is serialized.
+ *
+ *        The label fixes what is admissible: only a credential referenced by
+ *        #EDHOC_COSE_HEADER_KID may be a CBOR item (a CWT or a CCS), because
+ *        for the X.509 variants CRED is the DER certificate.
+ */
+enum edhoc_credential_format {
+	/** Not set. A zeroed structure holds this value, so the format is
+	 *  always a deliberate choice. */
+	EDHOC_CREDENTIAL_FORMAT_NONE = 0,
+	/** Opaque bytes, wrapped in a CBOR byte string. */
+	EDHOC_CREDENTIAL_FORMAT_RAW,
+	/** A CBOR item, embedded as it is. */
+	EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
+};
+
+_Static_assert(0 == EDHOC_CREDENTIAL_FORMAT_NONE,
+	       "A zeroed credential must not name a format");
+
 /**
  * \brief Credential referenced by a COSE 'kid' key identifier
  *        (#EDHOC_COSE_HEADER_KID, RFC 9528: 3.5.3).
@@ -103,8 +126,6 @@ enum edhoc_cose_header {
  *
  * \par On fetch, populate:
  * - the credential and its length: \p credential, \p credential_length;
- * - whether the credential is CBOR-encoded (e.g. CWT, CCS):
- *   \p is_credential_cbor_encoded;
  * - the key-identifier encoding: \p encode_type;
  * - the key identifier: \p key_id_int, or \p key_id_bstr.value with
  *   \p key_id_bstr.length.
@@ -123,8 +144,6 @@ struct edhoc_auth_credential_key_id {
 	const uint8_t *credential;
 	/** Size of the \p credential buffer in bytes. */
 	size_t credential_length;
-	/** Is the credential CBOR-encoded? E.g. CWT, CCS. */
-	bool is_credential_cbor_encoded;
 
 	/** Encoding of the key identifier. It must follow the representation of
 	 *  byte string identifiers described in RFC 9528: 3.3.2. */
@@ -232,42 +251,6 @@ struct edhoc_auth_credential_x509_hash {
 };
 
 /**
- * \brief User-defined authentication credential
- *        (#EDHOC_COSE_HEADER_CUSTOM, RFC 9528: 3.5.3).
- *
- *        The application chooses how ID_CRED and the credential are identified,
- *        transported and (de)serialized, populating the fields below on fetch
- *        and receiving them back on verify.
- *
- * \note The application is responsible for the correct CBOR encoding (compact
- *       when required) and decoding.
- */
-struct edhoc_auth_credential_custom {
-	/** ID_CRED buffer: identifies and optionally transports the credential
-	 *  (RFC 9528: 2. EDHOC Outline — ID_CRED_I & ID_CRED_R). */
-	const uint8_t *id_credential;
-	/** Size of the \p id_credential buffer in bytes. */
-	size_t id_credential_length;
-
-	/** Is ID_CRED in compact encoding? (RFC 9528: 3.5.3.2. Compact Encoding
-	 *  of ID_CRED Fields for 'kid'). */
-	bool is_id_credential_compact_encoded;
-	/** Encoding of the compact ID_CRED. */
-	enum edhoc_encode_type encode_type;
-
-	/** Compact-encoded ID_CRED buffer. */
-	const uint8_t *id_credential_compact;
-	/** Size of the \p id_credential_compact buffer in bytes. */
-	size_t id_credential_compact_length;
-
-	/** CRED buffer: the authentication credential carrying the public
-	 *  authentication key (RFC 9528: 2. EDHOC Outline — CRED_I & CRED_R). */
-	const uint8_t *credential;
-	/** Size of the \p credential buffer in bytes. */
-	size_t credential_length;
-};
-
-/**
  * \brief An EDHOC authentication credential (tagged union over the methods).
  *
  *        \p label selects the identification method and thus which union member
@@ -281,6 +264,12 @@ struct edhoc_auth_credentials {
 
 	/** Identification method; selects the active union member. */
 	enum edhoc_cose_header label;
+	/** Serialization of the credential (CRED). Constrained by \p label:
+	 *  #EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED is admissible only for
+	 *  #EDHOC_COSE_HEADER_KID. For the X.509 variants the library fills it
+	 *  in on verify, since it is the one that knows CRED is DER. */
+	enum edhoc_credential_format format;
+
 	union {
 		/** Key identifier authentication structure. */
 		struct edhoc_auth_credential_key_id key_id;
@@ -288,9 +277,6 @@ struct edhoc_auth_credentials {
 		struct edhoc_auth_credential_x509_chain x509_chain;
 		/** X.509 hash authentication structure. */
 		struct edhoc_auth_credential_x509_hash x509_hash;
-		/** User-defined authentication credential structure
-		 *  (selected by #EDHOC_COSE_HEADER_CUSTOM). */
-		struct edhoc_auth_credential_custom custom;
 	};
 };
 

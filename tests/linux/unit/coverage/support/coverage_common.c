@@ -86,8 +86,6 @@ static int mock_cred_fetch_x5t_int(void *user_ctx,
 static int
 mock_cred_fetch_x5chain_multi(void *user_ctx,
 			      struct edhoc_auth_credentials *auth_cred);
-static int mock_cred_fetch_cose_any(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred);
 
 static int
 mock_ead_compose_with_value(void *user_ctx,
@@ -117,11 +115,6 @@ const struct edhoc_credentials coverage_mock_creds_x5t_int = {
 
 const struct edhoc_credentials coverage_mock_creds_x5chain_multi = {
 	.fetch = mock_cred_fetch_x5chain_multi,
-	.verify = coverage_mock_cred_verify,
-};
-
-const struct edhoc_credentials coverage_mock_creds_cose_any = {
-	.fetch = mock_cred_fetch_cose_any,
 	.verify = coverage_mock_cred_verify,
 };
 
@@ -498,6 +491,7 @@ static int mock_cred_fetch(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 1;
 	auth_cred->x509_chain.certificate[0] = fake_cert;
 	auth_cred->x509_chain.certificate_length[0] = sizeof(fake_cert);
@@ -519,6 +513,7 @@ static int mock_cred_fetch_kid(void *user_ctx,
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->key_id.key_id_int = 5;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 	auth_cred->key_id.credential = mock_kid_credential;
 	auth_cred->key_id.credential_length = sizeof(mock_kid_credential);
@@ -542,7 +537,7 @@ static int mock_cred_fetch_kid_bstr(void *user_ctx,
 
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	auth_cred->key_id.is_credential_cbor_encoded = true;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
 	memcpy(auth_cred->key_id.key_id_bstr.value, kid, sizeof(kid));
 	auth_cred->key_id.key_id_bstr.length = sizeof(kid);
@@ -569,6 +564,7 @@ static int mock_cred_fetch_x5t_bstr(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 	auth_cred->x509_hash.certificate = mock_x5t_certificate;
 	auth_cred->x509_hash.certificate_length = sizeof(mock_x5t_certificate);
@@ -597,6 +593,7 @@ static int mock_cred_fetch_x5t_int(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 	auth_cred->x509_hash.certificate = mock_x5t_certificate;
 	auth_cred->x509_hash.certificate_length = sizeof(mock_x5t_certificate);
@@ -626,43 +623,13 @@ mock_cred_fetch_x5chain_multi(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 2;
 
 	auth_cred->x509_chain.certificate[0] = fake_cert_0;
 	auth_cred->x509_chain.certificate_length[0] = sizeof(fake_cert_0);
 	auth_cred->x509_chain.certificate[1] = fake_cert_1;
 	auth_cred->x509_chain.certificate_length[1] = sizeof(fake_cert_1);
-
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
-
-	return EDHOC_SUCCESS;
-}
-
-static int mock_cred_fetch_cose_any(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred)
-{
-	static const uint8_t fake_id_cred[] = { 0xA1, 0x04, 0x42, 0xAB, 0xCD };
-	static const uint8_t fake_cred[] = { 0x58, 0x02, 0x30, 0x00 };
-	static const uint8_t comp_enc[] = { 0x05 };
-
-	(void)user_ctx;
-
-	if (coverage_mock_should_fail()) {
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-	}
-
-	auth_cred->label = EDHOC_COSE_HEADER_CUSTOM;
-
-	auth_cred->custom.id_credential = fake_id_cred;
-	auth_cred->custom.id_credential_length = sizeof(fake_id_cred);
-
-	auth_cred->custom.credential = fake_cred;
-	auth_cred->custom.credential_length = sizeof(fake_cred);
-
-	auth_cred->custom.is_id_credential_compact_encoded = true;
-	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	auth_cred->custom.id_credential_compact = comp_enc;
-	auth_cred->custom.id_credential_compact_length = sizeof(comp_enc);
 
 	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
@@ -981,6 +948,7 @@ int coverage_mock_cred_verify(void *user_ctx,
 		auth_cred->key_id.credential = mock_kid_credential;
 		auth_cred->key_id.credential_length =
 			sizeof(mock_kid_credential);
+		auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
@@ -1023,6 +991,7 @@ int coverage_mock_cred_fetch_x509_zero_certs(
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 0;
 
 	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);

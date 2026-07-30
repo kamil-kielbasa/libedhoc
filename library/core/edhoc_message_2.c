@@ -1254,26 +1254,16 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			ctx->user_context, &call_context, ctx->ead.token,
 			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
 
-		if (EDHOC_SUCCESS != ret ||
-		    ARRAY_SIZE(ctx->ead.token) - 1 < ctx->ead.count) {
-			EDHOC_LOG_ERR("EAD_2 compose failure: %d, %zu, %zu",
-				      ret, ctx->ead.count,
-				      ARRAY_SIZE(ctx->ead.token) - 1);
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("EAD_2 compose: %d", ret);
 			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 		}
 
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead.token[i].label,
-				sizeof(ctx->ead.token[i].label),
-				"EAD_2 compose label");
+		ret = edhoc_validate_ead_composed(ctx->ead.token,
+						  ctx->ead.count);
 
-			if (0 != ctx->ead.token[i].value.length) {
-				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value.value,
-					ctx->ead.token[i].value.length,
-					"EAD_2 compose value");
-			}
+		if (EDHOC_SUCCESS != ret) {
+			return ret;
 		}
 	}
 

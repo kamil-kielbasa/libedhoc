@@ -34,9 +34,6 @@ extern const struct edhoc_credentials coverage_mock_creds_x5t_int;
 /** \brief Credentials using an x509 chain with multiple certificates. */
 extern const struct edhoc_credentials coverage_mock_creds_x5chain_multi;
 
-/** \brief Credentials using a COSE custom identifier with compact encoding. */
-extern const struct edhoc_credentials coverage_mock_creds_cose_any;
-
 /** \brief EAD interface whose compose emits a single token carrying a value. */
 extern const struct edhoc_ead coverage_mock_ead_with_value;
 

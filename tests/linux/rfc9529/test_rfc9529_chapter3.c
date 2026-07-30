@@ -49,26 +49,10 @@ static int auth_cred_fetch_init(void *user_ctx,
 				struct edhoc_auth_credentials *auth_cred);
 
 /**
- * \brief Authentication credentials fetch callback for initiator.
- *
- * \note It will use already cborised credentials.
- */
-static int auth_cred_fetch_init_any(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred);
-
-/**
  * \brief Authentication credentials fetch callback for responder.
  */
 static int auth_cred_fetch_resp(void *user_ctx,
 				struct edhoc_auth_credentials *auth_cred);
-
-/**
- * \brief Authentication credentials fetch callback for responder.
- *
- * \note It will use already cborised credentials.
- */
-static int auth_cred_fetch_resp_any(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred);
 
 /**
  * \brief Authentication credentials verify callback for initiator.
@@ -166,18 +150,8 @@ static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.verify = auth_cred_verify_init,
 };
 
-static const struct edhoc_credentials edhoc_auth_cred_mocked_init_any = {
-	.fetch = auth_cred_fetch_init_any,
-	.verify = auth_cred_verify_init,
-};
-
 static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
 	.fetch = auth_cred_fetch_resp,
-	.verify = auth_cred_verify_resp,
-};
-
-static const struct edhoc_credentials edhoc_auth_cred_mocked_resp_any = {
-	.fetch = auth_cred_fetch_resp_any,
 	.verify = auth_cred_verify_resp,
 };
 
@@ -295,37 +269,12 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
 	auth_cred->key_id.credential = CRED_I_cborised;
 	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_I_cborised);
-	auth_cred->key_id.is_credential_cbor_encoded = true;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_I_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_I_raw_cborised));
 	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
-
-	const int res = import_dh_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					   auth_cred->private_key_id);
-
-	if (EDHOC_SUCCESS != res)
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	return EDHOC_SUCCESS;
-}
-
-static int auth_cred_fetch_init_any(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred)
-{
-	(void)user_ctx;
-
-	auth_cred->label = EDHOC_COSE_HEADER_CUSTOM;
-	auth_cred->custom.id_credential = ID_CRED_I_cborised;
-	auth_cred->custom.id_credential_length = ARRAY_SIZE(ID_CRED_I_cborised);
-	auth_cred->custom.is_id_credential_compact_encoded = true;
-	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	auth_cred->custom.id_credential_compact = ID_CRED_I_raw_cborised;
-	auth_cred->custom.id_credential_compact_length =
-		ARRAY_SIZE(ID_CRED_I_raw_cborised);
-	auth_cred->custom.credential = CRED_I_cborised;
-	auth_cred->custom.credential_length = ARRAY_SIZE(CRED_I_cborised);
 
 	const int res = import_dh_priv_key(SK_I, ARRAY_SIZE(SK_I),
 					   auth_cred->private_key_id);
@@ -344,37 +293,12 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
 	auth_cred->key_id.credential = CRED_R_cborised;
 	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_R_cborised);
-	auth_cred->key_id.is_credential_cbor_encoded = true;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_R_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_R_raw_cborised));
 	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
-
-	const int res = import_dh_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					   auth_cred->private_key_id);
-
-	if (EDHOC_SUCCESS != res)
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	return EDHOC_SUCCESS;
-}
-
-static int auth_cred_fetch_resp_any(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred)
-{
-	(void)user_ctx;
-
-	auth_cred->label = EDHOC_COSE_HEADER_CUSTOM;
-	auth_cred->custom.id_credential = ID_CRED_R_cborised;
-	auth_cred->custom.id_credential_length = ARRAY_SIZE(ID_CRED_R_cborised);
-	auth_cred->custom.is_id_credential_compact_encoded = true;
-	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	auth_cred->custom.id_credential_compact = ID_CRED_R_raw_cborised;
-	auth_cred->custom.id_credential_compact_length =
-		ARRAY_SIZE(ID_CRED_R_raw_cborised);
-	auth_cred->custom.credential = CRED_R_cborised;
-	auth_cred->custom.credential_length = ARRAY_SIZE(CRED_R_cborised);
 
 	const int res = import_dh_priv_key(SK_R, ARRAY_SIZE(SK_R),
 					   auth_cred->private_key_id);
@@ -412,7 +336,7 @@ static int auth_cred_verify_init(void *user_ctx,
 
 	auth_cred->key_id.credential = CRED_R_cborised;
 	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_R_cborised);
-	auth_cred->key_id.is_credential_cbor_encoded = true;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
 	*pub_key_ref = PK_R;
 	*pub_key_len = ARRAY_SIZE(PK_R);
@@ -447,7 +371,7 @@ static int auth_cred_verify_resp(void *user_ctx,
 
 	auth_cred->key_id.credential = CRED_I_cborised;
 	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_I_cborised);
-	auth_cred->key_id.is_credential_cbor_encoded = true;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
 	*pub_key_ref = PK_I;
 	*pub_key_len = ARRAY_SIZE(PK_I);
@@ -644,55 +568,6 @@ TEST(rfc9529_chapter3, message_2_compose)
 				     ARRAY_SIZE(PRK_3e2m));
 }
 
-TEST(rfc9529_chapter3, message_2_compose_any)
-{
-	/* Required injections. */
-	ret = edhoc_bind_credentials(resp_ctx,
-				     &edhoc_auth_cred_mocked_resp_any);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	resp_ctx->state.machine = EDHOC_SM_RECEIVED_M1;
-	resp_ctx->negotiation.selected_method = METHOD;
-
-	resp_ctx->state.th.stage = EDHOC_TH_STATE_1;
-	resp_ctx->state.th.length = ARRAY_SIZE(H_message_1);
-	memcpy(resp_ctx->state.th.value, H_message_1, sizeof(H_message_1));
-
-	resp_ctx->ephemeral.peer.length = ARRAY_SIZE(G_X);
-	memcpy(resp_ctx->ephemeral.peer.value, G_X, ARRAY_SIZE(G_X));
-
-	resp_ctx->negotiation.peer_connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	resp_ctx->negotiation.peer_connection_id.int_value = (int8_t)C_I[0];
-
-	size_t msg_2_len = 0;
-	uint8_t msg_2[ARRAY_SIZE(message_2)] = { 0 };
-
-	ret = edhoc_message_2_compose(resp_ctx, msg_2, ARRAY_SIZE(msg_2),
-				      &msg_2_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_WAIT_M3, resp_ctx->state.machine);
-	TEST_ASSERT_EQUAL(false, resp_ctx->is_oscore_export_allowed);
-
-	ret = edhoc_error_get_code(resp_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(message_2), msg_2_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(msg_2, message_2, msg_2_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_3, resp_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(TH_3), resp_ctx->state.th.length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(resp_ctx->state.th.value, TH_3,
-				      resp_ctx->state.th.length);
-
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, resp_ctx->state.prk_state);
-	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
-				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
-				     ARRAY_SIZE(PRK_3e2m));
-}
-
 TEST(rfc9529_chapter3, message_2_process)
 {
 	/* Required injections. */
@@ -735,55 +610,6 @@ TEST(rfc9529_chapter3, message_2_process)
 
 TEST(rfc9529_chapter3, message_3_compose)
 {
-	/* Required injections. */
-	init_ctx->state.machine = EDHOC_SM_VERIFIED_M2;
-	init_ctx->negotiation.selected_method = METHOD;
-
-	init_ctx->state.th.stage = EDHOC_TH_STATE_3;
-	init_ctx->state.th.length = ARRAY_SIZE(TH_3);
-	memcpy(init_ctx->state.th.value, TH_3, ARRAY_SIZE(TH_3));
-
-	init_ctx->state.prk_state = EDHOC_PRK_STATE_3E2M;
-	tv_inject_slot(init_ctx, EDHOC_KEY_SLOT_PRK_3E2M,
-		       tv_import_derive(PRK_3e2m, ARRAY_SIZE(PRK_3e2m)));
-
-	init_ctx->ephemeral.peer.length = ARRAY_SIZE(G_Y);
-	memcpy(init_ctx->ephemeral.peer.value, G_Y, ARRAY_SIZE(G_Y));
-
-	size_t msg_3_len = 0;
-	uint8_t msg_3[ARRAY_SIZE(message_3)] = { 0 };
-
-	ret = edhoc_message_3_compose(init_ctx, msg_3, ARRAY_SIZE(msg_3),
-				      &msg_3_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_SM_COMPLETED, init_ctx->state.machine);
-	TEST_ASSERT_EQUAL(true, init_ctx->is_oscore_export_allowed);
-
-	ret = edhoc_error_get_code(init_ctx, &error_code_recv);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code_recv);
-
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(message_3), msg_3_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(message_3, msg_3, msg_3_len);
-
-	TEST_ASSERT_EQUAL(EDHOC_TH_STATE_4, init_ctx->state.th.stage);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(TH_4), init_ctx->state.th.length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(TH_4, init_ctx->state.th.value,
-				      init_ctx->state.th.length);
-
-	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, init_ctx->state.prk_state);
-	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
-				     EDHOC_KEY_SLOT_PRK_4E3M, PRK_4e3m,
-				     ARRAY_SIZE(PRK_4e3m));
-}
-
-TEST(rfc9529_chapter3, message_3_compose_any)
-{
-	ret = edhoc_bind_credentials(init_ctx,
-				     &edhoc_auth_cred_mocked_init_any);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
 	/* Required injections. */
 	init_ctx->state.machine = EDHOC_SM_VERIFIED_M2;
 	init_ctx->negotiation.selected_method = METHOD;
@@ -1348,10 +1174,8 @@ TEST_GROUP_RUNNER(rfc9529_chapter3)
 	RUN_TEST_CASE(rfc9529_chapter3, message_1_compose);
 	RUN_TEST_CASE(rfc9529_chapter3, message_1_process);
 	RUN_TEST_CASE(rfc9529_chapter3, message_2_compose);
-	RUN_TEST_CASE(rfc9529_chapter3, message_2_compose_any);
 	RUN_TEST_CASE(rfc9529_chapter3, message_2_process);
 	RUN_TEST_CASE(rfc9529_chapter3, message_3_compose);
-	RUN_TEST_CASE(rfc9529_chapter3, message_3_compose_any);
 	RUN_TEST_CASE(rfc9529_chapter3, message_3_process);
 	RUN_TEST_CASE(rfc9529_chapter3, message_4_compose);
 	RUN_TEST_CASE(rfc9529_chapter3, message_4_process);

@@ -57,6 +57,19 @@ _Static_assert(
 STATIC bool is_buffer_empty(const uint8_t *buffer, size_t length);
 
 /**
+ * \brief Validate the serialization of a credential against its label.
+ *
+ * \param label                        Identification method.
+ * \param format                       Credential format.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+STATIC int validate_format(enum edhoc_cose_header label,
+			   enum edhoc_credential_format format);
+
+/**
  * \brief Decode the 'x5chain' header parameter (RFC 9360: 2).
  *
  * \param[in] cose_x509                 Decoded COSE_X509.
@@ -117,22 +130,42 @@ validate_x509_chain(const struct edhoc_auth_credential_x509_chain *chain);
 STATIC int
 validate_x509_hash(const struct edhoc_auth_credential_x509_hash *x509_hash);
 
-/**
- * \brief Validate a credential the application encodes itself.
- *
- * \param[in] custom                    Custom credential.
- *
- * \retval #EDHOC_SUCCESS
- *         Success.
- * \return Negative error code on failure.
- */
-STATIC int validate_custom(const struct edhoc_auth_credential_custom *custom);
-
 /* Static function definitions --------------------------------------------- */
 
 STATIC bool is_buffer_empty(const uint8_t *buffer, size_t length)
 {
 	return NULL == buffer || 0 == length;
+}
+
+STATIC int validate_format(enum edhoc_cose_header label,
+			   enum edhoc_credential_format format)
+{
+	switch (label) {
+	case EDHOC_COSE_HEADER_KID:
+		/* CRED may be a CBOR item (a CWT or a CCS) or opaque bytes. */
+		if (EDHOC_CREDENTIAL_FORMAT_RAW != format &&
+		    EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED != format) {
+			EDHOC_LOG_ERR("Invalid format for 'kid': %d", format);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+		break;
+
+	case EDHOC_COSE_HEADER_X509_CHAIN:
+	case EDHOC_COSE_HEADER_X509_HASH:
+		/* CRED is the DER certificate, never a CBOR item. */
+		if (EDHOC_CREDENTIAL_FORMAT_RAW != format) {
+			EDHOC_LOG_ERR("Invalid format for X.509: %d", format);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+		break;
+
+	case EDHOC_COSE_HEADER_NONE:
+	default:
+		EDHOC_LOG_ERR("Unsupported credential label: %d", label);
+		return EDHOC_ERROR_NOT_SUPPORTED;
+	}
+
+	return EDHOC_SUCCESS;
 }
 
 STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
@@ -141,6 +174,7 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 	switch (cose_x509->COSE_X509_choice) {
 	case COSE_X509_bstr_c:
 		credentials->label = EDHOC_COSE_HEADER_X509_CHAIN;
+		credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		credentials->x509_chain.certificate_count = 1;
 		credentials->x509_chain.certificate[0] =
 			cose_x509->COSE_X509_bstr.value;
@@ -159,6 +193,7 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 		}
 
 		credentials->label = EDHOC_COSE_HEADER_X509_CHAIN;
+		credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		credentials->x509_chain.certificate_count =
 			cose_x509->COSE_X509_certs_l_certs_count;
 
@@ -224,6 +259,7 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 	}
 
 	credentials->label = EDHOC_COSE_HEADER_X509_HASH;
+	credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	credentials->x509_hash.certificate_fingerprint =
 		cert_hash->COSE_CertHash_hashValue.value;
 	credentials->x509_hash.certificate_fingerprint_length =
@@ -340,30 +376,6 @@ validate_x509_hash(const struct edhoc_auth_credential_x509_hash *x509_hash)
 	return EDHOC_SUCCESS;
 }
 
-STATIC int validate_custom(const struct edhoc_auth_credential_custom *custom)
-{
-	const bool no_id_credential = is_buffer_empty(
-		custom->id_credential, custom->id_credential_length);
-	const bool no_credential =
-		is_buffer_empty(custom->credential, custom->credential_length);
-
-	if (no_id_credential || no_credential) {
-		EDHOC_LOG_ERR("Empty custom credential");
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-	}
-
-	const bool no_compact =
-		is_buffer_empty(custom->id_credential_compact,
-				custom->id_credential_compact_length);
-
-	if (custom->is_id_credential_compact_encoded && no_compact) {
-		EDHOC_LOG_ERR("Empty compact ID_CRED for custom credential");
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-	}
-
-	return EDHOC_SUCCESS;
-}
-
 /* Module interface function definitions ----------------------------------- */
 
 int edhoc_parse_id_cred_kid_int(int32_t key_id,
@@ -450,7 +462,11 @@ int edhoc_validate_credential_fetched(
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
+	int ret = validate_format(credentials->label, credentials->format);
+
+	if (EDHOC_SUCCESS != ret) {
+		return ret;
+	}
 
 	switch (credentials->label) {
 	case EDHOC_COSE_HEADER_KID:
@@ -465,10 +481,7 @@ int edhoc_validate_credential_fetched(
 		ret = validate_x509_hash(&credentials->x509_hash);
 		break;
 
-	case EDHOC_COSE_HEADER_CUSTOM:
-		ret = validate_custom(&credentials->custom);
-		break;
-
+	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
 			      credentials->label);
@@ -493,6 +506,13 @@ int edhoc_validate_credential_verified(
 	if (no_public_key) {
 		EDHOC_LOG_ERR("Empty peer authentication key");
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	const int ret =
+		validate_format(credentials->label, credentials->format);
+
+	if (EDHOC_SUCCESS != ret) {
+		return ret;
 	}
 
 	/* The identification half of ID_CRED_x comes from the decoder and was
@@ -526,9 +546,7 @@ int edhoc_validate_credential_verified(
 		break;
 	}
 
-	/* ID_CRED_x has no wire form the decoder maps to a custom credential,
-	 * so this label can only come from the application overwriting it. */
-	case EDHOC_COSE_HEADER_CUSTOM:
+	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
 			      credentials->label);

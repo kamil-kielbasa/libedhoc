@@ -77,6 +77,11 @@ static int ead_compose_msg4(void *user_ctx,
 			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len);
+static int
+ead_compose_value_without_buffer(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
+				 struct edhoc_ead_token *ead_token,
+				 size_t ead_token_size, size_t *ead_token_len);
 static void inject_prk_4e3m(struct edhoc_context *ctx, const uint8_t *prk,
 			    size_t prk_len);
 static void setup_initiator(struct edhoc_context *ctx);
@@ -120,6 +125,7 @@ static int test_auth_cred_fetch_stub(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 1;
 	auth_cred->x509_chain.certificate[0] = dummy_cert;
 	auth_cred->x509_chain.certificate_length[0] = sizeof(dummy_cert);
@@ -241,6 +247,24 @@ static int ead_compose_msg4(void *user_ctx,
 	} else {
 		*ead_token_len = 0;
 	}
+
+	return EDHOC_SUCCESS;
+}
+
+static int
+ead_compose_value_without_buffer(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
+				 struct edhoc_ead_token *ead_token,
+				 size_t ead_token_size, size_t *ead_token_len)
+{
+	(void)user_ctx;
+	(void)call_ctx;
+	(void)ead_token_size;
+
+	ead_token[0].label = MSG1_EAD_LABEL;
+	ead_token[0].value.value = NULL;
+	ead_token[0].value.length = ARRAY_SIZE(msg1_ead_value);
+	*ead_token_len = 1;
 
 	return EDHOC_SUCCESS;
 }
@@ -479,6 +503,29 @@ TEST(message_paths, msg1_process_bstr_cid)
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	ret = edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(message_paths, msg1_compose_ead_value_without_buffer)
+{
+	struct edhoc_context init_ctx = { 0 };
+
+	setup_initiator(&init_ctx);
+
+	const struct edhoc_ead ead = {
+		.compose = ead_compose_value_without_buffer,
+		.process = test_ead_process_stub,
+	};
+	int ret = edhoc_bind_ead(&init_ctx, &ead);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t msg[512] = { 0 };
+	size_t msg_len = 0;
+	ret = edhoc_message_1_compose(&init_ctx, msg, ARRAY_SIZE(msg),
+				      &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_EAD_COMPOSE_FAILURE, ret);
+
+	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
@@ -816,6 +863,7 @@ TEST_GROUP_RUNNER(message_paths)
 
 	/* edhoc_message_1_process */
 	RUN_TEST_CASE(message_paths, msg1_process_bstr_cid);
+	RUN_TEST_CASE(message_paths, msg1_compose_ead_value_without_buffer);
 	RUN_TEST_CASE(message_paths, msg1_process_with_ead);
 	RUN_TEST_CASE(message_paths, msg1_process_bad_state);
 	RUN_TEST_CASE(message_paths, msg1_process_no_cipher_suites);

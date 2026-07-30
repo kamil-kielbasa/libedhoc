@@ -111,6 +111,7 @@ static int auth_cred_fetch_init(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 1;
 	auth_cred->x509_chain.certificate[0] = CRED_I;
 	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_I);
@@ -135,6 +136,7 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 1;
 	auth_cred->x509_chain.certificate[0] = CRED_R;
 	auth_cred->x509_chain.certificate_length[0] = ARRAY_SIZE(CRED_R);

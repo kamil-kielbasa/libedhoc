@@ -48,6 +48,7 @@ static int auth_cred_fetch_stub(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 1;
 	auth_cred->x509_chain.certificate[0] = dummy_cert;
 	auth_cred->x509_chain.certificate_length[0] = sizeof(dummy_cert);

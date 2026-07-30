@@ -21,6 +21,7 @@ int test_auth_cred_fetch_stub(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 	auth_cred->x509_chain.certificate_count = 1;
 
 	static const uint8_t dummy_cert[] = { 0x30, 0x00 };

@@ -278,33 +278,6 @@ TEST(coverage_handshake, mock_handshake_x5chain_multi_method0)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(coverage_handshake, mock_handshake_cose_any_method0)
-{
-	struct edhoc_context init_ctx = { 0 };
-	struct edhoc_context resp_ctx = { 0 };
-
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_credentials(&init_ctx, &coverage_mock_creds_cose_any);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_bind_credentials(&resp_ctx, &coverage_mock_creds_cose_any);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_context_deinit(&init_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_context_deinit(&resp_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(coverage_handshake, mock_handshake_bstr_cid_method0)
 {
 	struct edhoc_context init_ctx = { 0 };
@@ -366,7 +339,6 @@ TEST_GROUP_RUNNER(coverage_handshake)
 	RUN_TEST_CASE(coverage_handshake, mock_handshake_x5t_bstr_method0);
 	RUN_TEST_CASE(coverage_handshake, mock_handshake_x5t_int_method0);
 	RUN_TEST_CASE(coverage_handshake, mock_handshake_x5chain_multi_method0);
-	RUN_TEST_CASE(coverage_handshake, mock_handshake_cose_any_method0);
 	RUN_TEST_CASE(coverage_handshake, mock_handshake_bstr_cid_method0);
 	RUN_TEST_CASE(coverage_handshake, mock_handshake_ead_with_values);
 }

@@ -61,6 +61,35 @@ Version 2.0.0
     every build and memory backend (stack / heap / custom) with no dedicated
     preset or CI job.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Authentication
+  credentials model (breaking):
+
+  * ``EDHOC_COSE_HEADER_CUSTOM`` and ``struct edhoc_auth_credential_custom`` are
+    removed. They were the only way to hand the library a pre-encoded ID_CRED,
+    and therefore the only route for ID_CRED types the library does not model
+    natively (``kcwt``, ``kccs``, C509). Applications relying on them have no
+    replacement in this release; the supported labels are ``kid``, ``x5chain``
+    and ``x5t``.
+  * New ``EDHOC_COSE_HEADER_NONE = 0``. A zeroed ``struct
+    edhoc_auth_credentials`` no longer names a union member by accident, and
+    ``fetch`` that forgets to set ``label`` is rejected instead of misread.
+  * ``edhoc_auth_credential_key_id.is_credential_cbor_encoded`` (``bool``) is
+    replaced by ``struct edhoc_auth_credentials.format`` of the new ``enum
+    edhoc_credential_format`` (``NONE = 0``, ``RAW``, ``CBOR_ENCODED``). The
+    field sits next to ``label``, which constrains it: ``CBOR_ENCODED`` is
+    admissible only for ``kid``, since for the X.509 variants CRED is the DER
+    certificate. ``NONE`` is rejected, so the serialization is always a
+    deliberate choice. On verify the library fills the format in for the X.509
+    variants, as it is the one that knows CRED is DER.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : External
+  authorization data: the library validates what ``edhoc_ead.compose`` returns
+  and rejects both more items than the configured
+  ``CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS`` and a token whose value has a
+  non-zero length but no buffer, with ``EDHOC_ERROR_EAD_COMPOSE_FAILURE``. Such
+  a token used to reach the CBOR encoder, which cannot tell a missing buffer
+  from an empty one.
+
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Hardening of message
   processing:
 

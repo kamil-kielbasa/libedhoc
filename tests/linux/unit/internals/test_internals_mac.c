@@ -73,6 +73,7 @@ TEST(internals_mac, mac_ctx_len_x509_chain)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -103,7 +104,7 @@ TEST(internals_mac, mac_ctx_len_kid)
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 		.key_id.key_id_int = 4,
-		.key_id.is_credential_cbor_encoded = true,
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 		.key_id.credential = dummy_cred,
 		.key_id.credential_length = sizeof(dummy_cred),
 	};
@@ -140,6 +141,7 @@ TEST(internals_mac, mac_ctx_len_with_ead)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -171,6 +173,7 @@ TEST(internals_mac, mac_ctx_len_initiator_msg2)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -287,6 +290,7 @@ TEST(internals_mac, mac_ctx_len_invalid_cid_type)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -340,6 +344,7 @@ TEST(internals_mac, mac_ctx_len_th_zero)
 	const uint8_t fake_cert[] = { 0x30, 0x00 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = fake_cert,
 		.x509_chain.certificate_length[0] = sizeof(fake_cert),
@@ -370,6 +375,7 @@ TEST(internals_mac, mac_ctx_x509_chain)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -407,6 +413,7 @@ TEST(internals_mac, mac_ctx_x509_hash_int)
 	const uint8_t dummy_fp[32] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 		.x509_hash.algorithm_int = -16,
 		.x509_hash.certificate_fingerprint = dummy_fp,
@@ -448,6 +455,7 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr)
 	const uint8_t dummy_fp[32] = { 0 };
 	struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.x509_hash.algorithm_bstr.length = strlen(alg),
 		.x509_hash.certificate_fingerprint = dummy_fp,
@@ -487,7 +495,7 @@ TEST(internals_mac, mac_ctx_kid_int)
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 		.key_id.key_id_int = 4,
-		.key_id.is_credential_cbor_encoded = true,
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 		.key_id.credential = dummy_cred,
 		.key_id.credential_length = sizeof(dummy_cred),
 	};
@@ -524,7 +532,7 @@ TEST(internals_mac, mac_ctx_kid_bstr)
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
-		.key_id.is_credential_cbor_encoded = true,
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 		.key_id.key_id_bstr.length = 2,
 		.key_id.key_id_bstr.value[0] = 0x18,
 		.key_id.key_id_bstr.value[1] = 0x64,
@@ -565,6 +573,7 @@ TEST(internals_mac, mac_ctx_bstr_cid)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -607,47 +616,10 @@ TEST(internals_mac, mac_ctx_with_ead)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
-	};
-
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
-	struct mac_context *mac_ctx = (struct mac_context *)buf;
-	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
-
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
-	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
-	TEST_ASSERT_GREATER_THAN(0, mac_ctx->cred_len);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_mac, mac_ctx_custom)
-{
-	struct edhoc_context ctx = { 0 };
-
-	internals_setup_crypto_context(&ctx);
-	ctx.state.role = EDHOC_ROLE_RESPONDER;
-	ctx.state.message = EDHOC_MESSAGE_2;
-	ctx.state.th.stage = EDHOC_TH_STATE_2;
-	ctx.state.th.length = TH_LEN;
-	memset(ctx.state.th.value, 0xAA, TH_LEN);
-	ctx.negotiation.connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx.negotiation.connection_id.int_value = 5;
-
-	const uint8_t any_id_cred[] = { 0xA1, 0x04, 0x42, 0x11, 0x22 };
-	const uint8_t any_cred[20] = { 0 };
-	const struct edhoc_auth_credentials cred = {
-		.label = EDHOC_COSE_HEADER_CUSTOM,
-		.custom.id_credential = any_id_cred,
-		.custom.id_credential_length = sizeof(any_id_cred),
-		.custom.credential = any_cred,
-		.custom.credential_length = sizeof(any_cred),
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
@@ -681,6 +653,7 @@ TEST(internals_mac, mac_ctx_initiator_msg2)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -870,6 +843,7 @@ TEST(internals_mac, mac_ctx_invalid_cid_type)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -903,6 +877,7 @@ TEST(internals_mac, mac_ctx_buffer_too_small)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -932,6 +907,7 @@ TEST(internals_mac, mac_ctx_x509_chain_zero_certs)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 0,
 	};
 
@@ -961,7 +937,7 @@ TEST(internals_mac, mac_ctx_kid_bad_cbor)
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
-		.key_id.is_credential_cbor_encoded = true,
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 		.key_id.key_id_bstr.length = 1,
 		.key_id.key_id_bstr.value[0] = 0x40,
 		.key_id.credential = fake_cred,
@@ -1583,6 +1559,7 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 1,
 		.x509_chain.certificate[0] = dummy_cert,
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
@@ -2009,7 +1986,6 @@ TEST_GROUP_RUNNER(internals_mac)
 	RUN_TEST_CASE(internals_mac, mac_ctx_kid_bstr);
 	RUN_TEST_CASE(internals_mac, mac_ctx_bstr_cid);
 	RUN_TEST_CASE(internals_mac, mac_ctx_with_ead);
-	RUN_TEST_CASE(internals_mac, mac_ctx_custom);
 	RUN_TEST_CASE(internals_mac, mac_ctx_initiator_msg2);
 	RUN_TEST_CASE(internals_mac, mac_ctx_null_args);
 	RUN_TEST_CASE(internals_mac, mac_ctx_invalid_role);
