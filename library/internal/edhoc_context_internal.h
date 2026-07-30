@@ -57,16 +57,6 @@
 /* Types and type definitions ---------------------------------------------- */
 
 /**
- * \brief RFC 9528: 2. EDHOC Outline.
- */
-enum edhoc_role {
-	/** Initiator. */
-	EDHOC_ROLE_INITIATOR,
-	/** Responder. */
-	EDHOC_ROLE_RESPONDER,
-};
-
-/**
  * \brief RFC 9528: Appendix I. Example Protocol State Machine.
  */
 enum edhoc_state_machine {
@@ -421,6 +411,25 @@ edhoc_selected_cipher_suite(const struct edhoc_context *ctx)
 		&ctx->negotiation.cipher_suite;
 
 	return &suites->entry[ctx->negotiation.selected_cipher_suite_index];
+}
+
+/**
+ * \brief Context of a call into an application callback.
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return Call context describing the current session and message.
+ */
+static inline struct edhoc_call_context
+edhoc_call_context(const struct edhoc_context *ctx)
+{
+	return (struct edhoc_call_context){
+		.role = ctx->state.role,
+		.method = ctx->negotiation.selected_method,
+		.selected_cipher_suite =
+			edhoc_selected_cipher_suite(ctx)->value,
+		.message = ctx->state.message,
+	};
 }
 
 /**

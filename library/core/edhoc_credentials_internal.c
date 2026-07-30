@@ -209,8 +209,7 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
-		credentials->x509_hash.encode_type =
-			EDHOC_ENCODE_TYPE_BYTE_STRING;
+		credentials->x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING;
 		credentials->x509_hash.algorithm_bstr.length =
 			cert_hash->COSE_CertHash_hashAlg_tstr.len;
 		memcpy(credentials->x509_hash.algorithm_bstr.value,
@@ -247,7 +246,7 @@ STATIC int validate_key_id(const struct edhoc_auth_credential_key_id *key_id)
 	case EDHOC_ENCODE_TYPE_INTEGER:
 		break;
 
-	case EDHOC_ENCODE_TYPE_BYTE_STRING:
+	case EDHOC_ENCODE_TYPE_STRING:
 		if (EDHOC_CREDENTIAL_KID_MAX_LEN < key_id->key_id_bstr.length) {
 			EDHOC_LOG_ERR("Key identifier too large: %zu (max %d)",
 				      key_id->key_id_bstr.length,
@@ -321,7 +320,7 @@ validate_x509_hash(const struct edhoc_auth_credential_x509_hash *x509_hash)
 	case EDHOC_ENCODE_TYPE_INTEGER:
 		break;
 
-	case EDHOC_ENCODE_TYPE_BYTE_STRING:
+	case EDHOC_ENCODE_TYPE_STRING:
 		if (EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN <
 		    x509_hash->algorithm_bstr.length) {
 			EDHOC_LOG_ERR(
@@ -397,7 +396,7 @@ int edhoc_parse_id_cred_kid_bstr(const uint8_t *key_id, size_t key_id_length,
 	}
 
 	credentials->label = EDHOC_COSE_HEADER_KID;
-	credentials->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	credentials->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	credentials->key_id.key_id_bstr.length = key_id_length;
 	memcpy(credentials->key_id.key_id_bstr.value, key_id, key_id_length);
 

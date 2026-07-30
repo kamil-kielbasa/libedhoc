@@ -89,23 +89,26 @@ int coverage_do_mock_msg4_process(struct edhoc_context *init_ctx,
 				  struct edhoc_context *resp_ctx);
 
 /** \brief EAD compose callback that emits an empty token set. */
-int coverage_mock_ead_compose(void *user_ctx, enum edhoc_message msg,
+int coverage_mock_ead_compose(void *user_ctx,
+			      const struct edhoc_call_context *call_ctx,
 			      struct edhoc_ead_token *ead_token,
 			      size_t ead_token_size, size_t *ead_token_len);
 
 /** \brief EAD process callback that accepts any token set. */
-int coverage_mock_ead_process(void *user_ctx, enum edhoc_message msg,
+int coverage_mock_ead_process(void *user_ctx,
+			      const struct edhoc_call_context *call_ctx,
 			      const struct edhoc_ead_token *ead_token,
 			      size_t ead_token_size);
 
 /** \brief EAD compose callback that emits a single token. */
-int coverage_mock_ead_compose_with_token(void *user_ctx, enum edhoc_message msg,
-					 struct edhoc_ead_token *ead_token,
-					 size_t ead_token_size,
-					 size_t *ead_token_len);
+int coverage_mock_ead_compose_with_token(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	struct edhoc_ead_token *ead_token, size_t ead_token_size,
+	size_t *ead_token_len);
 
 /** \brief EAD process callback that always fails. */
-int coverage_mock_ead_process_fail(void *user_ctx, enum edhoc_message msg,
+int coverage_mock_ead_process_fail(void *user_ctx,
+				   const struct edhoc_call_context *call_ctx,
 				   const struct edhoc_ead_token *ead_token,
 				   size_t ead_token_size);
 

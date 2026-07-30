@@ -12,6 +12,7 @@
 #define EDHOC_CREDENTIALS_H
 
 /* Include files ----------------------------------------------------------- */
+#include <edhoc/types.h>
 
 /* Build-time configuration (Kconfig provides these on Zephyr): */
 #ifndef __ZEPHYR__
@@ -67,16 +68,6 @@
 /** \defgroup edhoc-interface-credentials EDHOC authentication credentials interface
  * @{
  */
-
-/**
- * \brief CBOR encoding of an identifier: as an integer or as a byte string.
- */
-enum edhoc_encode_type {
-	/** Encode as CBOR integer. */
-	EDHOC_ENCODE_TYPE_INTEGER,
-	/** Encode as CBOR byte string. */
-	EDHOC_ENCODE_TYPE_BYTE_STRING,
-};
 
 /**
  * \brief How the authentication credential is identified in ID_CRED.
@@ -146,7 +137,7 @@ struct edhoc_auth_credential_key_id {
 		 *  (#EDHOC_ENCODE_TYPE_INTEGER). */
 		int32_t key_id_int;
 		/** Key identifier as a CBOR byte string
-		 *  (#EDHOC_ENCODE_TYPE_BYTE_STRING). */
+		 *  (#EDHOC_ENCODE_TYPE_STRING). */
 		struct {
 			/** Byte string buffer. */
 			uint8_t value[EDHOC_CREDENTIAL_KID_MAX_LEN];
@@ -230,7 +221,7 @@ struct edhoc_auth_credential_x509_hash {
 		 *  (#EDHOC_ENCODE_TYPE_INTEGER). */
 		int32_t algorithm_int;
 		/** Fingerprint algorithm as a CBOR byte string
-		 *  (#EDHOC_ENCODE_TYPE_BYTE_STRING). */
+		 *  (#EDHOC_ENCODE_TYPE_STRING). */
 		struct {
 			/** Byte string buffer. */
 			uint8_t value[EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN];

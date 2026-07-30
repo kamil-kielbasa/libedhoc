@@ -42,7 +42,7 @@ struct ead_token_buf {
 };
 
 struct ead_context {
-	enum edhoc_message msg;
+	struct edhoc_call_context call_context;
 	size_t recv_tokens;
 	struct ead_token_buf token[MAX_NR_OF_EAD_TOKENS];
 };
@@ -57,19 +57,24 @@ static int test_auth_cred_verify_stub(void *user_ctx,
 				      struct edhoc_auth_credentials *auth_cred,
 				      const uint8_t **pub_key,
 				      size_t *pub_key_len);
-static int test_ead_compose_stub(void *user_ctx, enum edhoc_message msg,
+static int test_ead_compose_stub(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
 				 struct edhoc_ead_token *ead_token,
 				 size_t ead_token_size, size_t *ead_token_len);
-static int test_ead_process_stub(void *user_ctx, enum edhoc_message msg,
+static int test_ead_process_stub(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
 				 const struct edhoc_ead_token *ead_token,
 				 size_t ead_token_size);
-static int ead_compose_msg1(void *user_ctx, enum edhoc_message msg,
+static int ead_compose_msg1(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len);
-static int ead_process_track(void *user_ctx, enum edhoc_message msg,
+static int ead_process_track(void *user_ctx,
+			     const struct edhoc_call_context *call_ctx,
 			     const struct edhoc_ead_token *ead_token,
 			     size_t ead_token_size);
-static int ead_compose_msg4(void *user_ctx, enum edhoc_message msg,
+static int ead_compose_msg4(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len);
 static void inject_prk_4e3m(struct edhoc_context *ctx, const uint8_t *prk,
@@ -144,12 +149,13 @@ static int test_auth_cred_verify_stub(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int test_ead_compose_stub(void *user_ctx, enum edhoc_message msg,
+static int test_ead_compose_stub(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
 				 struct edhoc_ead_token *ead_token,
 				 size_t ead_token_size, size_t *ead_token_len)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)ead_token;
 	(void)ead_token_size;
 
@@ -162,29 +168,31 @@ static int test_ead_compose_stub(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-static int test_ead_process_stub(void *user_ctx, enum edhoc_message msg,
+static int test_ead_process_stub(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
 				 const struct edhoc_ead_token *ead_token,
 				 size_t ead_token_size)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)ead_token;
 	(void)ead_token_size;
 
 	return EDHOC_SUCCESS;
 }
 
-static int ead_compose_msg1(void *user_ctx, enum edhoc_message msg,
+static int ead_compose_msg1(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len)
 {
 	(void)user_ctx;
 	(void)ead_token_size;
 
-	if (EDHOC_MESSAGE_1 == msg) {
+	if (EDHOC_MESSAGE_1 == call_ctx->message) {
 		ead_token[0].label = MSG1_EAD_LABEL;
-		ead_token[0].value = msg1_ead_value;
-		ead_token[0].value_length = ARRAY_SIZE(msg1_ead_value);
+		ead_token[0].value.value = msg1_ead_value;
+		ead_token[0].value.length = ARRAY_SIZE(msg1_ead_value);
 		*ead_token_len = 1;
 	} else {
 		*ead_token_len = 0;
@@ -193,39 +201,42 @@ static int ead_compose_msg1(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-static int ead_process_track(void *user_ctx, enum edhoc_message msg,
+static int ead_process_track(void *user_ctx,
+			     const struct edhoc_call_context *call_ctx,
 			     const struct edhoc_ead_token *ead_token,
 			     size_t ead_token_size)
 {
 	struct ead_context *ead_ctx = user_ctx;
 
-	ead_ctx->msg = msg;
+	ead_ctx->call_context = *call_ctx;
 	ead_ctx->recv_tokens = ead_token_size;
 
 	for (size_t i = 0; i < ead_token_size && i < MAX_NR_OF_EAD_TOKENS;
 	     ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
-		ead_ctx->token[i].value_length = ead_token[i].value_length;
-		if (ead_token[i].value_length > 0 &&
-		    ead_token[i].value_length <= EAD_TOKEN_BUFFER_LEN)
-			memcpy(ead_ctx->token[i].value, ead_token[i].value,
-			       ead_token[i].value_length);
+		ead_ctx->token[i].value_length = ead_token[i].value.length;
+		if (ead_token[i].value.length > 0 &&
+		    ead_token[i].value.length <= EAD_TOKEN_BUFFER_LEN)
+			memcpy(ead_ctx->token[i].value,
+			       ead_token[i].value.value,
+			       ead_token[i].value.length);
 	}
 
 	return EDHOC_SUCCESS;
 }
 
-static int ead_compose_msg4(void *user_ctx, enum edhoc_message msg,
+static int ead_compose_msg4(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len)
 {
 	(void)user_ctx;
 	(void)ead_token_size;
 
-	if (EDHOC_MESSAGE_4 == msg) {
+	if (EDHOC_MESSAGE_4 == call_ctx->message) {
 		ead_token[0].label = MSG4_EAD_LABEL;
-		ead_token[0].value = msg4_ead_value;
-		ead_token[0].value_length = ARRAY_SIZE(msg4_ead_value);
+		ead_token[0].value.value = msg4_ead_value;
+		ead_token[0].value.length = ARRAY_SIZE(msg4_ead_value);
 		*ead_token_len = 1;
 	} else {
 		*ead_token_len = 0;
@@ -505,7 +516,11 @@ TEST(message_paths, msg1_process_with_ead)
 
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_ROLE_RESPONDER, ead_ctx.call_context.role);
+	TEST_ASSERT_EQUAL(EDHOC_METHOD_0, ead_ctx.call_context.method);
+	TEST_ASSERT_EQUAL(EDHOC_CIPHER_SUITE_2,
+			  ead_ctx.call_context.selected_cipher_suite);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, ead_ctx.call_context.message);
 	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(MSG1_EAD_LABEL, ead_ctx.token[0].label);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(msg1_ead_value),
@@ -624,7 +639,7 @@ TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
 		bstr_cid.bstr_value,
 		resp_ctx.negotiation.peer_connection_id.bstr_value,
 		bstr_cid.bstr_length);
-	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, ead_ctx.call_context.message);
 	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(MSG1_EAD_LABEL, ead_ctx.token[0].label);
 
@@ -776,7 +791,11 @@ TEST(message_paths, msg4_compose_process_roundtrip_with_ead)
 	ret = edhoc_message_4_process(&init_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_SM_PERSISTED, init_ctx.state.machine);
-	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_4, ead_ctx.msg);
+	TEST_ASSERT_EQUAL(EDHOC_ROLE_INITIATOR, ead_ctx.call_context.role);
+	TEST_ASSERT_EQUAL(EDHOC_METHOD_0, ead_ctx.call_context.method);
+	TEST_ASSERT_EQUAL(EDHOC_CIPHER_SUITE_2,
+			  ead_ctx.call_context.selected_cipher_suite);
+	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_4, ead_ctx.call_context.message);
 	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(MSG4_EAD_LABEL, ead_ctx.token[0].label);
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(msg4_ead_value),

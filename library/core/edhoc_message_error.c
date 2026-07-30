@@ -2,9 +2,9 @@
  * \file    edhoc_message_error.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message error compose & process.
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Include files ----------------------------------------------------------- */
@@ -180,25 +180,35 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 	case EDHOC_ERROR_CODE_UNSPECIFIED_ERROR: {
 		*code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
 
+		if (false == result.message_error_ERR_INFO_present) {
+			break;
+		}
+
+		if (message_error_ERR_INFO_tstr_c !=
+		    result.message_error_ERR_INFO.message_error_ERR_INFO_choice) {
+			EDHOC_LOG_ERR("ERR_INFO does not match ERR_CODE: %d",
+				      result.message_error_ERR_INFO
+					      .message_error_ERR_INFO_choice);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+
 		if (NULL == info || NULL == info->text_string ||
 		    0 == info->entries_size)
 			break;
 
-		if (true == result.message_error_ERR_INFO_present) {
-			const struct zcbor_string *tstr =
-				&result.message_error_ERR_INFO
-					 .message_error_ERR_INFO_tstr;
+		const struct zcbor_string *tstr =
+			&result.message_error_ERR_INFO
+				 .message_error_ERR_INFO_tstr;
 
-			if (tstr->len > info->entries_size) {
-				EDHOC_LOG_ERR("Buffer too small: %zu, %zu",
-					      tstr->len, info->entries_size);
-				return EDHOC_ERROR_BUFFER_TOO_SMALL;
-			}
-
-			info->entries_length = tstr->len;
-			memcpy(info->text_string, tstr->value,
-			       sizeof(*info->text_string) * tstr->len);
+		if (tstr->len > info->entries_size) {
+			EDHOC_LOG_ERR("Buffer too small: %zu, %zu", tstr->len,
+				      info->entries_size);
+			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
+
+		info->entries_length = tstr->len;
+		memcpy(info->text_string, tstr->value,
+		       sizeof(*info->text_string) * tstr->len);
 
 		break;
 	}
@@ -206,46 +216,53 @@ int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
 	case EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE: {
 		*code = EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE;
 
+		if (false == result.message_error_ERR_INFO_present) {
+			break;
+		}
+
+		if (message_error_ERR_INFO_suites_m_c !=
+		    result.message_error_ERR_INFO.message_error_ERR_INFO_choice) {
+			EDHOC_LOG_ERR("ERR_INFO does not match ERR_CODE: %d",
+				      result.message_error_ERR_INFO
+					      .message_error_ERR_INFO_choice);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+
 		if (NULL == info || NULL == info->cipher_suites ||
 		    0 == info->entries_size)
 			break;
 
-		if (true == result.message_error_ERR_INFO_present) {
-			const struct suites_r *suites =
-				&result.message_error_ERR_INFO
-					 .message_error_ERR_INFO_suites_m;
+		const struct suites_r *suites =
+			&result.message_error_ERR_INFO
+				 .message_error_ERR_INFO_suites_m;
 
-			switch (suites->suites_choice) {
-			case suites_int_c: {
-				info->entries_length = 1;
-				*info->cipher_suites = suites->suites_int;
-				break;
+		switch (suites->suites_choice) {
+		case suites_int_c: {
+			info->entries_length = 1;
+			*info->cipher_suites = suites->suites_int;
+			break;
+		}
+
+		case suites_int_l_c: {
+			if (suites->suites_int_l_int_count >
+			    info->entries_size) {
+				EDHOC_LOG_ERR("Buffer too small: %zu, %zu",
+					      suites->suites_int_l_int_count,
+					      info->entries_size);
+				return EDHOC_ERROR_BUFFER_TOO_SMALL;
 			}
 
-			case suites_int_l_c: {
-				if (suites->suites_int_l_int_count >
-				    info->entries_size) {
-					EDHOC_LOG_ERR(
-						"Buffer too small: %zu, %zu",
-						suites->suites_int_l_int_count,
-						info->entries_size);
-					return EDHOC_ERROR_BUFFER_TOO_SMALL;
-				}
+			info->entries_length = suites->suites_int_l_int_count;
+			memcpy(info->cipher_suites, suites->suites_int_l_int,
+			       sizeof(*info->cipher_suites) *
+				       suites->suites_int_l_int_count);
+			break;
+		}
 
-				info->entries_length =
-					suites->suites_int_l_int_count;
-				memcpy(info->cipher_suites,
-				       suites->suites_int_l_int,
-				       sizeof(*info->cipher_suites) *
-					       suites->suites_int_l_int_count);
-				break;
-			}
-
-			default:
-				EDHOC_LOG_ERR("Invalid suites choice: %d",
-					      suites->suites_choice);
-				return EDHOC_ERROR_NOT_PERMITTED;
-			}
+		default:
+			EDHOC_LOG_ERR("Invalid suites choice: %d",
+				      suites->suites_choice);
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
 		break;

@@ -144,14 +144,26 @@ cmd_fuzz() {
     local duration="${1:-60}"
     section "fuzz (${duration}s per target)"
     cmd_build fuzz
-    local found=0 target
+    local artifacts="build/fuzz/artifacts"
+    rm -rf "$artifacts"
+    mkdir -p "$artifacts"
+    local found=0 failed=() target status
     for target in build/fuzz/tests/linux/fuzz/fuzz_*; do
         [[ -x "$target" && ! "$target" == *.o ]] || continue
         found=1
         echo "--- $(basename "$target") ---"
-        timeout "$duration" "$target" -max_total_time=$((duration - 5)) || true
+        status=0
+        timeout "$duration" "$target" -max_total_time="$duration" \
+            -artifact_prefix="${artifacts}/" || status=$?
+        [[ $status -eq 0 || $status -eq 124 ]] ||
+            failed+=("$(basename "$target") (exit ${status})")
     done
     [[ $found -eq 1 ]] || { err "No fuzz targets in build/fuzz/tests/linux/fuzz/"; exit 1; }
+    if [[ ${#failed[@]} -ne 0 ]]; then
+        err "fuzz failed: ${failed[*]}"
+        err "reproducers in ${artifacts}/"
+        exit 1
+    fi
     ok "fuzz complete."
 }
 

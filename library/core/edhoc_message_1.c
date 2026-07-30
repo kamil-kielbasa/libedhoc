@@ -184,8 +184,11 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	/* 3e. Fill CBOR structure for message 1 - external authorization data if present. */
 	if (NULL != ctx->interfaces.ead.compose &&
 	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
+		const struct edhoc_call_context call_context =
+			edhoc_call_context(ctx);
+
 		ret = ctx->interfaces.ead.compose(
-			ctx->user_context, ctx->state.message, ctx->ead.token,
+			ctx->user_context, &call_context, ctx->ead.token,
 			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret ||
@@ -202,10 +205,10 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_1 compose token label");
 
-			if (0 != ctx->ead.token[i].value_length) {
+			if (0 != ctx->ead.token[i].value.length) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_length,
+					ctx->ead.token[i].value.value,
+					ctx->ead.token[i].value.length,
 					"EAD_1 compose token value");
 			}
 		}
@@ -222,10 +225,10 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 				.ead_x_ead_label = ctx->ead.token[i].label;
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
 				.ead_x_ead_value.value =
-				ctx->ead.token[i].value;
+				ctx->ead.token[i].value.value;
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
 				.ead_x_ead_value.len =
-				ctx->ead.token[i].value_length;
+				ctx->ead.token[i].value.length;
 		}
 	} else {
 		cbor_enc_msg_1.message_1_EAD_1_m_present = false;
@@ -518,17 +521,19 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 			ctx->ead.token[i].label =
 				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
 					.ead_x_ead_label;
-			ctx->ead.token[i].value =
+			ctx->ead.token[i].value.value =
 				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
 					.ead_x_ead_value.value;
-			ctx->ead.token[i].value_length =
+			ctx->ead.token[i].value.length =
 				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
 					.ead_x_ead_value.len;
 		}
 
+		const struct edhoc_call_context call_context =
+			edhoc_call_context(ctx);
+
 		ret = ctx->interfaces.ead.process(ctx->user_context,
-						  ctx->state.message,
-						  ctx->ead.token,
+						  &call_context, ctx->ead.token,
 						  ctx->ead.count);
 
 		for (size_t i = 0; i < ctx->ead.count; ++i) {
@@ -537,10 +542,10 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_1 process token label");
 
-			if (0 != ctx->ead.token[i].value_length) {
+			if (0 != ctx->ead.token[i].value.length) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_length,
+					ctx->ead.token[i].value.value,
+					ctx->ead.token[i].value.length,
 					"EAD_1 process token value");
 			}
 		}

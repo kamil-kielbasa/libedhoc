@@ -12,6 +12,8 @@
 #define EDHOC_EAD_H
 
 /* Include files ----------------------------------------------------------- */
+#include <edhoc/types.h>
+
 #include <stdint.h>
 #include <stddef.h>
 
@@ -23,21 +25,6 @@
  */
 
 /**
- * \brief EDHOC message number, passed to the EAD callbacks to identify which
- *        message (EAD_1..EAD_4) is being composed or processed.
- */
-enum edhoc_message {
-	/** EDHOC message 1. */
-	EDHOC_MESSAGE_1,
-	/** EDHOC message 2. */
-	EDHOC_MESSAGE_2,
-	/** EDHOC message 3. */
-	EDHOC_MESSAGE_3,
-	/** EDHOC message 4. */
-	EDHOC_MESSAGE_4,
-};
-
-/**
  * \brief A single EAD item: a label and an optional value (RFC 9528: 3.8).
  */
 struct edhoc_ead_token {
@@ -45,10 +32,13 @@ struct edhoc_ead_token {
 	 *  does not recognise it, EDHOC processing fails (RFC 9528: 3.8). */
 	int32_t label;
 
-	/** Optional EAD value buffer (may be NULL when \p value_length is 0). */
-	const uint8_t *value;
-	/** Size of the \p value buffer in bytes. */
-	size_t value_length;
+	/** Optional EAD value. Empty when the item carries a label only.
+	 *
+	 *  Neither side owns the bytes. On compose they belong to the
+	 *  application and must stay valid until the composing call returns;
+	 *  on process they point into a library buffer released as soon as the
+	 *  callback returns, so anything needed later must be copied out. */
+	struct edhoc_buffer value;
 };
 
 /**
@@ -63,7 +53,7 @@ struct edhoc_ead {
 	 * more items and set \p ead_token_count accordingly.
 	 *
 	 * \param[in] user_context      User context.
-	 * \param message               Which message is being composed (EAD_1..EAD_4).
+	 * \param[in] call_context      Context of this call.
 	 * \param[out] ead_token        Array to fill with the EAD items to send.
 	 * \param ead_token_size        Capacity of the \p ead_token array in entries.
 	 * \param[out] ead_token_count    On success, the number of items written.
@@ -72,7 +62,8 @@ struct edhoc_ead {
 	 *         Success.
 	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
-	int (*compose)(void *user_context, enum edhoc_message message,
+	int (*compose)(void *user_context,
+		       const struct edhoc_call_context *call_context,
 		       struct edhoc_ead_token *ead_token, size_t ead_token_size,
 		       size_t *ead_token_count);
 
@@ -84,7 +75,7 @@ struct edhoc_ead {
 	 * 3.8). Returning an error aborts the EDHOC session.
 	 *
 	 * \param[in] user_context      User context.
-	 * \param message               Which message is being processed (EAD_1..EAD_4).
+	 * \param[in] call_context      Context of this call.
 	 * \param[in] ead_token         Array of the received EAD items.
 	 * \param ead_token_size        Number of received items in \p ead_token.
 	 *
@@ -92,7 +83,8 @@ struct edhoc_ead {
 	 *         Success.
 	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
-	int (*process)(void *user_context, enum edhoc_message message,
+	int (*process)(void *user_context,
+		       const struct edhoc_call_context *call_context,
 		       const struct edhoc_ead_token *ead_token,
 		       size_t ead_token_size);
 };

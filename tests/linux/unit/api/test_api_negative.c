@@ -29,10 +29,12 @@
 /* Module interface variables and constants -------------------------------- */
 /* Static function declarations -------------------------------------------- */
 
-static int stub_ead_compose(void *user_ctx, enum edhoc_message msg,
+static int stub_ead_compose(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *token, size_t token_size,
 			    size_t *token_len);
-static int stub_ead_process(void *user_ctx, enum edhoc_message msg,
+static int stub_ead_process(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    const struct edhoc_ead_token *token,
 			    size_t token_size);
 static int stub_cred_fetch(void *user_ctx,
@@ -62,12 +64,13 @@ static const struct edhoc_platform stub_platform = {
 
 /* Static function definitions --------------------------------------------- */
 
-static int stub_ead_compose(void *user_ctx, enum edhoc_message msg,
+static int stub_ead_compose(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *token, size_t token_size,
 			    size_t *token_len)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)token;
 	(void)token_size;
 	(void)token_len;
@@ -75,12 +78,13 @@ static int stub_ead_compose(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-static int stub_ead_process(void *user_ctx, enum edhoc_message msg,
+static int stub_ead_process(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    const struct edhoc_ead_token *token,
 			    size_t token_size)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)token;
 	(void)token_size;
 

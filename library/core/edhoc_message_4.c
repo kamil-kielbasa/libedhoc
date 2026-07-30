@@ -188,8 +188,8 @@ STATIC int compute_plaintext_4_len(const struct edhoc_context *ctx,
 
 	for (size_t i = 0; i < ctx->ead.count; ++i) {
 		len += edhoc_cbor_int_mem_req(ctx->ead.token[i].label);
-		len += ctx->ead.token[i].value_length;
-		len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value_length);
+		len += ctx->ead.token[i].value.length;
+		len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value.length);
 	}
 
 	*ptxt_4_len = len;
@@ -221,11 +221,11 @@ STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label =
 				ctx->ead.token[i].label;
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value =
-				ctx->ead.token[i].value;
+				ctx->ead.token[i].value.value;
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len =
-				ctx->ead.token[i].value_length;
+				ctx->ead.token[i].value.length;
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value_present =
-				(NULL != ctx->ead.token[i].value);
+				(NULL != ctx->ead.token[i].value.value);
 		}
 	} else {
 		ead_4.plaintext_4_present = false;
@@ -497,9 +497,9 @@ STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 	for (size_t i = 0; i < ead_4.plaintext_4.EAD_4_count; ++i) {
 		ctx->ead.token[i].label =
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label;
-		ctx->ead.token[i].value =
+		ctx->ead.token[i].value.value =
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value;
-		ctx->ead.token[i].value_length =
+		ctx->ead.token[i].value.length =
 			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len;
 	}
 
@@ -558,8 +558,11 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	/* 2. Compose EAD_4 if present. */
 	if (NULL != ctx->interfaces.ead.compose &&
 	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
+		const struct edhoc_call_context call_context =
+			edhoc_call_context(ctx);
+
 		ret = ctx->interfaces.ead.compose(
-			ctx->user_context, ctx->state.message, ctx->ead.token,
+			ctx->user_context, &call_context, ctx->ead.token,
 			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret ||
@@ -575,10 +578,10 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 				(const uint8_t *)&ctx->ead.token[i].label,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_4 compose label");
-			if (0 != ctx->ead.token[i].value_length) {
+			if (0 != ctx->ead.token[i].value.length) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_length,
+					ctx->ead.token[i].value.value,
+					ctx->ead.token[i].value.length,
 					"EAD_4 compose value");
 			}
 		}
@@ -847,9 +850,11 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	 */
 	if (NULL != ctx->interfaces.ead.process &&
 	    0 != ARRAY_SIZE(ctx->ead.token) - 1 && 0 != ctx->ead.count) {
+		const struct edhoc_call_context call_context =
+			edhoc_call_context(ctx);
+
 		ret = ctx->interfaces.ead.process(ctx->user_context,
-						  ctx->state.message,
-						  ctx->ead.token,
+						  &call_context, ctx->ead.token,
 						  ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret) {
@@ -864,10 +869,10 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 				sizeof(ctx->ead.token[i].label),
 				"EAD_4 process label");
 
-			if (0 != ctx->ead.token[i].value_length) {
+			if (0 != ctx->ead.token[i].value.length) {
 				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value,
-					ctx->ead.token[i].value_length,
+					ctx->ead.token[i].value.value,
+					ctx->ead.token[i].value.length,
 					"EAD_4 process value");
 			}
 		}

@@ -103,26 +103,22 @@ static const uint8_t ead_value_4[] = {
 
 static const struct edhoc_ead_token ead_token_1 = {
 	.label = 0,
-	.value = ead_value_1,
-	.value_length = ARRAY_SIZE(ead_value_1),
+	.value = { .value = ead_value_1, .length = ARRAY_SIZE(ead_value_1) },
 };
 
 static const struct edhoc_ead_token ead_token_2 = {
 	.label = 24,
-	.value = ead_value_2,
-	.value_length = ARRAY_SIZE(ead_value_2),
+	.value = { .value = ead_value_2, .length = ARRAY_SIZE(ead_value_2) },
 };
 
 static const struct edhoc_ead_token ead_token_3 = {
 	.label = 65535,
-	.value = ead_value_3,
-	.value_length = ARRAY_SIZE(ead_value_3),
+	.value = { .value = ead_value_3, .length = ARRAY_SIZE(ead_value_3) },
 };
 
 static const struct edhoc_ead_token ead_token_4 = {
 	.label = -830,
-	.value = ead_value_4,
-	.value_length = ARRAY_SIZE(ead_value_4),
+	.value = { .value = ead_value_4, .length = ARRAY_SIZE(ead_value_4) },
 };
 
 /* One token per message. */
@@ -199,12 +195,14 @@ TEST(cipher_suite_2_x509_hash, method_0)
 	};
 
 	const struct handshake_endpoint initiator = {
+		.role = EDHOC_ROLE_INITIATOR,
 		.connection_id = init_cid,
 		.own = &initiator_signature,
 		.peer = &responder_signature,
 		.ead = &ead_single,
 	};
 	const struct handshake_endpoint responder = {
+		.role = EDHOC_ROLE_RESPONDER,
 		.connection_id = resp_cid,
 		.own = &responder_signature,
 		.peer = &initiator_signature,

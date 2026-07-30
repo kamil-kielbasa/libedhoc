@@ -109,9 +109,10 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_label)
 
 	internals_setup_crypto_context(&ctx);
 
-	const struct edhoc_ead_token tok = { .label = 70000,
-					     .value = NULL,
-					     .value_length = 0 };
+	const struct edhoc_ead_token tok = {
+		.label = 70000,
+		.value = { .value = NULL, .length = 0 },
+	};
 	ctx.ead.count = 1;
 	ctx.ead.token[0] = tok;
 
@@ -130,9 +131,10 @@ TEST(internals_message4, compute_plaintext_4_len_large_ead_value)
 
 	internals_setup_crypto_context(&ctx);
 
-	const struct edhoc_ead_token tok = { .label = 1,
-					     .value = NULL,
-					     .value_length = 60000 };
+	const struct edhoc_ead_token tok = {
+		.label = 1,
+		.value = { .value = NULL, .length = 60000 },
+	};
 	ctx.ead.count = 1;
 	ctx.ead.token[0] = tok;
 
@@ -151,9 +153,10 @@ TEST(internals_message4, compute_plaintext_4_len_very_large_ead_value)
 
 	internals_setup_crypto_context(&ctx);
 
-	const struct edhoc_ead_token tok = { .label = 1,
-					     .value = NULL,
-					     .value_length = 70000 };
+	const struct edhoc_ead_token tok = {
+		.label = 1,
+		.value = { .value = NULL, .length = 70000 },
+	};
 	ctx.ead.count = 1;
 	ctx.ead.token[0] = tok;
 

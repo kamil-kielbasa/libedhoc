@@ -71,6 +71,8 @@
  *        \c ead.
  */
 struct handshake_endpoint {
+	/** Role this endpoint plays. */
+	enum edhoc_role role;
 	/** Connection identifier this endpoint advertises. */
 	struct edhoc_connection_id connection_id;
 	/** Identity this endpoint presents (fetch). */

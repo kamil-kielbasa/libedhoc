@@ -217,7 +217,7 @@ STATIC int comp_id_cred_len(const struct edhoc_auth_credentials *cred,
 		case EDHOC_ENCODE_TYPE_INTEGER:
 			*len += edhoc_cbor_int_mem_req(cred->key_id.key_id_int);
 			break;
-		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+		case EDHOC_ENCODE_TYPE_STRING:
 			*len += cred->key_id.key_id_bstr.length;
 			*len += edhoc_cbor_bstr_oh(
 				cred->key_id.key_id_bstr.length);
@@ -261,7 +261,7 @@ STATIC int comp_id_cred_len(const struct edhoc_auth_credentials *cred,
 			*len += edhoc_cbor_int_mem_req(
 				cred->x509_hash.algorithm_int);
 			break;
-		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+		case EDHOC_ENCODE_TYPE_STRING:
 			*len += cred->x509_hash.algorithm_bstr.length;
 			*len += edhoc_cbor_bstr_oh(
 				cred->x509_hash.algorithm_bstr.length);
@@ -348,8 +348,8 @@ STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 
 	for (size_t i = 0; i < ctx->ead.count; ++i) {
 		*len += edhoc_cbor_int_mem_req(ctx->ead.token[i].label);
-		*len += ctx->ead.token[i].value_length;
-		*len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value_length);
+		*len += ctx->ead.token[i].value.length;
+		*len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value.length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -384,8 +384,8 @@ STATIC int kid_compact_encoding(const struct edhoc_auth_credentials *cred,
 		break;
 	}
 
-	case EDHOC_ENCODE_TYPE_BYTE_STRING: {
-		mac_ctx->id_cred_enc_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	case EDHOC_ENCODE_TYPE_STRING: {
+		mac_ctx->id_cred_enc_type = EDHOC_ENCODE_TYPE_STRING;
 
 		if (true == cred->key_id.is_credential_cbor_encoded) {
 			if (1 == cred->key_id.key_id_bstr.length) {
@@ -923,7 +923,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			id_cred.id_cred_x_kid.id_cred_x_kid_int =
 				cred->key_id.key_id_int;
 			break;
-		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+		case EDHOC_ENCODE_TYPE_STRING:
 			id_cred.id_cred_x_kid.id_cred_x_kid_choice =
 				id_cred_x_kid_bstr_c;
 			id_cred.id_cred_x_kid.id_cred_x_kid_bstr.value =
@@ -993,7 +993,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			cose_x509->COSE_CertHash_hashAlg_int =
 				cred->x509_hash.algorithm_int;
 			break;
-		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+		case EDHOC_ENCODE_TYPE_STRING:
 			cose_x509->COSE_CertHash_hashAlg_choice =
 				COSE_CertHash_hashAlg_tstr_c;
 			cose_x509->COSE_CertHash_hashAlg_tstr.value =
@@ -1048,7 +1048,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			       cred->custom.id_credential_compact,
 			       cred->custom.id_credential_compact_length);
 			break;
-		case EDHOC_ENCODE_TYPE_BYTE_STRING:
+		case EDHOC_ENCODE_TYPE_STRING:
 			mac_ctx->id_cred_bstr_len =
 				cred->custom.id_credential_compact_length;
 			memcpy(&mac_ctx->id_cred_bstr,
@@ -1177,11 +1177,11 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			tmp_ead.ead[i].ead_x_ead_label =
 				ctx->ead.token[i].label;
 			tmp_ead.ead[i].ead_x_ead_value_present =
-				(NULL != ctx->ead.token[i].value);
+				(NULL != ctx->ead.token[i].value.value);
 			tmp_ead.ead[i].ead_x_ead_value.value =
-				ctx->ead.token[i].value;
+				ctx->ead.token[i].value.value;
 			tmp_ead.ead[i].ead_x_ead_value.len =
-				ctx->ead.token[i].value_length;
+				ctx->ead.token[i].value.length;
 		}
 
 		len = 0;

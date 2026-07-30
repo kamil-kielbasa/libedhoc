@@ -123,12 +123,14 @@ TEST(cipher_suite_24_x509_chain, method_0)
 	};
 
 	const struct handshake_endpoint initiator = {
+		.role = EDHOC_ROLE_INITIATOR,
 		.connection_id = init_cid,
 		.own = &initiator_signature,
 		.peer = &responder_signature,
 		.ead = NULL,
 	};
 	const struct handshake_endpoint responder = {
+		.role = EDHOC_ROLE_RESPONDER,
 		.connection_id = resp_cid,
 		.own = &responder_signature,
 		.peer = &initiator_signature,

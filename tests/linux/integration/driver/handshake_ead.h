@@ -69,17 +69,21 @@ struct hs_ead {
 /* Module interface function declarations ---------------------------------- */
 
 /**
- * \brief Compose callback: emit the tokens the table lists for \p message.
+ * \brief Compose callback: emit the tokens the table lists for the message
+ *        named by \p call_context.
  */
-int hs_ead_compose(void *user_context, enum edhoc_message message,
+int hs_ead_compose(void *user_context,
+		   const struct edhoc_call_context *call_context,
 		   struct edhoc_ead_token *ead_token, size_t ead_token_size,
 		   size_t *ead_token_count);
 
 /**
  * \brief Process callback: return an error unless the received tokens match
- *        the table for \p message (label, length and value).
+ *        the table for the message named by \p call_context (label, length and
+ *        value).
  */
-int hs_ead_process(void *user_context, enum edhoc_message message,
+int hs_ead_process(void *user_context,
+		   const struct edhoc_call_context *call_context,
 		   const struct edhoc_ead_token *ead_token,
 		   size_t ead_token_size);
 

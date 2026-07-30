@@ -44,6 +44,66 @@
  */
 
 /**
+ * \brief EDHOC message number (RFC 9528: 5).
+ */
+enum edhoc_message {
+	/** EDHOC message 1. */
+	EDHOC_MESSAGE_1,
+	/** EDHOC message 2. */
+	EDHOC_MESSAGE_2,
+	/** EDHOC message 3. */
+	EDHOC_MESSAGE_3,
+	/** EDHOC message 4. */
+	EDHOC_MESSAGE_4,
+};
+
+/**
+ * \brief EDHOC role of the local peer (RFC 9528: 3.1).
+ */
+enum edhoc_role {
+	/** The local peer sent message 1. */
+	EDHOC_ROLE_INITIATOR,
+	/** The local peer received message 1. */
+	EDHOC_ROLE_RESPONDER,
+};
+
+/**
+ * \brief Immutable view of a byte sequence.
+ */
+struct edhoc_buffer {
+	/** Start of the byte sequence. */
+	const uint8_t *value;
+	/** Number of bytes in \p value. */
+	size_t length;
+};
+
+/**
+ * \brief Encoding of a CBOR item that is either a number or a string.
+ */
+enum edhoc_encode_type {
+	/** CBOR integer. */
+	EDHOC_ENCODE_TYPE_INTEGER,
+	/** CBOR byte string or text string, depending on the field: COSE 'kid'
+	 *  is a bstr, hashAlg in COSE_CertHash is a tstr. */
+	EDHOC_ENCODE_TYPE_STRING,
+};
+
+/**
+ * \brief A CBOR item that is either a number or a string.
+ */
+struct edhoc_cbor_int_or_string {
+	/** Which member of the union is valid. */
+	enum edhoc_encode_type encode_type;
+
+	union {
+		/** Valid for #EDHOC_ENCODE_TYPE_INTEGER. */
+		int32_t integer;
+		/** Valid for #EDHOC_ENCODE_TYPE_STRING. */
+		struct edhoc_buffer string;
+	};
+};
+
+/**
  * \brief RFC 9528: 3.2. Method.
  */
 enum edhoc_method {
@@ -57,6 +117,22 @@ enum edhoc_method {
 	EDHOC_METHOD_3 = 3,
 	/** Sentinel: number of methods, not a valid method value. */
 	EDHOC_METHOD_MAX,
+};
+
+/**
+ * \brief Context of a call from the library into an application callback.
+ *
+ * Valid for the duration of the callback.
+ */
+struct edhoc_call_context {
+	/** Role of the local peer. */
+	enum edhoc_role role;
+	/** Negotiated method. */
+	enum edhoc_method method;
+	/** Selected cipher suite. */
+	int32_t selected_cipher_suite;
+	/** Message being composed or processed. */
+	enum edhoc_message message;
 };
 
 /**

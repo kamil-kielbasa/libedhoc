@@ -224,3 +224,10 @@ jobs:
         with:
           command: "sudo apt-get update && sudo apt-get install -y ninja-build"
       - run: bash scripts/ci.sh fuzz 60
+      - name: Upload fuzz reproducers
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-artifacts
+          path: build/fuzz/artifacts/
+          if-no-files-found: ignore

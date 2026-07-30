@@ -89,13 +89,14 @@ mock_cred_fetch_x5chain_multi(void *user_ctx,
 static int mock_cred_fetch_cose_any(void *user_ctx,
 				    struct edhoc_auth_credentials *auth_cred);
 
-static int mock_ead_compose_with_value(void *user_ctx, enum edhoc_message msg,
-				       struct edhoc_ead_token *ead_token,
-				       size_t ead_token_size,
-				       size_t *ead_token_len);
-static int mock_ead_process_with_value(void *user_ctx, enum edhoc_message msg,
-				       const struct edhoc_ead_token *ead_token,
-				       size_t ead_token_size);
+static int
+mock_ead_compose_with_value(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_ead_token *ead_token,
+			    size_t ead_token_size, size_t *ead_token_len);
+static int mock_ead_process_with_value(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_ead_token *ead_token, size_t ead_token_size);
 
 /* Module interface variables and constants -------------------------------- */
 
@@ -540,7 +541,7 @@ static int mock_cred_fetch_kid_bstr(void *user_ctx,
 	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_KID;
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	auth_cred->key_id.is_credential_cbor_encoded = true;
 
 	memcpy(auth_cred->key_id.key_id_bstr.value, kid, sizeof(kid));
@@ -575,7 +576,7 @@ static int mock_cred_fetch_x5t_bstr(void *user_ctx,
 	auth_cred->x509_hash.certificate_fingerprint = fake_fp;
 	auth_cred->x509_hash.certificate_fingerprint_length = sizeof(fake_fp);
 
-	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	memcpy(auth_cred->x509_hash.algorithm_bstr.value, alg, sizeof(alg));
 	auth_cred->x509_hash.algorithm_bstr.length = sizeof(alg);
 
@@ -668,13 +669,14 @@ static int mock_cred_fetch_cose_any(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int mock_ead_compose_with_value(void *user_ctx, enum edhoc_message msg,
-				       struct edhoc_ead_token *ead_token,
-				       size_t ead_token_size,
-				       size_t *ead_token_len)
+static int
+mock_ead_compose_with_value(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_ead_token *ead_token,
+			    size_t ead_token_size, size_t *ead_token_len)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
@@ -685,25 +687,25 @@ static int mock_ead_compose_with_value(void *user_ctx, enum edhoc_message msg,
 	}
 
 	ead_token[0].label = 65535;
-	ead_token[0].value = ead_value_payload;
-	ead_token[0].value_length = sizeof(ead_value_payload);
+	ead_token[0].value.value = ead_value_payload;
+	ead_token[0].value.length = sizeof(ead_value_payload);
 	*ead_token_len = 1;
 
 	return EDHOC_SUCCESS;
 }
 
-static int mock_ead_process_with_value(void *user_ctx, enum edhoc_message msg,
-				       const struct edhoc_ead_token *ead_token,
-				       size_t ead_token_size)
+static int mock_ead_process_with_value(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_ead_token *ead_token, size_t ead_token_size)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 	}
 
-	if (ead_token_size >= 1 && ead_token[0].value_length > 0) {
+	if (ead_token_size >= 1 && ead_token[0].value.length > 0) {
 		return EDHOC_SUCCESS;
 	}
 
@@ -1028,12 +1030,13 @@ int coverage_mock_cred_fetch_x509_zero_certs(
 	return EDHOC_SUCCESS;
 }
 
-int coverage_mock_ead_compose(void *user_ctx, enum edhoc_message msg,
+int coverage_mock_ead_compose(void *user_ctx,
+			      const struct edhoc_call_context *call_ctx,
 			      struct edhoc_ead_token *ead_token,
 			      size_t ead_token_size, size_t *ead_token_len)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)ead_token;
 	(void)ead_token_size;
 
@@ -1046,12 +1049,13 @@ int coverage_mock_ead_compose(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-int coverage_mock_ead_process(void *user_ctx, enum edhoc_message msg,
+int coverage_mock_ead_process(void *user_ctx,
+			      const struct edhoc_call_context *call_ctx,
 			      const struct edhoc_ead_token *ead_token,
 			      size_t ead_token_size)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)ead_token;
 	(void)ead_token_size;
 
@@ -1062,15 +1066,15 @@ int coverage_mock_ead_process(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-int coverage_mock_ead_compose_with_token(void *user_ctx, enum edhoc_message msg,
-					 struct edhoc_ead_token *ead_token,
-					 size_t ead_token_size,
-					 size_t *ead_token_len)
+int coverage_mock_ead_compose_with_token(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	struct edhoc_ead_token *ead_token, size_t ead_token_size,
+	size_t *ead_token_len)
 {
 	static const uint8_t ead_val[] = { 0xAA, 0xBB };
 
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
@@ -1078,8 +1082,8 @@ int coverage_mock_ead_compose_with_token(void *user_ctx, enum edhoc_message msg,
 
 	if (ead_token_size > 0) {
 		ead_token[0].label = 1;
-		ead_token[0].value = ead_val;
-		ead_token[0].value_length = sizeof(ead_val);
+		ead_token[0].value.value = ead_val;
+		ead_token[0].value.length = sizeof(ead_val);
 		*ead_token_len = 1;
 	} else {
 		*ead_token_len = 0;
@@ -1088,12 +1092,13 @@ int coverage_mock_ead_compose_with_token(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-int coverage_mock_ead_process_fail(void *user_ctx, enum edhoc_message msg,
+int coverage_mock_ead_process_fail(void *user_ctx,
+				   const struct edhoc_call_context *call_ctx,
 				   const struct edhoc_ead_token *ead_token,
 				   size_t ead_token_size)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)ead_token;
 	(void)ead_token_size;
 

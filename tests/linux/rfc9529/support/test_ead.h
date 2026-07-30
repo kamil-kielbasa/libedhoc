@@ -27,71 +27,56 @@ struct ead_token_buf {
  * \brief Context structure for tracking EAD tokens across message exchanges.
  */
 struct ead_context {
-	enum edhoc_message msg;
+	struct edhoc_call_context call_context;
 	size_t recv_tokens;
 	struct ead_token_buf token[MAX_NR_OF_EAD_TOKENS];
 };
 
-/* Shared EAD token test data */
-extern const uint8_t ead_val_msg_1[10];
-extern const uint8_t ead_val_msg_2[16];
-extern const uint8_t ead_val_msg_3[120];
-extern const uint8_t ead_val_msg_4[7];
-
-extern const struct edhoc_ead_token ead_single_token_msg_1;
-extern const struct edhoc_ead_token ead_single_token_msg_2;
-extern const struct edhoc_ead_token ead_single_token_msg_3;
-extern const struct edhoc_ead_token ead_single_token_msg_4;
-
-extern const struct edhoc_ead_token ead_multiple_tokens_msg_1[];
-extern const struct edhoc_ead_token ead_multiple_tokens_msg_2[];
-extern const struct edhoc_ead_token ead_multiple_tokens_msg_3[];
-extern const struct edhoc_ead_token ead_multiple_tokens_msg_4[];
-
-#define EAD_MULTIPLE_TOKENS_MSG_1_LEN (3)
-#define EAD_MULTIPLE_TOKENS_MSG_2_LEN (2)
-#define EAD_MULTIPLE_TOKENS_MSG_3_LEN (3)
-#define EAD_MULTIPLE_TOKENS_MSG_4_LEN (3)
-
 /**
  * \brief EAD compose callback for single-token scenarios.
  */
-int test_ead_compose_single(void *user_ctx, enum edhoc_message msg,
+int test_ead_compose_single(void *user_ctx,
+			    const struct edhoc_call_context *call_context,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len);
 
 /**
  * \brief EAD process callback for single-token scenarios.
  */
-int test_ead_process_single(void *user_ctx, enum edhoc_message msg,
+int test_ead_process_single(void *user_ctx,
+			    const struct edhoc_call_context *call_context,
 			    const struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size);
 
 /**
  * \brief EAD compose callback for multiple-token scenarios.
  */
-int test_ead_compose_multiple(void *user_ctx, enum edhoc_message msg,
+int test_ead_compose_multiple(void *user_ctx,
+			      const struct edhoc_call_context *call_context,
 			      struct edhoc_ead_token *ead_token,
 			      size_t ead_token_size, size_t *ead_token_len);
 
 /**
  * \brief EAD process callback for multiple-token scenarios.
  */
-int test_ead_process_multiple(void *user_ctx, enum edhoc_message msg,
+int test_ead_process_multiple(void *user_ctx,
+			      const struct edhoc_call_context *call_context,
 			      const struct edhoc_ead_token *ead_token,
 			      size_t ead_token_size);
 
 /**
  * \brief Stub EAD compose callback that produces no tokens.
  */
-int test_ead_compose_stub(void *user_ctx, enum edhoc_message msg,
+int test_ead_compose_stub(void *user_ctx,
+			  const struct edhoc_call_context *call_context,
 			  struct edhoc_ead_token *ead_token,
 			  size_t ead_token_size, size_t *ead_token_len);
 
 /**
  * \brief Stub EAD process callback that accepts any tokens.
  */
-int test_ead_process_stub(void *user_ctx, enum edhoc_message msg,
+int test_ead_process_stub(void *user_ctx,
+			  const struct edhoc_call_context *call_context,
 			  const struct edhoc_ead_token *ead_token,
 			  size_t ead_token_size);
 

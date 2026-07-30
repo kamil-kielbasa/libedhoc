@@ -134,8 +134,8 @@ TEST(internals_mac, mac_ctx_len_with_ead)
 	const uint8_t ead_val[4] = { 1, 2, 3, 4 };
 	ctx.ead.count = 1;
 	ctx.ead.token[0].label = 100;
-	ctx.ead.token[0].value = ead_val;
-	ctx.ead.token[0].value_length = ARRAY_SIZE(ead_val);
+	ctx.ead.token[0].value.value = ead_val;
+	ctx.ead.token[0].value.length = ARRAY_SIZE(ead_val);
 
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
@@ -448,7 +448,7 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr)
 	const uint8_t dummy_fp[32] = { 0 };
 	struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
-		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.x509_hash.algorithm_bstr.length = strlen(alg),
 		.x509_hash.certificate_fingerprint = dummy_fp,
 		.x509_hash.certificate_fingerprint_length = sizeof(dummy_fp),
@@ -523,7 +523,7 @@ TEST(internals_mac, mac_ctx_kid_bstr)
 	const uint8_t dummy_cred[50] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.key_id.is_credential_cbor_encoded = true,
 		.key_id.key_id_bstr.length = 2,
 		.key_id.key_id_bstr.value[0] = 0x18,
@@ -601,8 +601,8 @@ TEST(internals_mac, mac_ctx_with_ead)
 	const uint8_t ead_val[4] = { 1, 2, 3, 4 };
 	ctx.ead.count = 1;
 	ctx.ead.token[0].label = 100;
-	ctx.ead.token[0].value = ead_val;
-	ctx.ead.token[0].value_length = ARRAY_SIZE(ead_val);
+	ctx.ead.token[0].value.value = ead_val;
+	ctx.ead.token[0].value.length = ARRAY_SIZE(ead_val);
 
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_auth_credentials cred = {
@@ -960,7 +960,7 @@ TEST(internals_mac, mac_ctx_kid_bad_cbor)
 	const uint8_t fake_cred[] = { 0x30, 0x00 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.key_id.is_credential_cbor_encoded = true,
 		.key_id.key_id_bstr.length = 1,
 		.key_id.key_id_bstr.value[0] = 0x40,

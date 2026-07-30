@@ -30,6 +30,20 @@
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
 static enum edhoc_error_code recv_error_code = -1;
 
+/** ERR_CODE = 1 with SUITES = [-3, 1, 1]: the fingerprint of the out-of-bounds
+ *  read that reinterpreted the array as a byte string. */
+static const uint8_t err_unspecified_with_suites[] = {
+	0x01, 0x83, 0x22, 0x01, 0x01,
+};
+
+/** ERR_CODE = 1 with ERR_INFO = true. */
+static const uint8_t err_unspecified_with_bool[] = { 0x01, 0xf5 };
+
+/** ERR_CODE = 2 with ERR_INFO = "abc". */
+static const uint8_t err_cipher_suite_with_tstr[] = {
+	0x02, 0x63, 0x61, 0x62, 0x63,
+};
+
 /* Static function declarations -------------------------------------------- */
 /* Static function definitions --------------------------------------------- */
 /* Module interface function definitions ----------------------------------- */
@@ -273,6 +287,64 @@ TEST(error_message, process_unknown_code)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
+TEST(error_message, process_suites_for_unspecified_rejected)
+{
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+	char text_string[100] = { 0 };
+	struct edhoc_error_info info = {
+		.text_string = text_string,
+		.entries_size = ARRAY_SIZE(text_string),
+	};
+
+	ret = edhoc_message_error_process(
+		err_unspecified_with_suites,
+		ARRAY_SIZE(err_unspecified_with_suites), &code, &info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	TEST_ASSERT_EQUAL(0, info.entries_length);
+}
+
+TEST(error_message, process_mismatched_info_rejected_without_buffer)
+{
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+
+	ret = edhoc_message_error_process(
+		err_unspecified_with_suites,
+		ARRAY_SIZE(err_unspecified_with_suites), &code, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(error_message, process_bool_for_unspecified_rejected)
+{
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+	char text_string[100] = { 0 };
+	struct edhoc_error_info info = {
+		.text_string = text_string,
+		.entries_size = ARRAY_SIZE(text_string),
+	};
+
+	ret = edhoc_message_error_process(err_unspecified_with_bool,
+					  ARRAY_SIZE(err_unspecified_with_bool),
+					  &code, &info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	TEST_ASSERT_EQUAL(0, info.entries_length);
+}
+
+TEST(error_message, process_tstr_for_cipher_suite_rejected)
+{
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+	int32_t cipher_suites[4] = { 0 };
+	struct edhoc_error_info info = {
+		.cipher_suites = cipher_suites,
+		.entries_size = ARRAY_SIZE(cipher_suites),
+	};
+
+	ret = edhoc_message_error_process(
+		err_cipher_suite_with_tstr,
+		ARRAY_SIZE(err_cipher_suite_with_tstr), &code, &info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	TEST_ASSERT_EQUAL(0, info.entries_length);
+}
+
 TEST_GROUP_RUNNER(error_message)
 {
 	RUN_TEST_CASE(error_message, success);
@@ -287,4 +359,11 @@ TEST_GROUP_RUNNER(error_message)
 	RUN_TEST_CASE(error_message, process_null_buffer);
 	RUN_TEST_CASE(error_message, process_invalid_cbor);
 	RUN_TEST_CASE(error_message, process_unknown_code);
+
+	/* ERR_INFO variant must match ERR_CODE (RFC 9528: 6). */
+	RUN_TEST_CASE(error_message, process_suites_for_unspecified_rejected);
+	RUN_TEST_CASE(error_message,
+		      process_mismatched_info_rejected_without_buffer);
+	RUN_TEST_CASE(error_message, process_bool_for_unspecified_rejected);
+	RUN_TEST_CASE(error_message, process_tstr_for_cipher_suite_rejected);
 }

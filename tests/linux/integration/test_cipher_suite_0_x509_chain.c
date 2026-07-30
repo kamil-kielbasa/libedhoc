@@ -151,12 +151,14 @@ TEST(cipher_suite_0_x509_chain, method_0_one_certificate)
 	};
 
 	const struct handshake_endpoint initiator = {
+		.role = EDHOC_ROLE_INITIATOR,
 		.connection_id = init_cid,
 		.own = &initiator_one_certificate,
 		.peer = &responder_one_certificate,
 		.ead = NULL,
 	};
 	const struct handshake_endpoint responder = {
+		.role = EDHOC_ROLE_RESPONDER,
 		.connection_id = resp_cid,
 		.own = &responder_one_certificate,
 		.peer = &initiator_one_certificate,
@@ -180,12 +182,14 @@ TEST(cipher_suite_0_x509_chain, method_0_two_certificate_chain)
 	};
 
 	const struct handshake_endpoint initiator = {
+		.role = EDHOC_ROLE_INITIATOR,
 		.connection_id = init_cid,
 		.own = &initiator_two_certificates,
 		.peer = &responder_two_certificates,
 		.ead = NULL,
 	};
 	const struct handshake_endpoint responder = {
+		.role = EDHOC_ROLE_RESPONDER,
 		.connection_id = resp_cid,
 		.own = &responder_two_certificates,
 		.peer = &initiator_two_certificates,

@@ -76,12 +76,13 @@ static int auth_cred_verify_stub(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int ead_compose_stub(void *user_ctx, enum edhoc_message msg,
+static int ead_compose_stub(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)ead_token;
 	(void)ead_token_size;
 
@@ -90,12 +91,13 @@ static int ead_compose_stub(void *user_ctx, enum edhoc_message msg,
 	return EDHOC_SUCCESS;
 }
 
-static int ead_process_stub(void *user_ctx, enum edhoc_message msg,
+static int ead_process_stub(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
 			    const struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size)
 {
 	(void)user_ctx;
-	(void)msg;
+	(void)call_ctx;
 	(void)ead_token;
 	(void)ead_token_size;
 

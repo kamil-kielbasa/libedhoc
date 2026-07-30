@@ -296,7 +296,7 @@ static int auth_cred_fetch_init(void *user_ctx,
 	auth_cred->key_id.credential = CRED_I_cborised;
 	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_I_cborised);
 	auth_cred->key_id.is_credential_cbor_encoded = true;
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_I_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_I_raw_cborised));
 	auth_cred->key_id.key_id_bstr.length =
@@ -320,7 +320,7 @@ static int auth_cred_fetch_init_any(void *user_ctx,
 	auth_cred->custom.id_credential = ID_CRED_I_cborised;
 	auth_cred->custom.id_credential_length = ARRAY_SIZE(ID_CRED_I_cborised);
 	auth_cred->custom.is_id_credential_compact_encoded = true;
-	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	auth_cred->custom.id_credential_compact = ID_CRED_I_raw_cborised;
 	auth_cred->custom.id_credential_compact_length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
@@ -345,7 +345,7 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	auth_cred->key_id.credential = CRED_R_cborised;
 	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_R_cborised);
 	auth_cred->key_id.is_credential_cbor_encoded = true;
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_R_raw_cborised,
 	       ARRAY_SIZE(ID_CRED_R_raw_cborised));
 	auth_cred->key_id.key_id_bstr.length =
@@ -369,7 +369,7 @@ static int auth_cred_fetch_resp_any(void *user_ctx,
 	auth_cred->custom.id_credential = ID_CRED_R_cborised;
 	auth_cred->custom.id_credential_length = ARRAY_SIZE(ID_CRED_R_cborised);
 	auth_cred->custom.is_id_credential_compact_encoded = true;
-	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->custom.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	auth_cred->custom.id_credential_compact = ID_CRED_R_raw_cborised;
 	auth_cred->custom.id_credential_compact_length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
@@ -404,7 +404,7 @@ static int auth_cred_verify_init(void *user_ctx,
 	if (ID_CRED_R_raw != auth_cred->key_id.key_id_int)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_R_raw_cborised);
 	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_R_raw_cborised,
@@ -439,7 +439,7 @@ static int auth_cred_verify_resp(void *user_ctx,
 	if (ID_CRED_I_raw != auth_cred->key_id.key_id_int)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	auth_cred->key_id.key_id_bstr.length =
 		ARRAY_SIZE(ID_CRED_I_raw_cborised);
 	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_I_raw_cborised,

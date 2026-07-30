@@ -61,6 +61,39 @@ Version 2.0.0
     every build and memory backend (stack / heap / custom) with no dedicated
     preset or CI job.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Hardening of message
+  processing:
+
+  * ``edhoc_message_error_process()`` rejects an ``ERR_INFO`` whose variant does
+    not match ``ERR_CODE`` (RFC 9528: 6) with ``EDHOC_ERROR_NOT_PERMITTED``. The
+    CBOR decoder picks the variant from its shape alone, so a peer could pair a
+    ``SUITES`` array with ``ERR_CODE 1``; the library then read the union as a
+    byte string and copied out of bounds. Reachable before authentication from
+    any peer that can deliver an error message.
+  * ``edhoc_message_3_process()`` rejects a ``CIPHERTEXT_3`` that is not longer
+    than the AEAD tag. ``PLAINTEXT_3`` always carries ``ID_CRED_I`` and
+    ``Signature_or_MAC_3``, so an empty plaintext is malformed; accepting it
+    also formed a zero-length VLA in the stack memory backend.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Application callback
+  context and EAD interface (breaking):
+
+  * New ``struct edhoc_call_context`` in ``<edhoc/types.h>`` carries the role,
+    the negotiated method, the selected cipher suite and the message being
+    handled. The library allocates it and passes it by ``const`` pointer, so it
+    stays extensible: new members may only be appended at the end.
+  * ``edhoc_ead.compose`` and ``edhoc_ead.process`` take
+    ``const struct edhoc_call_context *`` in place of ``enum edhoc_message``.
+    Read ``call_context->message`` where the message number was used before.
+  * ``struct edhoc_ead_token`` replaces the ``value`` / ``value_length`` pair
+    with a single ``struct edhoc_buffer value``.
+  * ``<edhoc/types.h>`` gains the shared types ``enum edhoc_message`` (moved
+    from ``<edhoc/ead.h>``), ``enum edhoc_role``, ``struct edhoc_buffer``,
+    ``enum edhoc_encode_type`` and ``struct edhoc_cbor_int_or_string``.
+  * ``EDHOC_ENCODE_TYPE_BYTE_STRING`` is renamed to
+    ``EDHOC_ENCODE_TYPE_STRING``: the same encoding covers a COSE ``kid``
+    (bstr) and a ``COSE_CertHash`` hash algorithm name (tstr).
+
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Versioning and
   cleanup (breaking):
 

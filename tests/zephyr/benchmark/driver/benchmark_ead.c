@@ -51,20 +51,23 @@ static int benchmark_ead_index(enum edhoc_message message, size_t *index)
 
 /* Module interface function definitions ----------------------------------- */
 
-int benchmark_ead_compose(void *user_context, enum edhoc_message message,
+int benchmark_ead_compose(void *user_context,
+			  const struct edhoc_call_context *call_context,
 			  struct edhoc_ead_token *ead_token,
 			  size_t ead_token_size, size_t *ead_token_count)
 {
 	const struct benchmark_endpoint *endpoint = user_context;
 
-	if (NULL == endpoint || NULL == endpoint->ead || NULL == ead_token ||
-	    NULL == ead_token_count || 0 == ead_token_size) {
+	if (NULL == endpoint || NULL == endpoint->ead || NULL == call_context ||
+	    NULL == ead_token || NULL == ead_token_count ||
+	    0 == ead_token_size) {
 		return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 	}
 
 	size_t msg_index = 0;
 
-	if (EDHOC_SUCCESS != benchmark_ead_index(message, &msg_index)) {
+	if (EDHOC_SUCCESS !=
+	    benchmark_ead_index(call_context->message, &msg_index)) {
 		return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
 	}
 
@@ -83,20 +86,22 @@ int benchmark_ead_compose(void *user_context, enum edhoc_message message,
 	return EDHOC_SUCCESS;
 }
 
-int benchmark_ead_process(void *user_context, enum edhoc_message message,
+int benchmark_ead_process(void *user_context,
+			  const struct edhoc_call_context *call_context,
 			  const struct edhoc_ead_token *ead_token,
 			  size_t ead_token_size)
 {
 	const struct benchmark_endpoint *endpoint = user_context;
 
-	if (NULL == endpoint || NULL == endpoint->ead ||
+	if (NULL == endpoint || NULL == endpoint->ead || NULL == call_context ||
 	    (0 != ead_token_size && NULL == ead_token)) {
 		return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 	}
 
 	size_t msg_index = 0;
 
-	if (EDHOC_SUCCESS != benchmark_ead_index(message, &msg_index)) {
+	if (EDHOC_SUCCESS !=
+	    benchmark_ead_index(call_context->message, &msg_index)) {
 		return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 	}
 
@@ -116,12 +121,12 @@ int benchmark_ead_process(void *user_context, enum edhoc_message message,
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 		}
 
-		if (want->value_length != ead_token[i].value_length) {
+		if (want->value.length != ead_token[i].value.length) {
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 		}
 
-		if (0 != memcmp(want->value, ead_token[i].value,
-				want->value_length)) {
+		if (0 != memcmp(want->value.value, ead_token[i].value.value,
+				want->value.length)) {
 			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
 		}
 	}

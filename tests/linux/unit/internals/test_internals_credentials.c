@@ -305,7 +305,7 @@ TEST(internals_credentials, kid_bstr_within_capacity)
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_BYTE_STRING,
+	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_STRING,
 			  parsed.auth_cred.key_id.encode_type);
 	TEST_ASSERT_EQUAL_size_t(1, parsed.auth_cred.key_id.key_id_bstr.length);
 	TEST_ASSERT_EQUAL_MEMORY(&ptxt_3_kid_bstr[1],
@@ -609,7 +609,7 @@ TEST(internals_credentials, validate_fetched_kid_over_capacity)
 {
 	struct edhoc_auth_credentials credentials = make_valid_kid();
 
-	credentials.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	credentials.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
 	credentials.key_id.key_id_bstr.length =
 		EDHOC_CREDENTIAL_KID_MAX_LEN + 1;
 

@@ -118,7 +118,7 @@ TEST(internals_common, comp_id_cred_len_kid_bstr)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.key_id.key_id_bstr.length = 1,
 	};
 
@@ -189,7 +189,7 @@ TEST(internals_common, comp_id_cred_len_x509_hash_bstr)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
-		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.x509_hash.algorithm_bstr.length = 2,
 		.x509_hash.algorithm_bstr.value[0] = 'S',
 		.x509_hash.algorithm_bstr.value[1] = 'H',
@@ -387,11 +387,11 @@ TEST(internals_common, comp_ead_len_with_tokens)
 
 	ctx.ead.count = 2;
 	ctx.ead.token[0].label = 1;
-	ctx.ead.token[0].value = val0;
-	ctx.ead.token[0].value_length = sizeof(val0);
+	ctx.ead.token[0].value.value = val0;
+	ctx.ead.token[0].value.length = sizeof(val0);
 	ctx.ead.token[1].label = 2;
-	ctx.ead.token[1].value = val1;
-	ctx.ead.token[1].value_length = sizeof(val1);
+	ctx.ead.token[1].value.value = val1;
+	ctx.ead.token[1].value.length = sizeof(val1);
 
 	ret = comp_ead_len(&ctx, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -465,7 +465,7 @@ TEST(internals_common, kid_compact_enc_bstr_cbor_one_byte)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.key_id.is_credential_cbor_encoded = true,
 		.key_id.key_id_bstr.length = 1,
 		.key_id.key_id_bstr.value[0] = 0x05,
@@ -486,7 +486,7 @@ TEST(internals_common, kid_compact_enc_bstr_cbor_multi_byte)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.key_id.is_credential_cbor_encoded = true,
 		.key_id.key_id_bstr.length = 2,
 		.key_id.key_id_bstr.value[0] = 0x18,
@@ -496,8 +496,7 @@ TEST(internals_common, kid_compact_enc_bstr_cbor_multi_byte)
 	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(mac_ctx->id_cred_is_comp_enc);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_BYTE_STRING,
-			  mac_ctx->id_cred_enc_type);
+	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_STRING, mac_ctx->id_cred_enc_type);
 	TEST_ASSERT_EQUAL(2, mac_ctx->id_cred_bstr_len);
 }
 
@@ -509,7 +508,7 @@ TEST(internals_common, kid_compact_enc_bstr_non_cbor)
 
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING,
+		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.key_id.is_credential_cbor_encoded = false,
 		.key_id.key_id_bstr.length = 0,
 	};
@@ -517,8 +516,7 @@ TEST(internals_common, kid_compact_enc_bstr_non_cbor)
 	int ret = kid_compact_encoding(&cred, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(mac_ctx->id_cred_is_comp_enc);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_BYTE_STRING,
-			  mac_ctx->id_cred_enc_type);
+	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_STRING, mac_ctx->id_cred_enc_type);
 }
 
 TEST(internals_common, kid_compact_enc_invalid_type)
