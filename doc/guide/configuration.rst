@@ -45,7 +45,7 @@ Kconfig library configuration
     | Values greater than ``3`` require regeneration of the CBOR backend.
 
 :C:`LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN`
-    | Maximum number of certificates in X.509 chain.
+    | Maximum number of certificates in X.509 chain, from ``1`` to ``3``.
     | Values greater than ``3`` require regeneration of the CBOR backend.
 
 :C:`LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID`

@@ -16,6 +16,7 @@ MATRIX_PRESETS=(
     p256_stack     p256_heap     p256_custom
     p384_stack     p384_heap     p384_custom
     mlkem512_stack mlkem512_heap mlkem512_custom
+    p256_limits
 )
 
 RED='\033[0;31m'

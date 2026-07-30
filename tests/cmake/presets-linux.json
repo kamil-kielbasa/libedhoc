@@ -17,8 +17,8 @@
         "CONFIG_LIBEDHOC_MAX_NR_OF_METHODS": "4",
         "CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID": "7",
         "CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS": "3",
-        "CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID": "1",
-        "CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG": "1",
+        "CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID": "2",
+        "CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG": "2",
         "CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN": "2",
         "CONFIG_LIBEDHOC_LOG_LEVEL": "4",
         "ENABLE_PROGRAMS": "OFF",
@@ -110,6 +110,16 @@
     { "name": "mlkem512_stack",  "displayName": "ML-KEM-512 (suite pqc_1) / stack",  "inherits": ["eph-mlkem512", "backend-stack"],  "binaryDir": "${sourceDir}/build/mlkem512_stack" },
     { "name": "mlkem512_heap",   "displayName": "ML-KEM-512 (suite pqc_1) / heap",   "inherits": ["eph-mlkem512", "backend-heap"],   "binaryDir": "${sourceDir}/build/mlkem512_heap" },
     { "name": "mlkem512_custom", "displayName": "ML-KEM-512 (suite pqc_1) / custom", "inherits": ["eph-mlkem512", "backend-custom"], "binaryDir": "${sourceDir}/build/mlkem512_custom" },
+
+    {
+      "name": "p256_limits",
+      "displayName": "P-256 (suite 2) / stack, maximum X.509 chain",
+      "inherits": ["eph-p256", "backend-stack"],
+      "binaryDir": "${sourceDir}/build/p256_limits",
+      "cacheVariables": {
+        "CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN": "3"
+      }
+    },
 
     {
       "name": "legacy",
@@ -208,6 +218,7 @@
     { "name": "mlkem512_stack",  "configurePreset": "mlkem512_stack" },
     { "name": "mlkem512_heap",   "configurePreset": "mlkem512_heap" },
     { "name": "mlkem512_custom", "configurePreset": "mlkem512_custom" },
+    { "name": "p256_limits",     "configurePreset": "p256_limits" },
     { "name": "legacy",          "configurePreset": "legacy" },
     { "name": "clang",           "configurePreset": "clang" },
     { "name": "clang-latest",    "configurePreset": "clang-latest" },
@@ -231,6 +242,7 @@
     { "name": "mlkem512_stack",  "configurePreset": "mlkem512_stack",  "output": { "outputOnFailure": true } },
     { "name": "mlkem512_heap",   "configurePreset": "mlkem512_heap",   "output": { "outputOnFailure": true } },
     { "name": "mlkem512_custom", "configurePreset": "mlkem512_custom", "output": { "outputOnFailure": true } },
+    { "name": "p256_limits",     "configurePreset": "p256_limits",     "output": { "outputOnFailure": true } },
     { "name": "legacy",          "configurePreset": "legacy",          "output": { "outputOnFailure": true } },
     { "name": "clang",           "configurePreset": "clang",           "output": { "outputOnFailure": true } },
     { "name": "clang-latest",    "configurePreset": "clang-latest",    "output": { "outputOnFailure": true } },

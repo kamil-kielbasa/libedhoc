@@ -230,6 +230,14 @@ STATIC int comp_id_cred_len(const struct edhoc_auth_credentials *cred,
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
+		if (EDHOC_CREDENTIAL_X5CHAIN_CAPACITY <
+		    cred->x509_chain.certificate_count) {
+			EDHOC_LOG_ERR("X.509 chain too large: %zu (max %d)",
+				      cred->x509_chain.certificate_count,
+				      EDHOC_CREDENTIAL_X5CHAIN_CAPACITY);
+			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		}
+
 		*len += edhoc_cbor_map_oh(nr_of_items);
 		for (size_t i = 0; i < cred->x509_chain.certificate_count;
 		     ++i) {
@@ -297,6 +305,8 @@ STATIC int comp_cred_len(const struct edhoc_auth_credentials *cred, size_t *len)
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
+
+	*len = 0;
 
 	switch (cred->label) {
 	case EDHOC_COSE_HEADER_CUSTOM:
@@ -416,7 +426,7 @@ STATIC int kid_compact_encoding(const struct edhoc_auth_credentials *cred,
 
 			ret = cbor_encode_byte_string_type_bstr_type(
 				mac_ctx->id_cred_bstr,
-				ARRAY_SIZE(mac_ctx->id_cred_bstr) - 1, &input,
+				ARRAY_SIZE(mac_ctx->id_cred_bstr), &input,
 				&mac_ctx->id_cred_bstr_len);
 
 			if (ZCBOR_SUCCESS != ret) {
@@ -930,8 +940,11 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
-		if (0 == cred->x509_chain.certificate_count) {
-			EDHOC_LOG_ERR("Invalid state: no certs");
+		if (0 == cred->x509_chain.certificate_count ||
+		    EDHOC_CREDENTIAL_X5CHAIN_CAPACITY <
+			    cred->x509_chain.certificate_count) {
+			EDHOC_LOG_ERR("Invalid X.509 chain length: %zu",
+				      cred->x509_chain.certificate_count);
 			return EDHOC_ERROR_BAD_STATE;
 		}
 
@@ -947,17 +960,6 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 			cose_x509->COSE_X509_bstr.len =
 				cred->x509_chain.certificate_length[0];
 		} else {
-			if (ARRAY_SIZE(cose_x509->COSE_X509_certs_l_certs) <
-			    cred->x509_chain.certificate_count) {
-				EDHOC_LOG_ERR(
-					"Buffer too small: %zu < %zu",
-					ARRAY_SIZE(
-						cose_x509
-							->COSE_X509_certs_l_certs),
-					cred->x509_chain.certificate_count);
-				return EDHOC_ERROR_BUFFER_TOO_SMALL;
-			}
-
 			cose_x509->COSE_X509_choice = COSE_X509_certs_l_c;
 			cose_x509->COSE_X509_certs_l_certs_count =
 				cred->x509_chain.certificate_count;

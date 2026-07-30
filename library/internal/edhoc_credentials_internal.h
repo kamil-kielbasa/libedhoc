@@ -91,4 +91,43 @@ int edhoc_parse_id_cred_map(const struct map *id_cred_map,
 
 /**@}*/
 
+/** \defgroup edhoc-credentials-validate EDHOC authentication credentials validation
+ *
+ * The application fills the credential structures, and their contents drive
+ * both the ID_CRED_x / CRED_x encoders and the size of the MAC context. These
+ * checks run right after each callback returns, so a malformed credential is
+ * rejected before any field of it is used.
+ * @{
+ */
+
+/**
+ * \brief Validate the credentials the application returned from \c fetch.
+ *
+ * \param[in] credentials               Local authentication credentials.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_validate_credential_fetched(
+	const struct edhoc_auth_credentials *credentials);
+
+/**
+ * \brief Validate the credentials and the authentication key the application
+ *        returned from \c verify.
+ *
+ * \param[in] credentials               Peer authentication credentials.
+ * \param[in] public_key                Peer authentication key.
+ * \param public_key_length             Length of \p public_key in bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_validate_credential_verified(
+	const struct edhoc_auth_credentials *credentials,
+	const uint8_t *public_key, size_t public_key_length);
+
+/**@}*/
+
 #endif /* EDHOC_CREDENTIALS_INTERNAL_H */

@@ -71,6 +71,7 @@ jobs:
           - mlkem512_stack
           - mlkem512_heap
           - mlkem512_custom
+          - p256_limits
           - clang
     steps:
       - uses: actions/checkout@v4

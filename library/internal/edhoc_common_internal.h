@@ -5,9 +5,9 @@
  *          - CBOR utilities.
  *          - MAC context.
  *          - MAC & Signature_or_MAC.
- * 
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -67,8 +67,10 @@ struct mac_context {
 	enum edhoc_encode_type id_cred_enc_type;
 	/** Buffer containing credentials identifier integer representation. */
 	int32_t id_cred_int;
-	/** Buffer containing credentials identifier byte string representation. */
-	uint8_t id_cred_bstr[CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID + 1];
+	/** Buffer containing credentials identifier byte string representation.
+	 *  Holds the CBOR encoding of the key identifier, so it reserves room for
+	 *  the byte string header on top of #EDHOC_CREDENTIAL_KID_MAX_LEN. */
+	uint8_t id_cred_bstr[EDHOC_CREDENTIAL_KID_MAX_LEN + 2];
 	/** Size of the \p id_cred_bstr buffer in bytes. */
 	size_t id_cred_bstr_len;
 
@@ -137,7 +139,7 @@ struct hash_segment {
  * @{
  */
 
-/** 
+/**
  * \brief Compute CBOR encoding size for an integer.
  *
  * \param value                         Integer value to encode.
@@ -146,7 +148,7 @@ struct hash_segment {
  */
 size_t edhoc_cbor_int_mem_req(int32_t value);
 
-/** 
+/**
  * \brief Compute CBOR overhead for a text string.
  *
  * \param length                        Length of the text string in bytes.
@@ -155,7 +157,7 @@ size_t edhoc_cbor_int_mem_req(int32_t value);
  */
 size_t edhoc_cbor_tstr_oh(size_t length);
 
-/** 
+/**
  * \brief Compute CBOR overhead for a byte string.
  *
  * \param length                        Length of the byte string in bytes.
@@ -164,7 +166,7 @@ size_t edhoc_cbor_tstr_oh(size_t length);
  */
 size_t edhoc_cbor_bstr_oh(size_t length);
 
-/** 
+/**
  * \brief Emit the CBOR byte-string header framing a payload of \p length
  *        bytes, so it can be streamed (e.g. into a hash) without a contiguous
  *        copy of the header and the payload.
@@ -177,7 +179,7 @@ size_t edhoc_cbor_bstr_oh(size_t length);
  */
 size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length);
 
-/** 
+/**
  * \brief Compute CBOR overhead for a map.
  *
  * \param items                         Number of key-value pairs in the map.
@@ -186,7 +188,7 @@ size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length);
  */
 size_t edhoc_cbor_map_oh(size_t items);
 
-/** 
+/**
  * \brief Compute CBOR overhead for an array.
  *
  * \param items                         Number of elements in the array.
@@ -229,7 +231,7 @@ int edhoc_comp_hash(const struct edhoc_context *ctx,
 
 /**
  * \brief Compute required buffer length for MAC 2/3 context.
- * 
+ *
  * \param[in] edhoc_context             EDHOC context.
  * \param[in] credentials               Authentication credentials.
  * \param[out] mac_context_length       On success, number of bytes that make up MAC context.
@@ -245,7 +247,7 @@ int edhoc_comp_mac_context_length(
 
 /**
  * \brief CBOR-encode items required by the MAC 2/3 context.
- * 
+ *
  * \param[in] edhoc_context             EDHOC context.
  * \param[in] credentials               Authentication credentials.
  * \param[out] mac_context              On success, generated MAC context.
@@ -266,7 +268,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *edhoc_context,
 
 /**
  * \brief Compute required buffer length for MAC 2/3.
- * 
+ *
  * \param[in] edhoc_context             EDHOC context.
  * \param[out] mac_length               On success, number of bytes that make up
  *                                      MAC 2/3 length requirements.
@@ -280,8 +282,8 @@ int edhoc_comp_mac_length(const struct edhoc_context *edhoc_context,
 
 /**
  * \brief Compute MAC 2/3 buffer.
- * 
- * \param[in] edhoc_context             EDHOC context.                 
+ *
+ * \param[in] edhoc_context             EDHOC context.
  * \param[in] mac_context               MAC context.
  * \param[out] mac                      Buffer where the generated MAC 2/3 is to be written.
  * \param mac_length                    Size of the \p mac buffer in bytes.
@@ -296,7 +298,7 @@ int edhoc_comp_mac(const struct edhoc_context *edhoc_context,
 
 /**
  * \brief Compute required buffer length for Signature_or_MAC 2/3.
- * 
+ *
  * \param[in] edhoc_context             EDHOC context.
  * \param[out] sign_or_mac_length       On success, number of bytes that make up
  *                                      Signature_or_MAC 2/3 length requirements.
@@ -310,13 +312,13 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *edhoc_context,
 
 /**
  * \brief Compute Signature_or_MAC 2/3 buffer.
- * 
+ *
  * \param[in] edhoc_context             EDHOC context.
  * \param[in] cred                      Authentication credentials.
  * \param[in] mac_context               MAC context.
  * \param[in] mac                       Buffer containing the MAC 2/3.
  * \param[in] mac_len                   Size of the \p mac buffer in bytes.
- * \param[out] signature                Buffer where the generated 
+ * \param[out] signature                Buffer where the generated
  *                                      Signature_or_MAC 2/3 is to be written.
  * \param signature_size                Size of the \p signature buffer in bytes.
  * \param[out] signature_length         On success, the number of bytes that make
@@ -335,7 +337,7 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *edhoc_context,
 
 /**
  * \brief Verify Signature_or_MAC 2/3 buffer.
- * 
+ *
  * \param[in] edhoc_context             EDHOC context.
  * \param[in] mac_context               MAC context.
  * \param[in] public_key                Buffer containing authentication public key.

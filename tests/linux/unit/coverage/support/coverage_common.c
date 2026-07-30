@@ -139,6 +139,11 @@ static int mock_hash_op_token;
 
 static const uint8_t ead_value_payload[] = { 0x01, 0x02, 0x03, 0x04 };
 
+/* CRED_x is not carried on the wire for 'kid' and 'x5t', so both peers have to
+ * resolve the very same bytes. The fetch and verify mocks share these. */
+static const uint8_t mock_kid_credential[] = { 0xa1, 0x01, 0x01 };
+static const uint8_t mock_x5t_certificate[] = { 0x30, 0x82, 0x01, 0x00 };
+
 static const struct edhoc_platform mock_platform = {
 	.zeroize = mock_zeroize,
 };
@@ -514,6 +519,9 @@ static int mock_cred_fetch_kid(void *user_ctx,
 	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
 	auth_cred->key_id.key_id_int = 5;
 
+	auth_cred->key_id.credential = mock_kid_credential;
+	auth_cred->key_id.credential_length = sizeof(mock_kid_credential);
+
 	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
@@ -524,7 +532,6 @@ static int mock_cred_fetch_kid_bstr(void *user_ctx,
 {
 	/* CBOR one-byte integer 5 — compact-encodable as ID_CRED. */
 	static const uint8_t kid[] = { 0x05 };
-	static const uint8_t fake_cred[] = { 0xA1, 0x01, 0x01 };
 
 	(void)user_ctx;
 
@@ -539,8 +546,8 @@ static int mock_cred_fetch_kid_bstr(void *user_ctx,
 	memcpy(auth_cred->key_id.key_id_bstr.value, kid, sizeof(kid));
 	auth_cred->key_id.key_id_bstr.length = sizeof(kid);
 
-	auth_cred->key_id.credential = fake_cred;
-	auth_cred->key_id.credential_length = sizeof(fake_cred);
+	auth_cred->key_id.credential = mock_kid_credential;
+	auth_cred->key_id.credential_length = sizeof(mock_kid_credential);
 
 	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
@@ -550,7 +557,6 @@ static int mock_cred_fetch_kid_bstr(void *user_ctx,
 static int mock_cred_fetch_x5t_bstr(void *user_ctx,
 				    struct edhoc_auth_credentials *auth_cred)
 {
-	static const uint8_t fake_cert[] = { 0x30, 0x82, 0x01, 0x00 };
 	static const uint8_t fake_fp[] = { 0xAA, 0xBB, 0xCC, 0xDD };
 	/* CBOR one-byte int for COSE_ALG_SHA_256_64 (-15). */
 	static const uint8_t alg[] = { 0x2e };
@@ -563,8 +569,8 @@ static int mock_cred_fetch_x5t_bstr(void *user_ctx,
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
 
-	auth_cred->x509_hash.certificate = fake_cert;
-	auth_cred->x509_hash.certificate_length = sizeof(fake_cert);
+	auth_cred->x509_hash.certificate = mock_x5t_certificate;
+	auth_cred->x509_hash.certificate_length = sizeof(mock_x5t_certificate);
 
 	auth_cred->x509_hash.certificate_fingerprint = fake_fp;
 	auth_cred->x509_hash.certificate_fingerprint_length = sizeof(fake_fp);
@@ -581,7 +587,6 @@ static int mock_cred_fetch_x5t_bstr(void *user_ctx,
 static int mock_cred_fetch_x5t_int(void *user_ctx,
 				   struct edhoc_auth_credentials *auth_cred)
 {
-	static const uint8_t fake_cert[] = { 0x30, 0x82, 0x01, 0x00 };
 	static const uint8_t fake_fp[] = { 0xAA, 0xBB, 0xCC, 0xDD };
 
 	(void)user_ctx;
@@ -592,8 +597,8 @@ static int mock_cred_fetch_x5t_int(void *user_ctx,
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
 
-	auth_cred->x509_hash.certificate = fake_cert;
-	auth_cred->x509_hash.certificate_length = sizeof(fake_cert);
+	auth_cred->x509_hash.certificate = mock_x5t_certificate;
+	auth_cred->x509_hash.certificate_length = sizeof(mock_x5t_certificate);
 
 	auth_cred->x509_hash.certificate_fingerprint = fake_fp;
 	auth_cred->x509_hash.certificate_fingerprint_length = sizeof(fake_fp);
@@ -962,10 +967,28 @@ int coverage_mock_cred_verify(void *user_ctx,
 	static const uint8_t fake_pk[65] = { 0x04 };
 
 	(void)user_ctx;
-	(void)auth_cred;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	/* 'kid' and 'x5t' only reference the credential, so resolving it is
+	 * part of the verify contract. x5chain carries it by value. */
+	switch (auth_cred->label) {
+	case EDHOC_COSE_HEADER_KID:
+		auth_cred->key_id.credential = mock_kid_credential;
+		auth_cred->key_id.credential_length =
+			sizeof(mock_kid_credential);
+		break;
+
+	case EDHOC_COSE_HEADER_X509_HASH:
+		auth_cred->x509_hash.certificate = mock_x5t_certificate;
+		auth_cred->x509_hash.certificate_length =
+			sizeof(mock_x5t_certificate);
+		break;
+
+	default:
+		break;
 	}
 
 	*pub_key = fake_pk;

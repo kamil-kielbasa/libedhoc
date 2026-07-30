@@ -1237,6 +1237,13 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
+	ret = edhoc_validate_credential_fetched(&auth_cred);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Validate fetched credentials: %d", ret);
+		return ret;
+	}
+
 	/* 5. Compose EAD_2 if present. */
 	if (NULL != ctx->interfaces.ead.compose &&
 	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
@@ -1680,6 +1687,15 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
 		EDHOC_MEM_FREE(ciphertext_2);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	ret = edhoc_validate_credential_verified(&parsed_ptxt.auth_cred,
+						 pub_key, pub_key_len);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Validate verified credentials: %d", ret);
+		EDHOC_MEM_FREE(ciphertext_2);
+		return ret;
 	}
 
 	/* 11. Compute pseudorandom key (PRK_3e2m). */

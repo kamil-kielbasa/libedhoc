@@ -38,6 +38,7 @@ function(libedhoc_target_warnings target profile)
                 -Wno-covered-switch-default       # contradicts -Wswitch-default
                 -Wno-declaration-after-statement  # the project is C11
                 -Wno-padded                       # informational; struct layout
+                -Wno-pre-c11-compat               # the project is C11
                 -Wno-switch-default
                 -Wno-unsafe-buffer-usage          # C has no bounds-safe alternative
                 -Wno-vla)                         # the stack backend allocates VLAs

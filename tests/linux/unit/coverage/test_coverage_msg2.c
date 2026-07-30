@@ -1162,8 +1162,9 @@ TEST(coverage_msg2, msg2_compose_x509_zero_certs_2)
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 
+	/* An empty chain is rejected by the validation that follows fetch. */
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -1244,8 +1245,9 @@ TEST(coverage_msg2, msg2_compose_x509_zero_certs)
 	uint8_t msg2[512] = { 0 };
 	size_t msg2_len = 0;
 
+	/* An empty chain is rejected by the validation that follows fetch. */
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

@@ -1029,6 +1029,13 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
+	ret = edhoc_validate_credential_fetched(&auth_creds);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Validate fetched credentials: %d", ret);
+		return ret;
+	}
+
 	/* 4. Compute IV_3 and AAD_3 (K_3 is produced into its context slot). */
 	EDHOC_MEM_ALLOC(uint8_t, iv, csuite->aead_iv_length);
 	if (NULL == iv) {
@@ -1481,6 +1488,15 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 			EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
 		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	ret = edhoc_validate_credential_verified(&parsed_ptxt.auth_cred,
+						 pub_key, pub_key_len);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Validate verified credentials: %d", ret);
+		EDHOC_MEM_FREE(ptxt);
+		return ret;
 	}
 
 	/* 8. Compute PRK_4e3m. */

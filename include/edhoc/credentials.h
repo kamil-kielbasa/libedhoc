@@ -45,10 +45,22 @@
 #error "Lack of defined length of private key identifier in bytes."
 #endif /* CONFIG_LIBEDHOC_KEY_ID_LEN */
 
-/** Upper bound of an X.509 certificate fingerprint ('x5t') in bytes. The
- *  longest hash COSE defines for a certificate thumbprint is SHA-512. A
- *  received fingerprint longer than this is rejected. */
-#define EDHOC_X509_HASH_FINGERPRINT_MAX_LEN (64)
+/** Maximum length of a COSE 'kid' key identifier in bytes. */
+#define EDHOC_CREDENTIAL_KID_MAX_LEN CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
+
+/** Capacity of a COSE 'x5chain' certificate chain, in certificates. */
+#define EDHOC_CREDENTIAL_X5CHAIN_CAPACITY \
+	CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
+
+/** Maximum length of a COSE 'x5t' hash algorithm name in bytes. Applies to the
+ *  text form only; the integer form carries no buffer. */
+#define EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN \
+	CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG
+
+/** Maximum length of a COSE 'x5t' certificate fingerprint in bytes. The longest
+ *  hash COSE defines for a certificate thumbprint is SHA-512, so a longer
+ *  fingerprint is rejected. */
+#define EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN (64)
 
 /* Types and type definitions ---------------------------------------------- */
 
@@ -137,8 +149,7 @@ struct edhoc_auth_credential_key_id {
 		 *  (#EDHOC_ENCODE_TYPE_BYTE_STRING). */
 		struct {
 			/** Byte string buffer. */
-			uint8_t value[CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID +
-				      1];
+			uint8_t value[EDHOC_CREDENTIAL_KID_MAX_LEN];
 			/** Size of the \p value buffer in bytes. */
 			size_t length;
 		} key_id_bstr;
@@ -163,16 +174,13 @@ struct edhoc_auth_credential_key_id {
  *   building, trust anchors, revocation).
  */
 struct edhoc_auth_credential_x509_chain {
-	/** Number of certificates in the chain. */
+	/** Number of certificates in the chain, at most
+	 *  #EDHOC_CREDENTIAL_X5CHAIN_CAPACITY. */
 	size_t certificate_count;
-	/** Certificate references. One slot is spare so the array stays valid
-	 *  when CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN is 0; the usable
-	 *  capacity is ARRAY_SIZE() - 1. */
-	const uint8_t
-		*certificate[CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN + 1];
+	/** Certificate references. */
+	const uint8_t *certificate[EDHOC_CREDENTIAL_X5CHAIN_CAPACITY];
 	/** Sizes of the \p certificate references in bytes. */
-	size_t certificate_length[CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN +
-				  1];
+	size_t certificate_length[EDHOC_CREDENTIAL_X5CHAIN_CAPACITY];
 };
 
 /**
@@ -225,7 +233,7 @@ struct edhoc_auth_credential_x509_hash {
 		 *  (#EDHOC_ENCODE_TYPE_BYTE_STRING). */
 		struct {
 			/** Byte string buffer. */
-			uint8_t value[CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG + 1];
+			uint8_t value[EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN];
 			/** Size of the \p value buffer in bytes. */
 			size_t length;
 		} algorithm_bstr;

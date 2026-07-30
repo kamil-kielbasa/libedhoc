@@ -36,7 +36,7 @@ if LIBEDHOC_ENABLE
                 the minimal default holds a single suite, raise it to the
                 number you actually negotiate. The bundled CBOR backend is
                 generated for up to 3 suites; using more requires regenerating
-                it (see cddl/) and raising this range.
+                it (see scripts/cddls/) and raising this range.
 
         config LIBEDHOC_MAX_LEN_OF_CONN_ID
             int "Maximum length of a connection identifier in bytes."
@@ -90,31 +90,30 @@ if LIBEDHOC_ENABLE
     menu "Authentication credentials"
         config LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
             int "Maximum number of certificates in an X.509 chain."
-            range 0 3
+            range 1 3
             default 2
             help
-                Capacity of the x5chain certificate list. Set to 0 if you never
-                authenticate with x5chain. The bundled CBOR backend is
-                generated for up to 3 certificates; more requires regenerating
-                it (see cddl/).
+                Capacity of the x5chain certificate list. The bundled CBOR
+                backend is generated for up to 3 certificates; more requires
+                regenerating it (see scripts/cddls/).
 
         config LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
             int "Maximum length of a credential key identifier in bytes."
-            range 0 64
+            range 1 64
             default 1
             help
                 Size of the buffer holding a byte-string credential key
-                identifier (COSE 'kid'). Set to 0 if you only use integer kids,
-                or never use kid credentials.
+                identifier (COSE 'kid'). One byte holds the common single-byte
+                form; raise it for longer identifiers.
 
         config LIBEDHOC_MAX_LEN_OF_HASH_ALG
             int "Maximum length of a credential hash-algorithm identifier in bytes."
-            range 0 64
+            range 1 64
             default 1
             help
                 Size of the buffer holding a byte-string hash-algorithm
-                identifier for x5t credentials. Set to 0 if you only use
-                integer algorithm ids, or never use x5t.
+                identifier for x5t credentials. One byte holds the common
+                single-byte form; raise it for longer identifiers.
     endmenu
 
     menu "External Authorization Data (EAD)"
@@ -126,7 +125,7 @@ if LIBEDHOC_ENABLE
                 Capacity of the External Authorization Data token list carried
                 in each message (EAD_1 .. EAD_4). Set to 0 to disable EAD. The
                 bundled CBOR backend is generated for up to 3 tokens; more
-                requires regenerating it (see cddl/).
+                requires regenerating it (see scripts/cddls/).
     endmenu
 
     menu "Cipher suites"

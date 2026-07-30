@@ -13,6 +13,7 @@
 /* Internal headers: */
 #include "internals_common.h"
 #include "edhoc_macros_internal.h"
+#include "edhoc_credentials_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -45,6 +46,15 @@ static void assert_sign_or_mac(const struct plaintext *parsed,
 /** \brief Assert that a rejected ID_CRED_x left nothing behind. */
 static void assert_untouched(const struct plaintext *parsed);
 
+/** \brief Build credentials referenced by a key identifier that pass validation. */
+static struct edhoc_auth_credentials make_valid_kid(void);
+
+/** \brief Build a single certificate chain that passes validation. */
+static struct edhoc_auth_credentials make_valid_x5chain(void);
+
+/** \brief Build a certificate fingerprint credential that passes validation. */
+static struct edhoc_auth_credentials make_valid_x5t(void);
+
 /* Static variables and constants ------------------------------------------ */
 
 /*
@@ -66,9 +76,10 @@ static const uint8_t ptxt_3_kid_bstr[] = {
 	0x41, 0xaa, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
 };
 
-/** ID_CRED_I = h'AABB': one byte over the configured 'kid' capacity. */
-static const uint8_t ptxt_3_kid_bstr_two[] = {
-	0x42, 0xaa, 0xbb, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
+/** ID_CRED_I = h'AABBCC': one byte over the configured 'kid' capacity. */
+static const uint8_t ptxt_3_kid_bstr_three[] = {
+	0x43, 0xaa, 0xbb, 0xcc, 0x48, 0xc0, 0xc1,
+	0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
 };
 
 /** ID_CRED_I as a 64 byte 'kid'. Byte 0 opens a byte string whose one byte
@@ -118,7 +129,7 @@ static const uint8_t ptxt_3_x5chain_two[] = {
 	0x02, 0x48, 0xc0, 0xc1, 0xc2, 0xc3, 0xc4, 0xc5, 0xc6, 0xc7,
 };
 
-/** ID_CRED_I with three certificates: one over the configured chain capacity. */
+/** ID_CRED_I with three certificates: the largest chain the CBOR model admits. */
 static const uint8_t ptxt_3_x5chain_three[] = {
 	0xa1, 0x18, 0x21, 0x83, 0x43, 0x30, 0x00, 0x01, 0x43,
 	0x30, 0x00, 0x02, 0x43, 0x30, 0x00, 0x03, 0x48, 0xc0,
@@ -217,6 +228,47 @@ static void assert_untouched(const struct plaintext *parsed)
 	TEST_ASSERT_EQUAL_MEMORY(&zeroed, parsed, sizeof(zeroed));
 }
 
+static struct edhoc_auth_credentials make_valid_kid(void)
+{
+	return (struct edhoc_auth_credentials){
+		.label = EDHOC_COSE_HEADER_KID,
+		.key_id = {
+			.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
+			.key_id_int = -12,
+			.credential = first_certificate,
+			.credential_length = ARRAY_SIZE(first_certificate),
+		},
+	};
+}
+
+static struct edhoc_auth_credentials make_valid_x5chain(void)
+{
+	return (struct edhoc_auth_credentials){
+		.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.x509_chain = {
+			.certificate_count = 1,
+			.certificate = { first_certificate },
+			.certificate_length = { ARRAY_SIZE(first_certificate) },
+		},
+	};
+}
+
+static struct edhoc_auth_credentials make_valid_x5t(void)
+{
+	return (struct edhoc_auth_credentials){
+		.label = EDHOC_COSE_HEADER_X509_HASH,
+		.x509_hash = {
+			.certificate = first_certificate,
+			.certificate_length = ARRAY_SIZE(first_certificate),
+			.certificate_fingerprint = fingerprint,
+			.certificate_fingerprint_length =
+				ARRAY_SIZE(fingerprint),
+			.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
+			.algorithm_int = -15,
+		},
+	};
+}
+
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(internals_credentials);
@@ -265,8 +317,9 @@ TEST(internals_credentials, kid_bstr_over_capacity)
 {
 	struct plaintext parsed = { 0 };
 
-	const int ret = parse_ptxt_3(ptxt_3_kid_bstr_two,
-				     ARRAY_SIZE(ptxt_3_kid_bstr_two), &parsed);
+	const int ret = parse_ptxt_3(ptxt_3_kid_bstr_three,
+				     ARRAY_SIZE(ptxt_3_kid_bstr_three),
+				     &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 	assert_untouched(&parsed);
@@ -372,15 +425,27 @@ TEST(internals_credentials, x5chain_two_certificates)
 	assert_sign_or_mac(&parsed, &ptxt_3_x5chain_two[13]);
 }
 
-TEST(internals_credentials, x5chain_over_capacity_rejected)
+TEST(internals_credentials, x5chain_three_certificates)
 {
+	/* Three is the largest chain the CBOR model admits, so this vector only
+	 * fits a build configured for the maximum. The rejection path is
+	 * covered by validate_fetched_x5chain_over_capacity. */
+	if (EDHOC_CREDENTIAL_X5CHAIN_CAPACITY < 3) {
+		TEST_IGNORE_MESSAGE("chain capacity below three certificates");
+	}
+
 	struct plaintext parsed = { 0 };
 
 	const int ret = parse_ptxt_3(ptxt_3_x5chain_three,
 				     ARRAY_SIZE(ptxt_3_x5chain_three), &parsed);
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
-	assert_untouched(&parsed);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
+	TEST_ASSERT_EQUAL_size_t(3,
+				 parsed.auth_cred.x509_chain.certificate_count);
+	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_three[13],
+			      parsed.auth_cred.x509_chain.certificate[2]);
+	assert_sign_or_mac(&parsed, &ptxt_3_x5chain_three[17]);
 }
 
 TEST(internals_credentials, x5t_algorithm_int)
@@ -486,9 +551,202 @@ TEST(internals_credentials, msg2_x5chain_single_certificate)
 	assert_sign_or_mac(&parsed, &ptxt_2_x5chain_one[9]);
 }
 
+TEST(internals_credentials, validate_fetched_null)
+{
+	const int ret = edhoc_validate_credential_fetched(NULL);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(internals_credentials, validate_fetched_unknown_label)
+{
+	const struct edhoc_auth_credentials credentials = {
+		.label = (enum edhoc_cose_header)99,
+	};
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
+}
+
+TEST(internals_credentials, validate_fetched_accepts_each_variant)
+{
+	const struct edhoc_auth_credentials kid = make_valid_kid();
+	const struct edhoc_auth_credentials x5chain = make_valid_x5chain();
+	const struct edhoc_auth_credentials x5t = make_valid_x5t();
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_validate_credential_fetched(&kid));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_validate_credential_fetched(&x5chain));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_validate_credential_fetched(&x5t));
+}
+
+TEST(internals_credentials, validate_fetched_kid_without_credential)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.key_id.credential = NULL;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
+}
+
+TEST(internals_credentials, validate_fetched_kid_bad_encode_type)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.key_id.encode_type = (enum edhoc_encode_type)7;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_fetched_kid_over_capacity)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.key_id.encode_type = EDHOC_ENCODE_TYPE_BYTE_STRING;
+	credentials.key_id.key_id_bstr.length =
+		EDHOC_CREDENTIAL_KID_MAX_LEN + 1;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5chain_empty)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5chain();
+
+	credentials.x509_chain.certificate_count = 0;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5chain_over_capacity)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5chain();
+
+	credentials.x509_chain.certificate_count =
+		EDHOC_CREDENTIAL_X5CHAIN_CAPACITY + 1;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5chain_null_certificate)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5chain();
+
+	credentials.x509_chain.certificate[0] = NULL;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5t_without_fingerprint)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5t();
+
+	credentials.x509_hash.certificate_fingerprint_length = 0;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5t_fingerprint_over_limit)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5t();
+
+	credentials.x509_hash.certificate_fingerprint_length =
+		EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN + 1;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_fetched_x5t_bad_encode_type)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5t();
+
+	credentials.x509_hash.encode_type = (enum edhoc_encode_type)7;
+
+	const int ret = edhoc_validate_credential_fetched(&credentials);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_verified_null)
+{
+	const int ret = edhoc_validate_credential_verified(
+		NULL, first_certificate, ARRAY_SIZE(first_certificate));
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(internals_credentials, validate_verified_without_public_key)
+{
+	const struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	const int ret =
+		edhoc_validate_credential_verified(&credentials, NULL, 0);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
+}
+
+TEST(internals_credentials, validate_verified_kid_without_credential)
+{
+	struct edhoc_auth_credentials credentials = make_valid_kid();
+
+	credentials.key_id.credential_length = 0;
+
+	const int ret = edhoc_validate_credential_verified(
+		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
+}
+
+TEST(internals_credentials, validate_verified_x5t_without_certificate)
+{
+	struct edhoc_auth_credentials credentials = make_valid_x5t();
+
+	credentials.x509_hash.certificate = NULL;
+
+	const int ret = edhoc_validate_credential_verified(
+		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
+}
+
+TEST(internals_credentials, validate_verified_accepts_each_variant)
+{
+	const struct edhoc_auth_credentials kid = make_valid_kid();
+	const struct edhoc_auth_credentials x5chain = make_valid_x5chain();
+	const struct edhoc_auth_credentials x5t = make_valid_x5t();
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_validate_credential_verified(
+				  &kid, fingerprint, ARRAY_SIZE(fingerprint)));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_validate_credential_verified(
+						 &x5chain, fingerprint,
+						 ARRAY_SIZE(fingerprint)));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_validate_credential_verified(
+				  &x5t, fingerprint, ARRAY_SIZE(fingerprint)));
+}
+
 TEST_GROUP_RUNNER(internals_credentials)
 {
-	/* Compact 'kid': accepted forms and the length bound. */
 	RUN_TEST_CASE(internals_credentials, kid_int);
 	RUN_TEST_CASE(internals_credentials, kid_bstr_within_capacity);
 	RUN_TEST_CASE(internals_credentials, kid_bstr_over_capacity);
@@ -503,7 +761,7 @@ TEST_GROUP_RUNNER(internals_credentials)
 	/* x5chain: byte string and array forms, and the chain capacity. */
 	RUN_TEST_CASE(internals_credentials, x5chain_single_certificate);
 	RUN_TEST_CASE(internals_credentials, x5chain_two_certificates);
-	RUN_TEST_CASE(internals_credentials, x5chain_over_capacity_rejected);
+	RUN_TEST_CASE(internals_credentials, x5chain_three_certificates);
 
 	/* x5t: hash algorithm forms and the fingerprint bound. */
 	RUN_TEST_CASE(internals_credentials, x5t_algorithm_int);
@@ -517,4 +775,38 @@ TEST_GROUP_RUNNER(internals_credentials)
 	RUN_TEST_CASE(internals_credentials, msg2_kid_bstr_255_rejected);
 	RUN_TEST_CASE(internals_credentials, msg2_map_kid_rejected);
 	RUN_TEST_CASE(internals_credentials, msg2_x5chain_single_certificate);
+
+	/* Validation of the credentials returned from fetch. */
+	RUN_TEST_CASE(internals_credentials, validate_fetched_null);
+	RUN_TEST_CASE(internals_credentials, validate_fetched_unknown_label);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_accepts_each_variant);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_kid_without_credential);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_kid_bad_encode_type);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_kid_over_capacity);
+	RUN_TEST_CASE(internals_credentials, validate_fetched_x5chain_empty);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5chain_over_capacity);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5chain_null_certificate);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5t_without_fingerprint);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5t_fingerprint_over_limit);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_fetched_x5t_bad_encode_type);
+
+	/* Validation of the credentials returned from verify. */
+	RUN_TEST_CASE(internals_credentials, validate_verified_null);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_verified_without_public_key);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_verified_kid_without_credential);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_verified_x5t_without_certificate);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_verified_accepts_each_variant);
 }
