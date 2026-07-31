@@ -252,33 +252,8 @@ TEST(internals_message2, prepare_plaintext_2_invalid_cid)
 	struct mac_context *mc = (struct mac_context *)buf;
 
 	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
-	mc->id_cred_is_comp_enc = true;
-	mc->id_cred_enc_type = EDHOC_ENCODE_TYPE_INTEGER;
-	mc->id_cred_int = 5;
-
-	uint8_t sign[8] = { 0 };
-	uint8_t ptxt[256] = { 0 };
-	size_t ptxt_len = 0;
-
-	int ret = prepare_plaintext_2(&ctx, mc, sign, ARRAY_SIZE(sign), ptxt,
-				      ARRAY_SIZE(ptxt), &ptxt_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_message2, prepare_plaintext_2_invalid_id_cred)
-{
-	struct edhoc_context ctx = { 0 };
-	internals_setup_crypto_context(&ctx);
-
-	uint8_t buf[256] = { 0 };
-	struct mac_context *mc = (struct mac_context *)buf;
-
-	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
-	mc->id_cred_is_comp_enc = true;
-	mc->id_cred_enc_type = 99;
+	mc->id_cred_comp[0] = 0x05;
+	mc->id_cred_comp_len = 1;
 
 	uint8_t sign[8] = { 0 };
 	uint8_t ptxt[256] = { 0 };
@@ -308,5 +283,4 @@ TEST_GROUP_RUNNER(internals_message2)
 	RUN_TEST_CASE(internals_message2, parse_plaintext_2_garbage);
 	RUN_TEST_CASE(internals_message2, parse_msg_2_garbage);
 	RUN_TEST_CASE(internals_message2, prepare_plaintext_2_invalid_cid);
-	RUN_TEST_CASE(internals_message2, prepare_plaintext_2_invalid_id_cred);
 }

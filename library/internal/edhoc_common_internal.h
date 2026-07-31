@@ -25,6 +25,7 @@
 #include <edhoc/types.h>
 #include <edhoc/ead.h>
 #include <edhoc/credentials.h>
+#include "edhoc_credentials_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -61,18 +62,12 @@ struct mac_context {
 	/** Size of the \p id_cred buffer in bytes. */
 	size_t id_cred_len;
 
-	/** Is compact encoding possible? */
-	bool id_cred_is_comp_enc;
-	/** Credentials identifier encoding type. */
-	enum edhoc_encode_type id_cred_enc_type;
-	/** Buffer containing credentials identifier integer representation. */
-	int32_t id_cred_int;
-	/** Buffer containing credentials identifier byte string representation.
-	 *  Holds the CBOR encoding of the key identifier, so it reserves room for
-	 *  the byte string header on top of #EDHOC_CREDENTIAL_KID_MAX_LEN. */
-	uint8_t id_cred_bstr[EDHOC_CREDENTIAL_KID_MAX_LEN + 2];
-	/** Size of the \p id_cred_bstr buffer in bytes. */
-	size_t id_cred_bstr_len;
+	/** Compact ID_CRED (RFC 9528: 3.5.3.2), already CBOR-encoded: a one byte
+	 *  integer, or a byte string with its header. Empty when the credential
+	 *  is not eligible for the compact encoding. */
+	uint8_t id_cred_comp[EDHOC_CREDENTIAL_KID_COMPACT_MAX_LEN];
+	/** Number of valid bytes in \p id_cred_comp. */
+	size_t id_cred_comp_len;
 
 	/** Buffer containing cborised transcript hash. */
 	uint8_t *th;
@@ -175,7 +170,7 @@ size_t edhoc_cbor_bstr_oh(size_t length);
  *                      bytes receiving the header.
  * \param length        Length of the byte-string payload.
  *
- * \return Number of header bytes written.
+ * \return Number of header bytes written, zero on invalid arguments.
  */
 size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length);
 
@@ -258,7 +253,7 @@ int edhoc_validate_ead_composed(const struct edhoc_ead_token *tokens,
  * \brief Compute required buffer length for MAC 2/3 context.
  *
  * \param[in] edhoc_context             EDHOC context.
- * \param[in] credentials               Authentication credentials.
+ * \param[in] credential_material       ID_CRED_x and CRED_x encoder input.
  * \param[out] mac_context_length       On success, number of bytes that make up MAC context.
  *
  * \retval #EDHOC_SUCCESS
@@ -267,23 +262,24 @@ int edhoc_validate_ead_composed(const struct edhoc_ead_token *tokens,
  */
 int edhoc_comp_mac_context_length(
 	const struct edhoc_context *edhoc_context,
-	const struct edhoc_auth_credentials *credentials,
+	const struct edhoc_credential_material *credential_material,
 	size_t *mac_context_length);
 
 /**
  * \brief CBOR-encode items required by the MAC 2/3 context.
  *
  * \param[in] edhoc_context             EDHOC context.
- * \param[in] credentials               Authentication credentials.
+ * \param[in] credential_material       ID_CRED_x and CRED_x encoder input.
  * \param[out] mac_context              On success, generated MAC context.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_mac_context(const struct edhoc_context *edhoc_context,
-			   const struct edhoc_auth_credentials *credentials,
-			   struct mac_context *mac_context);
+int edhoc_comp_mac_context(
+	const struct edhoc_context *edhoc_context,
+	const struct edhoc_credential_material *credential_material,
+	struct mac_context *mac_context);
 
 /**@}*/
 

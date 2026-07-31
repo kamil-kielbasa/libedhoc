@@ -360,16 +360,8 @@ STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 		break;
 	}
 
-	if (true == mac_ctx->id_cred_is_comp_enc) {
-		switch (mac_ctx->id_cred_enc_type) {
-		case EDHOC_ENCODE_TYPE_INTEGER:
-			len += edhoc_cbor_int_mem_req(mac_ctx->id_cred_int);
-			break;
-		case EDHOC_ENCODE_TYPE_STRING:
-			len += mac_ctx->id_cred_bstr_len;
-			len += edhoc_cbor_bstr_oh(mac_ctx->id_cred_bstr_len);
-			break;
-		}
+	if (0 != mac_ctx->id_cred_comp_len) {
+		len += mac_ctx->id_cred_comp_len;
 	} else {
 		len += mac_ctx->id_cred_len;
 	}
@@ -398,22 +390,10 @@ STATIC int prepare_plaintext_3(const struct mac_context *mac_ctx,
 	size_t offset = 0;
 
 	/* ID_CRED_I. */
-	if (mac_ctx->id_cred_is_comp_enc) {
-		switch (mac_ctx->id_cred_enc_type) {
-		case EDHOC_ENCODE_TYPE_INTEGER:
-			memcpy(&ptxt[offset], &mac_ctx->id_cred_int, 1);
-			offset += 1;
-			break;
-		case EDHOC_ENCODE_TYPE_STRING:
-			memcpy(&ptxt[offset], &mac_ctx->id_cred_bstr,
-			       mac_ctx->id_cred_bstr_len);
-			offset += mac_ctx->id_cred_bstr_len;
-			break;
-		default:
-			EDHOC_LOG_ERR("Invalid ID_CRED_I enc type: %d",
-				      mac_ctx->id_cred_enc_type);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	if (0 != mac_ctx->id_cred_comp_len) {
+		memcpy(&ptxt[offset], mac_ctx->id_cred_comp,
+		       mac_ctx->id_cred_comp_len);
+		offset += mac_ctx->id_cred_comp_len;
 	} else {
 		memcpy(&ptxt[offset], mac_ctx->id_cred, mac_ctx->id_cred_len);
 		offset += mac_ctx->id_cred_len;
@@ -800,12 +780,12 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	/* EAD_3 if present */
 	if (cbor_ptxt_3.plaintext_3_EAD_3_m_present) {
-		if (ARRAY_SIZE(ctx->ead.token) - 1 <
+		if (edhoc_ead_capacity(ctx) <
 		    cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count) {
 			EDHOC_LOG_ERR(
 				"EAD buffer too small: %zu, %zu",
 				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count,
-				ARRAY_SIZE(ctx->ead.token) - 1);
+				edhoc_ead_capacity(ctx));
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -991,14 +971,14 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		edhoc_selected_cipher_suite(ctx);
 
 	/* 2. Compose EAD_3 if present. */
-	if (NULL != ctx->interfaces.ead.compose &&
-	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
+	if (edhoc_ead_may_compose(ctx)) {
 		const struct edhoc_call_context call_context =
 			edhoc_call_context(ctx);
 
-		ret = ctx->interfaces.ead.compose(
-			ctx->user_context, &call_context, ctx->ead.token,
-			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
+		ret = ctx->interfaces.ead.compose(ctx->user_context,
+						  &call_context, ctx->ead.token,
+						  edhoc_ead_capacity(ctx),
+						  &ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("EAD_3 compose: %d", ret);
@@ -1075,8 +1055,17 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
+	struct edhoc_credential_material material = { 0 };
+	ret = edhoc_credential_material_from_auth(&auth_creds, &material);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_MEM_FREE(aad);
+		EDHOC_MEM_FREE(iv);
+		return ret;
+	}
+
 	size_t mac_context_length = 0;
-	ret = edhoc_comp_mac_context_length(ctx, &auth_creds,
+	ret = edhoc_comp_mac_context_length(ctx, &material,
 					    &mac_context_length);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1099,7 +1088,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	struct mac_context *mac_context = (void *)mac_3_context_buf;
 	mac_context->buf_len = mac_context_length;
 
-	ret = edhoc_comp_mac_context(ctx, &auth_creds, mac_context);
+	ret = edhoc_comp_mac_context(ctx, &material, mac_context);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context: %d", ret);
 		EDHOC_MEM_FREE(mac_3_context_buf);
@@ -1440,8 +1429,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 6. Process EAD_3 if present. */
-	if (NULL != ctx->interfaces.ead.process &&
-	    0 != ARRAY_SIZE(ctx->ead.token) - 1 && 0 != ctx->ead.count) {
+	if (edhoc_ead_may_process(ctx)) {
 		const struct edhoc_call_context call_context =
 			edhoc_call_context(ctx);
 
@@ -1504,9 +1492,17 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 9a. Compute required buffer length for context_3. */
+	struct edhoc_credential_material material = { 0 };
+	ret = edhoc_credential_material_from_auth(&parsed_ptxt.auth_cred,
+						  &material);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_MEM_FREE(ptxt);
+		return ret;
+	}
+
 	size_t mac_context_len = 0;
-	ret = edhoc_comp_mac_context_length(ctx, &parsed_ptxt.auth_cred,
-					    &mac_context_len);
+	ret = edhoc_comp_mac_context_length(ctx, &material, &mac_context_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
@@ -1526,7 +1522,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	struct mac_context *mac_context = (void *)mac_3_context_buf;
 	mac_context->buf_len = mac_context_len;
 
-	ret = edhoc_comp_mac_context(ctx, &parsed_ptxt.auth_cred, mac_context);
+	ret = edhoc_comp_mac_context(ctx, &material, mac_context);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context: %d", ret);
 		EDHOC_MEM_FREE(mac_3_context_buf);

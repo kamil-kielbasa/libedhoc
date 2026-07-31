@@ -32,6 +32,9 @@
 #include <edhoc/ead.h>
 #include <edhoc/values.h>
 
+/* EDHOC internal headers: */
+#include "edhoc_macros_internal.h"
+
 /* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
@@ -430,6 +433,55 @@ edhoc_call_context(const struct edhoc_context *ctx)
 			edhoc_selected_cipher_suite(ctx)->value,
 		.message = ctx->state.message,
 	};
+}
+
+/**
+ * \brief Number of EAD tokens the application may fill in.
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return Usable capacity of the token storage, zero in a "no EAD" build.
+ */
+static inline size_t edhoc_ead_capacity(const struct edhoc_context *ctx)
+{
+	return ARRAY_SIZE(ctx->ead.token) - 1;
+}
+
+/**
+ * \brief May the library ask the application to compose EAD?
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return \c true when a callback is bound and there is room for a token.
+ */
+static inline bool edhoc_ead_may_compose(const struct edhoc_context *ctx)
+{
+	return NULL != ctx->interfaces.ead.compose &&
+	       0 != edhoc_ead_capacity(ctx);
+}
+
+/**
+ * \brief Does the context carry EAD?
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return \c true when at least one token is live.
+ */
+static inline bool edhoc_ead_is_present(const struct edhoc_context *ctx)
+{
+	return 0 != ctx->ead.count;
+}
+
+/**
+ * \brief May the library hand received EAD to the application?
+ *
+ * \param[in] ctx                       EDHOC context.
+ *
+ * \return \c true when a callback is bound and a token was received.
+ */
+static inline bool edhoc_ead_may_process(const struct edhoc_context *ctx)
+{
+	return NULL != ctx->interfaces.ead.process && edhoc_ead_is_present(ctx);
 }
 
 /**

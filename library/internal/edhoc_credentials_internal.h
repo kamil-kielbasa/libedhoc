@@ -27,10 +27,65 @@
 #include <stddef.h>
 
 /* Defines ----------------------------------------------------------------- */
+
+/** Longest CBOR byte string header for a key identifier: one byte for the
+ *  major type when the length is below 24, two bytes above it. */
+#define EDHOC_CREDENTIAL_KID_CBOR_HEADER_MAX_LEN (2)
+
+_Static_assert(EDHOC_CREDENTIAL_KID_MAX_LEN <= UINT8_MAX,
+	       "a longer key identifier needs a longer CBOR header");
+
+/** Longest compact ID_CRED_x (RFC 9528: 3.5.3.2): the CBOR encoding of the
+ *  key identifier, header included. */
+#define EDHOC_CREDENTIAL_KID_COMPACT_MAX_LEN \
+	(EDHOC_CREDENTIAL_KID_MAX_LEN +      \
+	 EDHOC_CREDENTIAL_KID_CBOR_HEADER_MAX_LEN)
+
 /* Types and type definitions ---------------------------------------------- */
 
 /** ID_CRED_x COSE header map, defined by the CBOR backend. */
 struct map;
+
+/**
+ * \brief Everything the ID_CRED_x and CRED_x encoders need, gathered in one
+ *        place.
+ *
+ *        On compose the data comes from the local credentials; on process the
+ *        identification comes from the peer and CRED from the credentials the
+ *        application recognised. Both are funnelled through this type so the
+ *        encoders exist once.
+ */
+struct edhoc_credential_material {
+	/** Identification method; selects the active union member. */
+	enum edhoc_cose_header label;
+	/** Who performed the CBOR encoding: #EDHOC_CREDENTIAL_FORMAT_RAW means
+	 *  the library wraps \p credential and \p kid, #EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED
+	 *  means they are ready CBOR items and are embedded as they are. */
+	enum edhoc_credential_format format;
+
+	union {
+		/** Valid for #EDHOC_COSE_HEADER_KID. */
+		struct edhoc_cbor_int_or_string kid;
+		/** Valid for #EDHOC_COSE_HEADER_X509_CHAIN. */
+		struct {
+			/** Number of certificates in the chain. */
+			size_t count;
+			/** Certificates, end-entity first. */
+			struct edhoc_buffer
+				certificate[EDHOC_CREDENTIAL_X5CHAIN_CAPACITY];
+		} x509_chain;
+		/** Valid for #EDHOC_COSE_HEADER_X509_HASH. */
+		struct {
+			/** Fingerprint algorithm. */
+			struct edhoc_cbor_int_or_string algorithm;
+			/** Certificate fingerprint. */
+			struct edhoc_buffer fingerprint;
+		} x509_hash;
+	};
+
+	/** CRED_x. */
+	struct edhoc_buffer credential;
+};
 
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
@@ -127,6 +182,109 @@ int edhoc_validate_credential_fetched(
 int edhoc_validate_credential_verified(
 	const struct edhoc_auth_credentials *credentials,
 	const uint8_t *public_key, size_t public_key_length);
+
+/**@}*/
+
+/** \defgroup edhoc-credentials-encode EDHOC ID_CRED_x and CRED_x encoding
+ *
+ * Shared by message_2 (ID_CRED_R, CRED_R) and message_3 (ID_CRED_I, CRED_I),
+ * on both the composing and the processing side. Every entry point works on
+ * #edhoc_credential_material, so the encoding rules have a single home.
+ * @{
+ */
+
+/**
+ * \brief Fill in the encoder input from the credentials the application
+ *        returned.
+ *
+ * \param[in] credentials               Authentication credentials.
+ * \param[out] material                 On success, encoder input.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_credential_material_from_auth(
+	const struct edhoc_auth_credentials *credentials,
+	struct edhoc_credential_material *material);
+
+/**
+ * \brief Compute the buffer length required by ID_CRED_x.
+ *
+ * \param[in] material                  Encoder input.
+ * \param[out] length                   On success, required number of bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_credential_id_cred_length(
+	const struct edhoc_credential_material *material, size_t *length);
+
+/**
+ * \brief Compute the buffer length required by CRED_x.
+ *
+ * \param[in] material                  Encoder input.
+ * \param[out] length                   On success, required number of bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_credential_cred_length(
+	const struct edhoc_credential_material *material, size_t *length);
+
+/**
+ * \brief Encode ID_CRED_x as a COSE header map.
+ *
+ * \param[in] material                  Encoder input.
+ * \param[out] buffer                   On success, ID_CRED_x.
+ * \param buffer_length                 Size of \p buffer in bytes.
+ * \param[out] length                   On success, number of bytes written.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_credential_encode_id_cred(
+	const struct edhoc_credential_material *material, uint8_t *buffer,
+	size_t buffer_length, size_t *length);
+
+/**
+ * \brief Encode ID_CRED_x in the compact form, i.e. the bare 'kid'
+ *        (RFC 9528: 3.5.3.2).
+ *
+ *        Only #EDHOC_COSE_HEADER_KID qualifies; for any other label the
+ *        compact form does not exist and \p length is set to zero.
+ *
+ * \param[in] material                  Encoder input.
+ * \param[out] buffer                   On success, compact ID_CRED_x.
+ * \param buffer_length                 Size of \p buffer in bytes.
+ * \param[out] length                   On success, number of bytes written.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_credential_encode_id_cred_compact(
+	const struct edhoc_credential_material *material, uint8_t *buffer,
+	size_t buffer_length, size_t *length);
+
+/**
+ * \brief Encode CRED_x.
+ *
+ * \param[in] material                  Encoder input.
+ * \param[out] buffer                   On success, CRED_x.
+ * \param buffer_length                 Size of \p buffer in bytes.
+ * \param[out] length                   On success, number of bytes written.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_credential_encode_cred(
+	const struct edhoc_credential_material *material, uint8_t *buffer,
+	size_t buffer_length, size_t *length);
 
 /**@}*/
 

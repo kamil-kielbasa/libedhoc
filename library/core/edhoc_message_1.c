@@ -182,14 +182,14 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	}
 
 	/* 3e. Fill CBOR structure for message 1 - external authorization data if present. */
-	if (NULL != ctx->interfaces.ead.compose &&
-	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
+	if (edhoc_ead_may_compose(ctx)) {
 		const struct edhoc_call_context call_context =
 			edhoc_call_context(ctx);
 
-		ret = ctx->interfaces.ead.compose(
-			ctx->user_context, &call_context, ctx->ead.token,
-			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
+		ret = ctx->interfaces.ead.compose(ctx->user_context,
+						  &call_context, ctx->ead.token,
+						  edhoc_ead_capacity(ctx),
+						  &ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("EAD_1 compose: %d", ret);
@@ -204,7 +204,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 		}
 	}
 
-	if (0 != ctx->ead.count) {
+	if (edhoc_ead_is_present(ctx)) {
 		cbor_enc_msg_1.message_1_EAD_1_m_present = true;
 		cbor_enc_msg_1.message_1_EAD_1_m.EAD_1_count = ctx->ead.count;
 
@@ -497,12 +497,12 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	/* 4. Process EAD if present. */
 	if (true == cbor_dec_msg_1.message_1_EAD_1_m_present &&
 	    NULL != ctx->interfaces.ead.process) {
-		if (ARRAY_SIZE(ctx->ead.token) - 1 <
+		if (edhoc_ead_capacity(ctx) <
 		    cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count) {
 			EDHOC_LOG_ERR(
 				"EAD buffer too small: %zu, %zu",
 				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count,
-				ARRAY_SIZE(ctx->ead.token) - 1);
+				edhoc_ead_capacity(ctx));
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 

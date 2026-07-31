@@ -206,7 +206,13 @@ static int hash_abort(void *user_context, void *operation);
 
 static void set_derive_key_attributes(psa_key_attributes_t *attr)
 {
-	EDHOC_ASSERT(NULL != attr);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == attr) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return;
+	}
+	/* LCOV_EXCL_STOP */
 
 	psa_set_key_lifetime(attr, PSA_KEY_LIFETIME_VOLATILE);
 	psa_set_key_type(attr, PSA_KEY_TYPE_DERIVE);
@@ -219,7 +225,13 @@ static void set_derive_key_attributes(psa_key_attributes_t *attr)
 
 static void set_x25519_keypair_attributes(psa_key_attributes_t *attr)
 {
-	EDHOC_ASSERT(NULL != attr);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == attr) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return;
+	}
+	/* LCOV_EXCL_STOP */
 
 	psa_set_key_lifetime(attr, PSA_KEY_LIFETIME_VOLATILE);
 	psa_set_key_usage_flags(attr, PSA_KEY_USAGE_DERIVE);
@@ -232,10 +244,14 @@ static void set_x25519_keypair_attributes(psa_key_attributes_t *attr)
 static int export_public_key(psa_key_id_t key, uint8_t *out, size_t out_size,
 			     size_t *out_len)
 {
-	EDHOC_ASSERT(PSA_KEY_ID_NULL != key);
-	EDHOC_ASSERT(NULL != out);
-	EDHOC_ASSERT(0 != out_size);
-	EDHOC_ASSERT(NULL != out_len);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (PSA_KEY_ID_NULL == key || NULL == out || 0 == out_size ||
+	    NULL == out_len) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	if (out_size < EDHOC_CIPHER_SUITE_4_ECC_KEY_LEN) {
 		EDHOC_LOG_ERR("Public key buffer too small: %zu", out_size);
@@ -287,10 +303,14 @@ static int compute_shared_secret(psa_key_id_t priv_key,
 				 const uint8_t *peer_pub_key,
 				 size_t peer_pub_key_len, void *shr_sec_key_id)
 {
-	EDHOC_ASSERT(PSA_KEY_ID_NULL != priv_key);
-	EDHOC_ASSERT(NULL != peer_pub_key);
-	EDHOC_ASSERT(0 != peer_pub_key_len);
-	EDHOC_ASSERT(NULL != shr_sec_key_id);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (PSA_KEY_ID_NULL == priv_key || NULL == peer_pub_key ||
+	    0 == peer_pub_key_len || NULL == shr_sec_key_id) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	if (EDHOC_CIPHER_SUITE_4_ECC_KEY_LEN != peer_pub_key_len) {
 		EDHOC_LOG_ERR("Invalid peer public key length: %zu",
@@ -862,7 +882,13 @@ static int edhoc_mutex_unlock(void)
 
 static int allocate_hash_slot(void **op)
 {
-	EDHOC_ASSERT(NULL != op);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == op) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	*op = NULL;
 
@@ -904,7 +930,10 @@ static int allocate_hash_slot(void **op)
 
 static void release_hash_slot(const void *op)
 {
-	EDHOC_ASSERT(NULL != op);
+	if (NULL == op) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return;
+	}
 
 	if (0 != edhoc_mutex_lock()) {
 		EDHOC_LOG_ERR("Mutex lock failed");

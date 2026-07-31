@@ -327,7 +327,13 @@ static int mutex_unlock(void)
 
 static psa_key_id_t load_key_id(const void *key_id)
 {
-	EDHOC_ASSERT(NULL != key_id);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == key_id) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return PSA_KEY_ID_NULL;
+	}
+	/* LCOV_EXCL_STOP */
 
 	psa_key_id_t kid = PSA_KEY_ID_NULL;
 	memcpy(&kid, key_id, sizeof(kid));
@@ -337,7 +343,13 @@ static psa_key_id_t load_key_id(const void *key_id)
 
 static void store_key_id(void *key_id, psa_key_id_t kid)
 {
-	EDHOC_ASSERT(NULL != key_id);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == key_id) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return;
+	}
+	/* LCOV_EXCL_STOP */
 
 	memcpy(key_id, &kid, sizeof(kid));
 }
@@ -356,11 +368,15 @@ static bool is_keystore_handle(psa_key_id_t handle)
 static int keystore_reserve(size_t length, uint8_t **material,
 			    size_t *material_size, psa_key_id_t *handle)
 {
-	EDHOC_ASSERT(0 != length);
-	EDHOC_ASSERT(length <= EDHOC_CIPHER_SUITE_PQC_1_SLOT_MATERIAL_MAX);
-	EDHOC_ASSERT(NULL != material);
-	EDHOC_ASSERT(NULL != material_size);
-	EDHOC_ASSERT(NULL != handle);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (0 == length ||
+	    length > EDHOC_CIPHER_SUITE_PQC_1_SLOT_MATERIAL_MAX ||
+	    NULL == material || NULL == material_size || NULL == handle) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	if (0 != mutex_lock()) {
 		EDHOC_LOG_ERR("Mutex lock failed");
@@ -399,8 +415,13 @@ static int keystore_reserve(size_t length, uint8_t **material,
 static int keystore_store(const uint8_t *material, size_t length,
 			  psa_key_id_t *handle)
 {
-	EDHOC_ASSERT(NULL != material);
-	EDHOC_ASSERT(NULL != handle);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == material || NULL == handle) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	uint8_t *slot = NULL;
 	size_t slot_size = 0;
@@ -419,8 +440,13 @@ static int keystore_store(const uint8_t *material, size_t length,
 static int keystore_borrow(psa_key_id_t handle, const uint8_t **material,
 			   size_t *length)
 {
-	EDHOC_ASSERT(NULL != material);
-	EDHOC_ASSERT(NULL != length);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == material || NULL == length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	if (!is_keystore_handle(handle)) {
 		EDHOC_LOG_ERR("Not a software-keystore handle");
@@ -489,10 +515,14 @@ static int keystore_free(psa_key_id_t handle)
 static int export_psa_secret(psa_key_id_t handle, uint8_t *out, size_t out_size,
 			     size_t *out_length)
 {
-	EDHOC_ASSERT(PSA_KEY_ID_NULL != handle);
-	EDHOC_ASSERT(NULL != out);
-	EDHOC_ASSERT(0 != out_size);
-	EDHOC_ASSERT(NULL != out_length);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (PSA_KEY_ID_NULL == handle || NULL == out || 0 == out_size ||
+	    NULL == out_length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	const psa_status_t status =
 		psa_export_key(handle, out, out_size, out_length);
@@ -508,9 +538,13 @@ static int export_psa_secret(psa_key_id_t handle, uint8_t *out, size_t out_size,
 static int import_psa_secret(const uint8_t *raw, size_t length,
 			     psa_key_id_t *handle)
 {
-	EDHOC_ASSERT(NULL != raw);
-	EDHOC_ASSERT(0 != length);
-	EDHOC_ASSERT(NULL != handle);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == raw || 0 == length || NULL == handle) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
@@ -532,8 +566,13 @@ static int import_psa_secret(const uint8_t *raw, size_t length,
 
 static int import_psa_aead_key(const uint8_t *raw, psa_key_id_t *handle)
 {
-	EDHOC_ASSERT(NULL != raw);
-	EDHOC_ASSERT(NULL != handle);
+	/* Programmer error. Unreachable via the public API. */
+	/* LCOV_EXCL_START */
+	if (NULL == raw || NULL == handle) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+	/* LCOV_EXCL_STOP */
 
 	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
 	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
@@ -557,7 +596,10 @@ static int import_psa_aead_key(const uint8_t *raw, psa_key_id_t *handle)
 
 static int hash_alloc(void **operation)
 {
-	EDHOC_ASSERT(NULL != operation);
+	if (NULL == operation) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	if (0 != mutex_lock()) {
 		EDHOC_LOG_ERR("Mutex lock failed");

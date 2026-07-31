@@ -71,16 +71,18 @@ TEST(internals_mac, mac_ctx_len_x509_chain)
 	ctx.negotiation.connection_id.int_value = 5;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	size_t mac_ctx_len = 0;
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &mac_ctx_len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &mac_ctx_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
@@ -100,17 +102,17 @@ TEST(internals_mac, mac_ctx_len_kid)
 	memset(ctx.state.th.value, 0xAA, TH_LEN);
 
 	const uint8_t dummy_cred[50] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
-		.key_id.key_id_int = 4,
 		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
-		.key_id.credential = dummy_cred,
-		.key_id.credential_length = sizeof(dummy_cred),
+		.kid = { .encode_type = EDHOC_ENCODE_TYPE_INTEGER,
+			 .integer = 4 },
+		.credential = { .value = dummy_cred,
+				.length = sizeof(dummy_cred) },
 	};
 
 	size_t mac_ctx_len = 0;
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &mac_ctx_len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &mac_ctx_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
@@ -139,16 +141,18 @@ TEST(internals_mac, mac_ctx_len_with_ead)
 	ctx.ead.token[0].value.length = ARRAY_SIZE(ead_val);
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	size_t mac_ctx_len = 0;
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &mac_ctx_len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &mac_ctx_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
@@ -171,16 +175,18 @@ TEST(internals_mac, mac_ctx_len_initiator_msg2)
 	ctx.negotiation.peer_connection_id.int_value = 5;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	size_t mac_ctx_len = 0;
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &mac_ctx_len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &mac_ctx_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx_len);
 
@@ -194,16 +200,16 @@ TEST(internals_mac, mac_ctx_len_null_args)
 
 	internals_setup_crypto_context(&ctx);
 
-	const struct edhoc_auth_credentials cred = { 0 };
+	const struct edhoc_credential_material material = { 0 };
 	size_t len = 0;
 
-	int ret = edhoc_comp_mac_context_length(NULL, &cred, &len);
+	int ret = edhoc_comp_mac_context_length(NULL, &material, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_comp_mac_context_length(&ctx, NULL, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = edhoc_comp_mac_context_length(&ctx, &cred, NULL);
+	ret = edhoc_comp_mac_context_length(&ctx, &material, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -218,12 +224,12 @@ TEST(internals_mac, mac_ctx_len_invalid_role)
 	ctx.state.role = 99;
 	ctx.state.message = EDHOC_MESSAGE_2;
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 	size_t len = 0;
 
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -238,12 +244,12 @@ TEST(internals_mac, mac_ctx_len_invalid_message)
 	ctx.state.role = EDHOC_ROLE_RESPONDER;
 	ctx.state.message = EDHOC_MESSAGE_4;
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 	size_t len = 0;
 
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -263,12 +269,12 @@ TEST(internals_mac, mac_ctx_len_unsupported_cred)
 		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.connection_id.int_value = 5;
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = 99,
 	};
 	size_t len = 0;
 
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -288,16 +294,18 @@ TEST(internals_mac, mac_ctx_len_invalid_cid_type)
 	ctx.negotiation.connection_id.encode_type = 99;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	size_t mac_ctx_len = 0;
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &mac_ctx_len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &mac_ctx_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -306,29 +314,14 @@ TEST(internals_mac, mac_ctx_len_invalid_cid_type)
 
 TEST(internals_mac, mac_ctx_len_invalid_kid_encode)
 {
-	struct edhoc_context ctx = { 0 };
-
-	internals_setup_crypto_context(&ctx);
-	ctx.state.role = EDHOC_ROLE_RESPONDER;
-	ctx.state.message = EDHOC_MESSAGE_2;
-	ctx.state.th.stage = EDHOC_TH_STATE_2;
-	ctx.state.th.length = TH_LEN;
-	memset(ctx.state.th.value, 0xAA, TH_LEN);
-	ctx.negotiation.connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx.negotiation.connection_id.int_value = 5;
-
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = 99,
 	};
-	size_t len = 0;
 
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
+	struct edhoc_credential_material material = { 0 };
+	const int ret = edhoc_credential_material_from_auth(&cred, &material);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_mac, mac_ctx_len_th_zero)
@@ -342,16 +335,18 @@ TEST(internals_mac, mac_ctx_len_th_zero)
 	ctx.state.th.length = 0;
 
 	const uint8_t fake_cert[] = { 0x30, 0x00 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = fake_cert,
-		.x509_chain.certificate_length[0] = sizeof(fake_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = fake_cert,
+					       .length = sizeof(fake_cert) },
+		.credential = { .value = fake_cert,
+				.length = sizeof(fake_cert) },
 	};
 
 	size_t len = 0;
-	int ret = edhoc_comp_mac_context_length(&ctx, &cred, &len);
+	int ret = edhoc_comp_mac_context_length(&ctx, &material, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -373,19 +368,21 @@ TEST(internals_mac, mac_ctx_x509_chain)
 	ctx.negotiation.connection_id.int_value = 5;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -411,22 +408,23 @@ TEST(internals_mac, mac_ctx_x509_hash_int)
 
 	const uint8_t dummy_cert[100] = { 0 };
 	const uint8_t dummy_fp[32] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
-		.x509_hash.algorithm_int = -16,
-		.x509_hash.certificate_fingerprint = dummy_fp,
-		.x509_hash.certificate_fingerprint_length = sizeof(dummy_fp),
-		.x509_hash.certificate = dummy_cert,
-		.x509_hash.certificate_length = sizeof(dummy_cert),
+		.x509_hash.algorithm = { .encode_type =
+						 EDHOC_ENCODE_TYPE_INTEGER,
+					 .integer = -16 },
+		.x509_hash.fingerprint = { .value = dummy_fp,
+					   .length = sizeof(dummy_fp) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -450,26 +448,27 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr)
 		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.connection_id.int_value = 5;
 
-	const char *alg = "SHA-";
+	const uint8_t alg[] = { 'S', 'H', 'A', '-' };
 	const uint8_t dummy_cert[100] = { 0 };
 	const uint8_t dummy_fp[32] = { 0 };
-	struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING,
-		.x509_hash.algorithm_bstr.length = strlen(alg),
-		.x509_hash.certificate_fingerprint = dummy_fp,
-		.x509_hash.certificate_fingerprint_length = sizeof(dummy_fp),
-		.x509_hash.certificate = dummy_cert,
-		.x509_hash.certificate_length = sizeof(dummy_cert),
+		.x509_hash.algorithm = { .encode_type =
+						 EDHOC_ENCODE_TYPE_STRING,
+					 .string = { .value = alg,
+						     .length = sizeof(alg) } },
+		.x509_hash.fingerprint = { .value = dummy_fp,
+					   .length = sizeof(dummy_fp) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
-	memcpy(cred.x509_hash.algorithm_bstr.value, alg, strlen(alg));
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -491,20 +490,20 @@ TEST(internals_mac, mac_ctx_kid_int)
 	memset(ctx.state.th.value, 0xAA, TH_LEN);
 
 	const uint8_t dummy_cred[50] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
-		.key_id.key_id_int = 4,
 		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
-		.key_id.credential = dummy_cred,
-		.key_id.credential_length = sizeof(dummy_cred),
+		.kid = { .encode_type = EDHOC_ENCODE_TYPE_INTEGER,
+			 .integer = 4 },
+		.credential = { .value = dummy_cred,
+				.length = sizeof(dummy_cred) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -529,22 +528,22 @@ TEST(internals_mac, mac_ctx_kid_bstr)
 	ctx.negotiation.connection_id.int_value = 5;
 
 	const uint8_t dummy_cred[50] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const uint8_t kid_bstr[2] = { 0x18, 0x64 };
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
-		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
 		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
-		.key_id.key_id_bstr.length = 2,
-		.key_id.key_id_bstr.value[0] = 0x18,
-		.key_id.key_id_bstr.value[1] = 0x64,
-		.key_id.credential = dummy_cred,
-		.key_id.credential_length = sizeof(dummy_cred),
+		.kid = { .encode_type = EDHOC_ENCODE_TYPE_STRING,
+			 .string = { .value = kid_bstr,
+				     .length = sizeof(kid_bstr) } },
+		.credential = { .value = dummy_cred,
+				.length = sizeof(dummy_cred) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -571,19 +570,21 @@ TEST(internals_mac, mac_ctx_bstr_cid)
 	ctx.negotiation.connection_id.bstr_length = 2;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -614,19 +615,21 @@ TEST(internals_mac, mac_ctx_with_ead)
 	ctx.ead.token[0].value.length = ARRAY_SIZE(ead_val);
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -651,19 +654,21 @@ TEST(internals_mac, mac_ctx_initiator_msg2)
 	ctx.negotiation.peer_connection_id.int_value = 5;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->id_cred_len);
 	TEST_ASSERT_GREATER_THAN(0, mac_ctx->th_len);
@@ -679,19 +684,19 @@ TEST(internals_mac, mac_ctx_null_args)
 
 	internals_setup_crypto_context(&ctx);
 
-	const struct edhoc_auth_credentials cred = { 0 };
+	const struct edhoc_credential_material material = { 0 };
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(NULL, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(NULL, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_comp_mac_context(&ctx, NULL, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = edhoc_comp_mac_context(&ctx, &cred, NULL);
+	ret = edhoc_comp_mac_context(&ctx, &material, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -706,7 +711,7 @@ TEST(internals_mac, mac_ctx_invalid_role)
 	ctx.state.role = 99;
 	ctx.state.message = EDHOC_MESSAGE_2;
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
@@ -714,7 +719,7 @@ TEST(internals_mac, mac_ctx_invalid_role)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -729,7 +734,7 @@ TEST(internals_mac, mac_ctx_invalid_message)
 	ctx.state.role = EDHOC_ROLE_RESPONDER;
 	ctx.state.message = EDHOC_MESSAGE_4;
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
@@ -737,7 +742,7 @@ TEST(internals_mac, mac_ctx_invalid_message)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -758,7 +763,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg2)
 		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.connection_id.int_value = 5;
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
@@ -766,7 +771,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg2)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -784,7 +789,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg3)
 	ctx.state.th.length = TH_LEN;
 	memset(ctx.state.th.value, 0xAA, TH_LEN);
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
@@ -792,7 +797,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg3)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -813,7 +818,7 @@ TEST(internals_mac, mac_ctx_unsupported_cred)
 		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
 	ctx.negotiation.connection_id.int_value = 5;
 
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = 99,
 	};
 
@@ -821,7 +826,7 @@ TEST(internals_mac, mac_ctx_unsupported_cred)
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -841,19 +846,21 @@ TEST(internals_mac, mac_ctx_invalid_cid_type)
 	ctx.negotiation.connection_id.encode_type = 99;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -875,19 +882,21 @@ TEST(internals_mac, mac_ctx_buffer_too_small)
 	ctx.negotiation.connection_id.int_value = 5;
 
 	const uint8_t dummy_cert[100] = { 0 };
-	const struct edhoc_auth_credentials cred = {
+	const struct edhoc_credential_material material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
-		.x509_chain.certificate_count = 1,
-		.x509_chain.certificate[0] = dummy_cert,
-		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
+		.x509_chain.count = 1,
+		.x509_chain.certificate[0] = { .value = dummy_cert,
+					       .length = sizeof(dummy_cert) },
+		.credential = { .value = dummy_cert,
+				.length = sizeof(dummy_cert) },
 	};
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = 4;
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	int ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -896,33 +905,18 @@ TEST(internals_mac, mac_ctx_buffer_too_small)
 
 TEST(internals_mac, mac_ctx_x509_chain_zero_certs)
 {
-	struct edhoc_context ctx = { 0 };
-
-	internals_setup_crypto_context(&ctx);
-	ctx.state.role = EDHOC_ROLE_RESPONDER;
-	ctx.state.message = EDHOC_MESSAGE_3;
-	ctx.state.th.stage = EDHOC_TH_STATE_3;
-	ctx.state.th.length = TH_LEN;
-	memset(ctx.state.th.value, 0x11, TH_LEN);
-
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.certificate_count = 0,
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
-	struct mac_context *mac_ctx = (struct mac_context *)buf;
-	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
-
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	struct edhoc_credential_material material = { 0 };
+	const int ret = edhoc_credential_material_from_auth(&cred, &material);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
-TEST(internals_mac, mac_ctx_kid_bad_cbor)
+TEST(internals_mac, mac_ctx_kid_bstr_short_form)
 {
 	struct edhoc_context ctx = { 0 };
 
@@ -937,19 +931,28 @@ TEST(internals_mac, mac_ctx_kid_bad_cbor)
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_STRING,
-		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.key_id.key_id_bstr.length = 1,
-		.key_id.key_id_bstr.value[0] = 0x40,
+		.key_id.key_id_bstr.value[0] = 0x2b,
 		.key_id.credential = fake_cred,
 		.key_id.credential_length = sizeof(fake_cred),
 	};
+
+	struct edhoc_credential_material material = { 0 };
+	int ret = edhoc_credential_material_from_auth(&cred, &material);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
+	ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	/* h'2b' is one byte and reads as a CBOR integer, so RFC 9528: 3.3.2
+	 * shortens it to that byte. */
+	TEST_ASSERT_EQUAL_size_t(1, mac_ctx->id_cred_comp_len);
+	TEST_ASSERT_EQUAL_HEX8(0x2b, mac_ctx->id_cred_comp[0]);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -1565,11 +1568,15 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 		.x509_chain.certificate_length[0] = sizeof(dummy_cert),
 	};
 
+	struct edhoc_credential_material material = { 0 };
+	int ret = edhoc_credential_material_from_auth(&cred, &material);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const uint8_t mac[MAC_LEN] = { 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -1602,17 +1609,22 @@ TEST(internals_mac, comp_sign_or_mac_method2_msg3)
 	const uint8_t dummy_cred[50] = { 0 };
 	const struct edhoc_auth_credentials cred = {
 		.label = EDHOC_COSE_HEADER_KID,
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER,
 		.key_id.key_id_int = 4,
 		.key_id.credential = dummy_cred,
 		.key_id.credential_length = sizeof(dummy_cred),
 	};
 
+	struct edhoc_credential_material material = { 0 };
+	int ret = edhoc_credential_material_from_auth(&cred, &material);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
-	int ret = edhoc_comp_mac_context(&ctx, &cred, mac_ctx);
+	ret = edhoc_comp_mac_context(&ctx, &material, mac_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const uint8_t mac[MAC_LEN] = { 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -1996,7 +2008,7 @@ TEST_GROUP_RUNNER(internals_mac)
 	RUN_TEST_CASE(internals_mac, mac_ctx_invalid_cid_type);
 	RUN_TEST_CASE(internals_mac, mac_ctx_buffer_too_small);
 	RUN_TEST_CASE(internals_mac, mac_ctx_x509_chain_zero_certs);
-	RUN_TEST_CASE(internals_mac, mac_ctx_kid_bad_cbor);
+	RUN_TEST_CASE(internals_mac, mac_ctx_kid_bstr_short_form);
 
 	/* edhoc_comp_mac_length */
 	RUN_TEST_CASE(internals_mac, mac_len_method0_msg2);

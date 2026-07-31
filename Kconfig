@@ -96,24 +96,6 @@ if LIBEDHOC_ENABLE
                 Capacity of the x5chain certificate list. The bundled CBOR
                 backend is generated for up to 3 certificates; more requires
                 regenerating it (see scripts/cddls/).
-
-        config LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
-            int "Maximum length of a credential key identifier in bytes."
-            range 1 64
-            default 1
-            help
-                Size of the buffer holding a byte-string credential key
-                identifier (COSE 'kid'). One byte holds the common single-byte
-                form; raise it for longer identifiers.
-
-        config LIBEDHOC_MAX_LEN_OF_HASH_ALG
-            int "Maximum length of a credential hash-algorithm identifier in bytes."
-            range 1 64
-            default 1
-            help
-                Size of the buffer holding a byte-string hash-algorithm
-                identifier for x5t credentials. One byte holds the common
-                single-byte form; raise it for longer identifiers.
     endmenu
 
     menu "External Authorization Data (EAD)"

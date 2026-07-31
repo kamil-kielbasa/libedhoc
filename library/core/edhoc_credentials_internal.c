@@ -19,6 +19,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC header: */
 #include <edhoc/edhoc.h>
 #include "edhoc_macros_internal.h"
+#include "edhoc_common_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -31,6 +32,9 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_x509_types.h>
+#include <backend_cbor_id_cred_x_encode.h>
+#include <backend_cbor_int_type_encode.h>
+#include <backend_cbor_bstr_type_encode.h>
 
 /* Module defines ---------------------------------------------------------- */
 
@@ -45,6 +49,17 @@ _Static_assert(
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
+
+/**
+ * \brief Compute the number of bytes an integer or byte string occupies once
+ *        CBOR encoded.
+ *
+ * \param[in] value                     Integer or byte string.
+ *
+ * \return Number of bytes.
+ */
+STATIC size_t
+cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value);
 
 /**
  * \brief Check whether a buffer reference is unusable.
@@ -96,6 +111,16 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		     struct edhoc_auth_credentials *credentials);
 
 /**
+ * \brief Check whether a byte is a complete CBOR integer on its own.
+ *
+ * \param value                         Candidate byte.
+ *
+ * \return True for CBOR major type 0 or 1 with the argument in the initial
+ *         byte, otherwise false.
+ */
+STATIC bool is_one_byte_cbor_int(uint8_t value);
+
+/**
  * \brief Validate a credential referenced by a key identifier.
  *
  * \param[in] key_id                    Key identifier credential.
@@ -130,11 +155,55 @@ validate_x509_chain(const struct edhoc_auth_credential_x509_chain *chain);
 STATIC int
 validate_x509_hash(const struct edhoc_auth_credential_x509_hash *x509_hash);
 
+/**
+ * \brief Copy a CBOR item the application delivered ready to embed.
+ *
+ * \param[in] item                      Encoded item.
+ * \param[out] buffer                   On success, the copied item.
+ * \param buffer_length                 Size of \p buffer in bytes.
+ * \param[out] length                   On success, number of bytes written.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+STATIC int copy_encoded_item(const struct edhoc_buffer *item, uint8_t *buffer,
+			     size_t buffer_length, size_t *length);
+
 /* Static function definitions --------------------------------------------- */
+
+STATIC size_t
+cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value)
+{
+	if (NULL == value) {
+		EDHOC_LOG_ERR("Invalid argument");
+		return 0;
+	}
+
+	switch (value->encode_type) {
+	case EDHOC_ENCODE_TYPE_INTEGER:
+		return edhoc_cbor_int_mem_req(value->integer);
+	case EDHOC_ENCODE_TYPE_STRING:
+		return value->string.length +
+		       edhoc_cbor_bstr_oh(value->string.length);
+	}
+
+	return 0;
+}
 
 STATIC bool is_buffer_empty(const uint8_t *buffer, size_t length)
 {
 	return NULL == buffer || 0 == length;
+}
+
+STATIC bool is_one_byte_cbor_int(uint8_t value)
+{
+	const uint8_t cbor_unsigned_max = 0x17u;
+	const uint8_t cbor_negative_min = 0x20u;
+	const uint8_t cbor_negative_max = 0x37u;
+
+	return value <= cbor_unsigned_max ||
+	       (cbor_negative_min <= value && value <= cbor_negative_max);
 }
 
 STATIC int validate_format(enum edhoc_cose_header label,
@@ -171,6 +240,11 @@ STATIC int validate_format(enum edhoc_cose_header label,
 STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 			 struct edhoc_auth_credentials *credentials)
 {
+	if (NULL == cose_x509 || NULL == credentials) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
 	switch (cose_x509->COSE_X509_choice) {
 	case COSE_X509_bstr_c:
 		credentials->label = EDHOC_COSE_HEADER_X509_CHAIN;
@@ -218,6 +292,11 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		     struct edhoc_auth_credentials *credentials)
 {
+	if (NULL == cert_hash || NULL == credentials) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
 	if (EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN <
 	    cert_hash->COSE_CertHash_hashValue.len) {
 		EDHOC_LOG_ERR(
@@ -270,6 +349,11 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 
 STATIC int validate_key_id(const struct edhoc_auth_credential_key_id *key_id)
 {
+	if (NULL == key_id) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
 	const bool no_credential =
 		is_buffer_empty(key_id->credential, key_id->credential_length);
 
@@ -303,6 +387,11 @@ STATIC int validate_key_id(const struct edhoc_auth_credential_key_id *key_id)
 STATIC int
 validate_x509_chain(const struct edhoc_auth_credential_x509_chain *chain)
 {
+	if (NULL == chain) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
 	if (0 == chain->certificate_count ||
 	    EDHOC_CREDENTIAL_X5CHAIN_CAPACITY < chain->certificate_count) {
 		EDHOC_LOG_ERR("Invalid X.509 chain length: %zu",
@@ -327,6 +416,11 @@ validate_x509_chain(const struct edhoc_auth_credential_x509_chain *chain)
 STATIC int
 validate_x509_hash(const struct edhoc_auth_credential_x509_hash *x509_hash)
 {
+	if (NULL == x509_hash) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
 	const bool no_certificate = is_buffer_empty(
 		x509_hash->certificate, x509_hash->certificate_length);
 
@@ -372,6 +466,27 @@ validate_x509_hash(const struct edhoc_auth_credential_x509_hash *x509_hash)
 			      x509_hash->encode_type);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
+
+	return EDHOC_SUCCESS;
+}
+
+STATIC int copy_encoded_item(const struct edhoc_buffer *item, uint8_t *buffer,
+			     size_t buffer_length, size_t *length)
+{
+	if (NULL == item || NULL == buffer || 0 == buffer_length ||
+	    NULL == length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (buffer_length < item->length) {
+		EDHOC_LOG_ERR("Buffer too small: %zu > %zu", item->length,
+			      buffer_length);
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
+
+	memcpy(buffer, item->value, item->length);
+	*length = item->length;
 
 	return EDHOC_SUCCESS;
 }
@@ -554,4 +669,408 @@ int edhoc_validate_credential_verified(
 	}
 
 	return EDHOC_SUCCESS;
+}
+
+int edhoc_credential_material_from_auth(
+	const struct edhoc_auth_credentials *credentials,
+	struct edhoc_credential_material *material)
+{
+	if (NULL == credentials || NULL == material) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	memset(material, 0, sizeof(*material));
+
+	material->label = credentials->label;
+	material->format = credentials->format;
+
+	switch (credentials->label) {
+	case EDHOC_COSE_HEADER_KID:
+		material->credential.value = credentials->key_id.credential;
+		material->credential.length =
+			credentials->key_id.credential_length;
+
+		material->kid.encode_type = credentials->key_id.encode_type;
+
+		switch (credentials->key_id.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			material->kid.integer = credentials->key_id.key_id_int;
+			break;
+		case EDHOC_ENCODE_TYPE_STRING:
+			material->kid.string.value =
+				credentials->key_id.key_id_bstr.value;
+			material->kid.string.length =
+				credentials->key_id.key_id_bstr.length;
+			break;
+		default:
+			EDHOC_LOG_ERR("Invalid key identifier encode type: %d",
+				      credentials->key_id.encode_type);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+		break;
+
+	case EDHOC_COSE_HEADER_X509_CHAIN: {
+		const size_t count = credentials->x509_chain.certificate_count;
+
+		if (0 == count || EDHOC_CREDENTIAL_X5CHAIN_CAPACITY < count) {
+			EDHOC_LOG_ERR("Invalid X.509 chain length: %zu", count);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+
+		material->x509_chain.count = count;
+		for (size_t i = 0; i < count; ++i) {
+			material->x509_chain.certificate[i].value =
+				credentials->x509_chain.certificate[i];
+			material->x509_chain.certificate[i].length =
+				credentials->x509_chain.certificate_length[i];
+		}
+
+		/* CRED is the end-entity certificate. */
+		material->credential = material->x509_chain.certificate[0];
+		break;
+	}
+
+	case EDHOC_COSE_HEADER_X509_HASH:
+		material->credential.value = credentials->x509_hash.certificate;
+		material->credential.length =
+			credentials->x509_hash.certificate_length;
+
+		material->x509_hash.fingerprint.value =
+			credentials->x509_hash.certificate_fingerprint;
+		material->x509_hash.fingerprint.length =
+			credentials->x509_hash.certificate_fingerprint_length;
+
+		material->x509_hash.algorithm.encode_type =
+			credentials->x509_hash.encode_type;
+
+		switch (credentials->x509_hash.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			material->x509_hash.algorithm.integer =
+				credentials->x509_hash.algorithm_int;
+			break;
+		case EDHOC_ENCODE_TYPE_STRING:
+			material->x509_hash.algorithm.string.value =
+				credentials->x509_hash.algorithm_bstr.value;
+			material->x509_hash.algorithm.string.length =
+				credentials->x509_hash.algorithm_bstr.length;
+			break;
+		default:
+			EDHOC_LOG_ERR("Invalid hash algorithm encode type: %d",
+				      credentials->x509_hash.encode_type);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+		break;
+
+	case EDHOC_COSE_HEADER_NONE:
+	default:
+		EDHOC_LOG_ERR("Unsupported credential label: %d",
+			      credentials->label);
+		return EDHOC_ERROR_NOT_SUPPORTED;
+	}
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_credential_id_cred_length(
+	const struct edhoc_credential_material *material, size_t *length)
+{
+	if (NULL == material || NULL == length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	const size_t nr_of_items = 1;
+
+	*length = edhoc_cbor_map_oh(nr_of_items);
+
+	switch (material->label) {
+	case EDHOC_COSE_HEADER_KID:
+		*length += cbor_int_or_string_len(&material->kid);
+		break;
+
+	case EDHOC_COSE_HEADER_X509_CHAIN:
+		for (size_t i = 0; i < material->x509_chain.count; ++i) {
+			const size_t len =
+				material->x509_chain.certificate[i].length;
+
+			*length += len + edhoc_cbor_bstr_oh(len);
+		}
+
+		if (1 < material->x509_chain.count) {
+			*length +=
+				edhoc_cbor_array_oh(material->x509_chain.count);
+		}
+
+		break;
+
+	case EDHOC_COSE_HEADER_X509_HASH:
+		*length += edhoc_cbor_array_oh(nr_of_items);
+		*length +=
+			cbor_int_or_string_len(&material->x509_hash.algorithm);
+		*length += material->x509_hash.fingerprint.length;
+		*length += edhoc_cbor_bstr_oh(
+			material->x509_hash.fingerprint.length);
+		break;
+
+	case EDHOC_COSE_HEADER_NONE:
+	default:
+		EDHOC_LOG_ERR("Unsupported credential label: %d",
+			      material->label);
+		return EDHOC_ERROR_NOT_SUPPORTED;
+	}
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_credential_cred_length(
+	const struct edhoc_credential_material *material, size_t *length)
+{
+	if (NULL == material || NULL == length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	switch (material->label) {
+	case EDHOC_COSE_HEADER_KID:
+	case EDHOC_COSE_HEADER_X509_CHAIN:
+	case EDHOC_COSE_HEADER_X509_HASH:
+		break;
+
+	case EDHOC_COSE_HEADER_NONE:
+	default:
+		EDHOC_LOG_ERR("Unsupported credential label: %d",
+			      material->label);
+		return EDHOC_ERROR_NOT_SUPPORTED;
+	}
+
+	*length = material->credential.length +
+		  edhoc_cbor_bstr_oh(material->credential.length);
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_credential_encode_id_cred(
+	const struct edhoc_credential_material *material, uint8_t *buffer,
+	size_t buffer_length, size_t *length)
+{
+	if (NULL == material || NULL == buffer || 0 == buffer_length ||
+	    NULL == length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	struct id_cred_x id_cred = { 0 };
+
+	switch (material->label) {
+	case EDHOC_COSE_HEADER_KID: {
+		id_cred.id_cred_x_kid_present = true;
+
+		struct id_cred_x_kid_r *kid = &id_cred.id_cred_x_kid;
+
+		switch (material->kid.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			kid->id_cred_x_kid_choice = id_cred_x_kid_int_c;
+			kid->id_cred_x_kid_int = material->kid.integer;
+			break;
+		case EDHOC_ENCODE_TYPE_STRING:
+			kid->id_cred_x_kid_choice = id_cred_x_kid_bstr_c;
+			kid->id_cred_x_kid_bstr.value =
+				material->kid.string.value;
+			kid->id_cred_x_kid_bstr.len =
+				material->kid.string.length;
+			break;
+		default:
+			EDHOC_LOG_ERR("Invalid key identifier encode type: %d",
+				      material->kid.encode_type);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+		break;
+	}
+
+	case EDHOC_COSE_HEADER_X509_CHAIN: {
+		const size_t count = material->x509_chain.count;
+
+		if (0 == count || EDHOC_CREDENTIAL_X5CHAIN_CAPACITY < count) {
+			EDHOC_LOG_ERR("Invalid X.509 chain length: %zu", count);
+			return EDHOC_ERROR_BAD_STATE;
+		}
+
+		id_cred.id_cred_x_x5chain_present = true;
+
+		struct COSE_X509_r *x5chain =
+			&id_cred.id_cred_x_x5chain.id_cred_x_x5chain;
+
+		if (1 == count) {
+			x5chain->COSE_X509_choice = COSE_X509_bstr_c;
+			x5chain->COSE_X509_bstr.value =
+				material->x509_chain.certificate[0].value;
+			x5chain->COSE_X509_bstr.len =
+				material->x509_chain.certificate[0].length;
+			break;
+		}
+
+		x5chain->COSE_X509_choice = COSE_X509_certs_l_c;
+		x5chain->COSE_X509_certs_l_certs_count = count;
+
+		for (size_t i = 0; i < count; ++i) {
+			x5chain->COSE_X509_certs_l_certs[i].value =
+				material->x509_chain.certificate[i].value;
+			x5chain->COSE_X509_certs_l_certs[i].len =
+				material->x509_chain.certificate[i].length;
+		}
+		break;
+	}
+
+	case EDHOC_COSE_HEADER_X509_HASH: {
+		id_cred.id_cred_x_x5t_present = true;
+
+		struct COSE_CertHash *x5t =
+			&id_cred.id_cred_x_x5t.id_cred_x_x5t;
+
+		x5t->COSE_CertHash_hashValue.value =
+			material->x509_hash.fingerprint.value;
+		x5t->COSE_CertHash_hashValue.len =
+			material->x509_hash.fingerprint.length;
+
+		switch (material->x509_hash.algorithm.encode_type) {
+		case EDHOC_ENCODE_TYPE_INTEGER:
+			x5t->COSE_CertHash_hashAlg_choice =
+				COSE_CertHash_hashAlg_int_c;
+			x5t->COSE_CertHash_hashAlg_int =
+				material->x509_hash.algorithm.integer;
+			break;
+		case EDHOC_ENCODE_TYPE_STRING:
+			x5t->COSE_CertHash_hashAlg_choice =
+				COSE_CertHash_hashAlg_tstr_c;
+			x5t->COSE_CertHash_hashAlg_tstr.value =
+				material->x509_hash.algorithm.string.value;
+			x5t->COSE_CertHash_hashAlg_tstr.len =
+				material->x509_hash.algorithm.string.length;
+			break;
+		default:
+			EDHOC_LOG_ERR(
+				"Invalid hash algorithm encode type: %d",
+				material->x509_hash.algorithm.encode_type);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+		break;
+	}
+
+	case EDHOC_COSE_HEADER_NONE:
+	default:
+		EDHOC_LOG_ERR("Unsupported credential label: %d",
+			      material->label);
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	const int ret =
+		cbor_encode_id_cred_x(buffer, buffer_length, &id_cred, length);
+
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("CBOR enc ID_CRED: %d", ret);
+		return EDHOC_ERROR_CBOR_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_credential_encode_id_cred_compact(
+	const struct edhoc_credential_material *material, uint8_t *buffer,
+	size_t buffer_length, size_t *length)
+{
+	if (NULL == material || NULL == buffer || 0 == buffer_length ||
+	    NULL == length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	*length = 0;
+
+	if (EDHOC_COSE_HEADER_KID != material->label) {
+		return EDHOC_SUCCESS;
+	}
+
+	int ret = EDHOC_ERROR_GENERIC_ERROR;
+
+	switch (material->kid.encode_type) {
+	case EDHOC_ENCODE_TYPE_INTEGER:
+		ret = cbor_encode_integer_type_int_type(
+			buffer, buffer_length, &material->kid.integer, length);
+		break;
+
+	case EDHOC_ENCODE_TYPE_STRING: {
+		/* RFC 9528: 3.3.2 - a byte string identifier that is one byte
+		 * long and whose byte is a complete CBOR integer travels as
+		 * that integer. Everything else is a plain byte string. */
+		if (1 == material->kid.string.length &&
+		    is_one_byte_cbor_int(material->kid.string.value[0])) {
+			buffer[0] = material->kid.string.value[0];
+			*length = 1;
+
+			return EDHOC_SUCCESS;
+		}
+
+		const struct zcbor_string input = {
+			.value = material->kid.string.value,
+			.len = material->kid.string.length,
+		};
+
+		ret = cbor_encode_byte_string_type_bstr_type(
+			buffer, buffer_length, &input, length);
+		break;
+	}
+
+	default:
+		EDHOC_LOG_ERR("Invalid key identifier encode type: %d",
+			      material->kid.encode_type);
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
+
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("CBOR enc key identifier: %d", ret);
+		return EDHOC_ERROR_CBOR_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_credential_encode_cred(
+	const struct edhoc_credential_material *material, uint8_t *buffer,
+	size_t buffer_length, size_t *length)
+{
+	if (NULL == material || NULL == buffer || 0 == buffer_length ||
+	    NULL == length) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	switch (material->format) {
+	case EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED:
+		return copy_encoded_item(&material->credential, buffer,
+					 buffer_length, length);
+
+	case EDHOC_CREDENTIAL_FORMAT_RAW: {
+		const struct zcbor_string cred = {
+			.value = material->credential.value,
+			.len = material->credential.length,
+		};
+
+		const int ret = cbor_encode_byte_string_type_bstr_type(
+			buffer, buffer_length, &cred, length);
+
+		if (ZCBOR_SUCCESS != ret) {
+			EDHOC_LOG_ERR("CBOR enc CRED: %d", ret);
+			return EDHOC_ERROR_CBOR_FAILURE;
+		}
+
+		return EDHOC_SUCCESS;
+	}
+
+	case EDHOC_CREDENTIAL_FORMAT_NONE:
+	default:
+		EDHOC_LOG_ERR("Invalid credential format: %d",
+			      material->format);
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
 }

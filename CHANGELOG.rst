@@ -81,6 +81,19 @@ Version 2.0.0
     certificate. ``NONE`` is rejected, so the serialization is always a
     deliberate choice. On verify the library fills the format in for the X.509
     variants, as it is the one that knows CRED is DER.
+  * The key-identifier and fingerprint-algorithm buffers are no longer
+    configurable. ``CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID`` and
+    ``CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG`` are removed in favour of the fixed
+    ``EDHOC_CREDENTIAL_KID_MAX_LEN`` (32) and
+    ``EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN`` (32). Both are public, so an
+    application can size its own storage from them. Configurations that set
+    either symbol above 32 lose support.
+  * The compact encoding of ID_CRED_x now follows RFC 9528: 3.3.2 on its own:
+    a one byte ``kid`` whose byte is a complete CBOR integer travels as that
+    integer, anything else as a byte string. ``format`` no longer takes part in
+    it, so an application that used ``EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED`` to
+    force the short form can drop it — the identifier fields carry the ``kid``
+    itself in both formats.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : External
   authorization data: the library validates what ``edhoc_ead.compose`` returns

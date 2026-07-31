@@ -45,14 +45,8 @@ void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
 /* Library-internal functions under test (white-box) ----------------------- */
 
 extern int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
-extern int comp_id_cred_len(const struct edhoc_auth_credentials *cred,
-			    size_t *len);
 extern int comp_th_len(size_t th_len, size_t *len);
-extern int comp_cred_len(const struct edhoc_auth_credentials *cred,
-			 size_t *len);
 extern int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
-extern int kid_compact_encoding(const struct edhoc_auth_credentials *cred,
-				struct mac_context *mac_ctx);
 extern int compute_prk_out(struct edhoc_context *ctx);
 extern int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len);

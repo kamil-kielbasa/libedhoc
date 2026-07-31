@@ -48,12 +48,6 @@ Kconfig library configuration
     | Maximum number of certificates in X.509 chain, from ``1`` to ``3``.
     | Values greater than ``3`` require regeneration of the CBOR backend.
 
-:C:`LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID`
-    | Maximum length of authentication credentials key identifier in bytes.
-
-:C:`LIBEDHOC_MAX_LEN_OF_HASH_ALG`
-    | Maximum length of authentication credentials hash algorithm in bytes.
-
 Logging
 *******
 

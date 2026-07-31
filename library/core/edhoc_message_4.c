@@ -213,7 +213,7 @@ STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	if (0 != ctx->ead.count) {
+	if (edhoc_ead_is_present(ctx)) {
 		ead_4.plaintext_4_present = true;
 		ead_4.plaintext_4.EAD_4_count = ctx->ead.count;
 
@@ -486,10 +486,10 @@ STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	if (ARRAY_SIZE(ctx->ead.token) - 1 < ead_4.plaintext_4.EAD_4_count) {
+	if (edhoc_ead_capacity(ctx) < ead_4.plaintext_4.EAD_4_count) {
 		EDHOC_LOG_ERR("EAD buffer too small: %zu, %zu",
 			      ead_4.plaintext_4.EAD_4_count,
-			      ARRAY_SIZE(ctx->ead.token) - 1);
+			      edhoc_ead_capacity(ctx));
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
@@ -556,14 +556,14 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		edhoc_selected_cipher_suite(ctx);
 
 	/* 2. Compose EAD_4 if present. */
-	if (NULL != ctx->interfaces.ead.compose &&
-	    0 != ARRAY_SIZE(ctx->ead.token) - 1) {
+	if (edhoc_ead_may_compose(ctx)) {
 		const struct edhoc_call_context call_context =
 			edhoc_call_context(ctx);
 
-		ret = ctx->interfaces.ead.compose(
-			ctx->user_context, &call_context, ctx->ead.token,
-			ARRAY_SIZE(ctx->ead.token) - 1, &ctx->ead.count);
+		ret = ctx->interfaces.ead.compose(ctx->user_context,
+						  &call_context, ctx->ead.token,
+						  edhoc_ead_capacity(ctx),
+						  &ctx->ead.count);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("EAD_4 compose: %d", ret);
@@ -839,8 +839,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	 * plaintext buffer, so it must remain allocated until the EAD process
 	 * callback has consumed the tokens.
 	 */
-	if (NULL != ctx->interfaces.ead.process &&
-	    0 != ARRAY_SIZE(ctx->ead.token) - 1 && 0 != ctx->ead.count) {
+	if (edhoc_ead_may_process(ctx)) {
 		const struct edhoc_call_context call_context =
 			edhoc_call_context(ctx);
 

@@ -30,33 +30,27 @@
 #error "Library has not been enabled."
 #endif /* CONFIG_LIBEDHOC_ENABLE */
 
-#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
-#error "Lack of defined maximum length of authentication credentials key identifier in bytes."
-#endif /* CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID */
-
 #ifndef CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
 #error "Lack of defined maximum number of certificates in an X.509 chain."
 #endif /* CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN */
-
-#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG
-#error "Lack of defined maximum length of authentication credentials hash algorithm in bytes."
-#endif /* CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG */
 
 #ifndef CONFIG_LIBEDHOC_KEY_ID_LEN
 #error "Lack of defined length of private key identifier in bytes."
 #endif /* CONFIG_LIBEDHOC_KEY_ID_LEN */
 
-/** Maximum length of a COSE 'kid' key identifier in bytes. */
-#define EDHOC_CREDENTIAL_KID_MAX_LEN CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
+/** Maximum length of a COSE 'kid' key identifier in bytes. RFC 9528 puts no
+ *  bound on it; this one covers every identifier the reference cipher suites
+ *  can produce, including a full SHA-256 thumbprint. */
+#define EDHOC_CREDENTIAL_KID_MAX_LEN (32)
 
 /** Capacity of a COSE 'x5chain' certificate chain, in certificates. */
 #define EDHOC_CREDENTIAL_X5CHAIN_CAPACITY \
 	CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
 
 /** Maximum length of a COSE 'x5t' hash algorithm name in bytes. Applies to the
- *  text form only; the integer form carries no buffer. */
-#define EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN \
-	CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG
+ *  text form only; the integer form carries no buffer. Sized for the longest
+ *  COSE algorithm name in the IANA registry. */
+#define EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN (32)
 
 /** Maximum length of a COSE 'x5t' certificate fingerprint in bytes. The longest
  *  hash COSE defines for a certificate thumbprint is SHA-512, so a longer
@@ -149,8 +143,6 @@ struct edhoc_auth_credential_key_id {
 	 *  byte string identifiers described in RFC 9528: 3.3.2. */
 	enum edhoc_encode_type encode_type;
 
-	/** Key identifier, selected by \p encode_type: \p key_id_int when
-	 *  #EDHOC_ENCODE_TYPE_INTEGER, otherwise \p key_id_bstr. */
 	union {
 		/** Key identifier as a CBOR integer
 		 *  (#EDHOC_ENCODE_TYPE_INTEGER). */
@@ -266,8 +258,12 @@ struct edhoc_auth_credentials {
 	enum edhoc_cose_header label;
 	/** Serialization of the credential (CRED). Constrained by \p label:
 	 *  #EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED is admissible only for
-	 *  #EDHOC_COSE_HEADER_KID. For the X.509 variants the library fills it
-	 *  in on verify, since it is the one that knows CRED is DER. */
+	 *  #EDHOC_COSE_HEADER_KID, whose CRED may be a CCS or a CWT. For the
+	 *  X.509 variants CRED is the DER certificate, and the library fills the
+	 *  format in on verify, since it is the one that knows that.
+	 *
+	 *  It says nothing about the identifier itself: ID_CRED_x is always
+	 *  encoded by the library, following RFC 9528: 3.3.2. */
 	enum edhoc_credential_format format;
 
 	union {
