@@ -627,7 +627,7 @@ int edhoc_credential_validate_trusted(
 	}
 
 	const bool no_credential = is_buffer_empty(trusted->credential.value,
-						 trusted->credential.length);
+						   trusted->credential.length);
 
 	if (no_credential) {
 		EDHOC_LOG_ERR("Empty peer credential");
