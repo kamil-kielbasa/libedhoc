@@ -40,9 +40,11 @@ static int stub_ead_process(void *user_ctx,
 			    size_t token_size);
 static int stub_cred_fetch(void *user_ctx,
 			   struct edhoc_auth_credentials *auth_cred);
-static int stub_cred_verify(void *user_ctx,
-			    struct edhoc_auth_credentials *auth_cred,
-			    const uint8_t **pub_key, size_t *pub_key_len);
+static int
+stub_cred_authenticate_peer(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    const struct edhoc_credential_received *received,
+			    struct edhoc_credential_trusted *trusted);
 static void stub_zeroize(void *buffer, size_t length);
 
 /* Static variables and constants ------------------------------------------ */
@@ -56,7 +58,7 @@ static const struct edhoc_ead stub_ead = {
 
 static const struct edhoc_credentials stub_cred = {
 	.fetch = stub_cred_fetch,
-	.verify = stub_cred_verify,
+	.authenticate_peer = stub_cred_authenticate_peer,
 };
 
 static const struct edhoc_platform stub_platform = {
@@ -101,14 +103,16 @@ static int stub_cred_fetch(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int stub_cred_verify(void *user_ctx,
-			    struct edhoc_auth_credentials *auth_cred,
-			    const uint8_t **pub_key, size_t *pub_key_len)
+static int
+stub_cred_authenticate_peer(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    const struct edhoc_credential_received *received,
+			    struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
-	(void)auth_cred;
-	(void)pub_key;
-	(void)pub_key_len;
+	(void)call_ctx;
+	(void)received;
+	(void)trusted;
 
 	return EDHOC_SUCCESS;
 }
@@ -414,7 +418,8 @@ TEST(api, bindings)
 	ret = edhoc_bind_credentials(&ctx, &stub_cred);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(stub_cred.fetch, ctx.interfaces.cred.fetch);
-	TEST_ASSERT_EQUAL(stub_cred.verify, ctx.interfaces.cred.verify);
+	TEST_ASSERT_EQUAL(stub_cred.authenticate_peer,
+			  ctx.interfaces.cred.authenticate_peer);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

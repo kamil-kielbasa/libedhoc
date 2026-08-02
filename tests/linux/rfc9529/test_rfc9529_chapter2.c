@@ -63,16 +63,18 @@ static int auth_cred_fetch_resp(void *user_ctx,
 /**
  * \brief Authentication credentials verify callback for initiator.
  */
-static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len);
+static int auth_cred_authenticate_peer_init(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 /**
- * \brief Authentication credentials verify callback for responder.
+ * \brief Authentication credentials authenticate peer callback for responder.
  */
-static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len);
+static int auth_cred_authenticate_peer_resp(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 /* Static variables and constants ------------------------------------------ */
 
@@ -114,12 +116,12 @@ static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.fetch = auth_cred_fetch_init,
-	.verify = auth_cred_verify_init,
+	.authenticate_peer = auth_cred_authenticate_peer_init,
 };
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
 	.fetch = auth_cred_fetch_resp,
-	.verify = auth_cred_verify_resp,
+	.authenticate_peer = auth_cred_authenticate_peer_resp,
 };
 
 /* Static function definitions --------------------------------------------- */
@@ -282,26 +284,29 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len)
+static int auth_cred_authenticate_peer_init(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred || NULL == pub_key || NULL == pub_key_len)
+	if (NULL == received || NULL == trusted)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	/**
          * \brief Verify COSE header label value.
          */
-	if (EDHOC_COSE_HEADER_X509_HASH != auth_cred->label)
+	if (EDHOC_COSE_HEADER_X509_HASH != received->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received COSE IANA hash algorithm value.
          */
-	if (EDHOC_ENCODE_TYPE_INTEGER != auth_cred->x509_hash.encode_type ||
-	    COSE_ALG_SHA_256_64 != auth_cred->x509_hash.algorithm_int)
+	if (EDHOC_ENCODE_TYPE_INTEGER !=
+		    received->x509_hash.algorithm.encode_type ||
+	    COSE_ALG_SHA_256_64 != received->x509_hash.algorithm.integer)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -320,46 +325,48 @@ static int auth_cred_verify_init(void *user_ctx,
 	memcpy(cert_fingerprint, hash, sizeof(cert_fingerprint));
 
 	if (ARRAY_SIZE(cert_fingerprint) !=
-	    auth_cred->x509_hash.certificate_fingerprint_length)
+	    received->x509_hash.fingerprint.length)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(cert_fingerprint,
-			auth_cred->x509_hash.certificate_fingerprint,
-			auth_cred->x509_hash.certificate_fingerprint_length))
+	if (0 != memcmp(cert_fingerprint, received->x509_hash.fingerprint.value,
+			received->x509_hash.fingerprint.length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief If successful then assign certificate and public key.
          */
-	auth_cred->x509_hash.certificate = CRED_R;
-	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_R);
-
-	*pub_key = PK_R;
-	*pub_key_len = ARRAY_SIZE(PK_R);
+	trusted->credential.value = CRED_R;
+	trusted->credential.length = ARRAY_SIZE(CRED_R);
+	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->public_key.value = PK_R;
+	trusted->public_key.length = ARRAY_SIZE(PK_R);
 
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len)
+static int auth_cred_authenticate_peer_resp(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred || NULL == pub_key || NULL == pub_key_len)
+	if (NULL == received || NULL == trusted)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	/**
          * \brief Verify COSE header label value.
          */
-	if (EDHOC_COSE_HEADER_X509_HASH != auth_cred->label)
+	if (EDHOC_COSE_HEADER_X509_HASH != received->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief Verify received COSE IANA hash algorithm value.
          */
-	if (EDHOC_ENCODE_TYPE_INTEGER != auth_cred->x509_hash.encode_type ||
-	    COSE_ALG_SHA_256_64 != auth_cred->x509_hash.algorithm_int)
+	if (EDHOC_ENCODE_TYPE_INTEGER !=
+		    received->x509_hash.algorithm.encode_type ||
+	    COSE_ALG_SHA_256_64 != received->x509_hash.algorithm.integer)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
@@ -378,22 +385,21 @@ static int auth_cred_verify_resp(void *user_ctx,
 	memcpy(cert_fingerprint, hash, sizeof(cert_fingerprint));
 
 	if (ARRAY_SIZE(cert_fingerprint) !=
-	    auth_cred->x509_hash.certificate_fingerprint_length)
+	    received->x509_hash.fingerprint.length)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (0 != memcmp(cert_fingerprint,
-			auth_cred->x509_hash.certificate_fingerprint,
-			auth_cred->x509_hash.certificate_fingerprint_length))
+	if (0 != memcmp(cert_fingerprint, received->x509_hash.fingerprint.value,
+			received->x509_hash.fingerprint.length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
 	/**
          * \brief If successful then assign certificate and public key.
          */
-	auth_cred->x509_hash.certificate = CRED_I;
-	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_I);
-
-	*pub_key = PK_I;
-	*pub_key_len = ARRAY_SIZE(PK_I);
+	trusted->credential.value = CRED_I;
+	trusted->credential.length = ARRAY_SIZE(CRED_I);
+	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->public_key.value = PK_I;
+	trusted->public_key.length = ARRAY_SIZE(PK_I);
 
 	return EDHOC_SUCCESS;
 }

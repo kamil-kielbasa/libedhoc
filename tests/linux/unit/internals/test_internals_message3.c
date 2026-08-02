@@ -72,11 +72,10 @@ TEST(internals_message3, comp_th_3_bad_state)
 
 TEST(internals_message3, comp_key_iv_aad_3_null)
 {
-	uint8_t key[16] = { 0 };
 	uint8_t iv[13] = { 0 };
 	uint8_t aad[256] = { 0 };
-	int ret = comp_key_iv_aad_3(NULL, key, ARRAY_SIZE(key), iv,
-				    ARRAY_SIZE(iv), aad, ARRAY_SIZE(aad));
+	int ret = comp_key_iv_aad_3(NULL, iv, ARRAY_SIZE(iv), aad,
+				    ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -88,11 +87,10 @@ TEST(internals_message3, comp_key_iv_aad_3_bad_state)
 	ctx.state.th.stage = EDHOC_TH_STATE_1;
 	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
-	uint8_t key[16] = { 0 };
 	uint8_t iv[13] = { 0 };
 	uint8_t aad[256] = { 0 };
-	int ret = comp_key_iv_aad_3(&ctx, key, ARRAY_SIZE(key), iv,
-				    ARRAY_SIZE(iv), aad, ARRAY_SIZE(aad));
+	int ret = comp_key_iv_aad_3(&ctx, iv, ARRAY_SIZE(iv), aad,
+				    ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);

@@ -117,9 +117,10 @@ int coverage_mock_cred_fetch_invalid_label(
 int coverage_mock_cred_fetch_x509_zero_certs(
 	void *user_ctx, struct edhoc_auth_credentials *auth_cred);
 
-/** \brief Credential verify callback returning a fixed public key. */
-int coverage_mock_cred_verify(void *user_ctx,
-			      struct edhoc_auth_credentials *auth_cred,
-			      const uint8_t **pub_key, size_t *pub_key_len);
+/** \brief Credential authenticate callback returning a fixed public key. */
+int coverage_mock_cred_authenticate_peer(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 #endif /* COVERAGE_COMMON_H */

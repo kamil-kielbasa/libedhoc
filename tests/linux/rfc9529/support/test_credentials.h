@@ -21,9 +21,10 @@ int test_auth_cred_fetch_stub(void *user_ctx,
 /**
  * \brief Credential verify stub that returns a dummy 32-byte public key.
  */
-int test_auth_cred_verify_stub(void *user_ctx,
-			       struct edhoc_auth_credentials *auth_cred,
-			       const uint8_t **pub_key, size_t *pub_key_len);
+int test_auth_cred_authenticate_peer_stub(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 extern const struct edhoc_credentials test_cred_stubs;
 

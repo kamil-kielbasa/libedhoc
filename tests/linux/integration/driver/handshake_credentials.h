@@ -110,18 +110,19 @@ int hs_cred_fetch(void *user_context,
 		  struct edhoc_auth_credentials *auth_credentials);
 
 /**
- * \brief Verify callback: authenticate the peer identity
+ * \brief Authenticate callback: authenticate the peer identity
  *        (\c user_context->peer) and return its public key.
  *
- * \param[in] user_context          The \ref handshake_endpoint being configured.
- * \param[in,out] auth_credentials  Received credential to validate.
- * \param[out] public_key           On success, the peer public key reference.
- * \param[out] public_key_length    On success, the peer public key length.
+ * \param[in] user_context      The \ref handshake_endpoint being configured.
+ * \param[in] call_context      Session and message the call belongs to.
+ * \param[in] received          Peer identification, as received.
+ * \param[out] trusted          On success, the peer credential to trust.
  *
  * \return #EDHOC_SUCCESS on success, negative error code otherwise.
  */
-int hs_cred_verify(void *user_context,
-		   struct edhoc_auth_credentials *auth_credentials,
-		   const uint8_t **public_key, size_t *public_key_length);
+int hs_cred_authenticate_peer(void *user_context,
+			      const struct edhoc_call_context *call_context,
+			      const struct edhoc_credential_received *received,
+			      struct edhoc_credential_trusted *trusted);
 
 #endif /* HANDSHAKE_CREDENTIALS_H */

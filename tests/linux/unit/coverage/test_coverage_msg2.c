@@ -1152,7 +1152,7 @@ TEST(coverage_msg2, msg2_compose_x509_zero_certs_2)
 
 	const struct edhoc_credentials zero_creds = {
 		.fetch = coverage_mock_cred_fetch_x509_zero_certs,
-		.verify = coverage_mock_cred_verify,
+		.authenticate_peer = coverage_mock_cred_authenticate_peer,
 	};
 	ret = edhoc_bind_credentials(&resp_ctx, &zero_creds);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -1194,7 +1194,7 @@ TEST(coverage_msg2, msg2_compose_invalid_cred_label)
 
 	const struct edhoc_credentials bad_creds = {
 		.fetch = coverage_mock_cred_fetch_invalid_label,
-		.verify = coverage_mock_cred_verify,
+		.authenticate_peer = coverage_mock_cred_authenticate_peer,
 	};
 	ret = edhoc_bind_credentials(&resp_ctx, &bad_creds);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -1235,7 +1235,7 @@ TEST(coverage_msg2, msg2_compose_x509_zero_certs)
 
 	const struct edhoc_credentials zero_creds = {
 		.fetch = coverage_mock_cred_fetch_x509_zero_certs,
-		.verify = coverage_mock_cred_verify,
+		.authenticate_peer = coverage_mock_cred_authenticate_peer,
 	};
 	ret = edhoc_bind_credentials(&resp_ctx, &zero_creds);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

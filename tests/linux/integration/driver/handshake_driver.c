@@ -59,7 +59,7 @@ enum hs_oscore_export {
  * data travels through the bound user context (struct handshake_endpoint). */
 static const struct edhoc_credentials hs_credentials = {
 	.fetch = hs_cred_fetch,
-	.verify = hs_cred_verify,
+	.authenticate_peer = hs_cred_authenticate_peer,
 };
 
 static const struct edhoc_ead hs_ead_interface = {

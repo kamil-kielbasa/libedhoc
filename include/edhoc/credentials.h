@@ -243,6 +243,101 @@ struct edhoc_auth_credential_x509_hash {
 };
 
 /**
+ * \brief Key identifier received from the peer (#EDHOC_COSE_HEADER_KID).
+ *
+ *        A 'kid' is a byte string (RFC 9528: Appendix C.3), which is why the
+ *        identifier needs no encoding tag. On the wire it may arrive as a CBOR
+ *        integer, but that is only a transport encoding of a one byte string
+ *        (RFC 9528: 3.3.2) and the library resolves it before the callback
+ *        runs.
+ */
+struct edhoc_credential_received_kid {
+	/** Key identifier, at most #EDHOC_CREDENTIAL_KID_MAX_LEN bytes. */
+	struct edhoc_buffer identifier;
+};
+
+/**
+ * \brief X.509 certificate chain received from the peer
+ *        (#EDHOC_COSE_HEADER_X509_CHAIN).
+ */
+struct edhoc_credential_received_x509_chain {
+	/** Number of certificates, end-entity first. */
+	size_t count;
+	/** Certificates. */
+	struct edhoc_buffer certificate[EDHOC_CREDENTIAL_X5CHAIN_CAPACITY];
+};
+
+/**
+ * \brief Certificate fingerprint received from the peer
+ *        (#EDHOC_COSE_HEADER_X509_HASH).
+ */
+struct edhoc_credential_received_x509_hash {
+	/** Fingerprint algorithm. */
+	struct edhoc_cbor_int_or_string algorithm;
+	/** Certificate fingerprint, at most
+	 *  #EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN bytes. */
+	struct edhoc_buffer fingerprint;
+};
+
+/**
+ * \brief ID_CRED_I / ID_CRED_R as received from the peer.
+ *
+ *        \p label selects the active union member and is never
+ *        #EDHOC_COSE_HEADER_NONE.
+ *
+ * \warning Every buffer points into the message being processed. The library
+ *          keeps that message alive until it is done with it, so a view may be
+ *          handed straight back in #edhoc_credential_trusted, but it stops
+ *          being valid once the processing call returns. Copy whatever has to
+ *          outlive the handshake.
+ */
+struct edhoc_credential_received {
+	/** Identification method; selects the active union member. */
+	enum edhoc_cose_header label;
+
+	union {
+		/** Valid for #EDHOC_COSE_HEADER_KID. */
+		struct edhoc_credential_received_kid kid;
+		/** Valid for #EDHOC_COSE_HEADER_X509_CHAIN. */
+		struct edhoc_credential_received_x509_chain x509_chain;
+		/** Valid for #EDHOC_COSE_HEADER_X509_HASH. */
+		struct edhoc_credential_received_x509_hash x509_hash;
+	};
+};
+
+/**
+ * \brief The peer credential the application vouches for.
+ *
+ *        Filling this in asserts that the application resolved the identifier
+ *        and validated the credential against its own trust policy
+ *        (RFC 9528: Appendix D). EDHOC itself proves only possession of the
+ *        corresponding private key (RFC 9528: 3.5). The structure is zeroed
+ *        before the callback runs.
+ *
+ * \par What to fill in
+ * Always all three fields, whatever the identification method was. What differs
+ * is only where CRED comes from:
+ * - #EDHOC_COSE_HEADER_KID: the CCS or CWT the key identifier resolves to.
+ * - #EDHOC_COSE_HEADER_X509_CHAIN: the received end-entity certificate, i.e.
+ *   \c received->x509_chain.certificate[0] handed straight back, with
+ *   \p format set to #EDHOC_CREDENTIAL_FORMAT_RAW.
+ * - #EDHOC_COSE_HEADER_X509_HASH: the certificate the fingerprint resolves to.
+ *
+ * \warning The buffers must stay readable until the processing call returns,
+ *          never the callback's stack: the library reads them while it
+ *          finishes processing the message. A view from
+ *          #edhoc_credential_received satisfies this.
+ */
+struct edhoc_credential_trusted {
+	/** CRED_I / CRED_R. */
+	struct edhoc_buffer credential;
+	/** Serialization of \p credential. */
+	enum edhoc_credential_format format;
+	/** Peer authentication key, in the form the cipher suite expects. */
+	struct edhoc_buffer public_key;
+};
+
+/**
  * \brief An EDHOC authentication credential (tagged union over the methods).
  *
  *        \p label selects the identification method and thus which union member
@@ -282,7 +377,17 @@ struct edhoc_auth_credentials {
  *
  *        EDHOC delegates credential handling to the application (RFC 9528: 3.5):
  *        the library calls \p fetch to obtain the local credential to send, and
- *        \p verify to authenticate the peer's received credential.
+ *        \p authenticate_peer to authenticate the peer's received credential.
+ *
+ * \par Buffer ownership and lifetime
+ * The library never takes ownership of any of these buffers and never frees
+ * one.
+ * - #edhoc_credential_received: views owned by the library, valid only until
+ *   \p authenticate_peer returns.
+ * - #edhoc_credential_trusted: owned by the application, which must keep them
+ *   alive until processing of the message completes.
+ * - #edhoc_auth_credentials filled in by \p fetch: owned by the application,
+ *   which must keep them alive until the composing call returns.
  */
 struct edhoc_credentials {
 	/**
@@ -310,28 +415,31 @@ struct edhoc_credentials {
 	 * \brief Authenticate the peer's authentication credential.
 	 *
 	 * Called after the peer's ID_CRED has been received and decoded (from
-	 * message 2 on the Initiator, message 3 on the Responder). Use the
-	 * identification in \p peer_credentials to locate and validate the peer
-	 * credential per your trust policy — e.g. certificate path and
-	 * trust-anchor validation, revocation, or a key-identifier lookup — and
-	 * return a reference to the peer's public authentication key so the
-	 * library can verify Signature_or_MAC. EDHOC itself only proves
-	 * possession of the private key; all other credential validation is the
-	 * application's responsibility (RFC 9528: 3.5, Appendix D).
+	 * message 2 on the Initiator, message 3 on the Responder). Look up the
+	 * credential \p received points at, validate it against your trust
+	 * policy — certificate path and trust-anchor validation, revocation, a
+	 * key-identifier lookup — and fill in \p trusted. EDHOC itself only
+	 * proves possession of the private key; all other credential validation
+	 * is the application's responsibility (RFC 9528: 3.5, Appendix D).
+	 *
+	 * For #EDHOC_COSE_HEADER_X509_HASH the library does not check that the
+	 * credential matches the fingerprint. That binding is enforced by the
+	 * transcript: a mismatch surfaces as an invalid Signature_or_MAC.
 	 *
 	 * \param[in] user_context              User context.
-	 * \param[in,out] peer_credentials      Peer credential: identification in, resolved credential out.
-	 * \param[out] public_key_reference     On success, set to the peer's public authentication key.
-	 * \param[out] public_key_length        On success, the length of the public key in bytes.
+	 * \param[in] call_context              Session and message the call belongs to.
+	 * \param[in] received                  Peer identification, as received.
+	 * \param[out] trusted                  Peer credential to authenticate with.
 	 *
 	 * \retval #EDHOC_SUCCESS
 	 *         Success.
 	 * \return Negative error code on failure (\ref edhoc-error-codes).
 	 */
-	int (*verify)(void *user_context,
-		      struct edhoc_auth_credentials *peer_credentials,
-		      const uint8_t **public_key_reference,
-		      size_t *public_key_length);
+	int (*authenticate_peer)(
+		void *user_context,
+		const struct edhoc_call_context *call_context,
+		const struct edhoc_credential_received *received,
+		struct edhoc_credential_trusted *trusted);
 };
 
 /* Module interface variables and constants -------------------------------- */

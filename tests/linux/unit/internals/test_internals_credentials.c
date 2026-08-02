@@ -55,6 +55,16 @@ static struct edhoc_auth_credentials make_valid_x5chain(void);
 /** \brief Build a certificate fingerprint credential that passes validation. */
 static struct edhoc_auth_credentials make_valid_x5t(void);
 
+/**
+ * \brief Build peer identification for \p label. The payload stays empty:
+ *        \ref edhoc_credential_validate_trusted only reads the label.
+ */
+static struct edhoc_credential_received
+make_received(enum edhoc_cose_header label);
+
+/** \brief Build a credential by reference that passes validation. */
+static struct edhoc_credential_trusted make_valid_trusted(void);
+
 /* Static variables and constants ------------------------------------------ */
 
 /*
@@ -232,17 +242,21 @@ static void assert_sign_or_mac(const struct plaintext *parsed,
 			       const uint8_t *expected)
 {
 	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(sign_or_mac),
-				 parsed->sign_or_mac_len);
-	TEST_ASSERT_EQUAL_PTR(expected, parsed->sign_or_mac);
-	TEST_ASSERT_EQUAL_MEMORY(sign_or_mac, parsed->sign_or_mac,
+				 parsed->sign_or_mac.length);
+	TEST_ASSERT_EQUAL_PTR(expected, parsed->sign_or_mac.value);
+	TEST_ASSERT_EQUAL_MEMORY(sign_or_mac, parsed->sign_or_mac.value,
 				 ARRAY_SIZE(sign_or_mac));
 }
 
 static void assert_untouched(const struct plaintext *parsed)
 {
-	const struct plaintext zeroed = { 0 };
-
-	TEST_ASSERT_EQUAL_MEMORY(&zeroed, parsed, sizeof(zeroed));
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_NONE,
+			  parsed->peer_credential_id.label);
+	TEST_ASSERT_EQUAL_HEX8(0, parsed->kid_byte);
+	TEST_ASSERT_NULL(parsed->sign_or_mac.value);
+	TEST_ASSERT_EQUAL_size_t(0, parsed->sign_or_mac.length);
+	TEST_ASSERT_NULL(parsed->ead.value);
+	TEST_ASSERT_EQUAL_size_t(0, parsed->ead.length);
 }
 
 static struct edhoc_auth_credentials make_valid_kid(void)
@@ -289,10 +303,28 @@ static struct edhoc_auth_credentials make_valid_x5t(void)
 	};
 }
 
+static struct edhoc_credential_received
+make_received(enum edhoc_cose_header label)
+{
+	return (struct edhoc_credential_received){
+		.label = label,
+	};
+}
+
+static struct edhoc_credential_trusted make_valid_trusted(void)
+{
+	return (struct edhoc_credential_trusted){
+		.credential = { .value = first_certificate,
+				.length = ARRAY_SIZE(first_certificate) },
+		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
+		.public_key = { .value = fingerprint,
+				.length = ARRAY_SIZE(fingerprint) },
+	};
+}
+
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(internals_credentials);
-
 TEST_SETUP(internals_credentials)
 {
 }
@@ -309,10 +341,13 @@ TEST(internals_credentials, kid_int)
 				     &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER,
-			  parsed.auth_cred.key_id.encode_type);
-	TEST_ASSERT_EQUAL_INT32(-12, parsed.auth_cred.key_id.key_id_int);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID,
+			  parsed.peer_credential_id.label);
+	/* RFC 9528: 3.3.2 - the integer -12 stands for the byte string h'2B'. */
+	TEST_ASSERT_EQUAL_size_t(
+		1, parsed.peer_credential_id.kid.identifier.length);
+	TEST_ASSERT_EQUAL_HEX8(
+		0x2b, parsed.peer_credential_id.kid.identifier.value[0]);
 	assert_sign_or_mac(&parsed, &ptxt_3_kid_int[2]);
 }
 
@@ -324,12 +359,12 @@ TEST(internals_credentials, kid_bstr_within_capacity)
 				     ARRAY_SIZE(ptxt_3_kid_bstr), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_STRING,
-			  parsed.auth_cred.key_id.encode_type);
-	TEST_ASSERT_EQUAL_size_t(1, parsed.auth_cred.key_id.key_id_bstr.length);
-	TEST_ASSERT_EQUAL_MEMORY(&ptxt_3_kid_bstr[1],
-				 parsed.auth_cred.key_id.key_id_bstr.value, 1);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL_size_t(
+		1, parsed.peer_credential_id.kid.identifier.length);
+	TEST_ASSERT_EQUAL_PTR(&ptxt_3_kid_bstr[1],
+			      parsed.peer_credential_id.kid.identifier.value);
 	assert_sign_or_mac(&parsed, &ptxt_3_kid_bstr[3]);
 }
 
@@ -341,9 +376,11 @@ TEST(internals_credentials, kid_bstr_at_capacity)
 				     ARRAY_SIZE(ptxt_3_kid_bstr_32), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL_size_t(EDHOC_CREDENTIAL_KID_MAX_LEN,
-				 parsed.auth_cred.key_id.key_id_bstr.length);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL_size_t(
+		EDHOC_CREDENTIAL_KID_MAX_LEN,
+		parsed.peer_credential_id.kid.identifier.length);
 }
 
 TEST(internals_credentials, kid_bstr_over_capacity)
@@ -421,17 +458,19 @@ TEST(internals_credentials, x5chain_single_certificate)
 				     ARRAY_SIZE(ptxt_3_x5chain_one), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL_size_t(1,
-				 parsed.auth_cred.x509_chain.certificate_count);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL_size_t(1, parsed.peer_credential_id.x509_chain.count);
 	TEST_ASSERT_EQUAL_size_t(
 		ARRAY_SIZE(first_certificate),
-		parsed.auth_cred.x509_chain.certificate_length[0]);
-	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_one[4],
-			      parsed.auth_cred.x509_chain.certificate[0]);
-	TEST_ASSERT_EQUAL_MEMORY(first_certificate,
-				 parsed.auth_cred.x509_chain.certificate[0],
-				 ARRAY_SIZE(first_certificate));
+		parsed.peer_credential_id.x509_chain.certificate[0].length);
+	TEST_ASSERT_EQUAL_PTR(
+		&ptxt_3_x5chain_one[4],
+		parsed.peer_credential_id.x509_chain.certificate[0].value);
+	TEST_ASSERT_EQUAL_MEMORY(
+		first_certificate,
+		parsed.peer_credential_id.x509_chain.certificate[0].value,
+		ARRAY_SIZE(first_certificate));
 	assert_sign_or_mac(&parsed, &ptxt_3_x5chain_one[8]);
 }
 
@@ -443,17 +482,19 @@ TEST(internals_credentials, x5chain_two_certificates)
 				     ARRAY_SIZE(ptxt_3_x5chain_two), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL_size_t(2,
-				 parsed.auth_cred.x509_chain.certificate_count);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL_size_t(2, parsed.peer_credential_id.x509_chain.count);
 	TEST_ASSERT_EQUAL_size_t(
-		3, parsed.auth_cred.x509_chain.certificate_length[0]);
+		3, parsed.peer_credential_id.x509_chain.certificate[0].length);
 	TEST_ASSERT_EQUAL_size_t(
-		3, parsed.auth_cred.x509_chain.certificate_length[1]);
-	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_two[5],
-			      parsed.auth_cred.x509_chain.certificate[0]);
-	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_two[9],
-			      parsed.auth_cred.x509_chain.certificate[1]);
+		3, parsed.peer_credential_id.x509_chain.certificate[1].length);
+	TEST_ASSERT_EQUAL_PTR(
+		&ptxt_3_x5chain_two[5],
+		parsed.peer_credential_id.x509_chain.certificate[0].value);
+	TEST_ASSERT_EQUAL_PTR(
+		&ptxt_3_x5chain_two[9],
+		parsed.peer_credential_id.x509_chain.certificate[1].value);
 	assert_sign_or_mac(&parsed, &ptxt_3_x5chain_two[13]);
 }
 
@@ -472,11 +513,12 @@ TEST(internals_credentials, x5chain_three_certificates)
 				     ARRAY_SIZE(ptxt_3_x5chain_three), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL_size_t(3,
-				 parsed.auth_cred.x509_chain.certificate_count);
-	TEST_ASSERT_EQUAL_PTR(&ptxt_3_x5chain_three[13],
-			      parsed.auth_cred.x509_chain.certificate[2]);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL_size_t(3, parsed.peer_credential_id.x509_chain.count);
+	TEST_ASSERT_EQUAL_PTR(
+		&ptxt_3_x5chain_three[13],
+		parsed.peer_credential_id.x509_chain.certificate[2].value);
 	assert_sign_or_mac(&parsed, &ptxt_3_x5chain_three[17]);
 }
 
@@ -488,18 +530,22 @@ TEST(internals_credentials, x5t_algorithm_int)
 				     ARRAY_SIZE(ptxt_3_x5t_alg_int), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_HASH, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER,
-			  parsed.auth_cred.x509_hash.encode_type);
-	TEST_ASSERT_EQUAL_INT32(-15, parsed.auth_cred.x509_hash.algorithm_int);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_HASH,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL(
+		EDHOC_ENCODE_TYPE_INTEGER,
+		parsed.peer_credential_id.x509_hash.algorithm.encode_type);
+	TEST_ASSERT_EQUAL_INT32(
+		-15, parsed.peer_credential_id.x509_hash.algorithm.integer);
 	TEST_ASSERT_EQUAL_size_t(
 		ARRAY_SIZE(fingerprint),
-		parsed.auth_cred.x509_hash.certificate_fingerprint_length);
+		parsed.peer_credential_id.x509_hash.fingerprint.length);
 	TEST_ASSERT_EQUAL_PTR(
 		&ptxt_3_x5t_alg_int[6],
-		parsed.auth_cred.x509_hash.certificate_fingerprint);
+		parsed.peer_credential_id.x509_hash.fingerprint.value);
 	TEST_ASSERT_EQUAL_MEMORY(
-		fingerprint, parsed.auth_cred.x509_hash.certificate_fingerprint,
+		fingerprint,
+		parsed.peer_credential_id.x509_hash.fingerprint.value,
 		ARRAY_SIZE(fingerprint));
 	assert_sign_or_mac(&parsed, &ptxt_3_x5t_alg_int[15]);
 }
@@ -513,14 +559,16 @@ TEST(internals_credentials, x5t_algorithm_tstr)
 				     ARRAY_SIZE(ptxt_3_x5t_alg_tstr), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_HASH, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_STRING,
-			  parsed.auth_cred.x509_hash.encode_type);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_HASH,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL(
+		EDHOC_ENCODE_TYPE_STRING,
+		parsed.peer_credential_id.x509_hash.algorithm.encode_type);
 	TEST_ASSERT_EQUAL_size_t(
 		ARRAY_SIZE(sha),
-		parsed.auth_cred.x509_hash.algorithm_bstr.length);
+		parsed.peer_credential_id.x509_hash.algorithm.string.length);
 	TEST_ASSERT_EQUAL_MEMORY(
-		sha, parsed.auth_cred.x509_hash.algorithm_bstr.value,
+		sha, parsed.peer_credential_id.x509_hash.algorithm.string.value,
 		ARRAY_SIZE(sha));
 	assert_sign_or_mac(&parsed, &ptxt_3_x5t_alg_tstr[18]);
 }
@@ -557,10 +605,12 @@ TEST(internals_credentials, msg2_kid_int)
 				     &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL(EDHOC_ENCODE_TYPE_INTEGER,
-			  parsed.auth_cred.key_id.encode_type);
-	TEST_ASSERT_EQUAL_INT32(-12, parsed.auth_cred.key_id.key_id_int);
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL_size_t(
+		1, parsed.peer_credential_id.kid.identifier.length);
+	TEST_ASSERT_EQUAL_HEX8(
+		0x2b, parsed.peer_credential_id.kid.identifier.value[0]);
 	assert_sign_or_mac(&parsed, &ptxt_2_kid_int[3]);
 }
 
@@ -594,14 +644,16 @@ TEST(internals_credentials, msg2_x5chain_single_certificate)
 				     ARRAY_SIZE(ptxt_2_x5chain_one), &parsed);
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN, parsed.auth_cred.label);
-	TEST_ASSERT_EQUAL_size_t(1,
-				 parsed.auth_cred.x509_chain.certificate_count);
-	TEST_ASSERT_EQUAL_PTR(&ptxt_2_x5chain_one[5],
-			      parsed.auth_cred.x509_chain.certificate[0]);
-	TEST_ASSERT_EQUAL_MEMORY(first_certificate,
-				 parsed.auth_cred.x509_chain.certificate[0],
-				 ARRAY_SIZE(first_certificate));
+	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_X509_CHAIN,
+			  parsed.peer_credential_id.label);
+	TEST_ASSERT_EQUAL_size_t(1, parsed.peer_credential_id.x509_chain.count);
+	TEST_ASSERT_EQUAL_PTR(
+		&ptxt_2_x5chain_one[5],
+		parsed.peer_credential_id.x509_chain.certificate[0].value);
+	TEST_ASSERT_EQUAL_MEMORY(
+		first_certificate,
+		parsed.peer_credential_id.x509_chain.certificate[0].value,
+		ARRAY_SIZE(first_certificate));
 	assert_sign_or_mac(&parsed, &ptxt_2_x5chain_one[9]);
 }
 
@@ -681,14 +733,15 @@ TEST(internals_credentials, validate_fetched_kid_bad_format)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
-TEST(internals_credentials, validate_verified_kid_format_unset)
+TEST(internals_credentials, validate_trusted_kid_format_unset)
 {
-	struct edhoc_auth_credentials credentials = make_valid_kid();
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_KID);
+	struct edhoc_credential_trusted trusted = make_valid_trusted();
 
-	credentials.format = EDHOC_CREDENTIAL_FORMAT_NONE;
+	trusted.format = EDHOC_CREDENTIAL_FORMAT_NONE;
 
-	const int ret = edhoc_validate_credential_verified(
-		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
@@ -738,14 +791,15 @@ TEST(internals_credentials, validate_fetched_x5chain_format_unset)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
-TEST(internals_credentials, validate_verified_x5t_cbor_encoded_rejected)
+TEST(internals_credentials, validate_trusted_x5t_cbor_encoded_rejected)
 {
-	struct edhoc_auth_credentials credentials = make_valid_x5t();
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_X509_HASH);
+	struct edhoc_credential_trusted trusted = make_valid_trusted();
 
-	credentials.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	trusted.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
-	const int ret = edhoc_validate_credential_verified(
-		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
@@ -831,63 +885,113 @@ TEST(internals_credentials, validate_fetched_x5t_bad_encode_type)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
 
-TEST(internals_credentials, validate_verified_null)
+TEST(internals_credentials, validate_trusted_null)
 {
-	const int ret = edhoc_validate_credential_verified(
-		NULL, first_certificate, ARRAY_SIZE(first_certificate));
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_KID);
+	const struct edhoc_credential_trusted trusted = make_valid_trusted();
 
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_validate_trusted(NULL, &trusted));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_validate_trusted(&received, NULL));
 }
 
-TEST(internals_credentials, validate_verified_without_public_key)
+TEST(internals_credentials, validate_trusted_without_public_key)
 {
-	const struct edhoc_auth_credentials credentials = make_valid_kid();
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_KID);
+	struct edhoc_credential_trusted trusted = make_valid_trusted();
 
-	const int ret =
-		edhoc_validate_credential_verified(&credentials, NULL, 0);
+	trusted.public_key = (struct edhoc_buffer){ 0 };
+
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
 }
 
-TEST(internals_credentials, validate_verified_kid_without_credential)
+TEST(internals_credentials, validate_trusted_kid_without_credential)
 {
-	struct edhoc_auth_credentials credentials = make_valid_kid();
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_KID);
+	struct edhoc_credential_trusted trusted = make_valid_trusted();
 
-	credentials.key_id.credential_length = 0;
+	trusted.credential.length = 0;
 
-	const int ret = edhoc_validate_credential_verified(
-		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
 }
 
-TEST(internals_credentials, validate_verified_x5t_without_certificate)
+TEST(internals_credentials, validate_trusted_x5t_without_certificate)
 {
-	struct edhoc_auth_credentials credentials = make_valid_x5t();
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_X509_HASH);
+	struct edhoc_credential_trusted trusted = make_valid_trusted();
 
-	credentials.x509_hash.certificate = NULL;
+	trusted.credential.value = NULL;
 
-	const int ret = edhoc_validate_credential_verified(
-		&credentials, fingerprint, ARRAY_SIZE(fingerprint));
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
 }
 
-TEST(internals_credentials, validate_verified_accepts_each_variant)
+TEST(internals_credentials, validate_trusted_unsupported_label)
 {
-	const struct edhoc_auth_credentials kid = make_valid_kid();
-	const struct edhoc_auth_credentials x5chain = make_valid_x5chain();
-	const struct edhoc_auth_credentials x5t = make_valid_x5t();
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_NONE);
+	const struct edhoc_credential_trusted trusted = make_valid_trusted();
+
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
+}
+
+TEST(internals_credentials, validate_trusted_x5chain_without_credential)
+{
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_X509_CHAIN);
+	struct edhoc_credential_trusted trusted = make_valid_trusted();
+
+	/* The same requirement as for the other methods: CRED is mandatory,
+	 * here the received end-entity certificate handed straight back. */
+	trusted.credential = (struct edhoc_buffer){ 0 };
+
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE, ret);
+}
+
+TEST(internals_credentials, validate_trusted_x5chain_cbor_encoded_rejected)
+{
+	const struct edhoc_credential_received received =
+		make_received(EDHOC_COSE_HEADER_X509_CHAIN);
+	struct edhoc_credential_trusted trusted = make_valid_trusted();
+
+	trusted.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+
+	const int ret = edhoc_credential_validate_trusted(&received, &trusted);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+}
+
+TEST(internals_credentials, validate_trusted_accepts_each_variant)
+{
+	const struct edhoc_credential_received kid =
+		make_received(EDHOC_COSE_HEADER_KID);
+	const struct edhoc_credential_received x5chain =
+		make_received(EDHOC_COSE_HEADER_X509_CHAIN);
+	const struct edhoc_credential_received x5t =
+		make_received(EDHOC_COSE_HEADER_X509_HASH);
+
+	const struct edhoc_credential_trusted trusted = make_valid_trusted();
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_validate_credential_verified(
-				  &kid, fingerprint, ARRAY_SIZE(fingerprint)));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_validate_credential_verified(
-						 &x5chain, fingerprint,
-						 ARRAY_SIZE(fingerprint)));
+			  edhoc_credential_validate_trusted(&kid, &trusted));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_credential_validate_trusted(
+						 &x5chain, &trusted));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_validate_credential_verified(
-				  &x5t, fingerprint, ARRAY_SIZE(fingerprint)));
+			  edhoc_credential_validate_trusted(&x5t, &trusted));
 }
 
 TEST(internals_credentials, material_kid)
@@ -1403,10 +1507,6 @@ TEST_GROUP_RUNNER(internals_credentials)
 	RUN_TEST_CASE(internals_credentials,
 		      validate_fetched_x5chain_format_unset);
 	RUN_TEST_CASE(internals_credentials,
-		      validate_verified_kid_format_unset);
-	RUN_TEST_CASE(internals_credentials,
-		      validate_verified_x5t_cbor_encoded_rejected);
-	RUN_TEST_CASE(internals_credentials,
 		      validate_fetched_kid_over_capacity);
 	RUN_TEST_CASE(internals_credentials, validate_fetched_x5chain_empty);
 	RUN_TEST_CASE(internals_credentials,
@@ -1420,16 +1520,25 @@ TEST_GROUP_RUNNER(internals_credentials)
 	RUN_TEST_CASE(internals_credentials,
 		      validate_fetched_x5t_bad_encode_type);
 
-	/* Validation of the credentials returned from verify. */
-	RUN_TEST_CASE(internals_credentials, validate_verified_null);
+	/* Validation of the credentials returned from authenticate_peer. */
+	RUN_TEST_CASE(internals_credentials, validate_trusted_null);
 	RUN_TEST_CASE(internals_credentials,
-		      validate_verified_without_public_key);
+		      validate_trusted_without_public_key);
 	RUN_TEST_CASE(internals_credentials,
-		      validate_verified_kid_without_credential);
+		      validate_trusted_kid_without_credential);
+	RUN_TEST_CASE(internals_credentials, validate_trusted_kid_format_unset);
 	RUN_TEST_CASE(internals_credentials,
-		      validate_verified_x5t_without_certificate);
+		      validate_trusted_x5t_without_certificate);
 	RUN_TEST_CASE(internals_credentials,
-		      validate_verified_accepts_each_variant);
+		      validate_trusted_x5t_cbor_encoded_rejected);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_trusted_unsupported_label);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_trusted_x5chain_without_credential);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_trusted_x5chain_cbor_encoded_rejected);
+	RUN_TEST_CASE(internals_credentials,
+		      validate_trusted_accepts_each_variant);
 
 	/* Encoder input. */
 	RUN_TEST_CASE(internals_credentials, material_kid);

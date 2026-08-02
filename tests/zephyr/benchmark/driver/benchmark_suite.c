@@ -85,7 +85,7 @@ extern void edhoc_cipher_suite_pqc_1_keystore_release_all(void);
  * and it travels via the bound user context. */
 static const struct edhoc_credentials benchmark_credentials_interface = {
 	.fetch = benchmark_credentials_fetch,
-	.verify = benchmark_credentials_verify,
+	.authenticate_peer = benchmark_credentials_authenticate_peer,
 };
 
 static const struct edhoc_ead benchmark_ead_interface = {

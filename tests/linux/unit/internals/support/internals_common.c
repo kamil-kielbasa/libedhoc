@@ -42,17 +42,17 @@
 
 static int internals_cred_fetch_stub(void *user_ctx,
 				     struct edhoc_auth_credentials *auth_cred);
-static int internals_cred_verify_stub(void *user_ctx,
-				      struct edhoc_auth_credentials *auth_cred,
-				      const uint8_t **pub_key,
-				      size_t *pub_key_len);
+static int internals_cred_authenticate_peer_stub(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 static void internals_platform_zeroize(void *buffer, size_t length);
 
 /* Static variables and constants ------------------------------------------ */
 
 static const struct edhoc_credentials internals_cred_stubs = {
 	.fetch = internals_cred_fetch_stub,
-	.verify = internals_cred_verify_stub,
+	.authenticate_peer = internals_cred_authenticate_peer_stub,
 };
 
 static const struct edhoc_platform internals_platform = {
@@ -83,22 +83,23 @@ static int internals_cred_fetch_stub(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int internals_cred_verify_stub(void *user_ctx,
-				      struct edhoc_auth_credentials *auth_cred,
-				      const uint8_t **pub_key,
-				      size_t *pub_key_len)
+static int internals_cred_authenticate_peer_stub(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	static const uint8_t dummy_key[INTERNALS_P256_COORD_LEN] = { 0 };
 
 	(void)user_ctx;
-	(void)auth_cred;
+	(void)call_ctx;
+	(void)received;
 
-	if (NULL == pub_key || NULL == pub_key_len) {
+	if (NULL == trusted) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	*pub_key = dummy_key;
-	*pub_key_len = sizeof(dummy_key);
+	trusted->public_key.value = dummy_key;
+	trusted->public_key.length = ARRAY_SIZE(dummy_key);
 
 	return EDHOC_SUCCESS;
 }

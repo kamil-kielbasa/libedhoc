@@ -100,18 +100,18 @@ struct mac_context {
  *          - PLAINTEXT_3.
  */
 struct plaintext {
-	/** Authentication credentials. */
-	struct edhoc_auth_credentials auth_cred;
+	/** ID_CRED_x, as received from the peer. */
+	struct edhoc_credential_received peer_credential_id;
 
-	/** Buffer containing cborised Signature_or_MAC (2/3). */
-	const uint8_t *sign_or_mac;
-	/** Size of the \p sign_or_mac buffer in bytes. */
-	size_t sign_or_mac_len;
+	/** Backing store for a 'kid' that arrived in the CBOR integer form
+	 *  (RFC 9528: 3.3.2). */
+	uint8_t kid_byte;
 
-	/** Buffer containing cborised EAD (2/3). */
-	const uint8_t *ead;
-	/** Size of the \p ead buffer in bytes. */
-	size_t ead_len;
+	/** Cborised Signature_or_MAC (2/3). */
+	struct edhoc_buffer sign_or_mac;
+
+	/** Cborised EAD (2/3). */
+	struct edhoc_buffer ead;
 };
 
 /**

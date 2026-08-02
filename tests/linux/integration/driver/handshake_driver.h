@@ -67,7 +67,7 @@
  *        A pointer to this structure is bound to the context as its
  *        \c user_context, so it is the single object every credential and EAD
  *        callback receives: \ref hs_cred_fetch presents \c own, \ref
- *        hs_cred_verify authenticates \c peer, and the EAD callbacks read
+ *        hs_cred_authenticate_peer authenticates \c peer, and the EAD callbacks read
  *        \c ead.
  */
 struct handshake_endpoint {

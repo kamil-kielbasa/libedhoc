@@ -211,56 +211,62 @@ int hs_cred_fetch(void *user_context,
 				     auth_credentials->private_key_id);
 }
 
-int hs_cred_verify(void *user_context,
-		   struct edhoc_auth_credentials *auth_credentials,
-		   const uint8_t **public_key, size_t *public_key_length)
+int hs_cred_authenticate_peer(void *user_context,
+			      const struct edhoc_call_context *call_context,
+			      const struct edhoc_credential_received *received,
+			      struct edhoc_credential_trusted *trusted)
 {
 	const struct handshake_endpoint *endpoint = user_context;
 
 	if (NULL == endpoint || NULL == endpoint->peer ||
-	    NULL == auth_credentials || NULL == public_key ||
-	    NULL == public_key_length) {
+	    NULL == call_context || NULL == received || NULL == trusted) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (endpoint->role != call_context->role) {
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
 	const struct hs_identity *identity = endpoint->peer;
 
-	if (identity->cose_header != auth_credentials->label) {
+	if (identity->cose_header != received->label) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
 	switch (identity->cose_header) {
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
-		if (identity->cert_count !=
-		    auth_credentials->x509_chain.certificate_count) {
+		if (identity->cert_count != received->x509_chain.count) {
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
 		}
 
 		for (size_t i = 0; i < identity->cert_count; ++i) {
-			if (auth_credentials->x509_chain.certificate_length[i] !=
+			if (received->x509_chain.certificate[i].length !=
 			    identity->cert[i].length) {
 				return EDHOC_ERROR_CREDENTIALS_FAILURE;
 			}
 
 			if (0 !=
 			    memcmp(identity->cert[i].pointer,
-				   auth_credentials->x509_chain.certificate[i],
+				   received->x509_chain.certificate[i].value,
 				   identity->cert[i].length)) {
 				return EDHOC_ERROR_CREDENTIALS_FAILURE;
 			}
 		}
 
+		/* CRED is the received end-entity certificate. */
+		trusted->credential = received->x509_chain.certificate[0];
+		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 	}
 
 	case EDHOC_COSE_HEADER_X509_HASH: {
 		if (EDHOC_ENCODE_TYPE_INTEGER !=
-		    auth_credentials->x509_hash.encode_type) {
+		    received->x509_hash.algorithm.encode_type) {
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
 		}
 
 		if (identity->thumbprint_algorithm !=
-		    auth_credentials->x509_hash.algorithm_int) {
+		    received->x509_hash.algorithm.integer) {
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
 		}
 
@@ -281,21 +287,18 @@ int hs_cred_verify(void *user_context,
 		}
 
 		if (identity->thumbprint_length !=
-		    auth_credentials->x509_hash.certificate_fingerprint_length) {
+		    received->x509_hash.fingerprint.length) {
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
 		}
 
-		if (0 !=
-		    memcmp(hash,
-			   auth_credentials->x509_hash.certificate_fingerprint,
-			   identity->thumbprint_length)) {
+		if (0 != memcmp(hash, received->x509_hash.fingerprint.value,
+				identity->thumbprint_length)) {
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
 		}
 
-		auth_credentials->x509_hash.certificate =
-			identity->cert[0].pointer;
-		auth_credentials->x509_hash.certificate_length =
-			identity->cert[0].length;
+		trusted->credential.value = identity->cert[0].pointer;
+		trusted->credential.length = identity->cert[0].length;
+		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 		break;
 	}
@@ -304,8 +307,8 @@ int hs_cred_verify(void *user_context,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	*public_key = identity->public_key;
-	*public_key_length = identity->public_key_length;
+	trusted->public_key.value = identity->public_key;
+	trusted->public_key.length = identity->public_key_length;
 
 	return EDHOC_SUCCESS;
 }

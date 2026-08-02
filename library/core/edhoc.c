@@ -268,7 +268,7 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (NULL == cred->fetch || NULL == cred->verify) {
+	if (NULL == cred->fetch || NULL == cred->authenticate_peer) {
 		EDHOC_LOG_ERR("Bad state");
 		return EDHOC_ERROR_BAD_STATE;
 	}

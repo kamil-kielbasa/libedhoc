@@ -17,8 +17,9 @@ int test_auth_cred_fetch_stub(void *user_ctx,
 {
 	(void)user_ctx;
 
-	if (NULL == auth_cred)
+	if (NULL == auth_cred) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
 
 	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
 	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
@@ -32,24 +33,34 @@ int test_auth_cred_fetch_stub(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-int test_auth_cred_verify_stub(void *user_ctx,
-			       struct edhoc_auth_credentials *auth_cred,
-			       const uint8_t **pub_key, size_t *pub_key_len)
+int test_auth_cred_authenticate_peer_stub(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
-	(void)auth_cred;
+	(void)call_ctx;
 
-	if (NULL == pub_key || NULL == pub_key_len)
+	if (NULL == received || NULL == trusted) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (EDHOC_COSE_HEADER_X509_CHAIN != received->label ||
+	    0 == received->x509_chain.count) {
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	trusted->credential = received->x509_chain.certificate[0];
+	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 	static const uint8_t dummy_key[32] = { 0 };
-	*pub_key = dummy_key;
-	*pub_key_len = sizeof(dummy_key);
+	trusted->public_key.value = dummy_key;
+	trusted->public_key.length = ARRAY_SIZE(dummy_key);
 
 	return EDHOC_SUCCESS;
 }
 
 const struct edhoc_credentials test_cred_stubs = {
 	.fetch = test_auth_cred_fetch_stub,
-	.verify = test_auth_cred_verify_stub,
+	.authenticate_peer = test_auth_cred_authenticate_peer_stub,
 };

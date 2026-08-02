@@ -95,6 +95,35 @@ Version 2.0.0
     force the short form can drop it — the identifier fields carry the ``kid``
     itself in both formats.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Peer authentication
+  callback (breaking):
+
+  * ``edhoc_credentials.verify`` is replaced by ``authenticate_peer(user_context,
+    call_context, received, trusted)``. The callback no longer writes back into
+    the structure it was handed: it reads ``struct edhoc_credential_received``,
+    which describes what the peer sent, and fills in ``struct
+    edhoc_credential_trusted`` with the credential it vouches for. Only the
+    public key was ever an output before, and the credential fields doubled as
+    input and output, which made it easy to change what went into the transcript
+    by accident.
+  * Every buffer in ``struct edhoc_credential_received`` is a view into the
+    message being processed. The library keeps that message alive until it is
+    done with it, so a view may be handed straight back in ``struct
+    edhoc_credential_trusted``, but it stops being valid once the processing
+    call returns. In exchange the decoder no longer copies received identifiers
+    into fixed-size buffers.
+  * ``struct edhoc_credential_trusted`` always takes all three fields, whatever
+    the identification method was; only where CRED comes from differs. For
+    ``x5chain`` it is the received end-entity certificate, i.e.
+    ``received->x509_chain.certificate[0]`` handed back with ``format`` set to
+    ``EDHOC_CREDENTIAL_FORMAT_RAW``.
+  * A received ``kid`` is always reported as a byte string. The CBOR integer
+    form on the wire is a transport encoding (RFC 9528: 3.3.2), which the
+    library now resolves in both directions, so an application no longer has to
+    translate the compact form back before the identifier can match its own
+    records. An integer outside the one byte CBOR range -24..23 stands for no
+    byte string at all and is rejected with ``EDHOC_ERROR_NOT_PERMITTED``.
+
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : External
   authorization data: the library validates what ``edhoc_ead.compose`` returns
   and rejects both more items than the configured

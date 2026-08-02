@@ -88,27 +88,27 @@ STATIC int validate_format(enum edhoc_cose_header label,
  * \brief Decode the 'x5chain' header parameter (RFC 9360: 2).
  *
  * \param[in] cose_x509                 Decoded COSE_X509.
- * \param[out] credentials              On success, authentication credentials.
+ * \param[out] received                 On success, peer identification.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
 STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
-			 struct edhoc_auth_credentials *credentials);
+			 struct edhoc_credential_received *received);
 
 /**
  * \brief Decode the 'x5t' header parameter (RFC 9360: 2).
  *
  * \param[in] cert_hash                 Decoded COSE_CertHash.
- * \param[out] credentials              On success, authentication credentials.
+ * \param[out] received                 On success, peer identification.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
 STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
-		     struct edhoc_auth_credentials *credentials);
+		     struct edhoc_credential_received *received);
 
 /**
  * \brief Check whether a byte is a complete CBOR integer on its own.
@@ -238,21 +238,20 @@ STATIC int validate_format(enum edhoc_cose_header label,
 }
 
 STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
-			 struct edhoc_auth_credentials *credentials)
+			 struct edhoc_credential_received *received)
 {
-	if (NULL == cose_x509 || NULL == credentials) {
+	if (NULL == cose_x509 || NULL == received) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	switch (cose_x509->COSE_X509_choice) {
 	case COSE_X509_bstr_c:
-		credentials->label = EDHOC_COSE_HEADER_X509_CHAIN;
-		credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-		credentials->x509_chain.certificate_count = 1;
-		credentials->x509_chain.certificate[0] =
+		received->label = EDHOC_COSE_HEADER_X509_CHAIN;
+		received->x509_chain.count = 1;
+		received->x509_chain.certificate[0].value =
 			cose_x509->COSE_X509_bstr.value;
-		credentials->x509_chain.certificate_length[0] =
+		received->x509_chain.certificate[0].length =
 			cose_x509->COSE_X509_bstr.len;
 		break;
 
@@ -266,16 +265,15 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
-		credentials->label = EDHOC_COSE_HEADER_X509_CHAIN;
-		credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-		credentials->x509_chain.certificate_count =
+		received->label = EDHOC_COSE_HEADER_X509_CHAIN;
+		received->x509_chain.count =
 			cose_x509->COSE_X509_certs_l_certs_count;
 
 		for (size_t i = 0; i < cose_x509->COSE_X509_certs_l_certs_count;
 		     ++i) {
-			credentials->x509_chain.certificate[i] =
+			received->x509_chain.certificate[i].value =
 				cose_x509->COSE_X509_certs_l_certs[i].value;
-			credentials->x509_chain.certificate_length[i] =
+			received->x509_chain.certificate[i].length =
 				cose_x509->COSE_X509_certs_l_certs[i].len;
 		}
 		break;
@@ -290,9 +288,9 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 }
 
 STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
-		     struct edhoc_auth_credentials *credentials)
+		     struct edhoc_credential_received *received)
 {
-	if (NULL == cert_hash || NULL == credentials) {
+	if (NULL == cert_hash || NULL == received) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -308,8 +306,9 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 
 	switch (cert_hash->COSE_CertHash_hashAlg_choice) {
 	case COSE_CertHash_hashAlg_int_c:
-		credentials->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-		credentials->x509_hash.algorithm_int =
+		received->x509_hash.algorithm.encode_type =
+			EDHOC_ENCODE_TYPE_INTEGER;
+		received->x509_hash.algorithm.integer =
 			cert_hash->COSE_CertHash_hashAlg_int;
 		break;
 
@@ -323,12 +322,12 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
-		credentials->x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING;
-		credentials->x509_hash.algorithm_bstr.length =
+		received->x509_hash.algorithm.encode_type =
+			EDHOC_ENCODE_TYPE_STRING;
+		received->x509_hash.algorithm.string.value =
+			cert_hash->COSE_CertHash_hashAlg_tstr.value;
+		received->x509_hash.algorithm.string.length =
 			cert_hash->COSE_CertHash_hashAlg_tstr.len;
-		memcpy(credentials->x509_hash.algorithm_bstr.value,
-		       cert_hash->COSE_CertHash_hashAlg_tstr.value,
-		       cert_hash->COSE_CertHash_hashAlg_tstr.len);
 		break;
 
 	default:
@@ -337,11 +336,10 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	credentials->label = EDHOC_COSE_HEADER_X509_HASH;
-	credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	credentials->x509_hash.certificate_fingerprint =
+	received->label = EDHOC_COSE_HEADER_X509_HASH;
+	received->x509_hash.fingerprint.value =
 		cert_hash->COSE_CertHash_hashValue.value;
-	credentials->x509_hash.certificate_fingerprint_length =
+	received->x509_hash.fingerprint.length =
 		cert_hash->COSE_CertHash_hashValue.len;
 
 	return EDHOC_SUCCESS;
@@ -493,25 +491,39 @@ STATIC int copy_encoded_item(const struct edhoc_buffer *item, uint8_t *buffer,
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_parse_id_cred_kid_int(int32_t key_id,
-				struct edhoc_auth_credentials *credentials)
+int edhoc_credential_parse_kid_int(int32_t key_id, uint8_t *key_id_byte,
+				   struct edhoc_credential_received *received)
 {
-	if (NULL == credentials) {
+	if (NULL == key_id_byte || NULL == received) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	credentials->label = EDHOC_COSE_HEADER_KID;
-	credentials->key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	credentials->key_id.key_id_int = key_id;
+	/* RFC 9528: 3.3.2 - the integer is the transport encoding of the byte
+	 * string that its own CBOR encoding consists of, which only holds when
+	 * that encoding is a single byte. Re-encoding recovers the byte and
+	 * rejects any wider integer in one step. */
+	size_t encoded_length = 0;
+	const int ret = cbor_encode_integer_type_int_type(
+		key_id_byte, sizeof(*key_id_byte), &key_id, &encoded_length);
+
+	if (ZCBOR_SUCCESS != ret || sizeof(*key_id_byte) != encoded_length) {
+		EDHOC_LOG_ERR("Key identifier int is not one byte: %d",
+			      (int)key_id);
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
+
+	received->label = EDHOC_COSE_HEADER_KID;
+	received->kid.identifier.value = key_id_byte;
+	received->kid.identifier.length = sizeof(*key_id_byte);
 
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_parse_id_cred_kid_bstr(const uint8_t *key_id, size_t key_id_length,
-				 struct edhoc_auth_credentials *credentials)
+int edhoc_credential_parse_kid_bstr(const uint8_t *key_id, size_t key_id_length,
+				    struct edhoc_credential_received *received)
 {
-	if (NULL == key_id || NULL == credentials) {
+	if (NULL == key_id || NULL == received) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -522,18 +534,17 @@ int edhoc_parse_id_cred_kid_bstr(const uint8_t *key_id, size_t key_id_length,
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	credentials->label = EDHOC_COSE_HEADER_KID;
-	credentials->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	credentials->key_id.key_id_bstr.length = key_id_length;
-	memcpy(credentials->key_id.key_id_bstr.value, key_id, key_id_length);
+	received->label = EDHOC_COSE_HEADER_KID;
+	received->kid.identifier.value = key_id;
+	received->kid.identifier.length = key_id_length;
 
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_parse_id_cred_map(const struct map *id_cred_map,
-			    struct edhoc_auth_credentials *credentials)
+int edhoc_credential_parse_map(const struct map *id_cred_map,
+			       struct edhoc_credential_received *received)
 {
-	if (NULL == id_cred_map || NULL == credentials) {
+	if (NULL == id_cred_map || NULL == received) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -556,11 +567,11 @@ int edhoc_parse_id_cred_map(const struct map *id_cred_map,
 
 	if (id_cred_map->map_x5chain_present) {
 		return parse_x5chain(&id_cred_map->map_x5chain.map_x5chain,
-				     credentials);
+				     received);
 	}
 
 	if (id_cred_map->map_x5t_present) {
-		return parse_x5t(&id_cred_map->map_x5t.map_x5t, credentials);
+		return parse_x5t(&id_cred_map->map_x5t.map_x5t, received);
 	}
 
 	/* Header parameters outside the CDDL model are rejected earlier, by the
@@ -606,65 +617,111 @@ int edhoc_validate_credential_fetched(
 	return ret;
 }
 
-int edhoc_validate_credential_verified(
-	const struct edhoc_auth_credentials *credentials,
-	const uint8_t *public_key, size_t public_key_length)
+int edhoc_credential_validate_trusted(
+	const struct edhoc_credential_received *received,
+	const struct edhoc_credential_trusted *trusted)
 {
-	if (NULL == credentials) {
+	if (NULL == received || NULL == trusted) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const bool no_public_key =
-		is_buffer_empty(public_key, public_key_length);
+	const bool no_credential = is_buffer_empty(trusted->credential.value,
+						 trusted->credential.length);
+
+	if (no_credential) {
+		EDHOC_LOG_ERR("Empty peer credential");
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	const bool no_public_key = is_buffer_empty(trusted->public_key.value,
+						   trusted->public_key.length);
 
 	if (no_public_key) {
 		EDHOC_LOG_ERR("Empty peer authentication key");
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	const int ret =
-		validate_format(credentials->label, credentials->format);
-
-	if (EDHOC_SUCCESS != ret) {
-		return ret;
-	}
-
-	/* The identification half of ID_CRED_x comes from the decoder and was
-	 * validated there, so only CRED_x, which the application resolves, is
-	 * checked here. */
-	switch (credentials->label) {
-	case EDHOC_COSE_HEADER_KID: {
-		const bool no_credential =
-			is_buffer_empty(credentials->key_id.credential,
-					credentials->key_id.credential_length);
-
-		if (no_credential) {
-			EDHOC_LOG_ERR("Empty credential for 'kid'");
-			return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	switch (received->label) {
+	case EDHOC_COSE_HEADER_KID:
+		/* CRED may be a CBOR item (a CWT or a CCS) or opaque bytes. */
+		if (EDHOC_CREDENTIAL_FORMAT_RAW != trusted->format &&
+		    EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED != trusted->format) {
+			EDHOC_LOG_ERR("Invalid format for 'kid': %d",
+				      trusted->format);
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
-	}
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
-		return validate_x509_chain(&credentials->x509_chain);
-
-	case EDHOC_COSE_HEADER_X509_HASH: {
-		const bool no_certificate = is_buffer_empty(
-			credentials->x509_hash.certificate,
-			credentials->x509_hash.certificate_length);
-
-		if (no_certificate) {
-			EDHOC_LOG_ERR("Empty certificate for 'x5t'");
-			return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	case EDHOC_COSE_HEADER_X509_HASH:
+		/* CRED is the DER certificate, never a CBOR item. */
+		if (EDHOC_CREDENTIAL_FORMAT_RAW != trusted->format) {
+			EDHOC_LOG_ERR("Invalid format for X.509: %d",
+				      trusted->format);
+			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
-	}
 
 	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
-			      credentials->label);
+			      received->label);
+		return EDHOC_ERROR_NOT_SUPPORTED;
+	}
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_credential_material_from_trusted(
+	const struct edhoc_credential_received *received,
+	const struct edhoc_credential_trusted *trusted,
+	struct edhoc_credential_material *material)
+{
+	if (NULL == received || NULL == trusted || NULL == material) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	memset(material, 0, sizeof(*material));
+
+	material->label = received->label;
+	material->format = trusted->format;
+	material->credential = trusted->credential;
+
+	switch (received->label) {
+	case EDHOC_COSE_HEADER_KID:
+		material->kid.encode_type = EDHOC_ENCODE_TYPE_STRING;
+		material->kid.string = received->kid.identifier;
+		break;
+
+	case EDHOC_COSE_HEADER_X509_CHAIN: {
+		const size_t count = received->x509_chain.count;
+
+		if (0 == count || EDHOC_CREDENTIAL_X5CHAIN_CAPACITY < count) {
+			EDHOC_LOG_ERR("Invalid X.509 chain length: %zu", count);
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+
+		material->x509_chain.count = count;
+		for (size_t i = 0; i < count; ++i) {
+			material->x509_chain.certificate[i] =
+				received->x509_chain.certificate[i];
+		}
+
+		break;
+	}
+
+	case EDHOC_COSE_HEADER_X509_HASH:
+		material->x509_hash.algorithm = received->x509_hash.algorithm;
+		material->x509_hash.fingerprint =
+			received->x509_hash.fingerprint;
+		break;
+
+	case EDHOC_COSE_HEADER_NONE:
+	default:
+		EDHOC_LOG_ERR("Unsupported credential label: %d",
+			      received->label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 

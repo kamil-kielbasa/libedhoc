@@ -571,7 +571,7 @@ TEST(coverage_msg3, msg3_compose_invalid_cred_label)
 
 	const struct edhoc_credentials bad_creds = {
 		.fetch = coverage_mock_cred_fetch_invalid_label,
-		.verify = coverage_mock_cred_verify,
+		.authenticate_peer = coverage_mock_cred_authenticate_peer,
 	};
 	ret = edhoc_bind_credentials(&init_ctx, &bad_creds);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

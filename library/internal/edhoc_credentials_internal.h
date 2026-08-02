@@ -93,9 +93,11 @@ struct edhoc_credential_material {
 
 /** \defgroup edhoc-credentials-decode EDHOC ID_CRED_x decoding
  *
- * Shared by message_2 (ID_CRED_R) and message_3 (ID_CRED_I). On failure
- * \p credentials is left untouched, so a rejected ID_CRED_x never reaches the
- * application with a partially populated union.
+ * Shared by message_2 (ID_CRED_R) and message_3 (ID_CRED_I). Every field is a
+ * view into the message being processed, so nothing is copied and nothing
+ * outlives the call into \c authenticate_peer. On failure \p received is left
+ * untouched, so a rejected ID_CRED_x never reaches the application with a
+ * partially populated union.
  * @{
  */
 
@@ -103,15 +105,20 @@ struct edhoc_credential_material {
  * \brief Decode ID_CRED_x carried as a bare CBOR integer, i.e. a 'kid' in the
  *        compact encoding (RFC 9528: 3.5.3.2).
  *
+ *        The integer is a transport encoding of a one-byte key identifier
+ *        (RFC 9528: 3.3.2), so the byte it stands for is restored into
+ *        \p key_id_byte, which must outlive \p received.
+ *
  * \param key_id                        Key identifier.
- * \param[out] credentials              On success, authentication credentials.
+ * \param[out] key_id_byte              On success, the restored key identifier.
+ * \param[out] received                 On success, peer identification.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_parse_id_cred_kid_int(int32_t key_id,
-				struct edhoc_auth_credentials *credentials);
+int edhoc_credential_parse_kid_int(int32_t key_id, uint8_t *key_id_byte,
+				   struct edhoc_credential_received *received);
 
 /**
  * \brief Decode ID_CRED_x carried as a bare CBOR byte string, i.e. a 'kid' in
@@ -119,14 +126,14 @@ int edhoc_parse_id_cred_kid_int(int32_t key_id,
  *
  * \param[in] key_id                    Key identifier.
  * \param key_id_length                 Length of \p key_id in bytes.
- * \param[out] credentials              On success, authentication credentials.
+ * \param[out] received                 On success, peer identification.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_parse_id_cred_kid_bstr(const uint8_t *key_id, size_t key_id_length,
-				 struct edhoc_auth_credentials *credentials);
+int edhoc_credential_parse_kid_bstr(const uint8_t *key_id, size_t key_id_length,
+				    struct edhoc_credential_received *received);
 
 /**
  * \brief Decode ID_CRED_x carried as a COSE header map.
@@ -135,14 +142,14 @@ int edhoc_parse_id_cred_kid_bstr(const uint8_t *key_id, size_t key_id_length,
  *        'x5t'. A 'kid' in map form is rejected, see RFC 9528: 3.5.3.2.
  *
  * \param[in] id_cred_map               Decoded ID_CRED_x map.
- * \param[out] credentials              On success, authentication credentials.
+ * \param[out] received                 On success, peer identification.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_parse_id_cred_map(const struct map *id_cred_map,
-			    struct edhoc_auth_credentials *credentials);
+int edhoc_credential_parse_map(const struct map *id_cred_map,
+			       struct edhoc_credential_received *received);
 
 /**@}*/
 
@@ -168,20 +175,18 @@ int edhoc_validate_credential_fetched(
 	const struct edhoc_auth_credentials *credentials);
 
 /**
- * \brief Validate the credentials and the authentication key the application
- *        returned from \c verify.
+ * \brief Validate what the application returned from \c authenticate_peer.
  *
- * \param[in] credentials               Peer authentication credentials.
- * \param[in] public_key                Peer authentication key.
- * \param public_key_length             Length of \p public_key in bytes.
+ * \param[in] received                  Peer identification, as received.
+ * \param[in] trusted                   Peer credential the application vouches for.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_validate_credential_verified(
-	const struct edhoc_auth_credentials *credentials,
-	const uint8_t *public_key, size_t public_key_length);
+int edhoc_credential_validate_trusted(
+	const struct edhoc_credential_received *received,
+	const struct edhoc_credential_trusted *trusted);
 
 /**@}*/
 
@@ -206,6 +211,23 @@ int edhoc_validate_credential_verified(
  */
 int edhoc_credential_material_from_auth(
 	const struct edhoc_auth_credentials *credentials,
+	struct edhoc_credential_material *material);
+
+/**
+ * \brief Fill in the encoder input for the peer, from what was received and
+ *        what the application vouched for.
+ *
+ * \param[in] received                  Peer identification, as received.
+ * \param[in] trusted                   Peer credential the application vouches for.
+ * \param[out] material                 On success, encoder input.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_credential_material_from_trusted(
+	const struct edhoc_credential_received *received,
+	const struct edhoc_credential_trusted *trusted,
 	struct edhoc_credential_material *material);
 
 /**

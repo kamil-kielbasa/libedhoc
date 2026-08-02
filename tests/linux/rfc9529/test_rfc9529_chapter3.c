@@ -55,20 +55,20 @@ static int auth_cred_fetch_resp(void *user_ctx,
 				struct edhoc_auth_credentials *auth_cred);
 
 /**
- * \brief Authentication credentials verify callback for initiator.
+ * \brief Authentication credentials authenticate peer callback for initiator.
  */
-static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key_ref,
-				 size_t *pub_key_len);
+static int auth_cred_authenticate_peer_init(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 /**
- * \brief Authentication credentials verify callback for responder.
+ * \brief Authentication credentials authenticate peer callback for responder.
  */
-static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key_ref,
-				 size_t *pub_key_len);
+static int auth_cred_authenticate_peer_resp(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 /* Static variables and constants ------------------------------------------ */
 
@@ -147,12 +147,12 @@ static int import_dh_priv_key(const uint8_t *priv, size_t priv_len,
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.fetch = auth_cred_fetch_init,
-	.verify = auth_cred_verify_init,
+	.authenticate_peer = auth_cred_authenticate_peer_init,
 };
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
 	.fetch = auth_cred_fetch_resp,
-	.verify = auth_cred_verify_resp,
+	.authenticate_peer = auth_cred_authenticate_peer_resp,
 };
 
 /* Static function definitions --------------------------------------------- */
@@ -309,72 +309,60 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key_ref,
-				 size_t *pub_key_len)
+static int auth_cred_authenticate_peer_init(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred)
+	if (NULL == received || NULL == trusted)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (EDHOC_COSE_HEADER_KID != auth_cred->label)
+	if (EDHOC_COSE_HEADER_KID != received->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (EDHOC_ENCODE_TYPE_INTEGER != auth_cred->key_id.encode_type)
+	if (ARRAY_SIZE(ID_CRED_R_raw_cborised) !=
+		    received->kid.identifier.length ||
+	    0 != memcmp(ID_CRED_R_raw_cborised, received->kid.identifier.value,
+			received->kid.identifier.length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (ID_CRED_R_raw != auth_cred->key_id.key_id_int)
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	auth_cred->key_id.key_id_bstr.length =
-		ARRAY_SIZE(ID_CRED_R_raw_cborised);
-	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_R_raw_cborised,
-	       ARRAY_SIZE(ID_CRED_R_raw_cborised));
-
-	auth_cred->key_id.credential = CRED_R_cborised;
-	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_R_cborised);
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
-
-	*pub_key_ref = PK_R;
-	*pub_key_len = ARRAY_SIZE(PK_R);
+	trusted->credential.value = CRED_R_cborised;
+	trusted->credential.length = ARRAY_SIZE(CRED_R_cborised);
+	trusted->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	trusted->public_key.value = PK_R;
+	trusted->public_key.length = ARRAY_SIZE(PK_R);
 
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key_ref,
-				 size_t *pub_key_len)
+static int auth_cred_authenticate_peer_resp(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred)
+	if (NULL == received || NULL == trusted)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	if (EDHOC_COSE_HEADER_KID != auth_cred->label)
+	if (EDHOC_COSE_HEADER_KID != received->label)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (EDHOC_ENCODE_TYPE_INTEGER != auth_cred->key_id.encode_type)
+	if (ARRAY_SIZE(ID_CRED_I_raw_cborised) !=
+		    received->kid.identifier.length ||
+	    0 != memcmp(ID_CRED_I_raw_cborised, received->kid.identifier.value,
+			received->kid.identifier.length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	if (ID_CRED_I_raw != auth_cred->key_id.key_id_int)
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	auth_cred->key_id.key_id_bstr.length =
-		ARRAY_SIZE(ID_CRED_I_raw_cborised);
-	memcpy(auth_cred->key_id.key_id_bstr.value, ID_CRED_I_raw_cborised,
-	       ARRAY_SIZE(ID_CRED_I_raw_cborised));
-
-	auth_cred->key_id.credential = CRED_I_cborised;
-	auth_cred->key_id.credential_length = ARRAY_SIZE(CRED_I_cborised);
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
-
-	*pub_key_ref = PK_I;
-	*pub_key_len = ARRAY_SIZE(PK_I);
+	trusted->credential.value = CRED_I_cborised;
+	trusted->credential.length = ARRAY_SIZE(CRED_I_cborised);
+	trusted->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	trusted->public_key.value = PK_I;
+	trusted->public_key.length = ARRAY_SIZE(PK_I);
 
 	return EDHOC_SUCCESS;
 }

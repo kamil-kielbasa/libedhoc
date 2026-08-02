@@ -53,10 +53,10 @@ static void test_platform_zeroize(void *buffer, size_t length);
 static const struct edhoc_platform *test_get_platform(void);
 static int test_auth_cred_fetch_stub(void *user_ctx,
 				     struct edhoc_auth_credentials *auth_cred);
-static int test_auth_cred_verify_stub(void *user_ctx,
-				      struct edhoc_auth_credentials *auth_cred,
-				      const uint8_t **pub_key,
-				      size_t *pub_key_len);
+static int test_auth_cred_authenticate_peer_stub(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 static int test_ead_compose_stub(void *user_ctx,
 				 const struct edhoc_call_context *call_ctx,
 				 struct edhoc_ead_token *ead_token,
@@ -98,7 +98,7 @@ static const struct edhoc_platform test_platform = {
 
 static const struct edhoc_credentials test_cred_stubs = {
 	.fetch = test_auth_cred_fetch_stub,
-	.verify = test_auth_cred_verify_stub,
+	.authenticate_peer = test_auth_cred_authenticate_peer_stub,
 };
 
 /* Static function definitions --------------------------------------------- */
@@ -135,22 +135,23 @@ static int test_auth_cred_fetch_stub(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int test_auth_cred_verify_stub(void *user_ctx,
-				      struct edhoc_auth_credentials *auth_cred,
-				      const uint8_t **pub_key,
-				      size_t *pub_key_len)
+static int test_auth_cred_authenticate_peer_stub(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	static const uint8_t dummy_key[32] = { 0 };
 
 	(void)user_ctx;
-	(void)auth_cred;
+	(void)call_ctx;
+	(void)received;
 
-	if (NULL == pub_key || NULL == pub_key_len) {
+	if (NULL == trusted) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	*pub_key = dummy_key;
-	*pub_key_len = sizeof(dummy_key);
+	trusted->public_key.value = dummy_key;
+	trusted->public_key.length = ARRAY_SIZE(dummy_key);
 
 	return EDHOC_SUCCESS;
 }

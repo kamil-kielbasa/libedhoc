@@ -57,15 +57,17 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
  * \brief Compute pseudorandom key (PRK_4e3m).
  *
  * \param[in,out] ctx		EDHOC context.
- * \param[in] auth_cred         Authentication credentials.
- * \param[in] pub_key           Peer public static DH key.
- * \param pub_key_len           Size of the \p pub_key buffer in bytes.
+ * \param[in] private_key_id    Handle of the local static-DH authentication key
+ *                              (Initiator only, otherwise NULL).
+ * \param[in] peer_public_key   Peer static-DH authentication key (Responder
+ *                              only, otherwise NULL).
+ * \param peer_public_key_length Size of the \p peer_public_key buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_credentials *auth_cred,
-			 const uint8_t *pub_key, size_t pub_key_len);
+STATIC int comp_prk_4e3m(struct edhoc_context *ctx, const void *private_key_id,
+			 const uint8_t *peer_public_key,
+			 size_t peer_public_key_length);
 
 /**
  * \brief Compute memory required for PLAINTEXT_3.
@@ -234,23 +236,25 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
  * \brief Compute G_IY for PRK_4e3m into the G_IY key slot.
  *
  * \param[in,out] ctx           EDHOC context.
- * \param[in] auth_cred         Authentication credentials.
- * \param[in] pub_key           Peer public key.
- * \param pub_key_len           Peer public key length.
+ * \param[in] private_key_id    Handle of the local static-DH authentication key
+ *                              (Initiator only).
+ * \param[in] peer_public_key   Peer static-DH authentication key (Responder
+ *                              only).
+ * \param peer_public_key_length Size of the \p peer_public_key buffer in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int comp_giy(struct edhoc_context *ctx,
-		    const struct edhoc_auth_credentials *auth_cred,
-		    const uint8_t *pub_key, size_t pub_key_len);
+STATIC int comp_giy(struct edhoc_context *ctx, const void *private_key_id,
+		    const uint8_t *peer_public_key,
+		    size_t peer_public_key_length);
 
 /* Static function definitions --------------------------------------------- */
 
-STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
-			 const struct edhoc_auth_credentials *auth_cred,
-			 const uint8_t *pub_key, size_t pub_key_len)
+STATIC int comp_prk_4e3m(struct edhoc_context *ctx, const void *private_key_id,
+			 const uint8_t *peer_public_key,
+			 size_t peer_public_key_length)
 {
-	if (NULL == ctx || NULL == auth_cred) {
+	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -298,7 +302,8 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx,
 		/* G_IY is a static-DH shared secret produced into its context
 		 * slot; it is the IKM for EDHOC_Extract and is released with the
 		 * other message 3 secrets (or by deinit on an error path). */
-		ret = comp_giy(ctx, auth_cred, pub_key, pub_key_len);
+		ret = comp_giy(ctx, private_key_id, peer_public_key,
+			       peer_public_key_length);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute G_IY: %d", ret);
@@ -743,22 +748,23 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 	/* ID_CRED_I */
 	switch (cbor_ptxt_3.plaintext_3_ID_CRED_I_choice) {
 	case plaintext_3_ID_CRED_I_int_c:
-		ret = edhoc_parse_id_cred_kid_int(
+		ret = edhoc_credential_parse_kid_int(
 			cbor_ptxt_3.plaintext_3_ID_CRED_I_int,
-			&parsed_ptxt->auth_cred);
+			&parsed_ptxt->kid_byte,
+			&parsed_ptxt->peer_credential_id);
 		break;
 
 	case plaintext_3_ID_CRED_I_bstr_c:
-		ret = edhoc_parse_id_cred_kid_bstr(
+		ret = edhoc_credential_parse_kid_bstr(
 			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.value,
 			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.len,
-			&parsed_ptxt->auth_cred);
+			&parsed_ptxt->peer_credential_id);
 		break;
 
 	case plaintext_3_ID_CRED_I_map_m_c:
-		ret = edhoc_parse_id_cred_map(
+		ret = edhoc_credential_parse_map(
 			&cbor_ptxt_3.plaintext_3_ID_CRED_I_map_m,
-			&parsed_ptxt->auth_cred);
+			&parsed_ptxt->peer_credential_id);
 		break;
 
 	default:
@@ -773,9 +779,9 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 	}
 
 	/* Sign_or_MAC_3 */
-	parsed_ptxt->sign_or_mac =
+	parsed_ptxt->sign_or_mac.value =
 		cbor_ptxt_3.plaintext_3_Signature_or_MAC_3.value;
-	parsed_ptxt->sign_or_mac_len =
+	parsed_ptxt->sign_or_mac.length =
 		cbor_ptxt_3.plaintext_3_Signature_or_MAC_3.len;
 
 	/* EAD_3 if present */
@@ -869,11 +875,11 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 	return EDHOC_SUCCESS;
 }
 
-STATIC int comp_giy(struct edhoc_context *ctx,
-		    const struct edhoc_auth_credentials *auth_cred,
-		    const uint8_t *pub_key, size_t pub_key_len)
+STATIC int comp_giy(struct edhoc_context *ctx, const void *private_key_id,
+		    const uint8_t *peer_public_key,
+		    size_t peer_public_key_length)
 {
-	if (NULL == ctx || NULL == auth_cred) {
+	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -883,22 +889,32 @@ STATIC int comp_giy(struct edhoc_context *ctx,
 
 	switch (ctx->state.role) {
 	case EDHOC_ROLE_INITIATOR:
+		if (NULL == private_key_id) {
+			EDHOC_LOG_ERR("Missing local authentication key");
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
+
 		/* G_IY = key_agreement(I's static private key, R's ephemeral
 		 * public key G_Y). The shared secret is produced as a handle. */
 		ret = edhoc_crypto(ctx)->key_agreement(
-			ctx->user_context, auth_cred->private_key_id,
+			ctx->user_context, private_key_id,
 			ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
 			giy_key_id);
 		break;
 
 	case EDHOC_ROLE_RESPONDER:
+		if (NULL == peer_public_key || 0 == peer_public_key_length) {
+			EDHOC_LOG_ERR("Missing peer authentication key");
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
+
 		/* G_IY = key_agreement(R's ephemeral private key, I's static
 		 * public key). The Responder's ephemeral private key was
 		 * retained by the KEM encapsulation in message 2. */
 		ret = edhoc_crypto(ctx)->key_agreement(
 			ctx->user_context,
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
-			pub_key, pub_key_len, giy_key_id);
+			peer_public_key, peer_public_key_length, giy_key_id);
 		break;
 
 	default:
@@ -1046,7 +1062,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(aad, EDHOC_MEM_ALLOC_SIZE(aad), "AAD_3");
 
 	/* 5. Compute PRK_4e3m. */
-	ret = comp_prk_4e3m(ctx, &auth_creds, NULL, 0);
+	ret = comp_prk_4e3m(ctx, auth_creds.private_key_id, NULL, 0);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_4e3m: %d", ret);
@@ -1459,11 +1475,12 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 7. Verify if credentials from peer are trusted. */
-	const uint8_t *pub_key = NULL;
-	size_t pub_key_len = 0;
-	ret = ctx->interfaces.cred.verify(ctx->user_context,
-					  &parsed_ptxt.auth_cred, &pub_key,
-					  &pub_key_len);
+	const struct edhoc_call_context call_context = edhoc_call_context(ctx);
+	struct edhoc_credential_trusted trusted = { 0 };
+
+	ret = ctx->interfaces.cred.authenticate_peer(
+		ctx->user_context, &call_context,
+		&parsed_ptxt.peer_credential_id, &trusted);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Verify peer credentials: %d", ret);
@@ -1473,17 +1490,18 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	ret = edhoc_validate_credential_verified(&parsed_ptxt.auth_cred,
-						 pub_key, pub_key_len);
+	ret = edhoc_credential_validate_trusted(&parsed_ptxt.peer_credential_id,
+						&trusted);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Validate verified credentials: %d", ret);
+		EDHOC_LOG_ERR("Validate trusted credentials: %d", ret);
 		EDHOC_MEM_FREE(ptxt);
 		return ret;
 	}
 
 	/* 8. Compute PRK_4e3m. */
-	ret = comp_prk_4e3m(ctx, &parsed_ptxt.auth_cred, pub_key, pub_key_len);
+	ret = comp_prk_4e3m(ctx, NULL, trusted.public_key.value,
+			    trusted.public_key.length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_4e3m: %d", ret);
@@ -1493,8 +1511,8 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	/* 9a. Compute required buffer length for context_3. */
 	struct edhoc_credential_material material = { 0 };
-	ret = edhoc_credential_material_from_auth(&parsed_ptxt.auth_cred,
-						  &material);
+	ret = edhoc_credential_material_from_trusted(
+		&parsed_ptxt.peer_credential_id, &trusted, &material);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(ptxt);
@@ -1567,10 +1585,10 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 10. Verify Signature_or_MAC_3. */
-	ret = edhoc_verify_sign_or_mac(ctx, mac_context, pub_key, pub_key_len,
-				       parsed_ptxt.sign_or_mac,
-				       parsed_ptxt.sign_or_mac_len, mac_buf,
-				       mac_length);
+	ret = edhoc_verify_sign_or_mac(
+		ctx, mac_context, trusted.public_key.value,
+		trusted.public_key.length, parsed_ptxt.sign_or_mac.value,
+		parsed_ptxt.sign_or_mac.length, mac_buf, mac_length);
 	EDHOC_MEM_FREE(mac_buf);
 
 	if (EDHOC_SUCCESS != ret) {

@@ -100,22 +100,22 @@ static int mock_ead_process_with_value(
 
 const struct edhoc_credentials coverage_mock_creds_kid_bstr = {
 	.fetch = mock_cred_fetch_kid_bstr,
-	.verify = coverage_mock_cred_verify,
+	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 const struct edhoc_credentials coverage_mock_creds_x5t_bstr = {
 	.fetch = mock_cred_fetch_x5t_bstr,
-	.verify = coverage_mock_cred_verify,
+	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 const struct edhoc_credentials coverage_mock_creds_x5t_int = {
 	.fetch = mock_cred_fetch_x5t_int,
-	.verify = coverage_mock_cred_verify,
+	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 const struct edhoc_credentials coverage_mock_creds_x5chain_multi = {
 	.fetch = mock_cred_fetch_x5chain_multi,
-	.verify = coverage_mock_cred_verify,
+	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 const struct edhoc_ead coverage_mock_ead_with_value = {
@@ -163,7 +163,7 @@ static const struct edhoc_crypto coverage_mock_crypto = {
 
 static const struct edhoc_credentials coverage_mock_creds = {
 	.fetch = mock_cred_fetch,
-	.verify = coverage_mock_cred_verify,
+	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 static const struct edhoc_ead coverage_mock_ead = {
@@ -173,7 +173,7 @@ static const struct edhoc_ead coverage_mock_ead = {
 
 static const struct edhoc_credentials coverage_mock_creds_kid = {
 	.fetch = mock_cred_fetch_kid,
-	.verify = coverage_mock_cred_verify,
+	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 /* Static function definitions --------------------------------------------- */
@@ -929,40 +929,47 @@ int coverage_do_mock_msg4_process(struct edhoc_context *init_ctx,
 	return EDHOC_SUCCESS;
 }
 
-int coverage_mock_cred_verify(void *user_ctx,
-			      struct edhoc_auth_credentials *auth_cred,
-			      const uint8_t **pub_key, size_t *pub_key_len)
+int coverage_mock_cred_authenticate_peer(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	static const uint8_t fake_pk[65] = { 0x04 };
 
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
 	/* 'kid' and 'x5t' only reference the credential, so resolving it is
-	 * part of the verify contract. x5chain carries it by value. */
-	switch (auth_cred->label) {
+	 * part of the authenticate contract. x5chain carries it by value, and
+	 * the end-entity certificate is handed straight back. */
+	switch (received->label) {
 	case EDHOC_COSE_HEADER_KID:
-		auth_cred->key_id.credential = mock_kid_credential;
-		auth_cred->key_id.credential_length =
-			sizeof(mock_kid_credential);
-		auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->credential.value = mock_kid_credential;
+		trusted->credential.length = ARRAY_SIZE(mock_kid_credential);
+		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		break;
+
+	case EDHOC_COSE_HEADER_X509_CHAIN:
+		trusted->credential = received->x509_chain.certificate[0];
+		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		auth_cred->x509_hash.certificate = mock_x5t_certificate;
-		auth_cred->x509_hash.certificate_length =
-			sizeof(mock_x5t_certificate);
+		trusted->credential.value = mock_x5t_certificate;
+		trusted->credential.length = ARRAY_SIZE(mock_x5t_certificate);
+		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 
 	default:
 		break;
 	}
 
-	*pub_key = fake_pk;
-	*pub_key_len = sizeof(fake_pk);
+	trusted->public_key.value = fake_pk;
+	trusted->public_key.length = ARRAY_SIZE(fake_pk);
 
 	return EDHOC_SUCCESS;
 }

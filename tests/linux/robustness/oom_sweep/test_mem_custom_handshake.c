@@ -49,12 +49,14 @@ static int auth_cred_fetch_init(void *user_ctx,
 				struct edhoc_auth_credentials *auth_cred);
 static int auth_cred_fetch_resp(void *user_ctx,
 				struct edhoc_auth_credentials *auth_cred);
-static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len);
-static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len);
+static int auth_cred_authenticate_peer_init(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
+static int auth_cred_authenticate_peer_resp(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 /* Static function definitions --------------------------------------------- */
 
@@ -151,80 +153,88 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_init(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len)
+static int auth_cred_authenticate_peer_init(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred || NULL == pub_key || NULL == pub_key_len) {
+	if (NULL == received || NULL == trusted) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label) {
+	if (EDHOC_COSE_HEADER_X509_CHAIN != received->label) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	if (1 != auth_cred->x509_chain.certificate_count) {
+	if (1 != received->x509_chain.count) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_R)) {
+	if (received->x509_chain.certificate[0].length != ARRAY_SIZE(CRED_R)) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	if (0 != memcmp(CRED_R, auth_cred->x509_chain.certificate[0],
-			auth_cred->x509_chain.certificate_length[0])) {
+	if (0 != memcmp(CRED_R, received->x509_chain.certificate[0].value,
+			received->x509_chain.certificate[0].length)) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	*pub_key = PK_R;
-	*pub_key_len = ARRAY_SIZE(PK_R);
+	trusted->credential = received->x509_chain.certificate[0];
+	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->public_key.value = PK_R;
+	trusted->public_key.length = ARRAY_SIZE(PK_R);
 
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_verify_resp(void *user_ctx,
-				 struct edhoc_auth_credentials *auth_cred,
-				 const uint8_t **pub_key, size_t *pub_key_len)
+static int auth_cred_authenticate_peer_resp(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred || NULL == pub_key || NULL == pub_key_len) {
+	if (NULL == received || NULL == trusted) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_COSE_HEADER_X509_CHAIN != auth_cred->label) {
+	if (EDHOC_COSE_HEADER_X509_CHAIN != received->label) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	if (1 != auth_cred->x509_chain.certificate_count) {
+	if (1 != received->x509_chain.count) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	if (auth_cred->x509_chain.certificate_length[0] != ARRAY_SIZE(CRED_I)) {
+	if (received->x509_chain.certificate[0].length != ARRAY_SIZE(CRED_I)) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	if (0 != memcmp(CRED_I, auth_cred->x509_chain.certificate[0],
-			auth_cred->x509_chain.certificate_length[0])) {
+	if (0 != memcmp(CRED_I, received->x509_chain.certificate[0].value,
+			received->x509_chain.certificate[0].length)) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	*pub_key = PK_I;
-	*pub_key_len = ARRAY_SIZE(PK_I);
+	trusted->credential = received->x509_chain.certificate[0];
+	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->public_key.value = PK_I;
+	trusted->public_key.length = ARRAY_SIZE(PK_I);
 
 	return EDHOC_SUCCESS;
 }
 
 static const struct edhoc_credentials cred_init = {
 	.fetch = auth_cred_fetch_init,
-	.verify = auth_cred_verify_init,
+	.authenticate_peer = auth_cred_authenticate_peer_init,
 };
 
 static const struct edhoc_credentials cred_resp = {
 	.fetch = auth_cred_fetch_resp,
-	.verify = auth_cred_verify_resp,
+	.authenticate_peer = auth_cred_authenticate_peer_resp,
 };
 
 /* Module interface function definitions ----------------------------------- */
