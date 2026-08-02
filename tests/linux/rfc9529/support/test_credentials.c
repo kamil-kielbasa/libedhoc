@@ -10,6 +10,7 @@
 /* Include files ----------------------------------------------------------- */
 
 #include "test_credentials.h"
+#include "edhoc_macros_internal.h"
 #include <string.h>
 
 int test_auth_cred_fetch_stub(void *user_ctx,
