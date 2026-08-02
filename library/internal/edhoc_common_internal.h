@@ -335,7 +335,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *edhoc_context,
  * \brief Compute Signature_or_MAC 2/3 buffer.
  *
  * \param[in] edhoc_context             EDHOC context.
- * \param[in] cred                      Authentication credentials.
+ * \param[in] private_key_id            Handle of the local private key.
  * \param[in] mac_context               MAC context.
  * \param[in] mac                       Buffer containing the MAC 2/3.
  * \param[in] mac_len                   Size of the \p mac buffer in bytes.
@@ -350,7 +350,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *edhoc_context,
  * \return Negative error code on failure.
  */
 int edhoc_comp_sign_or_mac(const struct edhoc_context *edhoc_context,
-			   const struct edhoc_auth_credentials *cred,
+			   const void *private_key_id,
 			   const struct mac_context *mac_context,
 			   const uint8_t *mac, size_t mac_len,
 			   uint8_t *signature, size_t signature_size,

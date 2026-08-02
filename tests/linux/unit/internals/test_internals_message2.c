@@ -101,9 +101,7 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 
 TEST(internals_message2, comp_grx_null)
 {
-	struct edhoc_auth_credentials ac = { 0 };
-
-	int ret = comp_grx(NULL, &ac, NULL, 0);
+	int ret = comp_grx(NULL, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -117,8 +115,8 @@ TEST(internals_message2, comp_grx_invalid_role)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 
-	struct edhoc_auth_credentials ac = { 0 };
-	int ret = comp_grx(&ctx, &ac, NULL, 0);
+	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	int ret = comp_grx(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);

@@ -39,7 +39,7 @@
  *
  *        A pointer to this structure is bound to the context as its
  *        \c user_context, so it is the single object every credential and EAD
- *        callback receives: \ref benchmark_credentials_fetch presents \c own,
+ *        callback receives: \ref benchmark_credentials_select_local presents \c own,
  *        \ref benchmark_credentials_authenticate_peer authenticates \c peer, and the EAD
  *        callbacks read \c ead. Built internally by \ref benchmark_run_case.
  */

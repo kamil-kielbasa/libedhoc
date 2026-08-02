@@ -51,8 +51,10 @@ struct ead_context {
 
 static void test_platform_zeroize(void *buffer, size_t length);
 static const struct edhoc_platform *test_get_platform(void);
-static int test_auth_cred_fetch_stub(void *user_ctx,
-				     struct edhoc_auth_credentials *auth_cred);
+static int
+test_auth_cred_select_local_stub(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
+				 struct edhoc_credential_selected *selected);
 static int test_auth_cred_authenticate_peer_stub(
 	void *user_ctx, const struct edhoc_call_context *call_ctx,
 	const struct edhoc_credential_received *received,
@@ -97,7 +99,7 @@ static const struct edhoc_platform test_platform = {
 };
 
 static const struct edhoc_credentials test_cred_stubs = {
-	.fetch = test_auth_cred_fetch_stub,
+	.select_local = test_auth_cred_select_local_stub,
 	.authenticate_peer = test_auth_cred_authenticate_peer_stub,
 };
 
@@ -113,24 +115,26 @@ static const struct edhoc_platform *test_get_platform(void)
 	return &test_platform;
 }
 
-static int test_auth_cred_fetch_stub(void *user_ctx,
-				     struct edhoc_auth_credentials *auth_cred)
+static int
+test_auth_cred_select_local_stub(void *user_ctx,
+				 const struct edhoc_call_context *call_ctx,
+				 struct edhoc_credential_selected *selected)
 {
 	static const uint8_t dummy_cert[] = { 0x30, 0x00 };
 
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred) {
+	if (NULL == selected) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	auth_cred->x509_chain.certificate_count = 1;
-	auth_cred->x509_chain.certificate[0] = dummy_cert;
-	auth_cred->x509_chain.certificate_length[0] = sizeof(dummy_cert);
+	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->x509_chain.count = 1;
+	selected->x509_chain.certificate[0].value = dummy_cert;
+	selected->x509_chain.certificate[0].length = ARRAY_SIZE(dummy_cert);
 
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }

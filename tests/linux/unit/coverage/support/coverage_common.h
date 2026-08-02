@@ -110,12 +110,20 @@ int coverage_mock_ead_process_fail(void *user_ctx,
 				   size_t ead_token_size);
 
 /** \brief Credential fetch callback returning an invalid COSE header label. */
-int coverage_mock_cred_fetch_invalid_label(
-	void *user_ctx, struct edhoc_auth_credentials *auth_cred);
+int coverage_mock_cred_select_local_invalid_label(
+	void *user_ctx, const struct edhoc_call_context *call_context,
+	struct edhoc_credential_selected *selected);
 
 /** \brief Credential fetch callback returning an x509 chain with zero certs. */
-int coverage_mock_cred_fetch_x509_zero_certs(
-	void *user_ctx, struct edhoc_auth_credentials *auth_cred);
+int coverage_mock_cred_select_local_x509_zero_certs(
+	void *user_ctx, const struct edhoc_call_context *call_context,
+	struct edhoc_credential_selected *selected);
+
+/** \brief Credential fetch callback that reports success without filling
+ *         anything, leaving the structure as the library zeroed it. */
+int coverage_mock_cred_select_local_untouched(
+	void *user_ctx, const struct edhoc_call_context *call_context,
+	struct edhoc_credential_selected *selected);
 
 /** \brief Credential authenticate callback returning a fixed public key. */
 int coverage_mock_cred_authenticate_peer(

@@ -77,7 +77,7 @@ STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
  * \brief Compute COSE_Sign1.
  *
  * \param[in] ctx               EDHOC context.
- * \param[in] cred              Authentication credentials.
+ * \param[in] private_key_id    Handle of the local private key.
  * \param[in] mac_ctx           MAC context.
  * \param[in] mac               Buffer containing MAC 2/3.
  * \param mac_len               Size of the \p mac buffer in bytes.
@@ -88,7 +88,7 @@ STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
-			    const struct edhoc_auth_credentials *cred,
+			    const void *private_key_id,
 			    const struct mac_context *mac_ctx,
 			    const uint8_t *mac, size_t mac_len, uint8_t *sign,
 			    size_t sign_size, size_t *sign_len);
@@ -171,7 +171,7 @@ STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 }
 
 STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
-			    const struct edhoc_auth_credentials *cred,
+			    const void *private_key_id,
 			    const struct mac_context *mac_ctx,
 			    const uint8_t *mac, size_t mac_len, uint8_t *sign,
 			    size_t sign_size, size_t *sign_len)
@@ -216,7 +216,7 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	ret = edhoc_crypto(ctx)->sign(ctx->user_context, cred->private_key_id,
+	ret = edhoc_crypto(ctx)->sign(ctx->user_context, private_key_id,
 				      cose_sign_1_buf, cose_sign_1_buf_len,
 				      sign, sign_size, sign_len);
 	EDHOC_MEM_FREE(cose_sign_1_buf);
@@ -1017,13 +1017,13 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 }
 
 int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
-			   const struct edhoc_auth_credentials *cred,
+			   const void *private_key_id,
 			   const struct mac_context *mac_ctx,
 			   const uint8_t *mac, size_t mac_len, uint8_t *sign,
 			   size_t sign_size, size_t *sign_len)
 {
-	if (NULL == ctx || NULL == cred || NULL == mac_ctx || NULL == mac ||
-	    0 == mac_len || NULL == sign || 0 == sign_size ||
+	if (NULL == ctx || NULL == private_key_id || NULL == mac_ctx ||
+	    NULL == mac || 0 == mac_len || NULL == sign || 0 == sign_size ||
 	    NULL == sign_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
@@ -1033,8 +1033,8 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_2:
-			return sign_cose_sign_1(ctx, cred, mac_ctx, mac,
-						mac_len, sign, sign_size,
+			return sign_cose_sign_1(ctx, private_key_id, mac_ctx,
+						mac, mac_len, sign, sign_size,
 						sign_len);
 
 		case EDHOC_METHOD_1:
@@ -1054,8 +1054,8 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 		switch (ctx->negotiation.selected_method) {
 		case EDHOC_METHOD_0:
 		case EDHOC_METHOD_1:
-			return sign_cose_sign_1(ctx, cred, mac_ctx, mac,
-						mac_len, sign, sign_size,
+			return sign_cose_sign_1(ctx, private_key_id, mac_ctx,
+						mac, mac_len, sign, sign_size,
 						sign_len);
 
 		case EDHOC_METHOD_2:

@@ -66,7 +66,7 @@
  *
  *        A pointer to this structure is bound to the context as its
  *        \c user_context, so it is the single object every credential and EAD
- *        callback receives: \ref hs_cred_fetch presents \c own, \ref
+ *        callback receives: \ref hs_cred_select_local presents \c own, \ref
  *        hs_cred_authenticate_peer authenticates \c peer, and the EAD callbacks read
  *        \c ead.
  */
@@ -75,12 +75,17 @@ struct handshake_endpoint {
 	enum edhoc_role role;
 	/** Connection identifier this endpoint advertises. */
 	struct edhoc_connection_id connection_id;
-	/** Identity this endpoint presents (fetch). */
+	/** Identity this endpoint presents (select_local). */
 	const struct hs_identity *own;
-	/** Identity this endpoint must verify from the peer (verify). */
+	/** Identity this endpoint must verify from the peer
+	 *  (authenticate_peer). */
 	const struct hs_identity *peer;
 	/** EAD tokens for the whole handshake, or NULL to bind no EAD. */
 	const struct hs_ead *ead;
+	/** Cipher suite the credential callbacks must observe in their call
+	 *  context. Filled by \ref run_handshake from the scenario, so a test
+	 *  never restates it. */
+	int32_t expected_cipher_suite;
 };
 
 /**

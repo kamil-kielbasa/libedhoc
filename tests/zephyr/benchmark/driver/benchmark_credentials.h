@@ -62,12 +62,12 @@ struct benchmark_cert {
 /**
  * \brief One authenticated EDHOC identity.
  *
- *        Everything an endpoint needs to present this identity (fetch) and
- *        everything a peer needs to accept it (verify).
+ *        Everything an endpoint needs to present this identity (select_local)
+ *        and everything a peer needs to accept it (authenticate_peer).
  */
 struct benchmark_identity {
 	/** Credential identification method (COSE header selecting the union
-	 *  member of \ref edhoc_auth_credentials): x5chain or x5t here. */
+	 *  member of \ref edhoc_credential_selected): x5chain or x5t here. */
 	enum edhoc_cose_header cose_header;
 
 	/** Private authentication key to present in the fetch callback. */
@@ -106,8 +106,9 @@ struct benchmark_identity {
  *
  * \return #EDHOC_SUCCESS on success, negative error code otherwise.
  */
-int benchmark_credentials_fetch(
-	void *user_context, struct edhoc_auth_credentials *auth_credentials);
+int benchmark_credentials_select_local(
+	void *user_context, const struct edhoc_call_context *call_context,
+	struct edhoc_credential_selected *selected);
 
 /**
  * \brief Authenticate peer callback: authenticate the peer identity

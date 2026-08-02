@@ -13,23 +13,24 @@
 #include "edhoc_macros_internal.h"
 #include <string.h>
 
-int test_auth_cred_fetch_stub(void *user_ctx,
-			      struct edhoc_auth_credentials *auth_cred)
+int test_auth_cred_select_local_stub(void *user_ctx,
+				     const struct edhoc_call_context *call_ctx,
+				     struct edhoc_credential_selected *selected)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred) {
+	if (NULL == selected) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	auth_cred->x509_chain.certificate_count = 1;
+	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->x509_chain.count = 1;
 
 	static const uint8_t dummy_cert[] = { 0x30, 0x00 };
-	auth_cred->x509_chain.certificate[0] = dummy_cert;
-	auth_cred->x509_chain.certificate_length[0] = sizeof(dummy_cert);
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	selected->x509_chain.certificate[0].value = dummy_cert;
+	selected->x509_chain.certificate[0].length = sizeof(dummy_cert);
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -62,6 +63,6 @@ int test_auth_cred_authenticate_peer_stub(
 }
 
 const struct edhoc_credentials test_cred_stubs = {
-	.fetch = test_auth_cred_fetch_stub,
+	.select_local = test_auth_cred_select_local_stub,
 	.authenticate_peer = test_auth_cred_authenticate_peer_stub,
 };

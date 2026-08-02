@@ -160,47 +160,44 @@ static int benchmark_thumbprint_hash(int32_t cose_algorithm,
 
 /* Module interface function definitions ----------------------------------- */
 
-int benchmark_credentials_fetch(void *user_context,
-				struct edhoc_auth_credentials *auth_credentials)
+int benchmark_credentials_select_local(
+	void *user_context, const struct edhoc_call_context *call_ctx,
+	struct edhoc_credential_selected *selected)
 {
 	const struct benchmark_endpoint *endpoint = user_context;
 
-	if (NULL == endpoint || NULL == endpoint->own ||
-	    NULL == auth_credentials) {
+	if (NULL == endpoint || NULL == endpoint->own || NULL == selected) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	const struct benchmark_identity *identity = endpoint->own;
 
-	auth_credentials->label = identity->cose_header;
-	auth_credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	selected->label = identity->cose_header;
 
 	switch (identity->cose_header) {
 	case EDHOC_COSE_HEADER_X509_CHAIN:
-		auth_credentials->x509_chain.certificate_count =
-			identity->cert_count;
+		selected->x509_chain.count = identity->cert_count;
 
 		for (size_t i = 0; i < identity->cert_count; ++i) {
-			auth_credentials->x509_chain.certificate[i] =
+			selected->x509_chain.certificate[i].value =
 				identity->cert[i].pointer;
-			auth_credentials->x509_chain.certificate_length[i] =
+			selected->x509_chain.certificate[i].length =
 				identity->cert[i].length;
 		}
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		auth_credentials->x509_hash.certificate =
+		selected->x509_hash.certificate.value =
 			identity->cert[0].pointer;
-		auth_credentials->x509_hash.certificate_length =
+		selected->x509_hash.certificate.length =
 			identity->cert[0].length;
-		auth_credentials->x509_hash.certificate_fingerprint =
-			identity->thumbprint;
-		auth_credentials->x509_hash.certificate_fingerprint_length =
+		selected->x509_hash.fingerprint.value = identity->thumbprint;
+		selected->x509_hash.fingerprint.length =
 			identity->thumbprint_length;
-		auth_credentials->x509_hash.encode_type =
+		selected->x509_hash.algorithm.encode_type =
 			EDHOC_ENCODE_TYPE_INTEGER;
-		auth_credentials->x509_hash.algorithm_int =
+		selected->x509_hash.algorithm.integer =
 			identity->thumbprint_algorithm;
 
 		break;
@@ -212,7 +209,7 @@ int benchmark_credentials_fetch(void *user_context,
 	return benchmark_import_private_key(identity->key_import,
 					    identity->private_key,
 					    identity->private_key_length,
-					    auth_credentials->private_key_id);
+					    selected->private_key_id);
 }
 
 int benchmark_credentials_authenticate_peer(

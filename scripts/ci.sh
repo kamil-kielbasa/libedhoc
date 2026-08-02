@@ -190,8 +190,10 @@ cmd_format() {
 cmd_cppcheck() {
     require cppcheck
     section "cppcheck"
+    cmake --preset legacy -B build/cppcheck >/dev/null
     cppcheck --enable=warning,style --inline-suppr --error-exitcode=1 \
         -I include/ -I library/internal/ -I backends/cbor/include/ \
+        -I build/cppcheck/include/generated/ \
         library/core/*.c
     ok "cppcheck passed."
 }

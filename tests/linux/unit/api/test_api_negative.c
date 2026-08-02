@@ -37,8 +37,9 @@ static int stub_ead_process(void *user_ctx,
 			    const struct edhoc_call_context *call_ctx,
 			    const struct edhoc_ead_token *token,
 			    size_t token_size);
-static int stub_cred_fetch(void *user_ctx,
-			   struct edhoc_auth_credentials *auth_cred);
+static int stub_cred_select_local(void *user_ctx,
+				  const struct edhoc_call_context *call_ctx,
+				  struct edhoc_credential_selected *selected);
 static int
 stub_cred_authenticate_peer(void *user_ctx,
 			    const struct edhoc_call_context *call_ctx,
@@ -56,7 +57,7 @@ static const struct edhoc_ead stub_ead = {
 };
 
 static const struct edhoc_credentials stub_cred = {
-	.fetch = stub_cred_fetch,
+	.select_local = stub_cred_select_local,
 	.authenticate_peer = stub_cred_authenticate_peer,
 };
 
@@ -93,11 +94,13 @@ static int stub_ead_process(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int stub_cred_fetch(void *user_ctx,
-			   struct edhoc_auth_credentials *auth_cred)
+static int stub_cred_select_local(void *user_ctx,
+				  const struct edhoc_call_context *call_ctx,
+				  struct edhoc_credential_selected *selected)
 {
 	(void)user_ctx;
-	(void)auth_cred;
+	(void)call_ctx;
+	(void)selected;
 
 	return EDHOC_SUCCESS;
 }
@@ -464,7 +467,7 @@ TEST(api_negative, bind_credentials_null_callbacks)
 	int ret = edhoc_context_init(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	const struct edhoc_credentials cred = { .fetch = NULL,
+	const struct edhoc_credentials cred = { .select_local = NULL,
 						.authenticate_peer = NULL };
 
 	ret = edhoc_bind_credentials(&ctx, &cred);

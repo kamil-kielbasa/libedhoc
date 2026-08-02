@@ -242,11 +242,9 @@ TEST(internals_common, comp_prk_3e2m_method_0)
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.th.length = 32;
 
-	const struct edhoc_auth_credentials auth_cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-	};
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(&ctx, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_3e2m(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, ctx.state.prk_state);
 
@@ -283,14 +281,10 @@ TEST(internals_common, comp_prk_3e2m_method_1)
 				     sizeof(ctx.ephemeral.peer.value),
 				     &ctx.ephemeral.peer.length);
 
-	struct edhoc_auth_credentials auth_cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-	};
-	internals_inject_ecdh_key(auth_cred.private_key_id, dh_priv,
-				  sizeof(dh_priv));
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	internals_inject_ecdh_key(key_id, dh_priv, sizeof(dh_priv));
 
-	int ret = comp_prk_3e2m(&ctx, auth_cred.private_key_id, pub_key,
-				sizeof(pub_key));
+	int ret = comp_prk_3e2m(&ctx, key_id, pub_key, sizeof(pub_key));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, ctx.state.prk_state);
 
@@ -309,11 +303,9 @@ TEST(internals_common, comp_prk_3e2m_method_max)
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.th.length = 32;
 
-	const struct edhoc_auth_credentials auth_cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-	};
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(&ctx, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_3e2m(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -330,9 +322,9 @@ TEST(internals_common, comp_prk_3e2m_bad_prk_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 
-	const struct edhoc_auth_credentials auth_cred = { 0 };
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(&ctx, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_3e2m(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -341,9 +333,9 @@ TEST(internals_common, comp_prk_3e2m_bad_prk_state)
 
 TEST(internals_common, comp_prk_3e2m_null_args)
 {
-	const struct edhoc_auth_credentials auth_cred = { 0 };
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(NULL, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_3e2m(NULL, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -358,11 +350,9 @@ TEST(internals_common, comp_prk_4e3m_method_0)
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.th.length = 32;
 
-	const struct edhoc_auth_credentials auth_cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-	};
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(&ctx, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_4e3m(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, ctx.state.prk_state);
 
@@ -399,14 +389,10 @@ TEST(internals_common, comp_prk_4e3m_method_2)
 				     sizeof(ctx.ephemeral.peer.value),
 				     &ctx.ephemeral.peer.length);
 
-	struct edhoc_auth_credentials auth_cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-	};
-	internals_inject_ecdh_key(auth_cred.private_key_id, dh_priv,
-				  sizeof(dh_priv));
+	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	internals_inject_ecdh_key(key_id, dh_priv, sizeof(dh_priv));
 
-	int ret = comp_prk_4e3m(&ctx, auth_cred.private_key_id, pub_key,
-				sizeof(pub_key));
+	int ret = comp_prk_4e3m(&ctx, key_id, pub_key, sizeof(pub_key));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, ctx.state.prk_state);
 
@@ -425,11 +411,9 @@ TEST(internals_common, comp_prk_4e3m_method_max)
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.th.length = 32;
 
-	const struct edhoc_auth_credentials auth_cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-	};
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(&ctx, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_4e3m(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -446,9 +430,9 @@ TEST(internals_common, comp_prk_4e3m_bad_prk_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 
-	const struct edhoc_auth_credentials auth_cred = { 0 };
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(&ctx, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_4e3m(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -457,9 +441,9 @@ TEST(internals_common, comp_prk_4e3m_bad_prk_state)
 
 TEST(internals_common, comp_prk_4e3m_null_args)
 {
-	const struct edhoc_auth_credentials auth_cred = { 0 };
+	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(NULL, auth_cred.private_key_id, NULL, 0);
+	int ret = comp_prk_4e3m(NULL, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 

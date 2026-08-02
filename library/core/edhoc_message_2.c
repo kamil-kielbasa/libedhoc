@@ -1224,19 +1224,22 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	/* 4. Fetch authentication credentials. */
-	struct edhoc_auth_credentials auth_cred = { 0 };
-	ret = ctx->interfaces.cred.fetch(ctx->user_context, &auth_cred);
+	/* 4. Select authentication credential. */
+	const struct edhoc_call_context cred_call_context =
+		edhoc_call_context(ctx);
+	struct edhoc_credential_selected selected = { 0 };
+	ret = ctx->interfaces.cred.select_local(ctx->user_context,
+						&cred_call_context, &selected);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Fetch credentials: %d", ret);
+		EDHOC_LOG_ERR("Select local credential: %d", ret);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	ret = edhoc_validate_credential_fetched(&auth_cred);
+	ret = edhoc_credential_validate_selected(&selected);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Validate fetched credentials: %d", ret);
+		EDHOC_LOG_ERR("Validate selected credential: %d", ret);
 		return ret;
 	}
 
@@ -1264,7 +1267,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 6. Compute pseudorandom key (PRK_3e2m). */
-	ret = comp_prk_3e2m(ctx, auth_cred.private_key_id, NULL, 0);
+	ret = comp_prk_3e2m(ctx, selected.private_key_id, NULL, 0);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_3e2m: %d", ret);
@@ -1273,7 +1276,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	/* 7a. Compute required buffer length for context_2. */
 	struct edhoc_credential_material material = { 0 };
-	ret = edhoc_credential_material_from_auth(&auth_cred, &material);
+	ret = edhoc_credential_material_from_selected(&selected, &material);
 
 	if (EDHOC_SUCCESS != ret) {
 		return ret;
@@ -1348,8 +1351,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
-	ret = edhoc_comp_sign_or_mac(ctx, &auth_cred, mac_ctx, mac_buf,
-				     mac_length, signature,
+	ret = edhoc_comp_sign_or_mac(ctx, selected.private_key_id, mac_ctx,
+				     mac_buf, mac_length, signature,
 				     EDHOC_MEM_ALLOC_SIZE(signature),
 				     &signature_length);
 	EDHOC_MEM_FREE(mac_buf);

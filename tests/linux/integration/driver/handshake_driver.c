@@ -58,7 +58,7 @@ enum hs_oscore_export {
 /* The generic callbacks are identical for every scenario; the per-endpoint
  * data travels through the bound user context (struct handshake_endpoint). */
 static const struct edhoc_credentials hs_credentials = {
-	.fetch = hs_cred_fetch,
+	.select_local = hs_cred_select_local,
 	.authenticate_peer = hs_cred_authenticate_peer,
 };
 
@@ -471,8 +471,15 @@ void run_handshake(const struct handshake_scenario *scenario)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	hs_setup_context(&init_ctx, scenario, &scenario->init);
-	hs_setup_context(&resp_ctx, scenario, &scenario->resp);
+	/* The credential callbacks assert the call context they observe, which
+	 * only the driver knows in full. */
+	struct handshake_endpoint init_endpoint = scenario->init;
+	struct handshake_endpoint resp_endpoint = scenario->resp;
+	init_endpoint.expected_cipher_suite = cipher_suite->value;
+	resp_endpoint.expected_cipher_suite = cipher_suite->value;
+
+	hs_setup_context(&init_ctx, scenario, &init_endpoint);
+	hs_setup_context(&resp_ctx, scenario, &resp_endpoint);
 
 	uint8_t message[HS_MESSAGE_BUFFER_SIZE] = { 0 };
 	size_t message_length = 0;

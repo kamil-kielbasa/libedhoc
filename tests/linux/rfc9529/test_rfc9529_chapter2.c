@@ -51,14 +51,18 @@
 /**
  * \brief Authentication credentials fetch callback for initiator.
  */
-static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_credentials *auth_cred);
+static int
+auth_cred_select_local_init(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_credential_selected *selected);
 
 /**
  * \brief Authentication credentials fetch callback for responder.
  */
-static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_credentials *auth_cred);
+static int
+auth_cred_select_local_resp(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_credential_selected *selected);
 
 /**
  * \brief Authentication credentials verify callback for initiator.
@@ -115,12 +119,12 @@ static int import_sign_priv_key(const uint8_t *priv, size_t priv_len,
 }
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
-	.fetch = auth_cred_fetch_init,
+	.select_local = auth_cred_select_local_init,
 	.authenticate_peer = auth_cred_authenticate_peer_init,
 };
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
-	.fetch = auth_cred_fetch_resp,
+	.select_local = auth_cred_select_local_resp,
 	.authenticate_peer = auth_cred_authenticate_peer_resp,
 };
 
@@ -216,12 +220,15 @@ static int mocked_decapsulate_init(void *user_ctx, const void *decaps_key_id,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_fetch_init(void *user_ctx,
-				struct edhoc_auth_credentials *auth_cred)
+static int
+auth_cred_select_local_init(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_credential_selected *selected)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred)
+	if (NULL == selected)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	/**
@@ -231,18 +238,17 @@ static int auth_cred_fetch_init(void *user_ctx,
 	if (CBOR_ENC_COSE_ALG_SHA_256_64 != ID_CRED_I_cborised[4])
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	auth_cred->x509_hash.certificate = CRED_I;
-	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_I);
-	auth_cred->x509_hash.certificate_fingerprint = &ID_CRED_I_cborised[6];
-	auth_cred->x509_hash.certificate_fingerprint_length =
+	selected->label = EDHOC_COSE_HEADER_X509_HASH;
+	selected->x509_hash.certificate.value = CRED_I;
+	selected->x509_hash.certificate.length = ARRAY_SIZE(CRED_I);
+	selected->x509_hash.fingerprint.value = &ID_CRED_I_cborised[6];
+	selected->x509_hash.fingerprint.length =
 		ARRAY_SIZE(ID_CRED_I_cborised) - 6;
-	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	auth_cred->x509_hash.algorithm_int = COSE_ALG_SHA_256_64;
+	selected->x509_hash.algorithm.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
+	selected->x509_hash.algorithm.integer = COSE_ALG_SHA_256_64;
 
 	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					     auth_cred->private_key_id);
+					     selected->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -250,12 +256,15 @@ static int auth_cred_fetch_init(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
-static int auth_cred_fetch_resp(void *user_ctx,
-				struct edhoc_auth_credentials *auth_cred)
+static int
+auth_cred_select_local_resp(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_credential_selected *selected)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
-	if (NULL == auth_cred)
+	if (NULL == selected)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
 	/**
@@ -265,18 +274,17 @@ static int auth_cred_fetch_resp(void *user_ctx,
 	if (CBOR_ENC_COSE_ALG_SHA_256_64 != ID_CRED_R_cborised[4])
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	auth_cred->x509_hash.certificate = CRED_R;
-	auth_cred->x509_hash.certificate_length = ARRAY_SIZE(CRED_R);
-	auth_cred->x509_hash.certificate_fingerprint = &ID_CRED_R_cborised[6];
-	auth_cred->x509_hash.certificate_fingerprint_length =
+	selected->label = EDHOC_COSE_HEADER_X509_HASH;
+	selected->x509_hash.certificate.value = CRED_R;
+	selected->x509_hash.certificate.length = ARRAY_SIZE(CRED_R);
+	selected->x509_hash.fingerprint.value = &ID_CRED_R_cborised[6];
+	selected->x509_hash.fingerprint.length =
 		ARRAY_SIZE(ID_CRED_R_cborised) - 6;
-	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	auth_cred->x509_hash.algorithm_int = COSE_ALG_SHA_256_64;
+	selected->x509_hash.algorithm.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
+	selected->x509_hash.algorithm.integer = COSE_ALG_SHA_256_64;
 
 	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					     auth_cred->private_key_id);
+					     selected->private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;

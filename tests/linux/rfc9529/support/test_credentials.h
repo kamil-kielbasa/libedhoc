@@ -15,8 +15,9 @@
 /**
  * \brief Credential fetch stub that returns a minimal x509 chain credential.
  */
-int test_auth_cred_fetch_stub(void *user_ctx,
-			      struct edhoc_auth_credentials *auth_cred);
+int test_auth_cred_select_local_stub(
+	void *user_ctx, const struct edhoc_call_context *call_context,
+	struct edhoc_credential_selected *selected);
 
 /**
  * \brief Credential verify stub that returns a dummy 32-byte public key.

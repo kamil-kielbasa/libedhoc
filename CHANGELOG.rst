@@ -71,16 +71,14 @@ Version 2.0.0
     replacement in this release; the supported labels are ``kid``, ``x5chain``
     and ``x5t``.
   * New ``EDHOC_COSE_HEADER_NONE = 0``. A zeroed ``struct
-    edhoc_auth_credentials`` no longer names a union member by accident, and
-    ``fetch`` that forgets to set ``label`` is rejected instead of misread.
+    edhoc_credential_selected`` no longer names a union member by accident, and
+    a callback that forgets to set ``label`` is rejected instead of misread.
   * ``edhoc_auth_credential_key_id.is_credential_cbor_encoded`` (``bool``) is
-    replaced by ``struct edhoc_auth_credentials.format`` of the new ``enum
-    edhoc_credential_format`` (``NONE = 0``, ``RAW``, ``CBOR_ENCODED``). The
-    field sits next to ``label``, which constrains it: ``CBOR_ENCODED`` is
-    admissible only for ``kid``, since for the X.509 variants CRED is the DER
-    certificate. ``NONE`` is rejected, so the serialization is always a
-    deliberate choice. On verify the library fills the format in for the X.509
-    variants, as it is the one that knows CRED is DER.
+    replaced by ``struct edhoc_credential_selected_kid.format`` of the new
+    ``enum edhoc_credential_format`` (``NONE = 0``, ``RAW``, ``CBOR_ENCODED``).
+    The field belongs to the ``kid`` variant alone: for the X.509 variants CRED
+    is the DER certificate, so there is nothing to choose. ``NONE`` is
+    rejected, so the serialization is always a deliberate choice.
   * The key-identifier and fingerprint-algorithm buffers are no longer
     configurable. ``CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID`` and
     ``CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG`` are removed in favour of the fixed
@@ -94,6 +92,26 @@ Version 2.0.0
     it, so an application that used ``EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED`` to
     force the short form can drop it — the identifier fields carry the ``kid``
     itself in both formats.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Local credential
+  callback (breaking):
+
+  * ``edhoc_credentials.fetch`` is replaced by ``select_local(user_context,
+    call_context, selected)``. It fills the new ``struct
+    edhoc_credential_selected``, which replaces ``struct
+    edhoc_auth_credentials``.
+  * The library zeroes ``selected`` before every call, so a field the callback
+    does not set is not carried over from an earlier handshake. A callback that
+    returns success without setting ``label`` is rejected with
+    ``EDHOC_ERROR_NOT_SUPPORTED``.
+  * CRED moved from the top level into the variant that owns it: ``kid`` names
+    it explicitly in ``kid.credential``, ``x5t`` in ``x509_hash.certificate``,
+    and for ``x5chain`` the library takes ``x509_chain.certificate[0]`` itself,
+    since RFC 9528: 3.5.3 fixes CRED to the end-entity certificate.
+  * The ``kid`` identifier is a byte string on both callbacks. The compact CBOR
+    integer form of RFC 9528: 3.3.2 is applied by the library alone, so the
+    same identifier that ``select_local`` presents is what
+    ``authenticate_peer`` sees on the other side.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Peer authentication
   callback (breaking):

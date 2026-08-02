@@ -48,6 +48,13 @@ if(CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE)
         SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
         INCLUDE       ${_drv} ${_vectors}
         GROUPS        cipher_suite_2_x509_hash)
+
+    edhoc_add_unity_test(
+        NAME          test_cipher_suite_2_mixed_credentials
+        SOURCES       test_cipher_suite_2_mixed_credentials.c ${_driver} ${_memhook}
+        SUITE_SOURCES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
+        INCLUDE       ${_drv} ${_vectors}
+        GROUPS        cipher_suite_2_mixed_credentials)
 endif()
 
 if(CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE)

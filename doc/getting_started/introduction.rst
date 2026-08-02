@@ -130,8 +130,8 @@ on the wire by one of the :term:`COSE` credential types:
      - Hash of an X.509 certificate
 
 libedhoc embeds no credential storage or validation: the application supplies
-the fetch/verify callbacks and may consult a :term:`CRL` or any other trust
-policy. See :doc:`../api/credentials`.
+the ``select_local`` / ``authenticate_peer`` callbacks and may consult a
+:term:`CRL` or any other trust policy. See :doc:`../api/credentials`.
 
 Where next?
 -----------

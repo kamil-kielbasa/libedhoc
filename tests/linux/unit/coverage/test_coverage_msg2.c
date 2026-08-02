@@ -1151,7 +1151,7 @@ TEST(coverage_msg2, msg2_compose_x509_zero_certs_2)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const struct edhoc_credentials zero_creds = {
-		.fetch = coverage_mock_cred_fetch_x509_zero_certs,
+		.select_local = coverage_mock_cred_select_local_x509_zero_certs,
 		.authenticate_peer = coverage_mock_cred_authenticate_peer,
 	};
 	ret = edhoc_bind_credentials(&resp_ctx, &zero_creds);
@@ -1165,6 +1165,49 @@ TEST(coverage_msg2, msg2_compose_x509_zero_certs_2)
 	/* An empty chain is rejected by the validation that follows fetch. */
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+
+	ret = edhoc_context_deinit(&init_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	ret = edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(coverage_msg2, msg2_compose_cred_left_zeroed)
+{
+	struct edhoc_context init_ctx = { 0 };
+	struct edhoc_context resp_ctx = { 0 };
+
+	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t msg1[512] = { 0 };
+	size_t msg1_len = 0;
+
+	coverage_mock_reset(0);
+
+	ret = coverage_do_msg1_flow(&init_ctx, &resp_ctx, msg1, sizeof(msg1),
+				    &msg1_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	const struct edhoc_credentials silent_creds = {
+		.select_local = coverage_mock_cred_select_local_untouched,
+		.authenticate_peer = coverage_mock_cred_authenticate_peer,
+	};
+	ret = edhoc_bind_credentials(&resp_ctx, &silent_creds);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	coverage_mock_reset(0);
+
+	uint8_t msg2[512] = { 0 };
+	size_t msg2_len = 0;
+
+	/* The library zeroes the structure before the callback, so a callback
+	 * that fills nothing leaves EDHOC_COSE_HEADER_NONE behind. */
+	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -1193,7 +1236,7 @@ TEST(coverage_msg2, msg2_compose_invalid_cred_label)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const struct edhoc_credentials bad_creds = {
-		.fetch = coverage_mock_cred_fetch_invalid_label,
+		.select_local = coverage_mock_cred_select_local_invalid_label,
 		.authenticate_peer = coverage_mock_cred_authenticate_peer,
 	};
 	ret = edhoc_bind_credentials(&resp_ctx, &bad_creds);
@@ -1234,7 +1277,7 @@ TEST(coverage_msg2, msg2_compose_x509_zero_certs)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const struct edhoc_credentials zero_creds = {
-		.fetch = coverage_mock_cred_fetch_x509_zero_certs,
+		.select_local = coverage_mock_cred_select_local_x509_zero_certs,
 		.authenticate_peer = coverage_mock_cred_authenticate_peer,
 	};
 	ret = edhoc_bind_credentials(&resp_ctx, &zero_creds);
@@ -1495,6 +1538,7 @@ TEST_GROUP_RUNNER(coverage_msg2)
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_x509_zero_certs);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_x509_zero_certs_2);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_invalid_cred_label);
+	RUN_TEST_CASE(coverage_msg2, msg2_compose_cred_left_zeroed);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_no_fail);
 
 	/* Compose — fail-point sweeps. */

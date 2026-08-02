@@ -156,47 +156,60 @@ static int hs_thumbprint_hash(int32_t cose_algorithm, const uint8_t *data,
 
 /* Module interface function definitions ----------------------------------- */
 
-int hs_cred_fetch(void *user_context,
-		  struct edhoc_auth_credentials *auth_credentials)
+int hs_cred_select_local(void *user_context,
+			 const struct edhoc_call_context *call_ctx,
+			 struct edhoc_credential_selected *selected)
 {
 	const struct handshake_endpoint *endpoint = user_context;
 
-	if (NULL == endpoint || NULL == endpoint->own ||
-	    NULL == auth_credentials) {
+	if (NULL == endpoint || NULL == endpoint->own || NULL == call_ctx ||
+	    NULL == selected) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (endpoint->role != call_ctx->role ||
+	    endpoint->expected_cipher_suite !=
+		    call_ctx->selected_cipher_suite) {
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
 	const struct hs_identity *identity = endpoint->own;
 
-	auth_credentials->label = identity->cose_header;
-	auth_credentials->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	selected->label = identity->cose_header;
 
 	switch (identity->cose_header) {
+	case EDHOC_COSE_HEADER_KID:
+		selected->kid.identifier.value = identity->kid;
+		selected->kid.identifier.length = identity->kid_length;
+		selected->kid.credential.value = identity->credential;
+		selected->kid.credential.length = identity->credential_length;
+		selected->kid.format = identity->credential_format;
+
+		break;
+
 	case EDHOC_COSE_HEADER_X509_CHAIN:
-		auth_credentials->x509_chain.certificate_count =
-			identity->cert_count;
+		selected->x509_chain.count = identity->cert_count;
 
 		for (size_t i = 0; i < identity->cert_count; ++i) {
-			auth_credentials->x509_chain.certificate[i] =
+			selected->x509_chain.certificate[i].value =
 				identity->cert[i].pointer;
-			auth_credentials->x509_chain.certificate_length[i] =
+			selected->x509_chain.certificate[i].length =
 				identity->cert[i].length;
 		}
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		auth_credentials->x509_hash.certificate =
+		selected->x509_hash.certificate.value =
 			identity->cert[0].pointer;
-		auth_credentials->x509_hash.certificate_length =
+		selected->x509_hash.certificate.length =
 			identity->cert[0].length;
-		auth_credentials->x509_hash.certificate_fingerprint =
-			identity->thumbprint;
-		auth_credentials->x509_hash.certificate_fingerprint_length =
+		selected->x509_hash.fingerprint.value = identity->thumbprint;
+		selected->x509_hash.fingerprint.length =
 			identity->thumbprint_length;
-		auth_credentials->x509_hash.encode_type =
+		selected->x509_hash.algorithm.encode_type =
 			EDHOC_ENCODE_TYPE_INTEGER;
-		auth_credentials->x509_hash.algorithm_int =
+		selected->x509_hash.algorithm.integer =
 			identity->thumbprint_algorithm;
 
 		break;
@@ -208,7 +221,7 @@ int hs_cred_fetch(void *user_context,
 	return hs_import_private_key(identity->key_import,
 				     identity->private_key,
 				     identity->private_key_length,
-				     auth_credentials->private_key_id);
+				     selected->private_key_id);
 }
 
 int hs_cred_authenticate_peer(void *user_context,
@@ -223,7 +236,9 @@ int hs_cred_authenticate_peer(void *user_context,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (endpoint->role != call_context->role) {
+	if (endpoint->role != call_context->role ||
+	    endpoint->expected_cipher_suite !=
+		    call_context->selected_cipher_suite) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
@@ -234,6 +249,26 @@ int hs_cred_authenticate_peer(void *user_context,
 	}
 
 	switch (identity->cose_header) {
+	case EDHOC_COSE_HEADER_KID: {
+		if (identity->kid_length != received->kid.identifier.length) {
+			return EDHOC_ERROR_CREDENTIALS_FAILURE;
+		}
+
+		/* An empty identifier is legal, and memcmp() may not be called
+		 * with a null pointer even for zero bytes. */
+		if (0 != identity->kid_length &&
+		    0 != memcmp(identity->kid, received->kid.identifier.value,
+				identity->kid_length)) {
+			return EDHOC_ERROR_CREDENTIALS_FAILURE;
+		}
+
+		/* The identifier alone selects CRED; nothing else is sent. */
+		trusted->credential.value = identity->credential;
+		trusted->credential.length = identity->credential_length;
+		trusted->format = identity->credential_format;
+		break;
+	}
+
 	case EDHOC_COSE_HEADER_X509_CHAIN: {
 		if (identity->cert_count != received->x509_chain.count) {
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;

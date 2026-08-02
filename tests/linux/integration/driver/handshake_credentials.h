@@ -10,10 +10,10 @@
  *          at the identity it must verify (see \ref handshake_endpoint in
  *          handshake_driver.h):
  *
- *          - on \b fetch the callback presents \c own (the certificate to send
- *            and the private key to sign / key-agree with);
- *          - on \b verify the callback authenticates the received credential
- *            against \c peer and returns \c peer's public key.
+ *          - on \b select_local the callback presents \c own (the credential
+ *            to send and the private key to sign / key-agree with);
+ *          - on \b authenticate_peer the callback authenticates the received
+ *            credential against \c peer and returns \c peer's public key.
  *
  * \copyright Copyright (c) 2026
  *
@@ -63,15 +63,15 @@ struct hs_cert {
 /**
  * \brief One authenticated EDHOC identity.
  *
- *        Everything an endpoint needs to present this identity (fetch) and
- *        everything a peer needs to accept it (verify).
+ *        Everything an endpoint needs to present this identity (select_local)
+ *        and everything a peer needs to accept it (authenticate_peer).
  */
 struct hs_identity {
 	/** Credential identification method (COSE header selecting the union
-	 *  member of \ref edhoc_auth_credentials): x5chain or x5t here. */
+	 *  member of \ref edhoc_credential_selected): kid, x5chain or x5t. */
 	enum edhoc_cose_header cose_header;
 
-	/** Private authentication key to present in the fetch callback. */
+	/** Private authentication key to present in the select_local callback. */
 	const uint8_t *private_key;
 	/** Size of \p private_key in bytes. */
 	size_t private_key_length;
@@ -94,20 +94,33 @@ struct hs_identity {
 	size_t thumbprint_length;
 	/** \c x5t only: COSE algorithm identifier of the thumbprint hash. */
 	int32_t thumbprint_algorithm;
+
+	/** \c kid only: key identifier bytes. */
+	const uint8_t *kid;
+	/** \c kid only: size of \p kid in bytes. */
+	size_t kid_length;
+	/** \c kid only: credential the identifier refers to (a CCS here). */
+	const uint8_t *credential;
+	/** \c kid only: size of \p credential in bytes. */
+	size_t credential_length;
+	/** \c kid only: how \p credential enters the transcript hash. */
+	enum edhoc_credential_format credential_format;
 };
 
 /* Module interface function declarations ---------------------------------- */
 
 /**
- * \brief Fetch callback: present the local identity (\c user_context->own).
+ * \brief Select callback: present the local identity (\c user_context->own).
  *
  * \param[in] user_context      The \ref handshake_endpoint being configured.
- * \param[out] auth_credentials Credential structure to populate.
+ * \param[in] call_context      Session and message the call belongs to.
+ * \param[out] selected         Credential structure to populate.
  *
  * \return #EDHOC_SUCCESS on success, negative error code otherwise.
  */
-int hs_cred_fetch(void *user_context,
-		  struct edhoc_auth_credentials *auth_credentials);
+int hs_cred_select_local(void *user_context,
+			 const struct edhoc_call_context *call_context,
+			 struct edhoc_credential_selected *selected);
 
 /**
  * \brief Authenticate callback: authenticate the peer identity

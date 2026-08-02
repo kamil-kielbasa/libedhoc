@@ -71,9 +71,7 @@ TEST(internals_message4, comp_th_4_bad_state)
 
 TEST(internals_message4, comp_giy_null)
 {
-	const struct edhoc_auth_credentials ac = { 0 };
-
-	int ret = comp_giy(NULL, &ac, NULL, 0);
+	int ret = comp_giy(NULL, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -87,8 +85,8 @@ TEST(internals_message4, comp_giy_invalid_role)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 
-	const struct edhoc_auth_credentials ac = { 0 };
-	int ret = comp_giy(&ctx, &ac, NULL, 0);
+	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	int ret = comp_giy(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);

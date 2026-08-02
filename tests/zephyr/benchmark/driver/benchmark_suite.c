@@ -84,7 +84,7 @@ extern void edhoc_cipher_suite_pqc_1_keystore_release_all(void);
 /* The generic credential and EAD callbacks; only the per-endpoint data differs,
  * and it travels via the bound user context. */
 static const struct edhoc_credentials benchmark_credentials_interface = {
-	.fetch = benchmark_credentials_fetch,
+	.select_local = benchmark_credentials_select_local,
 	.authenticate_peer = benchmark_credentials_authenticate_peer,
 };
 

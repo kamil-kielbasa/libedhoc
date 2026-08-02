@@ -73,19 +73,28 @@ static int mock_hash_finish(void *user_ctx, void *operation, uint8_t *hash,
 			    size_t hash_size, size_t *hash_len);
 static int mock_hash_abort(void *user_ctx, void *operation);
 
-static int mock_cred_fetch(void *user_ctx,
-			   struct edhoc_auth_credentials *auth_cred);
-static int mock_cred_fetch_kid(void *user_ctx,
-			       struct edhoc_auth_credentials *auth_cred);
-static int mock_cred_fetch_kid_bstr(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred);
-static int mock_cred_fetch_x5t_bstr(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred);
-static int mock_cred_fetch_x5t_int(void *user_ctx,
-				   struct edhoc_auth_credentials *auth_cred);
+static int mock_cred_select_local(void *user_ctx,
+				  const struct edhoc_call_context *call_ctx,
+				  struct edhoc_credential_selected *selected);
 static int
-mock_cred_fetch_x5chain_multi(void *user_ctx,
-			      struct edhoc_auth_credentials *auth_cred);
+mock_cred_select_local_kid(void *user_ctx,
+			   const struct edhoc_call_context *call_ctx,
+			   struct edhoc_credential_selected *selected);
+static int
+mock_cred_select_local_kid_bstr(void *user_ctx,
+				const struct edhoc_call_context *call_ctx,
+				struct edhoc_credential_selected *selected);
+static int
+mock_cred_select_local_x5t_bstr(void *user_ctx,
+				const struct edhoc_call_context *call_ctx,
+				struct edhoc_credential_selected *selected);
+static int
+mock_cred_select_local_x5t_int(void *user_ctx,
+			       const struct edhoc_call_context *call_ctx,
+			       struct edhoc_credential_selected *selected);
+static int mock_cred_select_local_x5chain_multi(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	struct edhoc_credential_selected *selected);
 
 static int
 mock_ead_compose_with_value(void *user_ctx,
@@ -99,22 +108,22 @@ static int mock_ead_process_with_value(
 /* Module interface variables and constants -------------------------------- */
 
 const struct edhoc_credentials coverage_mock_creds_kid_bstr = {
-	.fetch = mock_cred_fetch_kid_bstr,
+	.select_local = mock_cred_select_local_kid_bstr,
 	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 const struct edhoc_credentials coverage_mock_creds_x5t_bstr = {
-	.fetch = mock_cred_fetch_x5t_bstr,
+	.select_local = mock_cred_select_local_x5t_bstr,
 	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 const struct edhoc_credentials coverage_mock_creds_x5t_int = {
-	.fetch = mock_cred_fetch_x5t_int,
+	.select_local = mock_cred_select_local_x5t_int,
 	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
 const struct edhoc_credentials coverage_mock_creds_x5chain_multi = {
-	.fetch = mock_cred_fetch_x5chain_multi,
+	.select_local = mock_cred_select_local_x5chain_multi,
 	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
@@ -162,7 +171,7 @@ static const struct edhoc_crypto coverage_mock_crypto = {
 };
 
 static const struct edhoc_credentials coverage_mock_creds = {
-	.fetch = mock_cred_fetch,
+	.select_local = mock_cred_select_local,
 	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
@@ -172,7 +181,7 @@ static const struct edhoc_ead coverage_mock_ead = {
 };
 
 static const struct edhoc_credentials coverage_mock_creds_kid = {
-	.fetch = mock_cred_fetch_kid,
+	.select_local = mock_cred_select_local_kid,
 	.authenticate_peer = coverage_mock_cred_authenticate_peer,
 };
 
@@ -479,159 +488,176 @@ static int mock_hash_abort(void *user_ctx, void *operation)
 	return EDHOC_SUCCESS;
 }
 
-static int mock_cred_fetch(void *user_ctx,
-			   struct edhoc_auth_credentials *auth_cred)
+static int mock_cred_select_local(void *user_ctx,
+				  const struct edhoc_call_context *call_ctx,
+				  struct edhoc_credential_selected *selected)
 {
 	static const uint8_t fake_cert[] = { 0x30, 0x00 };
 
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	auth_cred->x509_chain.certificate_count = 1;
-	auth_cred->x509_chain.certificate[0] = fake_cert;
-	auth_cred->x509_chain.certificate_length[0] = sizeof(fake_cert);
+	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->x509_chain.count = 1;
+	selected->x509_chain.certificate[0].value = fake_cert;
+	selected->x509_chain.certificate[0].length = sizeof(fake_cert);
 
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
 
-static int mock_cred_fetch_kid(void *user_ctx,
-			       struct edhoc_auth_credentials *auth_cred)
+static int
+mock_cred_select_local_kid(void *user_ctx,
+			   const struct edhoc_call_context *call_ctx,
+			   struct edhoc_credential_selected *selected)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_KID;
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	auth_cred->key_id.key_id_int = 5;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-
-	auth_cred->key_id.credential = mock_kid_credential;
-	auth_cred->key_id.credential_length = sizeof(mock_kid_credential);
-
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
-
-	return EDHOC_SUCCESS;
-}
-
-static int mock_cred_fetch_kid_bstr(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred)
-{
-	/* CBOR one-byte integer 5 — compact-encodable as ID_CRED. */
+	/* Byte 0x05 is a complete CBOR integer, so ID_CRED takes the compact
+	 * one-byte form (RFC 9528: 3.3.2). */
 	static const uint8_t kid[] = { 0x05 };
 
+	selected->label = EDHOC_COSE_HEADER_KID;
+	selected->kid.identifier.value = kid;
+	selected->kid.identifier.length = ARRAY_SIZE(kid);
+	selected->kid.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+
+	selected->kid.credential.value = mock_kid_credential;
+	selected->kid.credential.length = ARRAY_SIZE(mock_kid_credential);
+
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+
+	return EDHOC_SUCCESS;
+}
+
+static int
+mock_cred_select_local_kid_bstr(void *user_ctx,
+				const struct edhoc_call_context *call_ctx,
+				struct edhoc_credential_selected *selected)
+{
+	/* Byte 0xFF is not a CBOR integer, so ID_CRED keeps the byte string
+	 * form (RFC 9528: 3.3.2). */
+	static const uint8_t kid[] = { 0xff };
+
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_KID;
-	auth_cred->key_id.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	selected->label = EDHOC_COSE_HEADER_KID;
+	selected->kid.identifier.value = kid;
+	selected->kid.identifier.length = ARRAY_SIZE(kid);
+	selected->kid.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
-	memcpy(auth_cred->key_id.key_id_bstr.value, kid, sizeof(kid));
-	auth_cred->key_id.key_id_bstr.length = sizeof(kid);
+	selected->kid.credential.value = mock_kid_credential;
+	selected->kid.credential.length = ARRAY_SIZE(mock_kid_credential);
 
-	auth_cred->key_id.credential = mock_kid_credential;
-	auth_cred->key_id.credential_length = sizeof(mock_kid_credential);
-
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
 
-static int mock_cred_fetch_x5t_bstr(void *user_ctx,
-				    struct edhoc_auth_credentials *auth_cred)
+static int
+mock_cred_select_local_x5t_bstr(void *user_ctx,
+				const struct edhoc_call_context *call_ctx,
+				struct edhoc_credential_selected *selected)
 {
 	static const uint8_t fake_fp[] = { 0xAA, 0xBB, 0xCC, 0xDD };
 	/* CBOR one-byte int for COSE_ALG_SHA_256_64 (-15). */
 	static const uint8_t alg[] = { 0x2e };
 
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	selected->label = EDHOC_COSE_HEADER_X509_HASH;
 
-	auth_cred->x509_hash.certificate = mock_x5t_certificate;
-	auth_cred->x509_hash.certificate_length = sizeof(mock_x5t_certificate);
+	selected->x509_hash.certificate.value = mock_x5t_certificate;
+	selected->x509_hash.certificate.length =
+		ARRAY_SIZE(mock_x5t_certificate);
 
-	auth_cred->x509_hash.certificate_fingerprint = fake_fp;
-	auth_cred->x509_hash.certificate_fingerprint_length = sizeof(fake_fp);
+	selected->x509_hash.fingerprint.value = fake_fp;
+	selected->x509_hash.fingerprint.length = ARRAY_SIZE(fake_fp);
 
-	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	memcpy(auth_cred->x509_hash.algorithm_bstr.value, alg, sizeof(alg));
-	auth_cred->x509_hash.algorithm_bstr.length = sizeof(alg);
+	selected->x509_hash.algorithm.encode_type = EDHOC_ENCODE_TYPE_STRING;
+	selected->x509_hash.algorithm.string.value = alg;
+	selected->x509_hash.algorithm.string.length = ARRAY_SIZE(alg);
 
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
-
-	return EDHOC_SUCCESS;
-}
-
-static int mock_cred_fetch_x5t_int(void *user_ctx,
-				   struct edhoc_auth_credentials *auth_cred)
-{
-	static const uint8_t fake_fp[] = { 0xAA, 0xBB, 0xCC, 0xDD };
-
-	(void)user_ctx;
-
-	if (coverage_mock_should_fail()) {
-		return EDHOC_ERROR_CREDENTIALS_FAILURE;
-	}
-
-	auth_cred->label = EDHOC_COSE_HEADER_X509_HASH;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-
-	auth_cred->x509_hash.certificate = mock_x5t_certificate;
-	auth_cred->x509_hash.certificate_length = sizeof(mock_x5t_certificate);
-
-	auth_cred->x509_hash.certificate_fingerprint = fake_fp;
-	auth_cred->x509_hash.certificate_fingerprint_length = sizeof(fake_fp);
-
-	auth_cred->x509_hash.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	auth_cred->x509_hash.algorithm_int = -16; /* SHA-256 */
-
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
 
 static int
-mock_cred_fetch_x5chain_multi(void *user_ctx,
-			      struct edhoc_auth_credentials *auth_cred)
+mock_cred_select_local_x5t_int(void *user_ctx,
+			       const struct edhoc_call_context *call_ctx,
+			       struct edhoc_credential_selected *selected)
 {
-	static const uint8_t fake_cert_0[] = { 0x30, 0x00 };
-	static const uint8_t fake_cert_1[] = { 0x30, 0x01, 0x00 };
+	static const uint8_t fake_fp[] = { 0xAA, 0xBB, 0xCC, 0xDD };
 
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	auth_cred->x509_chain.certificate_count = 2;
+	selected->label = EDHOC_COSE_HEADER_X509_HASH;
 
-	auth_cred->x509_chain.certificate[0] = fake_cert_0;
-	auth_cred->x509_chain.certificate_length[0] = sizeof(fake_cert_0);
-	auth_cred->x509_chain.certificate[1] = fake_cert_1;
-	auth_cred->x509_chain.certificate_length[1] = sizeof(fake_cert_1);
+	selected->x509_hash.certificate.value = mock_x5t_certificate;
+	selected->x509_hash.certificate.length =
+		ARRAY_SIZE(mock_x5t_certificate);
 
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	selected->x509_hash.fingerprint.value = fake_fp;
+	selected->x509_hash.fingerprint.length = ARRAY_SIZE(fake_fp);
+
+	selected->x509_hash.algorithm.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
+	selected->x509_hash.algorithm.integer = -16; /* SHA-256 */
+
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+
+	return EDHOC_SUCCESS;
+}
+
+static int
+mock_cred_select_local_x5chain_multi(void *user_ctx,
+				     const struct edhoc_call_context *call_ctx,
+				     struct edhoc_credential_selected *selected)
+{
+	static const uint8_t fake_cert_0[] = { 0x30, 0x00 };
+	static const uint8_t fake_cert_1[] = { 0x30, 0x01, 0x00 };
+
+	(void)user_ctx;
+	(void)call_ctx;
+
+	if (coverage_mock_should_fail()) {
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
+
+	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->x509_chain.count = 2;
+
+	selected->x509_chain.certificate[0].value = fake_cert_0;
+	selected->x509_chain.certificate[0].length = sizeof(fake_cert_0);
+	selected->x509_chain.certificate[1].value = fake_cert_1;
+	selected->x509_chain.certificate[1].length = sizeof(fake_cert_1);
+
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -974,34 +1000,52 @@ int coverage_mock_cred_authenticate_peer(
 	return EDHOC_SUCCESS;
 }
 
-int coverage_mock_cred_fetch_invalid_label(
-	void *user_ctx, struct edhoc_auth_credentials *auth_cred)
+int coverage_mock_cred_select_local_invalid_label(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	struct edhoc_credential_selected *selected)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	auth_cred->label = (enum edhoc_cose_header)99;
+	selected->label = (enum edhoc_cose_header)99;
 
 	return EDHOC_SUCCESS;
 }
 
-int coverage_mock_cred_fetch_x509_zero_certs(
-	void *user_ctx, struct edhoc_auth_credentials *auth_cred)
+int coverage_mock_cred_select_local_x509_zero_certs(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	struct edhoc_credential_selected *selected)
 {
 	(void)user_ctx;
+	(void)call_ctx;
 
 	if (coverage_mock_should_fail()) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	auth_cred->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	auth_cred->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	auth_cred->x509_chain.certificate_count = 0;
+	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->x509_chain.count = 0;
 
-	memset(auth_cred->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+
+	return EDHOC_SUCCESS;
+}
+
+int coverage_mock_cred_select_local_untouched(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	struct edhoc_credential_selected *selected)
+{
+	(void)user_ctx;
+	(void)call_ctx;
+	(void)selected;
+
+	if (coverage_mock_should_fail()) {
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
 }

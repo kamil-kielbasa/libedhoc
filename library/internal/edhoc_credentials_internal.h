@@ -64,8 +64,10 @@ struct edhoc_credential_material {
 	enum edhoc_credential_format format;
 
 	union {
-		/** Valid for #EDHOC_COSE_HEADER_KID. */
-		struct edhoc_cbor_int_or_string kid;
+		/** Valid for #EDHOC_COSE_HEADER_KID. A 'kid' is always a byte
+		 *  string; the compact encoding of RFC 9528: 3.3.2 is applied by
+		 *  the encoder. */
+		struct edhoc_buffer kid;
 		/** Valid for #EDHOC_COSE_HEADER_X509_CHAIN. */
 		struct {
 			/** Number of certificates in the chain. */
@@ -165,14 +167,14 @@ int edhoc_credential_parse_map(const struct map *id_cred_map,
 /**
  * \brief Validate the credentials the application returned from \c fetch.
  *
- * \param[in] credentials               Local authentication credentials.
+ * \param[in] selected                  Local authentication credential.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_validate_credential_fetched(
-	const struct edhoc_auth_credentials *credentials);
+int edhoc_credential_validate_selected(
+	const struct edhoc_credential_selected *selected);
 
 /**
  * \brief Validate what the application returned from \c authenticate_peer.
@@ -199,18 +201,18 @@ int edhoc_credential_validate_trusted(
  */
 
 /**
- * \brief Fill in the encoder input from the credentials the application
- *        returned.
+ * \brief Fill in the encoder input from the credential the application
+ *        selected.
  *
- * \param[in] credentials               Authentication credentials.
+ * \param[in] selected                  Local authentication credential.
  * \param[out] material                 On success, encoder input.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_credential_material_from_auth(
-	const struct edhoc_auth_credentials *credentials,
+int edhoc_credential_material_from_selected(
+	const struct edhoc_credential_selected *selected,
 	struct edhoc_credential_material *material);
 
 /**
