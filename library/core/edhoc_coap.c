@@ -61,25 +61,23 @@ bool edhoc_coap_connection_id_equal(const struct edhoc_buffer *conn_id_1,
 
 int edhoc_coap_prepend_flow(struct edhoc_coap_prepended_fields *prepended_fields)
 {
-	if (NULL == prepended_fields || NULL == prepended_fields->buffer) {
+	if (NULL == prepended_fields || NULL == prepended_fields->buffer ||
+	    prepended_fields->capacity < prepended_fields->length) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	/* Check if we have enough space for CBOR true (1 byte) */
-	if (prepended_fields->buffer_size < 1) {
+	const uint8_t indicator = EDHOC_CBOR_TRUE;
+
+	if (sizeof(indicator) >
+	    prepended_fields->capacity - prepended_fields->length) {
 		EDHOC_LOG_ERR("Buffer too small: %zu",
-			      prepended_fields->buffer_size);
+			      prepended_fields->capacity);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	/* Initialize edhoc_message_ptr to point after prepended CBOR true */
-	prepended_fields->edhoc_message_ptr = prepended_fields->buffer + 1;
-	prepended_fields->edhoc_message_size =
-		prepended_fields->buffer_size - 1;
-
-	/* Prepend CBOR true at the start of buffer */
-	prepended_fields->buffer[0] = EDHOC_CBOR_TRUE;
+	prepended_fields->buffer[prepended_fields->length] = indicator;
+	prepended_fields->length += sizeof(indicator);
 
 	return EDHOC_SUCCESS;
 }
@@ -90,12 +88,13 @@ int edhoc_coap_prepend_connection_id(
 {
 	if (NULL == prepended_fields || NULL == conn_id ||
 	    NULL == prepended_fields->buffer ||
+	    prepended_fields->capacity < prepended_fields->length ||
 	    (NULL == conn_id->value && 0 != conn_id->length)) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (0 == prepended_fields->buffer_size) {
+	if (prepended_fields->capacity == prepended_fields->length) {
 		EDHOC_LOG_ERR("Buffer too small");
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
@@ -110,73 +109,17 @@ int edhoc_coap_prepend_connection_id(
 	}
 
 	size_t encoded_length = 0;
-	ret = edhoc_connection_id_encode(&cid, prepended_fields->buffer,
-					 prepended_fields->buffer_size,
-					 &encoded_length);
+	ret = edhoc_connection_id_encode(
+		&cid, &prepended_fields->buffer[prepended_fields->length],
+		prepended_fields->capacity - prepended_fields->length,
+		&encoded_length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Connection ID encoding: %d", ret);
 		return ret;
 	}
 
-	prepended_fields->edhoc_message_ptr =
-		prepended_fields->buffer + encoded_length;
-	prepended_fields->edhoc_message_size =
-		prepended_fields->buffer_size - encoded_length;
-
-	return EDHOC_SUCCESS;
-}
-
-int edhoc_coap_prepend_recalculate_size(
-	struct edhoc_coap_prepended_fields *prepended_fields)
-{
-	if (NULL == prepended_fields) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (NULL == prepended_fields->buffer ||
-	    0 == prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (NULL == prepended_fields->edhoc_message_ptr ||
-	    0 == prepended_fields->edhoc_message_size) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	/* Check that edhoc_message_ptr is within buffer bounds */
-	if (prepended_fields->edhoc_message_ptr < prepended_fields->buffer) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	/* Calculate size of the prepended field based on difference between buffer start and edhoc message start pointers.
-	 * Both edhoc_message_ptr and buffer are part of the same struct and edhoc_message_ptr is always set
-	 * by edhoc_prepend_* functions to point within buffer after the prepended fields. */
-	const size_t prepended_size =
-		(size_t)(prepended_fields->edhoc_message_ptr -
-			 prepended_fields->buffer);
-
-	/* Check that prepended size doesn't exceed buffer size */
-	if (prepended_size > prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	const size_t total_size =
-		prepended_size + prepended_fields->edhoc_message_size;
-
-	/* Sanity check: total size shouldn't exceed buffer size */
-	if (total_size > prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR("Buffer too small: %zu, %zu", total_size,
-			      prepended_fields->buffer_size);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	prepended_fields->buffer_size = total_size;
+	prepended_fields->length += encoded_length;
 
 	return EDHOC_SUCCESS;
 }
@@ -184,7 +127,8 @@ int edhoc_coap_prepend_recalculate_size(
 int edhoc_coap_extract_flow_info(
 	struct edhoc_coap_extracted_fields *extracted_fields)
 {
-	if (NULL == extracted_fields) {
+	if (NULL == extracted_fields ||
+	    extracted_fields->length < extracted_fields->consumed) {
 		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -192,24 +136,22 @@ int edhoc_coap_extract_flow_info(
 	extracted_fields->is_forward_flow = false;
 	extracted_fields->is_reverse_flow = false;
 
-	extracted_fields->edhoc_message_ptr = NULL;
-	extracted_fields->edhoc_message_size = 0;
-
-	if ((NULL == extracted_fields->buffer) &&
-	    (0 == extracted_fields->buffer_size)) {
+	/* An empty payload is the reverse flow whether or not it carries a
+	 * pointer (RFC 9528: A.2). */
+	if (extracted_fields->length == extracted_fields->consumed) {
 		extracted_fields->is_reverse_flow = true;
 		return EDHOC_SUCCESS;
 	}
 
-	/* Check for forward flow: buffer is not NULL AND size > 1 AND first byte is CBOR_TRUE */
-	if ((NULL != extracted_fields->buffer) &&
-	    (extracted_fields->buffer_size > 1) &&
-	    (EDHOC_CBOR_TRUE == extracted_fields->buffer[0])) {
+	if (NULL == extracted_fields->buffer) {
+		EDHOC_LOG_ERR("Invalid argument");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (EDHOC_CBOR_TRUE ==
+	    extracted_fields->buffer[extracted_fields->consumed]) {
 		extracted_fields->is_forward_flow = true;
-		extracted_fields->edhoc_message_ptr =
-			extracted_fields->buffer + 1;
-		extracted_fields->edhoc_message_size =
-			extracted_fields->buffer_size - 1;
+		extracted_fields->consumed += 1;
 	}
 
 	return EDHOC_SUCCESS;
@@ -218,17 +160,21 @@ int edhoc_coap_extract_flow_info(
 int edhoc_coap_extract_connection_id(
 	struct edhoc_coap_extracted_fields *extracted_fields)
 {
-	if ((NULL == extracted_fields) || (NULL == extracted_fields->buffer) ||
-	    (0 == extracted_fields->buffer_size)) {
+	if (NULL == extracted_fields || NULL == extracted_fields->buffer ||
+	    extracted_fields->length <= extracted_fields->consumed) {
 		EDHOC_LOG_ERR("Invalid argument");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	const uint8_t *const position =
+		&extracted_fields->buffer[extracted_fields->consumed];
+	const size_t remaining =
+		extracted_fields->length - extracted_fields->consumed;
+
 	struct connection_identifier_r cid_r = { 0 };
 	size_t decoded_len = 0;
-	const int ret = cbor_decode_connection_identifier(
-		extracted_fields->buffer, extracted_fields->buffer_size, &cid_r,
-		&decoded_len);
+	const int ret = cbor_decode_connection_identifier(position, remaining,
+							  &cid_r, &decoded_len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR decoding: %d", ret);
@@ -239,9 +185,8 @@ int edhoc_coap_extract_connection_id(
 	 * leading byte itself, the byte string form follows its header. */
 	switch (cid_r.connection_identifier_choice) {
 	case connection_identifier_int_c:
-		extracted_fields->extracted_conn_id.value =
-			extracted_fields->buffer;
-		extracted_fields->extracted_conn_id.length = decoded_len;
+		extracted_fields->connection_id.value = position;
+		extracted_fields->connection_id.length = decoded_len;
 		break;
 
 	case connection_identifier_bstr_c:
@@ -252,9 +197,9 @@ int edhoc_coap_extract_connection_id(
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
-		extracted_fields->extracted_conn_id.value =
+		extracted_fields->connection_id.value =
 			cid_r.connection_identifier_bstr.value;
-		extracted_fields->extracted_conn_id.length =
+		extracted_fields->connection_id.length =
 			cid_r.connection_identifier_bstr.len;
 		break;
 
@@ -264,10 +209,7 @@ int edhoc_coap_extract_connection_id(
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	extracted_fields->edhoc_message_ptr =
-		extracted_fields->buffer + decoded_len;
-	extracted_fields->edhoc_message_size =
-		extracted_fields->buffer_size - decoded_len;
+	extracted_fields->consumed += decoded_len;
 
 	return EDHOC_SUCCESS;
 }

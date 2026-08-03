@@ -27,6 +27,8 @@ Kconfig library configuration
 
 :C:`LIBEDHOC_MAX_LEN_OF_CONN_ID`
     | Maximum length of connection identifier in bytes.
+    | Identifiers are byte strings; one byte covers the range that
+      RFC 9528: 3.3.2 sends as a bare CBOR integer, which is the common case.
 
 :C:`LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY`
     | Maximum length of the KEM encapsulation key (``G_X``) in bytes.

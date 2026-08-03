@@ -142,6 +142,58 @@ Version 2.0.0
     records. An integer outside the one byte CBOR range -24..23 stands for no
     byte string at all and is rejected with ``EDHOC_ERROR_NOT_PERMITTED``.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Connection
+  identifiers are byte strings (breaking):
+
+  * ``struct edhoc_connection_id`` and ``enum edhoc_connection_id_type`` are
+    removed. ``edhoc_set_connection_id()`` takes ``const struct edhoc_buffer *``,
+    and so do ``edhoc_coap_connection_id_equal()`` and
+    ``edhoc_coap_prepend_connection_id()``. A connection identifier is a byte
+    string (RFC 9528: 3.3) and the empty one is legal; the compact CBOR integer
+    encoding of RFC 9528: 3.3.2 is a transport detail the library applies alone.
+    Replace an ``EDHOC_CONNECTION_ID_TYPE_BYTE_STRING`` value by the same bytes.
+    Replace an ``EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER`` value ``v`` in
+    -24..23 by the single byte ``v`` for ``v >= 0`` and ``0x20 + (-1 - v)``
+    otherwise, which is the byte that already travelled on the wire.
+  * ``edhoc_coap_extracted_fields.connection_id`` is a ``struct edhoc_buffer``
+    viewing the payload it was read from, valid as long as that payload is. It
+    used to be a copy that reported the raw CBOR byte instead of the identifier,
+    so an identifier sent in the compact form came back wrong.
+  * ``edhoc_coap_prepend_connection_id()`` used to write the integer value
+    rather than its CBOR encoding, which put a byte of the wrong CBOR major type
+    on the wire for negative identifiers. Both defects cancelled each other out
+    between two instances of this library and broke interoperability with any
+    other implementation.
+  * ``edhoc_coap_connection_id_equal()`` compares byte strings. It used to call
+    an identifier given as an integer different from the same identifier given
+    as bytes, a distinction RFC 9528: 3.3.2 does not make.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CoAP working buffers
+  count progress (breaking):
+
+  * ``struct edhoc_coap_prepended_fields`` is now ``buffer`` / ``capacity`` /
+    ``length``, and ``struct edhoc_coap_extracted_fields`` is ``buffer`` /
+    ``length`` / ``consumed`` plus the flow flags and the connection identifier.
+    The ``edhoc_message_ptr`` and ``edhoc_message_size`` members are gone: the
+    area for the EDHOC message is ``buffer + length`` with ``capacity - length``
+    bytes available on the sending side, and the received message is
+    ``buffer + consumed`` of ``length - consumed`` bytes. Initialise ``length``
+    and ``consumed`` to zero, and add the composed message length to ``length``
+    before sending.
+  * ``edhoc_coap_prepend_recalculate_size()`` is removed. It existed to derive
+    the payload size from a pointer difference, which ``length`` now holds
+    directly.
+  * ``edhoc_coap_prepend_flow()`` and ``edhoc_coap_prepend_connection_id()``
+    write at ``length`` instead of always writing at the start of the buffer,
+    so calling both no longer makes the second overwrite the first.
+    ``edhoc_coap_extract_flow_info()`` and
+    ``edhoc_coap_extract_connection_id()`` read at ``consumed`` for the same
+    reason, so the receiving side composes too.
+  * ``edhoc_coap_extract_flow_info()`` reports the reverse flow for any empty
+    payload, not only for one whose pointer is ``NULL``. A leading CBOR ``true``
+    is now consumed even when nothing follows it; it used to be left in place
+    and taken for the first byte of the EDHOC message.
+
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : External
   authorization data: the library validates what ``edhoc_ead.compose`` returns
   and rejects both more items than the configured

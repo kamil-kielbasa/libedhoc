@@ -193,8 +193,12 @@ static void hs_assert_peer_connection_id(const struct edhoc_context *ctx,
 		&ctx->negotiation.peer_connection_id;
 
 	TEST_ASSERT_EQUAL_size_t(expected->length, received->length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(expected->value, received->value,
-				      expected->length);
+
+	/* Unity refuses an array comparison of zero elements. */
+	if (0 != expected->length) {
+		TEST_ASSERT_EQUAL_UINT8_ARRAY(expected->value, received->value,
+					      expected->length);
+	}
 }
 
 static void hs_assert_peers_share_slot(const struct edhoc_crypto *crypto,
@@ -344,11 +348,19 @@ static void hs_export_oscore_and_compare(
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_salt, resp_salt,
 				      HS_OSCORE_MASTER_SALT_LENGTH);
 	TEST_ASSERT_EQUAL(init_sender_id_length, resp_recipient_id_length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_sender_id, resp_recipient_id,
-				      init_sender_id_length);
 	TEST_ASSERT_EQUAL(init_recipient_id_length, resp_sender_id_length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(init_recipient_id, resp_sender_id,
-				      resp_sender_id_length);
+
+	/* An empty connection identifier gives an empty OSCORE identifier
+	 * (RFC 9528: 3.3.3), which Unity refuses to compare. */
+	if (0 != init_sender_id_length) {
+		TEST_ASSERT_EQUAL_UINT8_ARRAY(init_sender_id, resp_recipient_id,
+					      init_sender_id_length);
+	}
+
+	if (0 != resp_sender_id_length) {
+		TEST_ASSERT_EQUAL_UINT8_ARRAY(init_recipient_id, resp_sender_id,
+					      resp_sender_id_length);
+	}
 
 	switch (kind) {
 	case HS_OSCORE_RAW:

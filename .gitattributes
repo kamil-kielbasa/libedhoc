@@ -19,6 +19,3 @@
 *.a    binary
 *.so   binary
 *.o    binary
-
-# libFuzzer seed corpora are raw wire bytes and carry no file extension.
-tests/linux/fuzz/corpus/** binary
