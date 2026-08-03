@@ -47,10 +47,11 @@ TEST(coverage_handshake, mock_full_handshake_method0)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
@@ -68,10 +69,11 @@ TEST(coverage_handshake, mock_full_handshake_method1)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_1);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_1);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_1);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_1);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
@@ -89,10 +91,11 @@ TEST(coverage_handshake, mock_full_handshake_method2)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_2);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_2);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_2);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_2);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
@@ -110,10 +113,11 @@ TEST(coverage_handshake, mock_full_handshake_method3)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_3);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_3);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_3);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_3);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
@@ -131,10 +135,12 @@ TEST(coverage_handshake, mock_handshake_kid_int_method0)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context_kid(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_kid_initiator(&init_ctx,
+							    EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context_kid(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_kid_responder(&resp_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
@@ -152,10 +158,12 @@ TEST(coverage_handshake, mock_handshake_kid_int_method3)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context_kid(&init_ctx, EDHOC_METHOD_3);
+	int ret = coverage_setup_mock_context_kid_initiator(&init_ctx,
+							    EDHOC_METHOD_3);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context_kid(&resp_ctx, EDHOC_METHOD_3);
+	ret = coverage_setup_mock_context_kid_responder(&resp_ctx,
+							EDHOC_METHOD_3);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
@@ -173,10 +181,11 @@ TEST(coverage_handshake, mock_handshake_kid_bstr_method0)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&init_ctx, &coverage_mock_creds_kid_bstr);
@@ -200,10 +209,11 @@ TEST(coverage_handshake, mock_handshake_x5t_bstr_method0)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&init_ctx, &coverage_mock_creds_x5t_bstr);
@@ -227,10 +237,11 @@ TEST(coverage_handshake, mock_handshake_x5t_int_method0)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&init_ctx, &coverage_mock_creds_x5t_int);
@@ -254,10 +265,11 @@ TEST(coverage_handshake, mock_handshake_x5chain_multi_method0)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_credentials(&init_ctx,
@@ -283,11 +295,12 @@ TEST(coverage_handshake, mock_handshake_bstr_cid_method0)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret =
-		coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_bstr_cid_initiator(
+		&init_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_bstr_cid_responder(&resp_ctx,
+							     EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg4_process(&init_ctx, &resp_ctx);
@@ -305,10 +318,11 @@ TEST(coverage_handshake, mock_handshake_ead_with_values)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_bind_ead(&init_ctx, &coverage_mock_ead_with_value);

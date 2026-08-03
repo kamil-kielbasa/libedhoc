@@ -163,8 +163,9 @@ int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
  * library copies it and applies the compact CBOR integer encoding of
  * RFC 9528: 3.3.2 on its own.
  *
- * \note  C_I and C_R are chosen independently; the library does not require
- *        them to differ.
+ * \note  C_I and C_R are chosen independently, but an application deriving an
+ *        OSCORE security context must not end up with equal ones
+ *        (RFC 9528: 3.3.3); see \ref edhoc_export_oscore_context().
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] connection_id             EDHOC connection identifier.
@@ -554,6 +555,11 @@ int edhoc_export_key_update(struct edhoc_context *edhoc_context,
  *        it nor releases it in \ref edhoc_context_deinit(). Destroy it through
  *        the \c destroy_key entry of the bound \ref edhoc_crypto vtable.
  *
+ * \note  C_I and C_R become the OSCORE Recipient IDs, so RFC 9528: 3.3.3
+ *        forbids them being equal. Such a session is rejected with
+ *        #EDHOC_ERROR_NOT_PERMITTED; only re-running EDHOC with distinct
+ *        identifiers helps.
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] master_secret_key_id     Buffer holding a key handle (\c CONFIG_LIBEDHOC_KEY_ID_LEN bytes) that receives the master secret.
  * \param[out] master_salt              Buffer where the exported master salt is to be written.
@@ -583,6 +589,11 @@ int edhoc_export_oscore_context(struct edhoc_context *edhoc_context,
  *        Derives the OSCORE Master Secret and Master Salt (exporter labels 0
  *        and 1) as raw bytes and copies out the OSCORE Sender and Recipient
  *        IDs.
+ *
+ * \note  C_I and C_R become the OSCORE Recipient IDs, so RFC 9528: 3.3.3
+ *        forbids them being equal. Such a session is rejected with
+ *        #EDHOC_ERROR_NOT_PERMITTED; only re-running EDHOC with distinct
+ *        identifiers helps.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] master_secret            Buffer where the exported master secret is to be written.

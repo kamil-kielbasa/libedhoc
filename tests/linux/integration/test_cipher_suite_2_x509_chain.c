@@ -252,28 +252,35 @@ TEST(cipher_suite_2_x509_chain, method_0)
 		     &initiator, &responder);
 }
 
-TEST(cipher_suite_2_x509_chain, method_0_empty_connection_ids)
+TEST(cipher_suite_2_x509_chain, method_0_empty_connection_id)
 {
-	/* RFC 9528: 3.3 allows the empty connection identifier. */
-	const struct edhoc_buffer empty_cid = { .value = NULL, .length = 0 };
+	/* RFC 9528: 3.3 allows the empty connection identifier, but 3.3.3
+	 * forbids both peers choosing the same one. */
+	const struct edhoc_buffer init_cid = { .value = NULL, .length = 0 };
+
+	const uint8_t resp_cid_value[] = { 0x2b };
+	const struct edhoc_buffer resp_cid = {
+		.value = resp_cid_value,
+		.length = ARRAY_SIZE(resp_cid_value),
+	};
 
 	const struct handshake_endpoint initiator = {
 		.role = EDHOC_ROLE_INITIATOR,
-		.connection_id = empty_cid,
+		.connection_id = init_cid,
 		.own = &initiator_signature,
 		.peer = &responder_signature,
 		.ead = NULL,
 	};
 	const struct handshake_endpoint responder = {
 		.role = EDHOC_ROLE_RESPONDER,
-		.connection_id = empty_cid,
+		.connection_id = resp_cid,
 		.own = &responder_signature,
 		.peer = &initiator_signature,
 		.ead = NULL,
 	};
 
 	run_scenario(
-		"cipher suite 2, X.509 chain, method 0, empty connection ids",
+		"cipher suite 2, X.509 chain, method 0, empty connection id",
 		EDHOC_METHOD_0, &initiator, &responder);
 }
 
@@ -412,7 +419,7 @@ TEST(cipher_suite_2_x509_chain, method_3_with_ead)
 TEST_GROUP_RUNNER(cipher_suite_2_x509_chain)
 {
 	RUN_TEST_CASE(cipher_suite_2_x509_chain, method_0);
-	RUN_TEST_CASE(cipher_suite_2_x509_chain, method_0_empty_connection_ids);
+	RUN_TEST_CASE(cipher_suite_2_x509_chain, method_0_empty_connection_id);
 	RUN_TEST_CASE(cipher_suite_2_x509_chain, method_0_with_ead);
 	RUN_TEST_CASE(cipher_suite_2_x509_chain, method_1);
 	RUN_TEST_CASE(cipher_suite_2_x509_chain, method_2);

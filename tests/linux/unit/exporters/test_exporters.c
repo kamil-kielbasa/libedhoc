@@ -314,11 +314,77 @@ TEST(exporters, export_aead_handle_is_aes_128)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(exporters, oscore_context_rejects_equal_connection_ids)
+{
+	struct edhoc_context ctx = { 0 };
+
+	uint8_t master_secret[16] = { 0 };
+	uint8_t salt[8] = { 0 };
+	uint8_t sid[8] = { 0 };
+	uint8_t rid[8] = { 0 };
+	size_t sid_len = 0;
+	size_t rid_len = 0;
+	uint8_t out[32] = { 0 };
+
+	setup_export_ready(&ctx);
+
+	/* RFC 9528: 3.3.3 - C_I and C_R become the OSCORE Recipient IDs, so
+	 * equal ones give both peers the same key and the same nonce. */
+	ctx.negotiation.peer_connection_id.value[0] =
+		ctx.negotiation.connection_id.value[0];
+
+	int ret = edhoc_export_oscore_context_raw(
+		&ctx, master_secret, sizeof(master_secret), salt, sizeof(salt),
+		sid, sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+
+	/* The rejection must not consume the export permission. */
+	TEST_ASSERT_TRUE(ctx.is_oscore_export_allowed);
+
+	uint8_t master_secret_kid[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+
+	ret = edhoc_export_oscore_context(&ctx, master_secret_kid, salt,
+					  sizeof(salt), sid, sizeof(sid),
+					  &sid_len, rid, sizeof(rid), &rid_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+
+	/* The requirement comes from OSCORE, so plain exporting still works. */
+	ret = edhoc_export_raw(&ctx, 32769, NULL, 0, out, sizeof(out));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(exporters, oscore_context_rejects_two_empty_connection_ids)
+{
+	struct edhoc_context ctx = { 0 };
+
+	uint8_t master_secret[16] = { 0 };
+	uint8_t salt[8] = { 0 };
+	uint8_t sid[8] = { 0 };
+	uint8_t rid[8] = { 0 };
+	size_t sid_len = 0;
+	size_t rid_len = 0;
+
+	setup_export_ready(&ctx);
+
+	ctx.negotiation.connection_id.length = 0;
+	ctx.negotiation.peer_connection_id.length = 0;
+
+	int ret = edhoc_export_oscore_context_raw(
+		&ctx, master_secret, sizeof(master_secret), salt, sizeof(salt),
+		sid, sizeof(sid), &sid_len, rid, sizeof(rid), &rid_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST(exporters, oscore_context_handle_matches_raw)
 {
 	struct edhoc_context ctx_raw = { 0 };
 	struct edhoc_context ctx_handle = { 0 };
-
 	uint8_t ms_raw[16] = { 0 };
 	uint8_t salt_raw[8] = { 0 };
 	uint8_t sid_raw[8] = { 0 };
@@ -748,6 +814,9 @@ TEST_GROUP_RUNNER(exporters)
 	/* Positive paths. */
 	RUN_TEST_CASE(exporters, export_kdf_handle_matches_raw);
 	RUN_TEST_CASE(exporters, export_aead_handle_is_aes_128);
+	RUN_TEST_CASE(exporters, oscore_context_rejects_equal_connection_ids);
+	RUN_TEST_CASE(exporters,
+		      oscore_context_rejects_two_empty_connection_ids);
 	RUN_TEST_CASE(exporters, oscore_context_handle_matches_raw);
 
 	/* Negative paths — edhoc_export / edhoc_export_raw. */

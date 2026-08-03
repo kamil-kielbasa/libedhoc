@@ -46,17 +46,32 @@ extern const struct edhoc_ead coverage_mock_ead_with_value;
  */
 void coverage_mock_reset(int fail_at);
 
-/** \brief Init a context and bind the mock crypto, platform, creds and EAD. */
-int coverage_setup_mock_context(struct edhoc_context *ctx,
-				enum edhoc_method method);
+/**
+ * \brief Init a context and bind the mock crypto, platform, creds and EAD.
+ *
+ *        The Initiator and Responder variants differ only in the connection
+ *        identifier, which RFC 9528: 3.3.3 requires to differ from the peer's
+ *        for OSCORE to be derivable.
+ */
+int coverage_setup_mock_context_initiator(struct edhoc_context *ctx,
+					  enum edhoc_method method);
 
-/** \brief As coverage_setup_mock_context(), but bind integer KID credentials. */
-int coverage_setup_mock_context_kid(struct edhoc_context *ctx,
-				    enum edhoc_method method);
+int coverage_setup_mock_context_responder(struct edhoc_context *ctx,
+					  enum edhoc_method method);
 
-/** \brief As coverage_setup_mock_context(), but use a byte-string connection ID. */
-int coverage_setup_mock_context_bstr_cid(struct edhoc_context *ctx,
-					 enum edhoc_method method);
+/** \brief As the functions above, but bind integer KID credentials. */
+int coverage_setup_mock_context_kid_initiator(struct edhoc_context *ctx,
+					      enum edhoc_method method);
+
+int coverage_setup_mock_context_kid_responder(struct edhoc_context *ctx,
+					      enum edhoc_method method);
+
+/** \brief As the functions above, but use a byte-string connection ID. */
+int coverage_setup_mock_context_bstr_cid_initiator(struct edhoc_context *ctx,
+						   enum edhoc_method method);
+
+int coverage_setup_mock_context_bstr_cid_responder(struct edhoc_context *ctx,
+						   enum edhoc_method method);
 
 /** \brief Compose message 1 on the initiator and process it on the responder. */
 int coverage_do_msg1_flow(struct edhoc_context *init_ctx,

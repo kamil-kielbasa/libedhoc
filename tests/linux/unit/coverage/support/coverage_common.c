@@ -142,6 +142,12 @@ static int mock_hash_op_token;
 
 static const uint8_t ead_value_payload[] = { 0x01, 0x02, 0x03, 0x04 };
 
+/* RFC 9528: 3.3.3 requires the peers to pick distinct connection identifiers. */
+static const uint8_t initiator_conn_id[] = { 0x37 };
+static const uint8_t responder_conn_id[] = { 0x27 };
+static const uint8_t initiator_bstr_conn_id[] = { 0x01, 0x02, 0x03 };
+static const uint8_t responder_bstr_conn_id[] = { 0x04, 0x05, 0x06 };
+
 /* CRED_x is not carried on the wire for 'kid' and 'x5t', so both peers have to
  * resolve the very same bytes. The fetch and verify mocks share these. */
 static const uint8_t mock_kid_credential[] = { 0xa1, 0x01, 0x01 };
@@ -705,22 +711,15 @@ static int mock_ead_process_with_value(
 	return EDHOC_SUCCESS;
 }
 
-/* Module interface function definitions ----------------------------------- */
-
-void coverage_mock_reset(int fail_at)
-{
-	mock_call_count = 0;
-	mock_fail_at = fail_at;
-}
-
-int coverage_setup_mock_context(struct edhoc_context *ctx,
-				enum edhoc_method method)
+static int setup_mock_context(struct edhoc_context *ctx,
+			      enum edhoc_method method,
+			      const uint8_t *conn_id_value,
+			      size_t conn_id_length)
 {
 	const enum edhoc_method methods[] = { method };
-	const uint8_t conn_id_value[] = { 0x37 };
 	const struct edhoc_buffer conn_id = {
 		.value = conn_id_value,
-		.length = ARRAY_SIZE(conn_id_value),
+		.length = conn_id_length,
 	};
 	int ret = edhoc_context_init(ctx);
 
@@ -767,44 +766,63 @@ int coverage_setup_mock_context(struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-int coverage_setup_mock_context_kid(struct edhoc_context *ctx,
-				    enum edhoc_method method)
+static int bind_kid_credentials(struct edhoc_context *ctx, int ret)
 {
-	int ret = coverage_setup_mock_context(ctx, method);
-
 	if (EDHOC_SUCCESS != ret) {
 		return ret;
 	}
 
-	ret = edhoc_bind_credentials(ctx, &coverage_mock_creds_kid);
-	if (EDHOC_SUCCESS != ret) {
-		return ret;
-	}
-
-	return EDHOC_SUCCESS;
+	return edhoc_bind_credentials(ctx, &coverage_mock_creds_kid);
 }
 
-int coverage_setup_mock_context_bstr_cid(struct edhoc_context *ctx,
-					 enum edhoc_method method)
+/* Module interface function definitions ----------------------------------- */
+
+void coverage_mock_reset(int fail_at)
 {
-	const uint8_t conn_id_value[] = { 0x01, 0x02, 0x03 };
-	const struct edhoc_buffer conn_id = {
-		.value = conn_id_value,
-		.length = ARRAY_SIZE(conn_id_value),
-	};
+	mock_call_count = 0;
+	mock_fail_at = fail_at;
+}
 
-	int ret = coverage_setup_mock_context(ctx, method);
+int coverage_setup_mock_context_initiator(struct edhoc_context *ctx,
+					  enum edhoc_method method)
+{
+	return setup_mock_context(ctx, method, initiator_conn_id,
+				  ARRAY_SIZE(initiator_conn_id));
+}
 
-	if (EDHOC_SUCCESS != ret) {
-		return ret;
-	}
+int coverage_setup_mock_context_responder(struct edhoc_context *ctx,
+					  enum edhoc_method method)
+{
+	return setup_mock_context(ctx, method, responder_conn_id,
+				  ARRAY_SIZE(responder_conn_id));
+}
 
-	ret = edhoc_set_connection_id(ctx, &conn_id);
-	if (EDHOC_SUCCESS != ret) {
-		return ret;
-	}
+int coverage_setup_mock_context_kid_initiator(struct edhoc_context *ctx,
+					      enum edhoc_method method)
+{
+	return bind_kid_credentials(
+		ctx, coverage_setup_mock_context_initiator(ctx, method));
+}
 
-	return EDHOC_SUCCESS;
+int coverage_setup_mock_context_kid_responder(struct edhoc_context *ctx,
+					      enum edhoc_method method)
+{
+	return bind_kid_credentials(
+		ctx, coverage_setup_mock_context_responder(ctx, method));
+}
+
+int coverage_setup_mock_context_bstr_cid_initiator(struct edhoc_context *ctx,
+						   enum edhoc_method method)
+{
+	return setup_mock_context(ctx, method, initiator_bstr_conn_id,
+				  ARRAY_SIZE(initiator_bstr_conn_id));
+}
+
+int coverage_setup_mock_context_bstr_cid_responder(struct edhoc_context *ctx,
+						   enum edhoc_method method)
+{
+	return setup_mock_context(ctx, method, responder_bstr_conn_id,
+				  ARRAY_SIZE(responder_bstr_conn_id));
 }
 
 int coverage_do_msg1_flow(struct edhoc_context *init_ctx,

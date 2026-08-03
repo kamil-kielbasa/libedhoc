@@ -511,6 +511,18 @@ STATIC int check_oscore_export(const struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
+	const struct connection_id *own = &ctx->negotiation.connection_id;
+	const struct connection_id *peer = &ctx->negotiation.peer_connection_id;
+
+	/* RFC 9528: 3.3.3 - C_I and C_R become the OSCORE Recipient IDs, so
+	 * equal ones give both peers the same key and the same nonce. Two
+	 * empty identifiers collide as well. */
+	if (own->length == peer->length &&
+	    0 == memcmp(own->value, peer->value, own->length)) {
+		EDHOC_LOG_ERR("Connection identifiers are not distinct");
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
+
 	return EDHOC_SUCCESS;
 }
 

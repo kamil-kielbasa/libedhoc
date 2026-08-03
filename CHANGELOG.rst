@@ -194,6 +194,23 @@ Version 2.0.0
     is now consumed even when nothing follows it; it used to be left in place
     and taken for the first byte of the EDHOC message.
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : OSCORE export
+  rejects colliding connection identifiers:
+
+  * ``edhoc_export_oscore_context()`` and ``edhoc_export_oscore_context_raw()``
+    return ``EDHOC_ERROR_NOT_PERMITTED`` when C_I equals C_R. RFC 9528: 3.3.3
+    forbids the peers selecting identifiers that yield the same OSCORE Recipient
+    ID, because the OSCORE key derivation (RFC 8613: 3.2.1) takes that ID as its
+    only distinguishing input: equal identifiers collapse the Sender and
+    Recipient keys of both peers into one, and the AEAD nonce
+    (RFC 8613: 5.2) is built from the same Sender ID and an equally initialised
+    sequence number. A response reusing the nonce of its request
+    (RFC 8613: 8.3) then repeats a (key, nonce) pair on the very first exchange,
+    which the uniqueness argument of RFC 8613: Appendix D.4 relies on never
+    happening. EDHOC itself completes normally, since connection identifiers
+    carry no cryptographic role there (RFC 9528: 3.3); only the OSCORE
+    derivation is refused.
+
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : External
   authorization data: the library validates what ``edhoc_ead.compose`` returns
   and rejects both more items than the configured

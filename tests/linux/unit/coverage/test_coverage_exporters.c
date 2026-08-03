@@ -47,7 +47,7 @@ TEST(coverage_exporters, export_raw_expand_fail)
 {
 	struct edhoc_context ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ctx.state.machine = EDHOC_SM_COMPLETED;
@@ -67,7 +67,7 @@ TEST(coverage_exporters, oscore_export_raw_wrong_status)
 {
 	struct edhoc_context ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ctx.state.machine = EDHOC_SM_COMPLETED;
@@ -100,7 +100,7 @@ TEST(coverage_exporters, key_update_success)
 {
 	struct edhoc_context ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ctx.state.machine = EDHOC_SM_COMPLETED;
@@ -123,7 +123,7 @@ TEST(coverage_exporters, key_update_extract_fail)
 {
 	struct edhoc_context ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ctx.state.machine = EDHOC_SM_COMPLETED;
@@ -145,7 +145,7 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid)
 {
 	struct edhoc_context ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ctx.state.machine = EDHOC_SM_COMPLETED;
@@ -184,7 +184,8 @@ TEST(coverage_exporters, export_raw_failure_sweep)
 	     fail_pt++) {
 		struct edhoc_context ctx = { 0 };
 
-		int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+		int ret = coverage_setup_mock_context_initiator(&ctx,
+								EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 		ctx.state.machine = EDHOC_SM_COMPLETED;
@@ -217,7 +218,8 @@ TEST(coverage_exporters, oscore_export_raw_failure_sweep)
 	     fail_pt++) {
 		struct edhoc_context ctx = { 0 };
 
-		int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
+		int ret = coverage_setup_mock_context_initiator(&ctx,
+								EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 		ctx.state.machine = EDHOC_SM_COMPLETED;
@@ -256,11 +258,12 @@ TEST(coverage_exporters, exporter_failure_sweep_extended)
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
 
-		int ret =
-			coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+		int ret = coverage_setup_mock_context_initiator(&init_ctx,
+								EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-		ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+		ret = coverage_setup_mock_context_responder(&resp_ctx,
+							    EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 		ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
@@ -295,11 +298,12 @@ TEST(coverage_exporters, oscore_export_raw_after_bstr_cid_handshake)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret =
-		coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_bstr_cid_initiator(
+		&init_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_bstr_cid_responder(&resp_ctx,
+							     EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
@@ -331,11 +335,12 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid_sid_too_small)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret =
-		coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_bstr_cid_initiator(
+		&init_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_bstr_cid_responder(&resp_ctx,
+							     EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
@@ -368,11 +373,12 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid_rid_too_small)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret =
-		coverage_setup_mock_context_bstr_cid(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_bstr_cid_initiator(
+		&init_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context_bstr_cid(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_bstr_cid_responder(&resp_ctx,
+							     EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
@@ -405,10 +411,11 @@ TEST(coverage_exporters, key_update_prk_state_4e3m)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t msg3[512] = { 0 };
@@ -440,10 +447,11 @@ TEST(coverage_exporters, key_update_prk_state_4e3m_fail)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t msg3[512] = { 0 };
@@ -475,9 +483,10 @@ TEST(coverage_exporters, oscore_export_raw_prk_state_4e3m)
 	struct edhoc_context init_ctx = { 0 };
 	struct edhoc_context resp_ctx = { 0 };
 
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
@@ -518,11 +527,12 @@ TEST(coverage_exporters, oscore_export_raw_failure_sweep_4e3m)
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
 
-		int ret =
-			coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+		int ret = coverage_setup_mock_context_initiator(&init_ctx,
+								EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-		ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+		ret = coverage_setup_mock_context_responder(&resp_ctx,
+							    EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 		ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
@@ -567,12 +577,12 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid_failure_sweep)
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
 
-		int ret = coverage_setup_mock_context_bstr_cid(&init_ctx,
-							       EDHOC_METHOD_0);
+		int ret = coverage_setup_mock_context_bstr_cid_initiator(
+			&init_ctx, EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-		ret = coverage_setup_mock_context_bstr_cid(&resp_ctx,
-							   EDHOC_METHOD_0);
+		ret = coverage_setup_mock_context_bstr_cid_responder(
+			&resp_ctx, EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 		ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
@@ -611,11 +621,12 @@ TEST(coverage_exporters, key_update_failure_sweep)
 		struct edhoc_context init_ctx = { 0 };
 		struct edhoc_context resp_ctx = { 0 };
 
-		int ret =
-			coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
+		int ret = coverage_setup_mock_context_initiator(&init_ctx,
+								EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-		ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
+		ret = coverage_setup_mock_context_responder(&resp_ctx,
+							    EDHOC_METHOD_0);
 		TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 		ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
