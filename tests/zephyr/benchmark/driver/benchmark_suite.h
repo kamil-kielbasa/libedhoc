@@ -45,7 +45,7 @@
  */
 struct benchmark_endpoint {
 	/** Connection identifier this endpoint advertises. */
-	struct edhoc_connection_id connection_id;
+	struct edhoc_buffer connection_id;
 	/** Identity this endpoint presents (fetch). */
 	const struct benchmark_identity *own;
 	/** Identity this endpoint must verify from the peer (verify). */
@@ -73,9 +73,9 @@ struct benchmark_case {
 	size_t methods_count;
 
 	/** Connection identifier the Initiator advertises. */
-	struct edhoc_connection_id initiator_connection_id;
+	struct edhoc_buffer initiator_connection_id;
 	/** Connection identifier the Responder advertises. */
-	struct edhoc_connection_id responder_connection_id;
+	struct edhoc_buffer responder_connection_id;
 
 	/** Initiator identity (presented on fetch, verified by the peer). */
 	const struct benchmark_identity *initiator;

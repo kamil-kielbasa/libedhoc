@@ -43,59 +43,128 @@ TEST_TEAR_DOWN(internals_common)
 	mbedtls_psa_crypto_free();
 }
 
-TEST(internals_common, comp_cid_len_one_byte_int)
+TEST(internals_common, connection_id_length_compact)
 {
-	size_t len = 0;
+	const struct connection_id cid = { .value = { 0x05 }, .length = 1 };
 
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
-
-	int ret = comp_cid_len(&cid, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(1, len);
+	TEST_ASSERT_EQUAL_size_t(1, edhoc_connection_id_encoded_length(&cid));
 }
 
-TEST(internals_common, comp_cid_len_byte_string)
+TEST(internals_common, connection_id_length_byte_string)
 {
-	size_t len = 0;
+	const struct connection_id cid = { .value = { 0xff }, .length = 1 };
 
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 3,
-	};
-
-	int ret = comp_cid_len(&cid, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(4, len);
+	TEST_ASSERT_EQUAL_size_t(2, edhoc_connection_id_encoded_length(&cid));
 }
 
-TEST(internals_common, comp_cid_len_invalid_type)
+TEST(internals_common, connection_id_length_null)
 {
-	size_t len = 0;
-
-	const struct edhoc_connection_id cid = {
-		.encode_type = 99,
-	};
-
-	int ret = comp_cid_len(&cid, &len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	TEST_ASSERT_EQUAL_size_t(0, edhoc_connection_id_encoded_length(NULL));
 }
 
-TEST(internals_common, comp_cid_len_null_args)
+TEST(internals_common, connection_id_encode_follows_rfc)
 {
+	/* RFC 9528: 3.3.2 - h'21' travels as the CBOR integer -2, h'18' does
+	 * not fit the compact form and stays a byte string. */
+	const struct connection_id compact = { .value = { 0x21 }, .length = 1 };
+	const struct connection_id wide = { .value = { 0x18 }, .length = 1 };
+	const struct connection_id empty = { .length = 0 };
+
+	uint8_t buffer[8] = { 0 };
 	size_t len = 0;
 
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-	};
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_connection_id_encode(&compact, buffer,
+						     ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL_size_t(1, len);
+	TEST_ASSERT_EQUAL_HEX8(0x21, buffer[0]);
 
-	int ret = comp_cid_len(NULL, &len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_connection_id_encode(&wide, buffer,
+						     ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL_size_t(2, len);
+	TEST_ASSERT_EQUAL_HEX8(0x41, buffer[0]);
+	TEST_ASSERT_EQUAL_HEX8(0x18, buffer[1]);
 
-	ret = comp_cid_len(&cid, NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_connection_id_encode(&empty, buffer,
+						     ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL_size_t(1, len);
+	TEST_ASSERT_EQUAL_HEX8(0x40, buffer[0]);
+}
+
+TEST(internals_common, connection_id_encode_null_args)
+{
+	const struct connection_id cid = { .value = { 0x05 }, .length = 1 };
+	uint8_t buffer[8] = { 0 };
+	size_t len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_connection_id_encode(NULL, buffer,
+						     ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_connection_id_encode(&cid, NULL,
+						     ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_connection_id_encode(&cid, buffer, 0, &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_connection_id_encode(&cid, buffer,
+						     ARRAY_SIZE(buffer), NULL));
+}
+
+TEST(internals_common, connection_id_from_int_recovers_the_byte)
+{
+	struct connection_id cid = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_connection_id_from_int(-12, &cid));
+	TEST_ASSERT_EQUAL_size_t(1, cid.length);
+	TEST_ASSERT_EQUAL_HEX8(0x2b, cid.value[0]);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_connection_id_from_int(23, &cid));
+	TEST_ASSERT_EQUAL_HEX8(0x17, cid.value[0]);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_connection_id_from_int(-24, &cid));
+	TEST_ASSERT_EQUAL_HEX8(0x37, cid.value[0]);
+}
+
+TEST(internals_common, connection_id_from_int_rejects_wide)
+{
+	struct connection_id cid = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED,
+			  edhoc_connection_id_from_int(24, &cid));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED,
+			  edhoc_connection_id_from_int(-25, &cid));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_connection_id_from_int(0, NULL));
+}
+
+TEST(internals_common, connection_id_from_bstr)
+{
+	const uint8_t value[] = { 0xaa, 0xbb };
+	struct connection_id cid = { 0 };
+
+	TEST_ASSERT_EQUAL(
+		EDHOC_SUCCESS,
+		edhoc_connection_id_from_bstr(value, ARRAY_SIZE(value), &cid));
+	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(value), cid.length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(value, cid.value, cid.length);
+
+	/* RFC 9528: 3.3 allows the empty identifier. */
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_connection_id_from_bstr(NULL, 0, &cid));
+	TEST_ASSERT_EQUAL_size_t(0, cid.length);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL,
+			  edhoc_connection_id_from_bstr(
+				  value, CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID + 1,
+				  &cid));
+	TEST_ASSERT_EQUAL(
+		EDHOC_ERROR_INVALID_ARGUMENT,
+		edhoc_connection_id_from_bstr(value, ARRAY_SIZE(value), NULL));
 }
 
 TEST(internals_common, comp_th_len_success)
@@ -698,11 +767,16 @@ TEST(internals_common, comp_salt_4e3m_null_args)
 
 TEST_GROUP_RUNNER(internals_common)
 {
-	/* comp_cid_len */
-	RUN_TEST_CASE(internals_common, comp_cid_len_one_byte_int);
-	RUN_TEST_CASE(internals_common, comp_cid_len_byte_string);
-	RUN_TEST_CASE(internals_common, comp_cid_len_invalid_type);
-	RUN_TEST_CASE(internals_common, comp_cid_len_null_args);
+	/* connection identifier */
+	RUN_TEST_CASE(internals_common, connection_id_length_compact);
+	RUN_TEST_CASE(internals_common, connection_id_length_byte_string);
+	RUN_TEST_CASE(internals_common, connection_id_length_null);
+	RUN_TEST_CASE(internals_common, connection_id_encode_follows_rfc);
+	RUN_TEST_CASE(internals_common, connection_id_encode_null_args);
+	RUN_TEST_CASE(internals_common,
+		      connection_id_from_int_recovers_the_byte);
+	RUN_TEST_CASE(internals_common, connection_id_from_int_rejects_wide);
+	RUN_TEST_CASE(internals_common, connection_id_from_bstr);
 
 	/* comp_th_len */
 	RUN_TEST_CASE(internals_common, comp_th_len_success);

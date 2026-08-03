@@ -302,66 +302,39 @@ TEST(api, set_many_cipher_suites)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(api, set_connection_id_one_byte_integer)
+TEST(api, set_connection_id)
 {
 	struct edhoc_context ctx = { 0 };
 	int ret = edhoc_context_init(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-	};
+	const uint8_t value[CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID] = { 0x01 };
+	struct edhoc_buffer cid = { .value = value,
+				    .length = ARRAY_SIZE(value) + 1 };
 
-	cid.int_value = ONE_BYTE_CBOR_INT_MIN_VALUE - 1;
 	ret = edhoc_set_connection_id(&ctx, &cid);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
-	cid.int_value = ONE_BYTE_CBOR_INT_MAX_VALUE + 1;
+	cid.value = NULL;
+	cid.length = 1;
 	ret = edhoc_set_connection_id(&ctx, &cid);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	cid.int_value =
-		ONE_BYTE_CBOR_INT_MIN_VALUE + ONE_BYTE_CBOR_INT_MAX_VALUE;
-	ret = edhoc_set_connection_id(&ctx, &cid);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(cid.encode_type,
-			  ctx.negotiation.connection_id.encode_type);
-	TEST_ASSERT_EQUAL(cid.int_value,
-			  ctx.negotiation.connection_id.int_value);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(api, set_connection_id_byte_string)
-{
-	struct edhoc_context ctx = { 0 };
-	int ret = edhoc_context_init(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-	};
-
-	cid.bstr_length = 0;
-	ret = edhoc_set_connection_id(&ctx, &cid);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-
-	cid.bstr_length = ARRAY_SIZE(cid.bstr_value) + 1;
-	ret = edhoc_set_connection_id(&ctx, &cid);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-
-	cid.bstr_length = ARRAY_SIZE(cid.bstr_value) - 1;
-	for (size_t i = 0; i < cid.bstr_length; ++i)
-		cid.bstr_value[i] = (uint8_t)(i + 1);
-
+	/* RFC 9528: 3.3 allows the empty identifier. */
+	cid.value = NULL;
+	cid.length = 0;
 	ret = edhoc_set_connection_id(&ctx, &cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(cid.bstr_length,
-			  ctx.negotiation.connection_id.bstr_length);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(cid.bstr_value,
-				      ctx.negotiation.connection_id.bstr_value,
-				      sizeof(cid.bstr_value));
+	TEST_ASSERT_EQUAL_size_t(0, ctx.negotiation.connection_id.length);
+
+	cid.value = value;
+	cid.length = ARRAY_SIZE(value);
+	ret = edhoc_set_connection_id(&ctx, &cid);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_size_t(cid.length,
+				 ctx.negotiation.connection_id.length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		value, ctx.negotiation.connection_id.value, cid.length);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -506,8 +479,7 @@ TEST_GROUP_RUNNER(api)
 	RUN_TEST_CASE(api, set_single_cipher_suite);
 	RUN_TEST_CASE(api, set_many_cipher_suites);
 
-	RUN_TEST_CASE(api, set_connection_id_one_byte_integer);
-	RUN_TEST_CASE(api, set_connection_id_byte_string);
+	RUN_TEST_CASE(api, set_connection_id);
 
 	RUN_TEST_CASE(api, bindings);
 

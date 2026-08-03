@@ -74,7 +74,7 @@ struct handshake_endpoint {
 	/** Role this endpoint plays. */
 	enum edhoc_role role;
 	/** Connection identifier this endpoint advertises. */
-	struct edhoc_connection_id connection_id;
+	struct edhoc_buffer connection_id;
 	/** Identity this endpoint presents (select_local). */
 	const struct hs_identity *own;
 	/** Identity this endpoint must verify from the peer

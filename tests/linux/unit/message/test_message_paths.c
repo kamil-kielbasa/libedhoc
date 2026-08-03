@@ -297,9 +297,10 @@ static void inject_prk_4e3m(struct edhoc_context *ctx, const uint8_t *prk,
 static void setup_initiator(struct edhoc_context *ctx)
 {
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 0,
+	const uint8_t cid_value[] = { 0x00 };
+	const struct edhoc_buffer cid = {
+		.value = cid_value,
+		.length = ARRAY_SIZE(cid_value),
 	};
 
 	int ret = edhoc_context_init(ctx);
@@ -329,9 +330,10 @@ static void setup_initiator(struct edhoc_context *ctx)
 static void setup_responder(struct edhoc_context *ctx)
 {
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 0,
+	const uint8_t cid_value[] = { 0x00 };
+	const struct edhoc_buffer cid = {
+		.value = cid_value,
+		.length = ARRAY_SIZE(cid_value),
 	};
 
 	int ret = edhoc_context_init(ctx);
@@ -379,10 +381,10 @@ TEST(message_paths, msg1_compose_bstr_cid)
 	struct edhoc_context ctx = { 0 };
 	setup_initiator(&ctx);
 
-	const struct edhoc_connection_id bstr_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 3,
-		.bstr_value = { 0x01, 0x02, 0x03 },
+	const uint8_t bstr_cid_value[] = { 0x01, 0x02, 0x03 };
+	const struct edhoc_buffer bstr_cid = {
+		.value = bstr_cid_value,
+		.length = ARRAY_SIZE(bstr_cid_value),
 	};
 	int ret = edhoc_set_connection_id(&ctx, &bstr_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -416,9 +418,10 @@ TEST(message_paths, msg1_compose_multiple_cipher_suites)
 	ret = edhoc_set_cipher_suites(&ctx, csuites, ARRAY_SIZE(csuites));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 0,
+	const uint8_t cid_value[] = { 0x00 };
+	const struct edhoc_buffer cid = {
+		.value = cid_value,
+		.length = ARRAY_SIZE(cid_value),
 	};
 	ret = edhoc_set_connection_id(&ctx, &cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -473,17 +476,18 @@ TEST(message_paths, msg1_process_bstr_cid)
 	setup_initiator(&init_ctx);
 	setup_responder(&resp_ctx);
 
-	const struct edhoc_connection_id bstr_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 3,
-		.bstr_value = { 0x01, 0x02, 0x03 },
+	const uint8_t bstr_cid_value[] = { 0x01, 0x02, 0x03 };
+	const struct edhoc_buffer bstr_cid = {
+		.value = bstr_cid_value,
+		.length = ARRAY_SIZE(bstr_cid_value),
 	};
 	int ret = edhoc_set_connection_id(&init_ctx, &bstr_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	const struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
+	const uint8_t resp_cid_value[] = { 0x05 };
+	const struct edhoc_buffer resp_cid = {
+		.value = resp_cid_value,
+		.length = ARRAY_SIZE(resp_cid_value),
 	};
 	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -496,14 +500,12 @@ TEST(message_paths, msg1_process_bstr_cid)
 
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-			  resp_ctx.negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL(bstr_cid.bstr_length,
-			  resp_ctx.negotiation.peer_connection_id.bstr_length);
+	TEST_ASSERT_EQUAL_size_t(
+		bstr_cid.length,
+		resp_ctx.negotiation.peer_connection_id.length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(
-		bstr_cid.bstr_value,
-		resp_ctx.negotiation.peer_connection_id.bstr_value,
-		bstr_cid.bstr_length);
+		bstr_cid.value, resp_ctx.negotiation.peer_connection_id.value,
+		bstr_cid.length);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -643,17 +645,18 @@ TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
 	setup_initiator(&init_ctx);
 	setup_responder(&resp_ctx);
 
-	const struct edhoc_connection_id bstr_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 3,
-		.bstr_value = { 0x01, 0x02, 0x03 },
+	const uint8_t bstr_cid_value[] = { 0x01, 0x02, 0x03 };
+	const struct edhoc_buffer bstr_cid = {
+		.value = bstr_cid_value,
+		.length = ARRAY_SIZE(bstr_cid_value),
 	};
 	int ret = edhoc_set_connection_id(&init_ctx, &bstr_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	const struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 7,
+	const uint8_t resp_cid_value[] = { 0x07 };
+	const struct edhoc_buffer resp_cid = {
+		.value = resp_cid_value,
+		.length = ARRAY_SIZE(resp_cid_value),
 	};
 	ret = edhoc_set_connection_id(&resp_ctx, &resp_cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -683,14 +686,12 @@ TEST(message_paths, msg1_roundtrip_bstr_cid_and_ead)
 
 	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-			  resp_ctx.negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL(bstr_cid.bstr_length,
-			  resp_ctx.negotiation.peer_connection_id.bstr_length);
+	TEST_ASSERT_EQUAL_size_t(
+		bstr_cid.length,
+		resp_ctx.negotiation.peer_connection_id.length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(
-		bstr_cid.bstr_value,
-		resp_ctx.negotiation.peer_connection_id.bstr_value,
-		bstr_cid.bstr_length);
+		bstr_cid.value, resp_ctx.negotiation.peer_connection_id.value,
+		bstr_cid.length);
 	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_1, ead_ctx.call_context.message);
 	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
 	TEST_ASSERT_EQUAL(MSG1_EAD_LABEL, ead_ctx.token[0].label);

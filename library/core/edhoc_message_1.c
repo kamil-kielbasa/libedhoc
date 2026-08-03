@@ -159,26 +159,18 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	cbor_enc_msg_1.message_1_G_X.len = ctx->ephemeral.own.length;
 
 	/* 3d. Fill CBOR structure for message 1 - connection identifier. */
-	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_int_c;
-		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
-		cbor_enc_msg_1.message_1_C_I_int =
-			ctx->negotiation.connection_id.int_value;
-		break;
+	int32_t connection_id_int = 0;
 
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
+	if (edhoc_connection_id_compact(&ctx->negotiation.connection_id,
+					&connection_id_int)) {
+		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_int_c;
+		cbor_enc_msg_1.message_1_C_I_int = connection_id_int;
+	} else {
 		cbor_enc_msg_1.message_1_C_I_choice = message_1_C_I_bstr_c;
 		cbor_enc_msg_1.message_1_C_I_bstr.value =
-			ctx->negotiation.connection_id.bstr_value;
+			ctx->negotiation.connection_id.value;
 		cbor_enc_msg_1.message_1_C_I_bstr.len =
-			ctx->negotiation.connection_id.bstr_length;
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Invalid cid enc type: %d",
-			      ctx->negotiation.connection_id.encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
+			ctx->negotiation.connection_id.length;
 	}
 
 	/* 3e. Fill CBOR structure for message 1 - external authorization data if present. */
@@ -431,40 +423,27 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	/* 3d. Verify connection identifier. */
 	switch (cbor_dec_msg_1.message_1_C_I_choice) {
 	case message_1_C_I_int_c: {
-		if (ONE_BYTE_CBOR_INT_MIN_VALUE >
-			    cbor_dec_msg_1.message_1_C_I_int ||
-		    ONE_BYTE_CBOR_INT_MAX_VALUE <
-			    cbor_dec_msg_1.message_1_C_I_int) {
+		if (EDHOC_SUCCESS !=
+		    edhoc_connection_id_from_int(
+			    cbor_dec_msg_1.message_1_C_I_int,
+			    &ctx->negotiation.peer_connection_id)) {
 			EDHOC_LOG_ERR("C_I integer out of range: %d",
 				      cbor_dec_msg_1.message_1_C_I_int);
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 		}
-
-		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-		ctx->negotiation.peer_connection_id.int_value =
-			(int8_t)cbor_dec_msg_1.message_1_C_I_int;
 		break;
 	}
 
 	case message_1_C_I_bstr_c: {
-		if (ARRAY_SIZE(ctx->negotiation.peer_connection_id.bstr_value) <
-		    cbor_dec_msg_1.message_1_C_I_bstr.len) {
-			EDHOC_LOG_ERR(
-				"C_I byte string too large: %zu, %zu",
-				cbor_dec_msg_1.message_1_C_I_bstr.len,
-				ARRAY_SIZE(ctx->negotiation.peer_connection_id
-						   .bstr_value));
+		if (EDHOC_SUCCESS !=
+		    edhoc_connection_id_from_bstr(
+			    cbor_dec_msg_1.message_1_C_I_bstr.value,
+			    cbor_dec_msg_1.message_1_C_I_bstr.len,
+			    &ctx->negotiation.peer_connection_id)) {
+			EDHOC_LOG_ERR("C_I byte string too large: %zu",
+				      cbor_dec_msg_1.message_1_C_I_bstr.len);
 			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 		}
-
-		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
-		ctx->negotiation.peer_connection_id.bstr_length =
-			cbor_dec_msg_1.message_1_C_I_bstr.len;
-		memcpy(ctx->negotiation.peer_connection_id.bstr_value,
-		       cbor_dec_msg_1.message_1_C_I_bstr.value,
-		       cbor_dec_msg_1.message_1_C_I_bstr.len);
 		break;
 	}
 
@@ -474,25 +453,9 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 
-	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		EDHOC_LOG_HEXDUMP_DBG(
-			(const uint8_t *)&ctx->negotiation.peer_connection_id
-				.int_value,
-			sizeof(ctx->negotiation.peer_connection_id.int_value),
-			"C_I");
-		break;
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		EDHOC_LOG_HEXDUMP_DBG(
-			ctx->negotiation.peer_connection_id.bstr_value,
-			ctx->negotiation.peer_connection_id.bstr_length, "C_I");
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Invalid peer CID encoding type: %d",
-			      ctx->negotiation.peer_connection_id.encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
+	EDHOC_LOG_HEXDUMP_DBG(ctx->negotiation.peer_connection_id.value,
+			      ctx->negotiation.peer_connection_id.length,
+			      "C_I");
 
 	/* 4. Process EAD if present. */
 	if (true == cbor_dec_msg_1.message_1_EAD_1_m_present &&

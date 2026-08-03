@@ -41,17 +41,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /**
- * \brief Compute required buffer length for C_R (message_2).
- *
- * \param[in] cid               EDHOC connection identifier.
- * \param[out] len              On success, number of bytes that make up
- *                              C_R length requirements.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len);
-
-/**
  * \brief Compute required buffer length for TH (2/3).
  *
  * \param th_len                Transcript hash length.
@@ -115,31 +104,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 /* Static function definitions --------------------------------------------- */
 
-STATIC int comp_cid_len(const struct edhoc_connection_id *cid, size_t *len)
-{
-	if (NULL == cid || NULL == len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	*len = 0;
-
-	switch (cid->encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		*len = 1;
-		break;
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		*len += cid->bstr_length;
-		*len += edhoc_cbor_bstr_oh(cid->bstr_length);
-		break;
-	default:
-		EDHOC_LOG_ERR("Invalid CID enc type: %d", cid->encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	return EDHOC_SUCCESS;
-}
-
 STATIC int comp_th_len(size_t th_len, size_t *len)
 {
 	if (0 == th_len || NULL == len) {
@@ -149,7 +113,7 @@ STATIC int comp_th_len(size_t th_len, size_t *len)
 
 	*len = 0;
 	*len += th_len;
-	*len += edhoc_cbor_bstr_oh(th_len);
+	*len += edhoc_cbor_bstr_header_length(th_len);
 
 	return EDHOC_SUCCESS;
 }
@@ -162,9 +126,10 @@ STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 	}
 
 	for (size_t i = 0; i < ctx->ead.count; ++i) {
-		*len += edhoc_cbor_int_mem_req(ctx->ead.token[i].label);
+		*len += edhoc_cbor_int_length(ctx->ead.token[i].label);
 		*len += ctx->ead.token[i].value.length;
-		*len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value.length);
+		*len += edhoc_cbor_bstr_header_length(
+			ctx->ead.token[i].value.length);
 	}
 
 	return EDHOC_SUCCESS;
@@ -190,14 +155,14 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	len += sizeof("Signature1");
-	len += edhoc_cbor_tstr_oh(sizeof("Signature1"));
+	len += edhoc_cbor_tstr_header_length(sizeof("Signature1"));
 	len += mac_ctx->id_cred_len;
-	len += edhoc_cbor_bstr_oh(mac_ctx->id_cred_len);
+	len += edhoc_cbor_bstr_header_length(mac_ctx->id_cred_len);
 	len += mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len;
-	len += edhoc_cbor_bstr_oh(mac_ctx->th_len + mac_ctx->cred_len +
-				  mac_ctx->ead_len);
+	len += edhoc_cbor_bstr_header_length(
+		mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len);
 	len += mac_len;
-	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
+	len += edhoc_cbor_int_length((int32_t)mac_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
 	if (NULL == cose_sign_1_buf) {
@@ -249,14 +214,14 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	len += sizeof("Signature1");
-	len += edhoc_cbor_tstr_oh(sizeof("Signature1"));
+	len += edhoc_cbor_tstr_header_length(sizeof("Signature1"));
 	len += mac_ctx->id_cred_len;
-	len += edhoc_cbor_bstr_oh(mac_ctx->id_cred_len);
+	len += edhoc_cbor_bstr_header_length(mac_ctx->id_cred_len);
 	len += mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len;
-	len += edhoc_cbor_bstr_oh(mac_ctx->th_len + mac_ctx->cred_len +
-				  mac_ctx->ead_len);
+	len += edhoc_cbor_bstr_header_length(
+		mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len);
 	len += mac_len;
-	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
+	len += edhoc_cbor_int_length((int32_t)mac_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
 	if (NULL == cose_sign_1_buf) {
@@ -292,10 +257,10 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 /* Module interface function definitions ----------------------------------- */
 
-size_t edhoc_cbor_int_mem_req(int32_t value)
+size_t edhoc_cbor_int_length(int32_t value)
 {
-	if (value >= ONE_BYTE_CBOR_INT_MIN_VALUE &&
-	    value <= ONE_BYTE_CBOR_INT_MAX_VALUE) {
+	if (value >= EDHOC_ONE_BYTE_CBOR_INT_MIN &&
+	    value <= EDHOC_ONE_BYTE_CBOR_INT_MAX) {
 		return 1;
 	} else if (value >= -(UINT8_MAX + 1) && value <= UINT8_MAX) {
 		return 2;
@@ -306,7 +271,7 @@ size_t edhoc_cbor_int_mem_req(int32_t value)
 	}
 }
 
-size_t edhoc_cbor_tstr_oh(size_t length)
+size_t edhoc_cbor_tstr_header_length(size_t length)
 {
 	if (length <= 23) {
 		return 1;
@@ -321,7 +286,7 @@ size_t edhoc_cbor_tstr_oh(size_t length)
 	}
 }
 
-size_t edhoc_cbor_bstr_oh(size_t length)
+size_t edhoc_cbor_bstr_header_length(size_t length)
 {
 	if (length <= 23) {
 		return 1; // canonical CBOR
@@ -336,10 +301,20 @@ size_t edhoc_cbor_bstr_oh(size_t length)
 	}
 }
 
+bool edhoc_cbor_is_one_byte_int(uint8_t value)
+{
+	const uint8_t cbor_unsigned_max = 0x17u;
+	const uint8_t cbor_negative_min = 0x20u;
+	const uint8_t cbor_negative_max = 0x37u;
+
+	return value <= cbor_unsigned_max ||
+	       (cbor_negative_min <= value && value <= cbor_negative_max);
+}
+
 size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length)
 {
-	if (NULL == header ||
-	    EDHOC_CBOR_BSTR_HEADER_MAX_LEN < edhoc_cbor_bstr_oh(length)) {
+	if (NULL == header || EDHOC_CBOR_BSTR_HEADER_MAX_LEN <
+				      edhoc_cbor_bstr_header_length(length)) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return 0;
 	}
@@ -498,7 +473,7 @@ int edhoc_comp_mac_context_length(
 
 	/* C_R length. */
 	if (EDHOC_MESSAGE_2 == ctx->state.message) {
-		const struct edhoc_connection_id *cid = NULL;
+		const struct connection_id *cid = NULL;
 
 		switch (ctx->state.role) {
 		case EDHOC_ROLE_INITIATOR:
@@ -512,13 +487,7 @@ int edhoc_comp_mac_context_length(
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
-		len = 0;
-		ret = comp_cid_len(cid, &len);
-
-		if (EDHOC_SUCCESS != ret)
-			return ret;
-
-		*mac_ctx_len += len;
+		*mac_ctx_len += edhoc_connection_id_encoded_length(cid);
 	}
 
 	/* ID_CRED length. */
@@ -599,7 +568,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 
 	/* C_R length. */
 	if (EDHOC_MESSAGE_2 == ctx->state.message) {
-		const struct edhoc_connection_id *cid = NULL;
+		const struct connection_id *cid = NULL;
 
 		switch (ctx->state.role) {
 		case EDHOC_ROLE_INITIATOR:
@@ -614,47 +583,15 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 		}
 
 		mac_ctx->conn_id = &mac_ctx->buf[0];
+		mac_ctx->conn_id_len = edhoc_connection_id_encoded_length(cid);
 
 		len = 0;
-		ret = comp_cid_len(cid, &len);
+		ret = edhoc_connection_id_encode(cid, mac_ctx->conn_id,
+						 mac_ctx->conn_id_len, &len);
 
-		if (EDHOC_SUCCESS != ret)
-			return ret;
-
-		mac_ctx->conn_id_len = len;
-
-		/* C_R cborising. */
-		/* Cborise C_R. */
-		switch (cid->encode_type) {
-		case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER: {
-			/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
-			const int32_t value = cid->int_value;
-			len = 0;
-			ret = cbor_encode_integer_type_int_type(
-				mac_ctx->conn_id, mac_ctx->conn_id_len, &value,
-				&len);
-			break;
-		}
-		case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING: {
-			const struct zcbor_string cbor_bstr = {
-				.value = cid->bstr_value,
-				.len = cid->bstr_length,
-			};
-			len = 0;
-			ret = cbor_encode_byte_string_type_bstr_type(
-				mac_ctx->conn_id, mac_ctx->conn_id_len,
-				&cbor_bstr, &len);
-			break;
-		}
-		default:
-			EDHOC_LOG_ERR("Invalid CID encode type: %d",
-				      cid->encode_type);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
-
-		if (ZCBOR_SUCCESS != ret) {
+		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("CBOR enc C_R: %d", ret);
-			return EDHOC_ERROR_CBOR_FAILURE;
+			return ret;
 		}
 
 		mac_ctx->conn_id_len = len;
@@ -902,9 +839,10 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(info.info_label);
-	len += mac_ctx->buf_len + edhoc_cbor_bstr_oh(mac_ctx->buf_len);
-	len += edhoc_cbor_int_mem_req((int32_t)mac_len);
+	len += edhoc_cbor_int_length(info.info_label);
+	len += mac_ctx->buf_len +
+	       edhoc_cbor_bstr_header_length(mac_ctx->buf_len);
+	len += edhoc_cbor_int_length((int32_t)mac_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info_buf, len);
 	if (NULL == info_buf) {

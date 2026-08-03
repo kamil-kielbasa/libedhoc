@@ -286,7 +286,7 @@ TEST(api_negative, set_cipher_suites_not_initialized)
 
 TEST(api_negative, set_connection_id_null_ctx)
 {
-	const struct edhoc_connection_id cid = { 0 };
+	const struct edhoc_buffer cid = { 0 };
 
 	int ret = edhoc_set_connection_id(NULL, &cid);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
@@ -310,10 +310,9 @@ TEST(api_negative, set_connection_id_not_initialized)
 {
 	struct edhoc_context ctx = { 0 };
 
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 0,
-	};
+	const uint8_t value[] = { 0x00 };
+	const struct edhoc_buffer cid = { .value = value,
+					  .length = ARRAY_SIZE(value) };
 
 	int ret = edhoc_set_connection_id(&ctx, &cid);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);

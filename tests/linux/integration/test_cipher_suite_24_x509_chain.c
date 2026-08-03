@@ -112,14 +112,15 @@ TEST_TEAR_DOWN(cipher_suite_24_x509_chain)
 
 TEST(cipher_suite_24_x509_chain, method_0)
 {
-	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = -24,
+	const uint8_t init_cid_value[] = { 0x37 };
+	const struct edhoc_buffer init_cid = {
+		.value = init_cid_value,
+		.length = ARRAY_SIZE(init_cid_value),
 	};
-	const struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 3,
-		.bstr_value = { 0x18, 0x19, 0x1a },
+	const uint8_t resp_cid_value[] = { 0x18, 0x19, 0x1a };
+	const struct edhoc_buffer resp_cid = {
+		.value = resp_cid_value,
+		.length = ARRAY_SIZE(resp_cid_value),
 	};
 
 	const struct handshake_endpoint initiator = {

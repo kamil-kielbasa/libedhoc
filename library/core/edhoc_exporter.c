@@ -177,9 +177,10 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT);
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
-	len += edhoc_cbor_int_mem_req((int32_t)csuite->hash_length);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
+	len += edhoc_cbor_int_length((int32_t)csuite->hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -254,9 +255,9 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
-	len += context_len + edhoc_cbor_bstr_oh(context_len);
-	len += edhoc_cbor_int_mem_req((int32_t)csuite->hash_length);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
+	len += context_len + edhoc_cbor_bstr_header_length(context_len);
+	len += edhoc_cbor_int_length((int32_t)csuite->hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -332,10 +333,9 @@ STATIC int compute_prk_exporter(struct edhoc_context *ctx)
 		edhoc_selected_cipher_suite(ctx);
 
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(
-		EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
-	len += edhoc_cbor_bstr_oh(0); /* cbor empty byte string. */
-	len += edhoc_cbor_int_mem_req((int32_t)csuite->hash_length);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
+	len += edhoc_cbor_bstr_header_length(0); /* cbor empty byte string. */
+	len += edhoc_cbor_int_length((int32_t)csuite->hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -411,9 +411,9 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 
 	/* 2. Cborise the exporter info (label, context, output length). */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req((int32_t)label);
-	len += context_len + edhoc_cbor_bstr_oh(context_len);
-	len += edhoc_cbor_int_mem_req((int32_t)output_length);
+	len += edhoc_cbor_int_length((int32_t)label);
+	len += context_len + edhoc_cbor_bstr_header_length(context_len);
+	len += edhoc_cbor_int_length((int32_t)output_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -536,114 +536,31 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	/* 2. Copy OSCORE sender ID. */
-	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER: {
-		/* See RFC9528 section 3.3.3 */
-		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
-		int32_t int_value =
-			ctx->negotiation.peer_connection_id.int_value;
-		ret = cbor_encode_integer_type_int_type(sid, sid_size,
-							&int_value, sid_len);
-		if (ZCBOR_SUCCESS != ret) {
-			EDHOC_LOG_ERR("CBOR encode OSCORE SID: %d", ret);
-			return EDHOC_ERROR_CBOR_FAILURE;
-		}
-		break;
-	}
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		if (sid_size <
-		    ctx->negotiation.peer_connection_id.bstr_length) {
-			EDHOC_LOG_ERR(
-				"Buffer too small for OSCORE SID: %zu, %zu",
-				sid_size,
-				ctx->negotiation.peer_connection_id.bstr_length);
-			return EDHOC_ERROR_BUFFER_TOO_SMALL;
-		}
-
-		*sid_len = ctx->negotiation.peer_connection_id.bstr_length;
-		memcpy(sid, ctx->negotiation.peer_connection_id.bstr_value,
-		       ctx->negotiation.peer_connection_id.bstr_length);
-		break;
-	default:
-		EDHOC_LOG_ERR("Invalid peer CID enc type: %d",
-			      ctx->negotiation.peer_connection_id.encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
+	/* 2. Copy OSCORE sender ID. RFC 9528: 3.3.3 - the OSCORE identifier is
+	 * the connection identifier byte string itself. */
+	if (sid_size < ctx->negotiation.peer_connection_id.length) {
+		EDHOC_LOG_ERR("Buffer too small for OSCORE SID: %zu, %zu",
+			      sid_size,
+			      ctx->negotiation.peer_connection_id.length);
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		EDHOC_LOG_HEXDUMP_DBG(
-			(const uint8_t *)&ctx->negotiation.peer_connection_id
-				.int_value,
-			sizeof(ctx->negotiation.peer_connection_id.int_value),
-			"OSCORE sender ID");
-		break;
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		EDHOC_LOG_HEXDUMP_DBG(
-			ctx->negotiation.peer_connection_id.bstr_value,
-			ctx->negotiation.peer_connection_id.bstr_length,
-			"OSCORE sender ID");
-		break;
-	default:
-		EDHOC_LOG_ERR("Invalid peer CID enc type: %d",
-			      ctx->negotiation.peer_connection_id.encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
+	*sid_len = ctx->negotiation.peer_connection_id.length;
+	memcpy(sid, ctx->negotiation.peer_connection_id.value, *sid_len);
+
+	EDHOC_LOG_HEXDUMP_DBG(sid, *sid_len, "OSCORE sender ID");
 
 	/* 3. Copy OSCORE recipient ID. */
-	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER: {
-		/* See RFC9528 section 3.3.3 */
-		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
-		int32_t int_value = ctx->negotiation.connection_id.int_value;
-		ret = cbor_encode_integer_type_int_type(rid, rid_size,
-							&int_value, rid_len);
-		if (ZCBOR_SUCCESS != ret) {
-			EDHOC_LOG_ERR("CBOR encode OSCORE RID: %d", ret);
-			return EDHOC_ERROR_CBOR_FAILURE;
-		}
-		break;
-	}
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		if (rid_size < ctx->negotiation.connection_id.bstr_length) {
-			EDHOC_LOG_ERR(
-				"Buffer too small for OSCORE RID: %zu, %zu",
-				rid_size,
-				ctx->negotiation.connection_id.bstr_length);
-			return EDHOC_ERROR_BUFFER_TOO_SMALL;
-		}
-
-		*rid_len = ctx->negotiation.connection_id.bstr_length;
-		memcpy(rid, ctx->negotiation.connection_id.bstr_value,
-		       ctx->negotiation.connection_id.bstr_length);
-		break;
-	default:
-		EDHOC_LOG_ERR("Invalid OSCORE RID enc type: %d",
-			      ctx->negotiation.connection_id.encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
+	if (rid_size < ctx->negotiation.connection_id.length) {
+		EDHOC_LOG_ERR("Buffer too small for OSCORE RID: %zu, %zu",
+			      rid_size, ctx->negotiation.connection_id.length);
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		EDHOC_LOG_HEXDUMP_DBG(
-			(const uint8_t *)&ctx->negotiation.connection_id
-				.int_value,
-			sizeof(ctx->negotiation.connection_id.int_value),
-			"OSCORE recipient ID");
-		break;
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		EDHOC_LOG_HEXDUMP_DBG(
-			ctx->negotiation.connection_id.bstr_value,
-			ctx->negotiation.connection_id.bstr_length,
-			"OSCORE recipient ID");
-		break;
+	*rid_len = ctx->negotiation.connection_id.length;
+	memcpy(rid, ctx->negotiation.connection_id.value, *rid_len);
 
-	default:
-		EDHOC_LOG_ERR("Invalid OSCORE RID enc type: %d",
-			      ctx->negotiation.connection_id.encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
+	EDHOC_LOG_HEXDUMP_DBG(rid, *rid_len, "OSCORE recipient ID");
 
 	return EDHOC_SUCCESS;
 }

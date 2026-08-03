@@ -31,6 +31,11 @@ ZTEST(edhoc_benchmark, test_suite_0_x25519_eddsa)
 {
 	const enum edhoc_method methods[] = { EDHOC_METHOD_0 };
 
+	/* Both identifiers travel in the compact form of
+	 * RFC 9528: 3.3.2, so the benchmark measures the common case. */
+	const uint8_t initiator_cid[] = { 0x0c };
+	const uint8_t responder_cid[] = { 0x2b };
+
 	const struct benchmark_identity initiator = {
 		.cose_header = EDHOC_COSE_HEADER_X509_CHAIN,
 		.cert = { { .pointer = CRED_I, .length = ARRAY_SIZE(CRED_I) } },
@@ -59,14 +64,12 @@ ZTEST(edhoc_benchmark, test_suite_0_x25519_eddsa)
 		.methods = methods,
 		.methods_count = ARRAY_SIZE(methods),
 		.initiator_connection_id = {
-			.encode_type =
-				EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-			.int_value = 12,
+			.value = initiator_cid,
+			.length = ARRAY_SIZE(initiator_cid),
 		},
 		.responder_connection_id = {
-			.encode_type =
-				EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-			.int_value = -12,
+			.value = responder_cid,
+			.length = ARRAY_SIZE(responder_cid),
 		},
 		.initiator = &initiator,
 		.responder = &responder,

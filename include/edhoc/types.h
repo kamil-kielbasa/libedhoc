@@ -23,6 +23,9 @@
 #include "edhoc_config.h"
 #endif
 
+/* EDHOC headers: */
+#include <edhoc/values.h>
+
 /* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
@@ -136,34 +139,6 @@ struct edhoc_call_context {
 };
 
 /**
- * \brief EDHOC connection identifier encoding type (RFC 9528: 3.3.2).
- */
-enum edhoc_connection_id_type {
-	/** Encode connection identifier as CBOR integer. */
-	EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-	/** Encode connection identifier as CBOR byte string. */
-	EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-};
-
-/**
- * \brief RFC 9528: 3.3.2. Representation of Byte String Identifiers.
- */
-struct edhoc_connection_id {
-	/** Encoding of the connection identifier. It must follow the
-	 *  representation of byte string identifiers described in RFC 9528:
-	 *  3.3.2. */
-	enum edhoc_connection_id_type encode_type;
-
-	/** Connection identifier as a CBOR integer. */
-	int8_t int_value;
-
-	/** Connection identifier as a CBOR byte string. */
-	uint8_t bstr_value[CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID + 1];
-	/** Number of valid bytes in \p bstr_value. */
-	size_t bstr_length;
-};
-
-/**
  * \brief EDHOC error code. RFC 9528: 6. Error Handling.
  */
 enum edhoc_error_code {
@@ -197,6 +172,10 @@ struct edhoc_error_info {
 	 *  the caller on compose, by the library on process). */
 	size_t entries_length;
 };
+
+/* Module interface variables and constants -------------------------------- */
+/* Extern variables and constant declarations ------------------------------ */
+/* Module interface function declarations ---------------------------------- */
 
 /**@}*/
 

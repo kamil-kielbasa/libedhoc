@@ -98,16 +98,6 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		     struct edhoc_credential_received *received);
 
 /**
- * \brief Check whether a byte is a complete CBOR integer on its own.
- *
- * \param value                         Candidate byte.
- *
- * \return True for CBOR major type 0 or 1 with the argument in the initial
- *         byte, otherwise false.
- */
-STATIC bool is_one_byte_cbor_int(uint8_t value);
-
-/**
  * \brief Copy a CBOR item the application delivered ready to embed.
  *
  * \param[in] item                      Encoded item.
@@ -134,10 +124,10 @@ cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value)
 
 	switch (value->encode_type) {
 	case EDHOC_ENCODE_TYPE_INTEGER:
-		return edhoc_cbor_int_mem_req(value->integer);
+		return edhoc_cbor_int_length(value->integer);
 	case EDHOC_ENCODE_TYPE_STRING:
 		return value->string.length +
-		       edhoc_cbor_bstr_oh(value->string.length);
+		       edhoc_cbor_bstr_header_length(value->string.length);
 	}
 
 	return 0;
@@ -146,16 +136,6 @@ cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value)
 STATIC bool is_buffer_empty(const uint8_t *buffer, size_t length)
 {
 	return NULL == buffer || 0 == length;
-}
-
-STATIC bool is_one_byte_cbor_int(uint8_t value)
-{
-	const uint8_t cbor_unsigned_max = 0x17u;
-	const uint8_t cbor_negative_min = 0x20u;
-	const uint8_t cbor_negative_max = 0x37u;
-
-	return value <= cbor_unsigned_max ||
-	       (cbor_negative_min <= value && value <= cbor_negative_max);
 }
 
 STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
@@ -686,7 +666,7 @@ int edhoc_credential_id_cred_length(
 	switch (material->label) {
 	case EDHOC_COSE_HEADER_KID:
 		*length += material->kid.length +
-			   edhoc_cbor_bstr_oh(material->kid.length);
+			   edhoc_cbor_bstr_header_length(material->kid.length);
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
@@ -694,7 +674,7 @@ int edhoc_credential_id_cred_length(
 			const size_t len =
 				material->x509_chain.certificate[i].length;
 
-			*length += len + edhoc_cbor_bstr_oh(len);
+			*length += len + edhoc_cbor_bstr_header_length(len);
 		}
 
 		if (1 < material->x509_chain.count) {
@@ -709,7 +689,7 @@ int edhoc_credential_id_cred_length(
 		*length +=
 			cbor_int_or_string_len(&material->x509_hash.algorithm);
 		*length += material->x509_hash.fingerprint.length;
-		*length += edhoc_cbor_bstr_oh(
+		*length += edhoc_cbor_bstr_header_length(
 			material->x509_hash.fingerprint.length);
 		break;
 
@@ -745,7 +725,7 @@ int edhoc_credential_cred_length(
 	}
 
 	*length = material->credential.length +
-		  edhoc_cbor_bstr_oh(material->credential.length);
+		  edhoc_cbor_bstr_header_length(material->credential.length);
 
 	return EDHOC_SUCCESS;
 }
@@ -881,7 +861,7 @@ int edhoc_credential_encode_id_cred_compact(
 	 * whose byte is a complete CBOR integer travels as that integer.
 	 * Everything else is a plain byte string. */
 	if (1 == material->kid.length &&
-	    is_one_byte_cbor_int(material->kid.value[0])) {
+	    edhoc_cbor_is_one_byte_int(material->kid.value[0])) {
 		buffer[0] = material->kid.value[0];
 		*length = 1;
 

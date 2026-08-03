@@ -74,9 +74,8 @@ TEST(coverage_exporters, oscore_export_raw_wrong_status)
 	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.is_oscore_export_allowed = true;
 	ctx.state.th.length = 32;
-	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx.negotiation.peer_connection_id.int_value = -8;
+	ctx.negotiation.peer_connection_id.value[0] = 0x27;
+	ctx.negotiation.peer_connection_id.length = 1;
 
 	uint8_t ms[16] = { 0 };
 	uint8_t salt[8] = { 0 };
@@ -153,11 +152,9 @@ TEST(coverage_exporters, oscore_export_raw_bstr_cid)
 	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 	ctx.is_oscore_export_allowed = true;
 	ctx.state.th.length = 32;
-	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
-	ctx.negotiation.peer_connection_id.bstr_length = 2;
-	ctx.negotiation.peer_connection_id.bstr_value[0] = 0xAA;
-	ctx.negotiation.peer_connection_id.bstr_value[1] = 0xBB;
+	ctx.negotiation.peer_connection_id.value[0] = 0xAA;
+	ctx.negotiation.peer_connection_id.value[1] = 0xBB;
+	ctx.negotiation.peer_connection_id.length = 2;
 
 	uint8_t ms[16] = { 0 };
 	uint8_t salt[8] = { 0 };
@@ -227,9 +224,8 @@ TEST(coverage_exporters, oscore_export_raw_failure_sweep)
 		ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 		ctx.is_oscore_export_allowed = true;
 		ctx.state.th.length = 32;
-		ctx.negotiation.peer_connection_id.encode_type =
-			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-		ctx.negotiation.peer_connection_id.int_value = -8;
+		ctx.negotiation.peer_connection_id.value[0] = 0x27;
+		ctx.negotiation.peer_connection_id.length = 1;
 
 		uint8_t ms[16] = { 0 };
 		uint8_t salt[8] = { 0 };
@@ -323,84 +319,6 @@ TEST(coverage_exporters, oscore_export_raw_after_bstr_cid_handshake)
 		&sender_id_len, recipient_id, sizeof(recipient_id),
 		&recipient_id_len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = edhoc_context_deinit(&init_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ret = edhoc_context_deinit(&resp_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(coverage_exporters, oscore_export_raw_invalid_cid_type)
-{
-	struct edhoc_context init_ctx = { 0 };
-	struct edhoc_context resp_ctx = { 0 };
-
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	resp_ctx.negotiation.peer_connection_id.encode_type =
-		(enum edhoc_connection_id_type)99;
-
-	coverage_mock_reset(0);
-
-	uint8_t master_secret[32] = { 0 };
-	uint8_t master_salt[32] = { 0 };
-	uint8_t sender_id[16] = { 0 };
-	uint8_t recipient_id[16] = { 0 };
-	size_t sender_id_len = 0;
-	size_t recipient_id_len = 0;
-
-	ret = edhoc_export_oscore_context_raw(
-		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
-		sizeof(master_salt), sender_id, sizeof(sender_id),
-		&sender_id_len, recipient_id, sizeof(recipient_id),
-		&recipient_id_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
-
-	ret = edhoc_context_deinit(&init_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ret = edhoc_context_deinit(&resp_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(coverage_exporters, oscore_export_raw_invalid_own_cid_type)
-{
-	struct edhoc_context init_ctx = { 0 };
-	struct edhoc_context resp_ctx = { 0 };
-
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = coverage_do_mock_msg3_process(&init_ctx, &resp_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	resp_ctx.negotiation.connection_id.encode_type =
-		(enum edhoc_connection_id_type)99;
-
-	coverage_mock_reset(0);
-
-	uint8_t master_secret[32] = { 0 };
-	uint8_t master_salt[32] = { 0 };
-	uint8_t sender_id[16] = { 0 };
-	uint8_t recipient_id[16] = { 0 };
-	size_t sender_id_len = 0;
-	size_t recipient_id_len = 0;
-
-	ret = edhoc_export_oscore_context_raw(
-		&resp_ctx, master_secret, sizeof(master_secret), master_salt,
-		sizeof(master_salt), sender_id, sizeof(sender_id),
-		&sender_id_len, recipient_id, sizeof(recipient_id),
-		&recipient_id_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -731,9 +649,6 @@ TEST_GROUP_RUNNER(coverage_exporters)
 	RUN_TEST_CASE(coverage_exporters, exporter_failure_sweep_extended);
 	RUN_TEST_CASE(coverage_exporters,
 		      oscore_export_raw_after_bstr_cid_handshake);
-	RUN_TEST_CASE(coverage_exporters, oscore_export_raw_invalid_cid_type);
-	RUN_TEST_CASE(coverage_exporters,
-		      oscore_export_raw_invalid_own_cid_type);
 	RUN_TEST_CASE(coverage_exporters,
 		      oscore_export_raw_bstr_cid_sid_too_small);
 	RUN_TEST_CASE(coverage_exporters,

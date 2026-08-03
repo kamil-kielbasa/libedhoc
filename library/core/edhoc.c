@@ -140,9 +140,10 @@ int edhoc_set_cipher_suites(struct edhoc_context *ctx,
 }
 
 int edhoc_set_connection_id(struct edhoc_context *ctx,
-			    const struct edhoc_connection_id *cid)
+			    const struct edhoc_buffer *cid)
 {
-	if (NULL == ctx || NULL == cid) {
+	if (NULL == ctx || NULL == cid ||
+	    (NULL == cid->value && 0 != cid->length)) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -152,33 +153,14 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	switch (cid->encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		if (ONE_BYTE_CBOR_INT_MIN_VALUE > cid->int_value ||
-		    ONE_BYTE_CBOR_INT_MAX_VALUE < cid->int_value) {
-			EDHOC_LOG_ERR("Bad state");
-			return EDHOC_ERROR_BAD_STATE;
-		}
-		break;
+	const int ret = edhoc_connection_id_from_bstr(
+		cid->value, cid->length, &ctx->negotiation.connection_id);
 
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		if (0 == cid->bstr_length) {
-			EDHOC_LOG_ERR("Bad state");
-			return EDHOC_ERROR_BAD_STATE;
-		}
-
-		if (CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID < cid->bstr_length) {
-			EDHOC_LOG_ERR("Bad state");
-			return EDHOC_ERROR_BAD_STATE;
-		}
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Connection ID conversion: %d", ret);
+		return ret;
 	}
 
-	ctx->negotiation.connection_id = *cid;
 	ctx->negotiation.connection_id_present = true;
 
 	return EDHOC_SUCCESS;

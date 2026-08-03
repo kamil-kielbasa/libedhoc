@@ -436,16 +436,10 @@ TEST_SETUP(rfc9529_chapter2)
 		*edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_0),
 	};
 
-	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = (int8_t)C_I[0],
-	};
-
-	struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = ARRAY_SIZE(C_R),
-	};
-	memcpy(&resp_cid.bstr_value, C_R, ARRAY_SIZE(C_R));
+	const struct edhoc_buffer init_cid = { .value = C_I,
+					       .length = ARRAY_SIZE(C_I) };
+	const struct edhoc_buffer resp_cid = { .value = C_R,
+					       .length = ARRAY_SIZE(C_R) };
 
 	ret = edhoc_context_init(init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -550,10 +544,12 @@ TEST(rfc9529_chapter2, message_1_process)
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, resp_ctx->state.prk_state);
 
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-			  resp_ctx->negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL((int8_t)C_I[0],
-			  resp_ctx->negotiation.peer_connection_id.int_value);
+	TEST_ASSERT_EQUAL_size_t(
+		ARRAY_SIZE(C_I),
+		resp_ctx->negotiation.peer_connection_id.length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		C_I, resp_ctx->negotiation.peer_connection_id.value,
+		ARRAY_SIZE(C_I));
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_X), resp_ctx->ephemeral.peer.length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_X, resp_ctx->ephemeral.peer.value,
@@ -573,9 +569,9 @@ TEST(rfc9529_chapter2, message_2_compose)
 	resp_ctx->ephemeral.peer.length = ARRAY_SIZE(G_X);
 	memcpy(resp_ctx->ephemeral.peer.value, G_X, ARRAY_SIZE(G_X));
 
-	resp_ctx->negotiation.peer_connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	resp_ctx->negotiation.peer_connection_id.int_value = (int8_t)C_I[0];
+	memcpy(resp_ctx->negotiation.peer_connection_id.value, C_I,
+	       ARRAY_SIZE(C_I));
+	resp_ctx->negotiation.peer_connection_id.length = ARRAY_SIZE(C_I);
 
 	size_t msg_2_len = 0;
 	uint8_t msg_2[ARRAY_SIZE(message_2)] = { 0 };
@@ -639,13 +635,12 @@ TEST(rfc9529_chapter2, message_2_process)
 				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
 				     ARRAY_SIZE(PRK_3e2m));
 
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-			  init_ctx->negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R),
-			  init_ctx->negotiation.peer_connection_id.bstr_length);
+	TEST_ASSERT_EQUAL_size_t(
+		ARRAY_SIZE(C_R),
+		init_ctx->negotiation.peer_connection_id.length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(
-		C_R, init_ctx->negotiation.peer_connection_id.bstr_value,
-		init_ctx->negotiation.peer_connection_id.bstr_length);
+		C_R, init_ctx->negotiation.peer_connection_id.value,
+		ARRAY_SIZE(C_R));
 }
 
 TEST(rfc9529_chapter2, message_3_compose)
@@ -852,10 +847,12 @@ TEST(rfc9529_chapter2, handshake)
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_INVALID, resp_ctx->state.prk_state);
 
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-			  resp_ctx->negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL((int8_t)C_I[0],
-			  resp_ctx->negotiation.peer_connection_id.int_value);
+	TEST_ASSERT_EQUAL_size_t(
+		ARRAY_SIZE(C_I),
+		resp_ctx->negotiation.peer_connection_id.length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		C_I, resp_ctx->negotiation.peer_connection_id.value,
+		ARRAY_SIZE(C_I));
 
 	TEST_ASSERT_EQUAL(ARRAY_SIZE(G_X), resp_ctx->ephemeral.peer.length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(G_X, resp_ctx->ephemeral.peer.value,
@@ -911,13 +908,12 @@ TEST(rfc9529_chapter2, handshake)
 				     EDHOC_KEY_SLOT_PRK_3E2M, PRK_3e2m,
 				     ARRAY_SIZE(PRK_3e2m));
 
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-			  init_ctx->negotiation.peer_connection_id.encode_type);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R),
-			  init_ctx->negotiation.peer_connection_id.bstr_length);
+	TEST_ASSERT_EQUAL_size_t(
+		ARRAY_SIZE(C_R),
+		init_ctx->negotiation.peer_connection_id.length);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(
-		C_R, init_ctx->negotiation.peer_connection_id.bstr_value,
-		init_ctx->negotiation.peer_connection_id.bstr_length);
+		C_R, init_ctx->negotiation.peer_connection_id.value,
+		ARRAY_SIZE(C_R));
 
 	memset(buffer, 0, sizeof(buffer));
 	size_t msg_3_len = 0;
@@ -1022,9 +1018,9 @@ TEST(rfc9529_chapter2, handshake)
 	uint8_t init_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
 	uint8_t init_master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
 	size_t init_sender_id_len = 0;
-	uint8_t init_sender_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
+	uint8_t init_sender_id[ARRAY_SIZE(C_R)] = { 0 };
 	size_t init_recipient_id_len = 0;
-	uint8_t init_recipient_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
+	uint8_t init_recipient_id[ARRAY_SIZE(C_I)] = { 0 };
 
 	/* Derive OSCORE master secret and master salt. */
 	ret = edhoc_export_oscore_context_raw(
@@ -1046,9 +1042,9 @@ TEST(rfc9529_chapter2, handshake)
 	uint8_t resp_master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
 	uint8_t resp_master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
 	size_t resp_sender_id_len = 0;
-	uint8_t resp_sender_id[ARRAY_SIZE(OSCORE_C_I)] = { 0 };
+	uint8_t resp_sender_id[ARRAY_SIZE(C_I)] = { 0 };
 	size_t resp_recipient_id_len = 0;
-	uint8_t resp_recipient_id[ARRAY_SIZE(OSCORE_C_R)] = { 0 };
+	uint8_t resp_recipient_id[ARRAY_SIZE(C_R)] = { 0 };
 
 	/* Derive OSCORE master secret and master salt. */
 	ret = edhoc_export_oscore_context_raw(
@@ -1081,18 +1077,16 @@ TEST(rfc9529_chapter2, handshake)
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Salt, resp_master_salt,
 				      ARRAY_SIZE(resp_master_salt));
 
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_I), init_recipient_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, init_recipient_id,
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_I), init_recipient_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_I, init_recipient_id,
 				      init_recipient_id_len);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_I), resp_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, resp_sender_id,
-				      resp_sender_id_len);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_I), resp_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_I, resp_sender_id, resp_sender_id_len);
 
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), init_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, init_sender_id,
-				      init_sender_id_len);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), resp_recipient_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, resp_recipient_id,
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R), init_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_R, init_sender_id, init_sender_id_len);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R), resp_recipient_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_R, resp_recipient_id,
 				      resp_recipient_id_len);
 
 	TEST_ASSERT_EQUAL(init_sender_id_len, resp_recipient_id_len);
@@ -1184,18 +1178,16 @@ TEST(rfc9529_chapter2, handshake)
 				      resp_master_salt,
 				      ARRAY_SIZE(resp_master_salt));
 
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_I), init_recipient_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, init_recipient_id,
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_I), init_recipient_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_I, init_recipient_id,
 				      init_recipient_id_len);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_I), resp_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_I, resp_sender_id,
-				      resp_sender_id_len);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_I), resp_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_I, resp_sender_id, resp_sender_id_len);
 
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), init_sender_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, init_sender_id,
-				      init_sender_id_len);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(OSCORE_C_R), resp_recipient_id_len);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_C_R, resp_recipient_id,
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R), init_sender_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_R, init_sender_id, init_sender_id_len);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(C_R), resp_recipient_id_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(C_R, resp_recipient_id,
 				      resp_recipient_id_len);
 
 	TEST_ASSERT_EQUAL(init_sender_id_len, resp_recipient_id_len);

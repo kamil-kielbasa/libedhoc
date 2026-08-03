@@ -89,8 +89,8 @@ struct edhoc_coap_extracted_fields {
 	 *  \ref edhoc_coap_extract_flow_info). */
 	bool is_reverse_flow;
 	/** Connection identifier extracted by
-	 *  \ref edhoc_coap_extract_connection_id. */
-	struct edhoc_connection_id extracted_conn_id;
+	 *  \ref edhoc_coap_extract_connection_id. A view into \p buffer. */
+	struct edhoc_buffer extracted_conn_id;
 };
 
 /**@}*/
@@ -114,8 +114,8 @@ struct edhoc_coap_extracted_fields {
  *
  * \return \c true if both encode the same connection identifier, else \c false.
  */
-bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
-				    const struct edhoc_connection_id *conn_id_2);
+bool edhoc_coap_connection_id_equal(const struct edhoc_buffer *conn_id_1,
+				    const struct edhoc_buffer *conn_id_2);
 
 /**@}*/
 
@@ -169,7 +169,7 @@ int edhoc_coap_prepend_flow(
  */
 int edhoc_coap_prepend_connection_id(
 	struct edhoc_coap_prepended_fields *prepended_fields,
-	const struct edhoc_connection_id *conn_id);
+	const struct edhoc_buffer *conn_id);
 
 /**
  * \brief Finalise the payload size after composing the EDHOC message.

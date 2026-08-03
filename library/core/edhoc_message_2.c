@@ -533,17 +533,8 @@ STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 
-	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		len += edhoc_cbor_int_mem_req(
-			ctx->negotiation.connection_id.int_value);
-		break;
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		len += ctx->negotiation.connection_id.bstr_length;
-		len += edhoc_cbor_bstr_oh(
-			ctx->negotiation.connection_id.bstr_length);
-		break;
-	}
+	len += edhoc_connection_id_encoded_length(
+		&ctx->negotiation.connection_id);
 
 	if (0 != mac_ctx->id_cred_comp_len) {
 		len += mac_ctx->id_cred_comp_len;
@@ -552,7 +543,7 @@ STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 	}
 
 	len += sign_len;
-	len += edhoc_cbor_bstr_oh(sign_len);
+	len += edhoc_cbor_bstr_header_length(sign_len);
 	len += mac_ctx->ead_len;
 
 	*plaintext_2_len = len;
@@ -569,43 +560,12 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 
 	size_t offset = 0;
 
-	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER: {
-		size_t len = 0;
-		/* NOLINTNEXTLINE(bugprone-signed-char-misuse,cert-str34-c) */
-		const int32_t value = ctx->negotiation.connection_id.int_value;
-		ret = cbor_encode_integer_type_int_type(
-			ptxt, ptxt_size - offset, &value, &len);
+	ret = edhoc_connection_id_encode(&ctx->negotiation.connection_id, ptxt,
+					 ptxt_size, &offset);
 
-		if (ZCBOR_SUCCESS != ret) {
-			EDHOC_LOG_ERR("CBOR enc C_I int");
-			return EDHOC_ERROR_CBOR_FAILURE;
-		}
-
-		offset += len;
-		break;
-	}
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING: {
-		size_t len = 0;
-		const struct zcbor_string input = {
-			.value = ctx->negotiation.connection_id.bstr_value,
-			.len = ctx->negotiation.connection_id.bstr_length,
-		};
-		ret = cbor_encode_byte_string_type_bstr_type(
-			ptxt, ptxt_size - offset, &input, &len);
-
-		if (ZCBOR_SUCCESS != ret) {
-			EDHOC_LOG_ERR("CBOR enc C_I bstr");
-			return EDHOC_ERROR_CBOR_FAILURE;
-		}
-
-		offset += len;
-		break;
-	}
-	default:
-		EDHOC_LOG_ERR("Invalid C_I enc type: %d",
-			      ctx->negotiation.connection_id.encode_type);
-		return EDHOC_ERROR_NOT_PERMITTED;
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("CBOR enc C_R");
+		return ret;
 	}
 
 	if (0 != mac_ctx->id_cred_comp_len) {
@@ -624,7 +584,8 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset], sign_len + edhoc_cbor_bstr_oh(sign_len),
+		&ptxt[offset],
+		sign_len + edhoc_cbor_bstr_header_length(sign_len),
 		&cbor_sign_or_mac_2, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
@@ -674,9 +635,10 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 	};
 
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2);
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
-	len += edhoc_cbor_int_mem_req((int32_t)keystream_len);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
+	len += edhoc_cbor_int_length((int32_t)keystream_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -872,36 +834,26 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 	/* C_R */
 	switch (cbor_ptxt_2.plaintext_2_C_R_choice) {
 	case plaintext_2_C_R_int_c:
-		if (ONE_BYTE_CBOR_INT_MIN_VALUE >
-			    (int8_t)cbor_ptxt_2.plaintext_2_C_R_int ||
-		    ONE_BYTE_CBOR_INT_MAX_VALUE <
-			    (int8_t)cbor_ptxt_2.plaintext_2_C_R_int) {
+		if (EDHOC_SUCCESS !=
+		    edhoc_connection_id_from_int(
+			    cbor_ptxt_2.plaintext_2_C_R_int,
+			    &ctx->negotiation.peer_connection_id)) {
 			EDHOC_LOG_ERR("C_R int out of range: %d",
-				      (int8_t)cbor_ptxt_2.plaintext_2_C_R_int);
+				      cbor_ptxt_2.plaintext_2_C_R_int);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
-
-		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-		ctx->negotiation.peer_connection_id.int_value =
-			(int8_t)cbor_ptxt_2.plaintext_2_C_R_int;
 		break;
 
 	case plaintext_2_C_R_bstr_c:
-		if (ARRAY_SIZE(ctx->negotiation.peer_connection_id.bstr_value) <
-		    cbor_ptxt_2.plaintext_2_C_R_bstr.len) {
+		if (EDHOC_SUCCESS !=
+		    edhoc_connection_id_from_bstr(
+			    cbor_ptxt_2.plaintext_2_C_R_bstr.value,
+			    cbor_ptxt_2.plaintext_2_C_R_bstr.len,
+			    &ctx->negotiation.peer_connection_id)) {
 			EDHOC_LOG_ERR("C_R bstr too large: %zu",
 				      cbor_ptxt_2.plaintext_2_C_R_bstr.len);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
-
-		ctx->negotiation.peer_connection_id.encode_type =
-			EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
-		ctx->negotiation.peer_connection_id.bstr_length =
-			cbor_ptxt_2.plaintext_2_C_R_bstr.len;
-		memcpy(ctx->negotiation.peer_connection_id.bstr_value,
-		       cbor_ptxt_2.plaintext_2_C_R_bstr.value,
-		       cbor_ptxt_2.plaintext_2_C_R_bstr.len);
 		break;
 
 	default:
@@ -1049,9 +1001,10 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	};
 
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M);
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
-	len += edhoc_cbor_int_mem_req((int32_t)hash_len);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
+	len += edhoc_cbor_int_length((int32_t)hash_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -1622,26 +1575,9 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	switch (ctx->negotiation.peer_connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		EDHOC_LOG_HEXDUMP_DBG(
-			(const uint8_t *)&ctx->negotiation.peer_connection_id
-				.int_value,
-			sizeof(ctx->negotiation.peer_connection_id.int_value),
-			"C_R");
-		break;
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		EDHOC_LOG_HEXDUMP_DBG(
-			ctx->negotiation.peer_connection_id.bstr_value,
-			ctx->negotiation.peer_connection_id.bstr_length, "C_R");
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Invalid peer CID type: %d",
-			      ctx->negotiation.peer_connection_id.encode_type);
-		EDHOC_MEM_FREE(ciphertext_2);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
+	EDHOC_LOG_HEXDUMP_DBG(ctx->negotiation.peer_connection_id.value,
+			      ctx->negotiation.peer_connection_id.length,
+			      "C_R");
 
 	/* 9. Process EAD if present. */
 	if (edhoc_ead_may_process(ctx)) {

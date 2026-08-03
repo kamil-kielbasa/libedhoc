@@ -137,9 +137,10 @@ TEST(rfc9528_negotiation, example_1)
 		[0].kem_encapsulation_key_length = 32,
 		[0].hash_length = 32,
 	};
-	const struct edhoc_connection_id conn_id_init = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 1,
+	const uint8_t conn_id_init_value[] = { 0x01 };
+	const struct edhoc_buffer conn_id_init = {
+		.value = conn_id_init_value,
+		.length = ARRAY_SIZE(conn_id_init_value),
 	};
 
 	/* 1. Setup initiator context. */
@@ -369,9 +370,10 @@ TEST(rfc9528_negotiation, example_2)
 		[1].kem_encapsulation_key_length = 32,
 		[1].hash_length = 32,
 	};
-	const struct edhoc_connection_id conn_id_init = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 1,
+	const uint8_t conn_id_init_value[] = { 0x01 };
+	const struct edhoc_buffer conn_id_init = {
+		.value = conn_id_init_value,
+		.length = ARRAY_SIZE(conn_id_init_value),
 	};
 
 	/* 1. Setup initiator context. */

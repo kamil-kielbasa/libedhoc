@@ -34,6 +34,7 @@
 
 /* EDHOC internal headers: */
 #include "edhoc_macros_internal.h"
+#include "edhoc_connection_id_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -242,9 +243,9 @@ struct edhoc_negotiation {
 	struct edhoc_cipher_suite_list peer_cipher_suite;
 
 	/** Own connection identifier. */
-	struct edhoc_connection_id connection_id;
+	struct connection_id connection_id;
 	/** Peer connection identifier. */
-	struct edhoc_connection_id peer_connection_id;
+	struct connection_id peer_connection_id;
 
 	/** Set once \ref edhoc_set_methods succeeds. */
 	bool methods_present : 1;

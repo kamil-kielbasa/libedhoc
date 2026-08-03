@@ -353,18 +353,6 @@ STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 
-	switch (ctx->negotiation.connection_id.encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		len += edhoc_cbor_int_mem_req(
-			ctx->negotiation.connection_id.int_value);
-		break;
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		len += ctx->negotiation.connection_id.bstr_length;
-		len += edhoc_cbor_bstr_oh(
-			ctx->negotiation.connection_id.bstr_length);
-		break;
-	}
-
 	if (0 != mac_ctx->id_cred_comp_len) {
 		len += mac_ctx->id_cred_comp_len;
 	} else {
@@ -372,7 +360,7 @@ STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 	}
 
 	len += sign_len;
-	len += edhoc_cbor_bstr_oh(sign_len);
+	len += edhoc_cbor_bstr_header_length(sign_len);
 	len += mac_ctx->ead_len;
 
 	*plaintext_3_len = len;
@@ -410,7 +398,8 @@ STATIC int prepare_plaintext_3(const struct mac_context *mac_ctx,
 
 	size_t len = 0;
 	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset], sign_len + edhoc_cbor_bstr_oh(sign_len),
+		&ptxt[offset],
+		sign_len + edhoc_cbor_bstr_header_length(sign_len),
 		&cbor_sign_or_mac_3, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
@@ -446,9 +435,11 @@ STATIC int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len)
 
 	size_t len = 0;
 
-	len += sizeof("Encrypt0") + edhoc_cbor_tstr_oh(sizeof("Encrypt0"));
+	len += sizeof("Encrypt0") +
+	       edhoc_cbor_tstr_header_length(sizeof("Encrypt0"));
 	len += 1; /* One byte for cbor bstr with 0 value. */
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
 
 	*aad_3_len = len;
 	return EDHOC_SUCCESS;
@@ -478,9 +469,10 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
-	len += edhoc_cbor_int_mem_req((int32_t)csuite->aead_key_length);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
+	len += edhoc_cbor_int_length((int32_t)csuite->aead_key_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -839,9 +831,10 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 	};
 
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M);
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
-	len += edhoc_cbor_int_mem_req((int32_t)hash_len);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
+	len += edhoc_cbor_int_length((int32_t)hash_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {

@@ -43,24 +43,6 @@ TEST_TEAR_DOWN(internals_message1)
 	mbedtls_psa_crypto_free();
 }
 
-TEST(internals_message1, msg1_compose_invalid_cid_type)
-{
-	struct edhoc_context ctx = { 0 };
-	internals_setup_crypto_context(&ctx);
-
-	ctx.state.role = EDHOC_ROLE_INITIATOR;
-	ctx.negotiation.connection_id.encode_type = 99;
-
-	uint8_t msg1[256] = { 0 };
-	size_t msg1_len = 0;
-	int ret = edhoc_message_1_compose(&ctx, msg1, ARRAY_SIZE(msg1),
-					  &msg1_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(internals_message1, msg1_compose_zero_csuites)
 {
 	struct edhoc_context ctx = { 0 };
@@ -73,9 +55,10 @@ TEST(internals_message1, msg1_compose_zero_csuites)
 	int ret = edhoc_set_methods(&ctx, method, ARRAY_SIZE(method));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 1,
+	const uint8_t cid_value[] = { 0x01 };
+	const struct edhoc_buffer cid = {
+		.value = cid_value,
+		.length = ARRAY_SIZE(cid_value),
 	};
 	ret = edhoc_set_connection_id(&ctx, &cid);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -147,7 +130,6 @@ TEST(internals_message1, msg1_process_truncated)
 
 TEST_GROUP_RUNNER(internals_message1)
 {
-	RUN_TEST_CASE(internals_message1, msg1_compose_invalid_cid_type);
 	RUN_TEST_CASE(internals_message1, msg1_compose_zero_csuites);
 	RUN_TEST_CASE(internals_message1, msg1_compose_tiny_buffer);
 	RUN_TEST_CASE(internals_message1, msg1_process_malformed);

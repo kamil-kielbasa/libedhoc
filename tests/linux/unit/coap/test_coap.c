@@ -12,6 +12,7 @@
 /* EDHOC headers: */
 #include <edhoc/coap.h>
 #include "edhoc_values_internal.h"
+#include "edhoc_macros_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -40,141 +41,67 @@ TEST_TEAR_DOWN(coap)
 {
 }
 
-TEST(coap, connection_id_equal_same_int)
+TEST(coap, connection_id_equal_same)
 {
-	const struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
-	const struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
+	const uint8_t value[] = { 0x01, 0x02, 0x03 };
+	const struct edhoc_buffer conn_id_1 = { .value = value,
+						.length = ARRAY_SIZE(value) };
+	const struct edhoc_buffer conn_id_2 = { .value = value,
+						.length = ARRAY_SIZE(value) };
 
 	TEST_ASSERT_TRUE(
 		edhoc_coap_connection_id_equal(&conn_id_1, &conn_id_2));
 }
 
-TEST(coap, connection_id_equal_different_int)
+TEST(coap, connection_id_equal_different_value)
 {
-	const struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
-	const struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 10,
+	const uint8_t value_1[] = { 0x01, 0x02, 0x03 };
+	const uint8_t value_2[] = { 0x01, 0x02, 0x04 };
+	const struct edhoc_buffer conn_id_1 = { .value = value_1,
+						.length = ARRAY_SIZE(value_1) };
+	const struct edhoc_buffer conn_id_2 = { .value = value_2,
+						.length = ARRAY_SIZE(value_2) };
+
+	TEST_ASSERT_FALSE(
+		edhoc_coap_connection_id_equal(&conn_id_1, &conn_id_2));
+}
+
+TEST(coap, connection_id_equal_different_length)
+{
+	const uint8_t value[] = { 0x01, 0x02, 0x03 };
+	const struct edhoc_buffer conn_id_1 = { .value = value,
+						.length = ARRAY_SIZE(value) };
+	const struct edhoc_buffer conn_id_2 = {
+		.value = value, .length = ARRAY_SIZE(value) - 1
 	};
 
 	TEST_ASSERT_FALSE(
 		edhoc_coap_connection_id_equal(&conn_id_1, &conn_id_2));
 }
 
-TEST(coap, connection_id_equal_same_bstr)
+TEST(coap, connection_id_equal_empty)
 {
-	const uint8_t bstr_1[] = { 0x01, 0x02, 0x03 };
-	const uint8_t bstr_2[] = { 0x01, 0x02, 0x03 };
-
-	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(bstr_1),
-	};
-
-	memcpy(conn_id_1.bstr_value, bstr_1, sizeof(bstr_1));
-
-	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(bstr_2),
-	};
-
-	memcpy(conn_id_2.bstr_value, bstr_2, sizeof(bstr_2));
+	const struct edhoc_buffer conn_id_1 = { 0 };
+	const struct edhoc_buffer conn_id_2 = { 0 };
 
 	TEST_ASSERT_TRUE(
-		edhoc_coap_connection_id_equal(&conn_id_1, &conn_id_2));
-}
-
-TEST(coap, connection_id_equal_different_bstr)
-{
-	const uint8_t bstr_1[] = { 0x01, 0x02, 0x03 };
-	const uint8_t bstr_2[] = { 0x01, 0x02, 0x04 };
-
-	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(bstr_1),
-	};
-
-	memcpy(conn_id_1.bstr_value, bstr_1, sizeof(bstr_1));
-
-	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(bstr_2),
-	};
-
-	memcpy(conn_id_2.bstr_value, bstr_2, sizeof(bstr_2));
-
-	TEST_ASSERT_FALSE(
-		edhoc_coap_connection_id_equal(&conn_id_1, &conn_id_2));
-}
-
-TEST(coap, connection_id_equal_different_bstr_length)
-{
-	const uint8_t bstr_1[] = { 0x01, 0x02, 0x03 };
-	const uint8_t bstr_2[] = { 0x01, 0x02 };
-
-	struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(bstr_1),
-	};
-
-	memcpy(conn_id_1.bstr_value, bstr_1, sizeof(bstr_1));
-
-	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(bstr_2),
-	};
-
-	memcpy(conn_id_2.bstr_value, bstr_2, sizeof(bstr_2));
-
-	TEST_ASSERT_FALSE(
-		edhoc_coap_connection_id_equal(&conn_id_1, &conn_id_2));
-}
-
-TEST(coap, connection_id_equal_different_type)
-{
-	const uint8_t bstr[] = { 0x05 };
-
-	const struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
-
-	struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(bstr),
-	};
-
-	memcpy(conn_id_2.bstr_value, bstr, sizeof(bstr));
-
-	TEST_ASSERT_FALSE(
 		edhoc_coap_connection_id_equal(&conn_id_1, &conn_id_2));
 }
 
 TEST(coap, connection_id_equal_null_first)
 {
-	const struct edhoc_connection_id conn_id_2 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
+	const uint8_t value[] = { 0x05 };
+	const struct edhoc_buffer conn_id_2 = { .value = value,
+						.length = ARRAY_SIZE(value) };
 
 	TEST_ASSERT_FALSE(edhoc_coap_connection_id_equal(NULL, &conn_id_2));
 }
 
 TEST(coap, connection_id_equal_null_second)
 {
-	const struct edhoc_connection_id conn_id_1 = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
+	const uint8_t value[] = { 0x05 };
+	const struct edhoc_buffer conn_id_1 = { .value = value,
+						.length = ARRAY_SIZE(value) };
 
 	TEST_ASSERT_FALSE(edhoc_coap_connection_id_equal(&conn_id_1, NULL));
 }
@@ -231,13 +158,13 @@ TEST(coap, prepend_flow_buffer_too_small)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
-TEST(coap, prepend_connection_id_int_success)
+TEST(coap, prepend_connection_id_compact)
 {
+	/* RFC 9528: 3.3.2 - h'2b' is the one byte encoding of -12. */
 	uint8_t buffer[100] = { 0 };
-	const struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
+	const uint8_t value[] = { 0x2b };
+	const struct edhoc_buffer conn_id = { .value = value,
+					      .length = ARRAY_SIZE(value) };
 	struct edhoc_coap_prepended_fields prepended_fields = {
 		.buffer = buffer,
 		.buffer_size = sizeof(buffer),
@@ -247,23 +174,18 @@ TEST(coap, prepend_connection_id_int_success)
 
 	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(5, buffer[0]);
+	TEST_ASSERT_EQUAL_HEX8(0x2b, buffer[0]);
 	TEST_ASSERT_EQUAL_PTR(buffer + 1, prepended_fields.edhoc_message_ptr);
 	TEST_ASSERT_EQUAL(sizeof(buffer) - 1,
 			  prepended_fields.edhoc_message_size);
 }
 
-TEST(coap, prepend_connection_id_bstr_success)
+TEST(coap, prepend_connection_id_byte_string)
 {
 	uint8_t buffer[100] = { 0 };
-	const uint8_t cid_bstr[] = { 0x01, 0x02, 0x03 };
-
-	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(cid_bstr),
-	};
-
-	memcpy(conn_id.bstr_value, cid_bstr, sizeof(cid_bstr));
+	const uint8_t value[] = { 0xff };
+	const struct edhoc_buffer conn_id = { .value = value,
+					      .length = ARRAY_SIZE(value) };
 
 	struct edhoc_coap_prepended_fields prepended_fields = {
 		.buffer = buffer,
@@ -274,21 +196,49 @@ TEST(coap, prepend_connection_id_bstr_success)
 
 	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_HEX8(0x41, buffer[0]);
+	TEST_ASSERT_EQUAL_HEX8(0xff, buffer[1]);
+	TEST_ASSERT_EQUAL_PTR(buffer + 2, prepended_fields.edhoc_message_ptr);
+}
 
-	/* CBOR byte string: 0x43 (major type 2, length 3) followed by data. */
-	TEST_ASSERT_EQUAL(0x43, buffer[0]);
-	TEST_ASSERT_EQUAL(0x01, buffer[1]);
-	TEST_ASSERT_EQUAL(0x02, buffer[2]);
-	TEST_ASSERT_EQUAL(0x03, buffer[3]);
-	TEST_ASSERT_EQUAL_PTR(buffer + 4, prepended_fields.edhoc_message_ptr);
+TEST(coap, prepend_connection_id_empty)
+{
+	uint8_t buffer[100] = { 0 };
+	const struct edhoc_buffer conn_id = { 0 };
+
+	struct edhoc_coap_prepended_fields prepended_fields = {
+		.buffer = buffer,
+		.buffer_size = sizeof(buffer),
+		.edhoc_message_ptr = buffer,
+		.edhoc_message_size = sizeof(buffer),
+	};
+
+	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_HEX8(0x40, buffer[0]);
+	TEST_ASSERT_EQUAL_PTR(buffer + 1, prepended_fields.edhoc_message_ptr);
+}
+
+TEST(coap, prepend_connection_id_too_large)
+{
+	uint8_t buffer[100] = { 0 };
+	const uint8_t value[CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID + 1] = { 0 };
+	const struct edhoc_buffer conn_id = { .value = value,
+					      .length = ARRAY_SIZE(value) };
+	struct edhoc_coap_prepended_fields prepended_fields = {
+		.buffer = buffer,
+		.buffer_size = sizeof(buffer),
+	};
+
+	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
 TEST(coap, prepend_connection_id_null_fields)
 {
-	const struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
+	const uint8_t value[] = { 0x05 };
+	const struct edhoc_buffer conn_id = { .value = value,
+					      .length = ARRAY_SIZE(value) };
 
 	int ret = edhoc_coap_prepend_connection_id(NULL, &conn_id);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
@@ -308,44 +258,12 @@ TEST(coap, prepend_connection_id_null_conn_id)
 
 TEST(coap, prepend_connection_id_null_buffer)
 {
-	const struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 5,
-	};
+	const uint8_t value[] = { 0x05 };
+	const struct edhoc_buffer conn_id = { .value = value,
+					      .length = ARRAY_SIZE(value) };
 	struct edhoc_coap_prepended_fields prepended_fields = {
 		.buffer = NULL,
 		.buffer_size = 100,
-	};
-
-	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(coap, prepend_connection_id_bstr_zero_length)
-{
-	uint8_t buffer[100] = { 0 };
-	const struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 0,
-	};
-	struct edhoc_coap_prepended_fields prepended_fields = {
-		.buffer = buffer,
-		.buffer_size = sizeof(buffer),
-	};
-
-	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(coap, prepend_connection_id_invalid_type)
-{
-	uint8_t buffer[64] = { 0 };
-	const struct edhoc_connection_id conn_id = {
-		.encode_type = (enum edhoc_connection_id_type)99,
-	};
-	struct edhoc_coap_prepended_fields prepended_fields = {
-		.buffer = buffer,
-		.buffer_size = sizeof(buffer),
 	};
 
 	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
@@ -544,9 +462,11 @@ TEST(coap, extract_flow_info_single_byte_buffer)
 	TEST_ASSERT_FALSE(extracted_fields.is_reverse_flow);
 }
 
-TEST(coap, extract_connection_id_int_success)
+TEST(coap, extract_connection_id_compact)
 {
-	const uint8_t buffer[] = { 0x05 };
+	/* RFC 9528: 3.3.2 - the CBOR integer -12 stands for the byte string
+	 * h'2b', so the identifier is the payload byte itself. */
+	const uint8_t buffer[] = { 0x2b };
 	struct edhoc_coap_extracted_fields extracted_fields = {
 		.buffer = buffer,
 		.buffer_size = sizeof(buffer),
@@ -556,15 +476,15 @@ TEST(coap, extract_connection_id_int_success)
 
 	int ret = edhoc_coap_extract_connection_id(&extracted_fields);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-			  extracted_fields.extracted_conn_id.encode_type);
-	TEST_ASSERT_EQUAL(5, extracted_fields.extracted_conn_id.int_value);
+	TEST_ASSERT_EQUAL_size_t(1, extracted_fields.extracted_conn_id.length);
+	TEST_ASSERT_EQUAL_HEX8(0x2b,
+			       extracted_fields.extracted_conn_id.value[0]);
 }
 
-TEST(coap, extract_connection_id_bstr_success)
+TEST(coap, extract_connection_id_byte_string)
 {
-	/* CBOR byte string: 0x43 (major type 2, length 3) followed by data. */
 	const uint8_t buffer[] = { 0x43, 0x01, 0x02, 0x03 };
+	const uint8_t expected[] = { 0x01, 0x02, 0x03 };
 	struct edhoc_coap_extracted_fields extracted_fields = {
 		.buffer = buffer,
 		.buffer_size = sizeof(buffer),
@@ -574,15 +494,65 @@ TEST(coap, extract_connection_id_bstr_success)
 
 	int ret = edhoc_coap_extract_connection_id(&extracted_fields);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-			  extracted_fields.extracted_conn_id.encode_type);
-	TEST_ASSERT_EQUAL(3, extracted_fields.extracted_conn_id.bstr_length);
-	TEST_ASSERT_EQUAL(0x01,
-			  extracted_fields.extracted_conn_id.bstr_value[0]);
-	TEST_ASSERT_EQUAL(0x02,
-			  extracted_fields.extracted_conn_id.bstr_value[1]);
-	TEST_ASSERT_EQUAL(0x03,
-			  extracted_fields.extracted_conn_id.bstr_value[2]);
+	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(expected),
+				 extracted_fields.extracted_conn_id.length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(expected,
+				      extracted_fields.extracted_conn_id.value,
+				      ARRAY_SIZE(expected));
+}
+
+TEST(coap, extract_connection_id_empty)
+{
+	const uint8_t buffer[] = { 0x40 };
+	struct edhoc_coap_extracted_fields extracted_fields = {
+		.buffer = buffer,
+		.buffer_size = sizeof(buffer),
+		.edhoc_message_ptr = buffer,
+		.edhoc_message_size = sizeof(buffer),
+	};
+
+	int ret = edhoc_coap_extract_connection_id(&extracted_fields);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_size_t(0, extracted_fields.extracted_conn_id.length);
+}
+
+TEST(coap, connection_id_survives_prepend_and_extract)
+{
+	/* Both ends of the compact range plus a value outside it. */
+	const uint8_t identifiers[][1] = {
+		{ 0x37 }, { 0x17 }, { 0x00 }, { 0xff }
+	};
+
+	for (size_t i = 0; i < ARRAY_SIZE(identifiers); ++i) {
+		uint8_t buffer[8] = { 0 };
+		const struct edhoc_buffer conn_id = {
+			.value = identifiers[i],
+			.length = ARRAY_SIZE(identifiers[i]),
+		};
+		struct edhoc_coap_prepended_fields prepended_fields = {
+			.buffer = buffer,
+			.buffer_size = sizeof(buffer),
+			.edhoc_message_ptr = buffer,
+			.edhoc_message_size = sizeof(buffer),
+		};
+
+		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+				  edhoc_coap_prepend_connection_id(
+					  &prepended_fields, &conn_id));
+
+		struct edhoc_coap_extracted_fields extracted_fields = {
+			.buffer = buffer,
+			.buffer_size = sizeof(buffer),
+			.edhoc_message_ptr = buffer,
+			.edhoc_message_size = sizeof(buffer),
+		};
+
+		TEST_ASSERT_EQUAL(
+			EDHOC_SUCCESS,
+			edhoc_coap_extract_connection_id(&extracted_fields));
+		TEST_ASSERT_TRUE(edhoc_coap_connection_id_equal(
+			&conn_id, &extracted_fields.extracted_conn_id));
+	}
 }
 
 TEST(coap, extract_connection_id_null_fields)
@@ -668,49 +638,12 @@ TEST(coap, prepend_and_extract_flow_roundtrip)
 	TEST_ASSERT_TRUE(extracted_fields.is_forward_flow);
 }
 
-TEST(coap, prepend_and_extract_connection_id_roundtrip)
-{
-	uint8_t buffer[100] = { 0 };
-	const uint8_t cid_bstr[] = { 0x01, 0x02, 0x03 };
-
-	struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = sizeof(cid_bstr),
-	};
-
-	memcpy(conn_id.bstr_value, cid_bstr, sizeof(cid_bstr));
-
-	struct edhoc_coap_prepended_fields prepended_fields = {
-		.buffer = buffer,
-		.buffer_size = sizeof(buffer),
-		.edhoc_message_ptr = buffer,
-		.edhoc_message_size = sizeof(buffer),
-	};
-
-	int ret = edhoc_coap_prepend_connection_id(&prepended_fields, &conn_id);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	struct edhoc_coap_extracted_fields extracted_fields = {
-		.buffer = buffer,
-		.buffer_size = prepended_fields.buffer_size,
-		.edhoc_message_ptr = buffer,
-		.edhoc_message_size = prepended_fields.buffer_size,
-	};
-
-	ret = edhoc_coap_extract_connection_id(&extracted_fields);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_TRUE(edhoc_coap_connection_id_equal(
-		&conn_id, &extracted_fields.extracted_conn_id));
-}
-
 TEST_GROUP_RUNNER(coap)
 {
-	RUN_TEST_CASE(coap, connection_id_equal_same_int);
-	RUN_TEST_CASE(coap, connection_id_equal_different_int);
-	RUN_TEST_CASE(coap, connection_id_equal_same_bstr);
-	RUN_TEST_CASE(coap, connection_id_equal_different_bstr);
-	RUN_TEST_CASE(coap, connection_id_equal_different_bstr_length);
-	RUN_TEST_CASE(coap, connection_id_equal_different_type);
+	RUN_TEST_CASE(coap, connection_id_equal_same);
+	RUN_TEST_CASE(coap, connection_id_equal_different_value);
+	RUN_TEST_CASE(coap, connection_id_equal_different_length);
+	RUN_TEST_CASE(coap, connection_id_equal_empty);
 	RUN_TEST_CASE(coap, connection_id_equal_null_first);
 	RUN_TEST_CASE(coap, connection_id_equal_null_second);
 	RUN_TEST_CASE(coap, connection_id_equal_both_null);
@@ -720,13 +653,13 @@ TEST_GROUP_RUNNER(coap)
 	RUN_TEST_CASE(coap, prepend_flow_null_buffer);
 	RUN_TEST_CASE(coap, prepend_flow_buffer_too_small);
 
-	RUN_TEST_CASE(coap, prepend_connection_id_int_success);
-	RUN_TEST_CASE(coap, prepend_connection_id_bstr_success);
+	RUN_TEST_CASE(coap, prepend_connection_id_compact);
+	RUN_TEST_CASE(coap, prepend_connection_id_byte_string);
+	RUN_TEST_CASE(coap, prepend_connection_id_empty);
+	RUN_TEST_CASE(coap, prepend_connection_id_too_large);
 	RUN_TEST_CASE(coap, prepend_connection_id_null_fields);
 	RUN_TEST_CASE(coap, prepend_connection_id_null_conn_id);
 	RUN_TEST_CASE(coap, prepend_connection_id_null_buffer);
-	RUN_TEST_CASE(coap, prepend_connection_id_bstr_zero_length);
-	RUN_TEST_CASE(coap, prepend_connection_id_invalid_type);
 
 	RUN_TEST_CASE(coap, prepend_recalculate_size_success);
 	RUN_TEST_CASE(coap, prepend_recalculate_size_null_fields);
@@ -744,8 +677,10 @@ TEST_GROUP_RUNNER(coap)
 	RUN_TEST_CASE(coap, extract_flow_info_null_fields);
 	RUN_TEST_CASE(coap, extract_flow_info_single_byte_buffer);
 
-	RUN_TEST_CASE(coap, extract_connection_id_int_success);
-	RUN_TEST_CASE(coap, extract_connection_id_bstr_success);
+	RUN_TEST_CASE(coap, extract_connection_id_compact);
+	RUN_TEST_CASE(coap, extract_connection_id_byte_string);
+	RUN_TEST_CASE(coap, extract_connection_id_empty);
+	RUN_TEST_CASE(coap, connection_id_survives_prepend_and_extract);
 	RUN_TEST_CASE(coap, extract_connection_id_null_fields);
 	RUN_TEST_CASE(coap, extract_connection_id_null_buffer);
 	RUN_TEST_CASE(coap, extract_connection_id_zero_buffer_size);
@@ -753,5 +688,4 @@ TEST_GROUP_RUNNER(coap)
 	RUN_TEST_CASE(coap, extract_connection_id_bstr_too_long);
 
 	RUN_TEST_CASE(coap, prepend_and_extract_flow_roundtrip);
-	RUN_TEST_CASE(coap, prepend_and_extract_connection_id_roundtrip);
 }

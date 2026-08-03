@@ -39,7 +39,11 @@ static const uint8_t G_X[] = {
 	0xa9, 0xa1, 0x1b, 0xf5, 0x11, 0xc8, 0xdf, 0xf8, 0xf8, 0x34, 0x73,
 	0x0b, 0x96, 0xc1, 0xb7, 0xc8, 0xdb, 0xca, 0x2f, 0xc3, 0xb6,
 };
-static const uint8_t C_I[] = { -24 };
+/*
+ * RFC 9529: 3.3 - C_I is the byte string 0x37, encoded as 0x37 because it
+ * is the one byte CBOR encoding of the integer -24.
+ */
+static const uint8_t C_I[] = { 0x37 };
 
 static const uint8_t message_1[] = {
 	0x03, 0x82, 0x06, 0x02, 0x58, 0x20, 0x8a, 0xf6, 0xf4, 0x30,
@@ -66,7 +70,11 @@ static const uint8_t G_Y[] = {
 	0x2c, 0x8e, 0xa0, 0xf9, 0x55, 0xa1, 0x3a, 0x4f, 0xf5, 0xd5,
 };
 
-static const uint8_t C_R[] = { -8 };
+/*
+ * RFC 9529: 3.4 - C_R is the byte string 0x27, encoded as 0x27 because it
+ * is the one byte CBOR encoding of the integer -8.
+ */
+static const uint8_t C_R[] = { 0x27 };
 
 static const uint8_t H_message_1[] = {
 	0xca, 0x02, 0xca, 0xbd, 0xa5, 0xa8, 0x90, 0x27, 0x49, 0xb4, 0x2f,
@@ -489,13 +497,6 @@ static const uint8_t OSCORE_Master_Salt_info[] = {
 static const uint8_t OSCORE_Master_Salt[] = {
 	0xad, 0xa2, 0x4c, 0x7d, 0xbf, 0xc8, 0x5e, 0xeb,
 };
-
-/**
- * \brief OSCORE Sender and Recipient IDs (CBOR-encoded connection identifiers).
- *        C_I = -24 encodes to 0x37, C_R = -8 encodes to 0x27.
- */
-static const uint8_t OSCORE_C_I[] = { 0x37 };
-static const uint8_t OSCORE_C_R[] = { 0x27 };
 
 /**
  * \brief OSCORE security session after EDHOC key update.

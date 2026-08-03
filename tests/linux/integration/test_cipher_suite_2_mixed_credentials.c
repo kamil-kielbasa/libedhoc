@@ -295,15 +295,16 @@ static const struct hs_identity resp_hash_dh = {
 
 /* The Initiator sends a compact one-byte identifier, the Responder a byte
  * string, so both encodings of RFC 9528: 3.3.2 appear in every scenario. */
-static const struct edhoc_connection_id initiator_connection_id = {
-	.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-	.int_value = 23,
+static const uint8_t initiator_connection_id_value[] = { 0x17 };
+static const struct edhoc_buffer initiator_connection_id = {
+	.value = initiator_connection_id_value,
+	.length = ARRAY_SIZE(initiator_connection_id_value),
 };
 
-static const struct edhoc_connection_id responder_connection_id = {
-	.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-	.bstr_length = 2,
-	.bstr_value = { 0x7a, 0x7b },
+static const uint8_t responder_connection_id_value[] = { 0x7a, 0x7b };
+static const struct edhoc_buffer responder_connection_id = {
+	.value = responder_connection_id_value,
+	.length = ARRAY_SIZE(responder_connection_id_value),
 };
 
 static const uint8_t ead_value_1[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };

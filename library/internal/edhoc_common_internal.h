@@ -135,31 +135,43 @@ struct hash_segment {
  */
 
 /**
- * \brief Compute CBOR encoding size for an integer.
+ * \brief Length of the CBOR encoding of an integer.
  *
  * \param value                         Integer value to encode.
  *
- * \return Number of bytes required to CBOR-encode \p value.
+ * \return Number of bytes the encoding of \p value occupies.
  */
-size_t edhoc_cbor_int_mem_req(int32_t value);
+size_t edhoc_cbor_int_length(int32_t value);
 
 /**
- * \brief Compute CBOR overhead for a text string.
+ * \brief Length of the CBOR header framing a text string.
  *
  * \param length                        Length of the text string in bytes.
  *
- * \return Number of CBOR overhead bytes for encoding a tstr of \p length.
+ * \return Number of header bytes, excluding the string itself.
  */
-size_t edhoc_cbor_tstr_oh(size_t length);
+size_t edhoc_cbor_tstr_header_length(size_t length);
 
 /**
- * \brief Compute CBOR overhead for a byte string.
+ * \brief Length of the CBOR header framing a byte string.
  *
  * \param length                        Length of the byte string in bytes.
  *
- * \return Number of CBOR overhead bytes for encoding a bstr of \p length.
+ * \return Number of header bytes, excluding the string itself.
  */
-size_t edhoc_cbor_bstr_oh(size_t length);
+size_t edhoc_cbor_bstr_header_length(size_t length);
+
+/**
+ * \brief Check whether a byte is a complete one byte CBOR integer.
+ *
+ *        RFC 9528: 3.3.2 represents such a byte string by that integer. Applies
+ *        to connection identifiers and to a COSE 'kid'.
+ *
+ * \param value                         Byte to check.
+ *
+ * \return True if \p value encodes an integer in the range -24..23.
+ */
+bool edhoc_cbor_is_one_byte_int(uint8_t value);
 
 /**
  * \brief Emit the CBOR byte-string header framing a payload of \p length

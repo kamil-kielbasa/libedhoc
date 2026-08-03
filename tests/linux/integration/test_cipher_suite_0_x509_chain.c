@@ -140,14 +140,15 @@ TEST_TEAR_DOWN(cipher_suite_0_x509_chain)
 
 TEST(cipher_suite_0_x509_chain, method_0_one_certificate)
 {
-	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 0,
+	const uint8_t init_cid_value[] = { 0x00 };
+	const struct edhoc_buffer init_cid = {
+		.value = init_cid_value,
+		.length = ARRAY_SIZE(init_cid_value),
 	};
-	const struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 1,
-		.bstr_value = { 0x01 },
+	const uint8_t resp_cid_value[] = { 0x01 };
+	const struct edhoc_buffer resp_cid = {
+		.value = resp_cid_value,
+		.length = ARRAY_SIZE(resp_cid_value),
 	};
 
 	const struct handshake_endpoint initiator = {
@@ -171,14 +172,15 @@ TEST(cipher_suite_0_x509_chain, method_0_one_certificate)
 
 TEST(cipher_suite_0_x509_chain, method_0_two_certificate_chain)
 {
-	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = -1,
+	const uint8_t init_cid_value[] = { 0x20 };
+	const struct edhoc_buffer init_cid = {
+		.value = init_cid_value,
+		.length = ARRAY_SIZE(init_cid_value),
 	};
-	const struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 2,
-		.bstr_value = { 0x02, 0x03 },
+	const uint8_t resp_cid_value[] = { 0x02, 0x03 };
+	const struct edhoc_buffer resp_cid = {
+		.value = resp_cid_value,
+		.length = ARRAY_SIZE(resp_cid_value),
 	};
 
 	const struct handshake_endpoint initiator = {

@@ -27,16 +27,14 @@
  * @{
  */
 
-/** Minimum value for CBOR one byte integer.
- *  It must follow RFC 9528: 3.3.2. Representation of Byte String Identifiers. */
-#define ONE_BYTE_CBOR_INT_MIN_VALUE ((int32_t)-24)
-
-/** Maximum value for CBOR one byte integer.
- *  It must follow RFC 9528: 3.3.2. Representation of Byte String Identifiers. */
-#define ONE_BYTE_CBOR_INT_MAX_VALUE ((int32_t)23)
-
 /** CBOR encoding for boolean true (RFC 8949: 3.3.1. Major Type 7). */
 #define EDHOC_CBOR_TRUE ((uint8_t)0xf5)
+
+/** Smallest integer with a one byte CBOR encoding (RFC 9528: 3.3.2). */
+#define EDHOC_ONE_BYTE_CBOR_INT_MIN ((int32_t)-24)
+
+/** Largest integer with a one byte CBOR encoding (RFC 9528: 3.3.2). */
+#define EDHOC_ONE_BYTE_CBOR_INT_MAX ((int32_t)23)
 
 /** KEYSTREAM_2 from RFC 9528: 4.1.2. EDHOC_Expand and EDHOC_KDF. */
 #define EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2 ((size_t)0)

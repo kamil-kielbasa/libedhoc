@@ -175,9 +175,10 @@ static void inject_prk_4e3m(struct edhoc_context *ctx, const uint8_t *prk,
 static void setup_basic_context(struct edhoc_context *ctx)
 {
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 1,
+	const uint8_t cid_value[] = { 0x01 };
+	const struct edhoc_buffer cid = {
+		.value = cid_value,
+		.length = ARRAY_SIZE(cid_value),
 	};
 
 	memset(ctx, 0, sizeof(*ctx));
@@ -220,12 +221,10 @@ static void setup_export_ready(struct edhoc_context *ctx)
 	memset(prk, 0xCD, sizeof(prk));
 	inject_prk_4e3m(ctx, prk, sizeof(prk));
 
-	ctx->negotiation.peer_connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx->negotiation.peer_connection_id.int_value = 1;
-	ctx->negotiation.connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx->negotiation.connection_id.int_value = 2;
+	ctx->negotiation.peer_connection_id.value[0] = 0x01;
+	ctx->negotiation.peer_connection_id.length = 1;
+	ctx->negotiation.connection_id.value[0] = 0x02;
+	ctx->negotiation.connection_id.length = 1;
 }
 
 /* Module interface function definitions ----------------------------------- */
@@ -616,7 +615,7 @@ TEST(exporters, oscore_context_raw_bad_state_not_completed)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(exporters, oscore_context_raw_sender_id_encode_fail)
+TEST(exporters, oscore_context_raw_sender_id_buffer_too_small)
 {
 	struct edhoc_context ctx = { 0 };
 
@@ -641,25 +640,24 @@ TEST(exporters, oscore_context_raw_sender_id_encode_fail)
 	memset(prk, 0xCD, sizeof(prk));
 	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
-	/* A one-byte integer CID of 24 does not fit CBOR one-byte encoding. */
-	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx.negotiation.peer_connection_id.int_value = 24;
-	ctx.negotiation.connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx.negotiation.connection_id.int_value = 1;
+	/* A two byte identifier does not fit the one byte output buffer. */
+	ctx.negotiation.peer_connection_id.value[0] = 0xaa;
+	ctx.negotiation.peer_connection_id.value[1] = 0xbb;
+	ctx.negotiation.peer_connection_id.length = 2;
+	ctx.negotiation.connection_id.value[0] = 0x01;
+	ctx.negotiation.connection_id.length = 1;
 
 	int ret = edhoc_export_oscore_context_raw(&ctx, secret, sizeof(secret),
 						  salt, sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(exporters, oscore_context_raw_recipient_id_encode_fail)
+TEST(exporters, oscore_context_raw_recipient_id_buffer_too_small)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t prk[EXPORTERS_SHA256_LEN] = { 0 };
@@ -683,19 +681,18 @@ TEST(exporters, oscore_context_raw_recipient_id_encode_fail)
 	memset(prk, 0xCD, sizeof(prk));
 	inject_prk_4e3m(&ctx, prk, sizeof(prk));
 
-	/* A one-byte integer CID of 24 does not fit CBOR one-byte encoding. */
-	ctx.negotiation.peer_connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx.negotiation.peer_connection_id.int_value = 1;
-	ctx.negotiation.connection_id.encode_type =
-		EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-	ctx.negotiation.connection_id.int_value = 24;
+	/* A two byte identifier does not fit the one byte output buffer. */
+	ctx.negotiation.peer_connection_id.value[0] = 0x01;
+	ctx.negotiation.peer_connection_id.length = 1;
+	ctx.negotiation.connection_id.value[0] = 0xaa;
+	ctx.negotiation.connection_id.value[1] = 0xbb;
+	ctx.negotiation.connection_id.length = 2;
 
 	int ret = edhoc_export_oscore_context_raw(&ctx, secret, sizeof(secret),
 						  salt, sizeof(salt), sid,
 						  sizeof(sid), &sid_len, rid,
 						  sizeof(rid), &rid_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -769,8 +766,9 @@ TEST_GROUP_RUNNER(exporters)
 	RUN_TEST_CASE(exporters, oscore_context_null_master_secret_key_id);
 	RUN_TEST_CASE(exporters, oscore_context_raw_not_allowed);
 	RUN_TEST_CASE(exporters, oscore_context_raw_bad_state_not_completed);
-	RUN_TEST_CASE(exporters, oscore_context_raw_sender_id_encode_fail);
-	RUN_TEST_CASE(exporters, oscore_context_raw_recipient_id_encode_fail);
+	RUN_TEST_CASE(exporters, oscore_context_raw_sender_id_buffer_too_small);
+	RUN_TEST_CASE(exporters,
+		      oscore_context_raw_recipient_id_buffer_too_small);
 
 	/* Negative paths — edhoc_export_key_update. */
 	RUN_TEST_CASE(exporters, key_update_null_context);

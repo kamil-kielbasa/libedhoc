@@ -101,11 +101,9 @@ static void hs_setup_context(struct edhoc_context *ctx,
 static void hs_assert_no_error(const struct edhoc_context *ctx);
 
 /** \brief Assert the peer connection id learned from the wire is as expected. */
-static void
-hs_assert_peer_connection_id(const struct edhoc_context *ctx,
-			     const struct edhoc_connection_id *expected);
+static void hs_assert_peer_connection_id(const struct edhoc_context *ctx,
+					 const struct edhoc_buffer *expected);
 
-/** \brief Assert both peers hold identical key material in \p slot. */
 static void hs_assert_peers_share_slot(const struct edhoc_crypto *crypto,
 				       const struct edhoc_context *lhs,
 				       const struct edhoc_context *rhs,
@@ -188,31 +186,15 @@ static void hs_assert_no_error(const struct edhoc_context *ctx)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_SUCCESS, error_code);
 }
 
-static void
-hs_assert_peer_connection_id(const struct edhoc_context *ctx,
-			     const struct edhoc_connection_id *expected)
+static void hs_assert_peer_connection_id(const struct edhoc_context *ctx,
+					 const struct edhoc_buffer *expected)
 {
-	const struct edhoc_connection_id *received =
+	const struct connection_id *received =
 		&ctx->negotiation.peer_connection_id;
 
-	TEST_ASSERT_EQUAL(expected->encode_type, received->encode_type);
-
-	switch (expected->encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		TEST_ASSERT_EQUAL(expected->int_value, received->int_value);
-		break;
-
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		TEST_ASSERT_EQUAL(expected->bstr_length, received->bstr_length);
-		TEST_ASSERT_EQUAL_UINT8_ARRAY(expected->bstr_value,
-					      received->bstr_value,
-					      expected->bstr_length);
-		break;
-
-	default:
-		TEST_FAIL_MESSAGE("Unknown connection id encode type");
-		break;
-	}
+	TEST_ASSERT_EQUAL_size_t(expected->length, received->length);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(expected->value, received->value,
+				      expected->length);
 }
 
 static void hs_assert_peers_share_slot(const struct edhoc_crypto *crypto,

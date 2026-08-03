@@ -100,27 +100,6 @@ TEST(coverage_msg1, msg1_compose_buffer_too_small)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(coverage_msg1, msg1_compose_invalid_cid_type)
-{
-	struct edhoc_context ctx = { 0 };
-
-	int ret = coverage_setup_mock_context(&ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ctx.negotiation.connection_id.encode_type = 99;
-
-	coverage_mock_reset(0);
-
-	uint8_t msg[256] = { 0 };
-	size_t msg_len = 0;
-
-	ret = edhoc_message_1_compose(&ctx, msg, sizeof(msg), &msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(coverage_msg1, msg1_compose_no_cipher_suites)
 {
 	struct edhoc_context ctx = { 0 };
@@ -360,7 +339,6 @@ TEST_GROUP_RUNNER(coverage_msg1)
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_generate_key_pair_fail);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_hash_fail);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_buffer_too_small);
-	RUN_TEST_CASE(coverage_msg1, msg1_compose_invalid_cid_type);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_no_cipher_suites);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_bad_state);
 	RUN_TEST_CASE(coverage_msg1, msg1_compose_failure_sweep);

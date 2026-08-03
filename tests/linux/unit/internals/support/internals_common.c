@@ -123,9 +123,10 @@ const struct edhoc_platform *internals_get_platform(void)
 void internals_setup_crypto_context(struct edhoc_context *ctx)
 {
 	const enum edhoc_method method[] = { EDHOC_METHOD_0 };
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 1,
+	const uint8_t cid_value[] = { 0x01 };
+	const struct edhoc_buffer cid = {
+		.value = cid_value,
+		.length = ARRAY_SIZE(cid_value),
 	};
 
 	int ret = 0;

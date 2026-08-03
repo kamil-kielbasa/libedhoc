@@ -717,9 +717,10 @@ int coverage_setup_mock_context(struct edhoc_context *ctx,
 				enum edhoc_method method)
 {
 	const enum edhoc_method methods[] = { method };
-	const struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = -24,
+	const uint8_t conn_id_value[] = { 0x37 };
+	const struct edhoc_buffer conn_id = {
+		.value = conn_id_value,
+		.length = ARRAY_SIZE(conn_id_value),
 	};
 	int ret = edhoc_context_init(ctx);
 
@@ -786,10 +787,10 @@ int coverage_setup_mock_context_kid(struct edhoc_context *ctx,
 int coverage_setup_mock_context_bstr_cid(struct edhoc_context *ctx,
 					 enum edhoc_method method)
 {
-	const struct edhoc_connection_id conn_id = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = 3,
-		.bstr_value = { 0x01, 0x02, 0x03 },
+	const uint8_t conn_id_value[] = { 0x01, 0x02, 0x03 };
+	const struct edhoc_buffer conn_id = {
+		.value = conn_id_value,
+		.length = ARRAY_SIZE(conn_id_value),
 	};
 
 	int ret = coverage_setup_mock_context(ctx, method);

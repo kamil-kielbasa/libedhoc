@@ -187,9 +187,10 @@ STATIC int compute_plaintext_4_len(const struct edhoc_context *ctx,
 	size_t len = 0;
 
 	for (size_t i = 0; i < ctx->ead.count; ++i) {
-		len += edhoc_cbor_int_mem_req(ctx->ead.token[i].label);
+		len += edhoc_cbor_int_length(ctx->ead.token[i].label);
 		len += ctx->ead.token[i].value.length;
-		len += edhoc_cbor_bstr_oh(ctx->ead.token[i].value.length);
+		len += edhoc_cbor_bstr_header_length(
+			ctx->ead.token[i].value.length);
 	}
 
 	*ptxt_4_len = len;
@@ -245,9 +246,11 @@ STATIC size_t compute_aad_4_len(const struct edhoc_context *ctx)
 {
 	size_t len = 0;
 
-	len += sizeof("Encrypt0") + edhoc_cbor_tstr_oh(sizeof("Encrypt0"));
-	len += edhoc_cbor_bstr_oh(0);
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
+	len += sizeof("Encrypt0") +
+	       edhoc_cbor_tstr_header_length(sizeof("Encrypt0"));
+	len += edhoc_cbor_bstr_header_length(0);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
 
 	return len;
 }
@@ -277,9 +280,10 @@ STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_mem_req(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4);
-	len += ctx->state.th.length + edhoc_cbor_bstr_oh(ctx->state.th.length);
-	len += edhoc_cbor_int_mem_req((int32_t)csuite->aead_key_length);
+	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4);
+	len += ctx->state.th.length +
+	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
+	len += edhoc_cbor_int_length((int32_t)csuite->aead_key_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {

@@ -256,16 +256,10 @@ int test_mem_custom_setup_contexts(struct edhoc_context *initiator,
 		*edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_0),
 	};
 
-	const struct edhoc_connection_id init_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = (int8_t)C_I[0],
-	};
-
-	const struct edhoc_connection_id resp_cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_BYTE_STRING,
-		.bstr_length = ARRAY_SIZE(C_R),
-		.bstr_value = { C_R[0] },
-	};
+	const struct edhoc_buffer init_cid = { .value = C_I,
+					       .length = ARRAY_SIZE(C_I) };
+	const struct edhoc_buffer resp_cid = { .value = C_R,
+					       .length = ARRAY_SIZE(C_R) };
 
 	int rc = 0;
 

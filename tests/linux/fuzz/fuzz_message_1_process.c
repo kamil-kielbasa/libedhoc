@@ -125,9 +125,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	const struct edhoc_cipher_suite csuites[] = {
 		*edhoc_cipher_suite_get_params(EDHOC_CIPHER_SUITE_2),
 	};
-	const struct edhoc_connection_id cid = {
-		.encode_type = EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER,
-		.int_value = 0,
+	const uint8_t cid_value[] = { 0x00 };
+	const struct edhoc_buffer cid = {
+		.value = cid_value,
+		.length = ARRAY_SIZE(cid_value),
 	};
 	const struct edhoc_ead ead = {
 		.compose = ead_compose_stub,

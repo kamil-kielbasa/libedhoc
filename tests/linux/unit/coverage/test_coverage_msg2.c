@@ -994,41 +994,6 @@ TEST(coverage_msg2, msg2_compose_bstr_cid_tiny_buf)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(coverage_msg2, msg2_compose_corrupted_cid_type)
-{
-	struct edhoc_context init_ctx = { 0 };
-	struct edhoc_context resp_ctx = { 0 };
-	int ret = coverage_setup_mock_context(&init_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ret = coverage_setup_mock_context(&resp_ctx, EDHOC_METHOD_0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	uint8_t msg1[512] = { 0 };
-	size_t msg1_len = 0;
-
-	coverage_mock_reset(0);
-
-	ret = coverage_do_msg1_flow(&init_ctx, &resp_ctx, msg1, sizeof(msg1),
-				    &msg1_len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	resp_ctx.negotiation.connection_id.encode_type =
-		(enum edhoc_connection_id_type)99;
-
-	coverage_mock_reset(0);
-
-	uint8_t msg2[512] = { 0 };
-	size_t msg2_len = 0;
-
-	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
-
-	ret = edhoc_context_deinit(&init_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ret = edhoc_context_deinit(&resp_ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(coverage_msg2, msg2_compose_corrupted_method)
 {
 	struct edhoc_context init_ctx = { 0 };
@@ -1531,7 +1496,6 @@ TEST_GROUP_RUNNER(coverage_msg2)
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_signature_fail);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_encrypt_fail);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_bad_state);
-	RUN_TEST_CASE(coverage_msg2, msg2_compose_corrupted_cid_type);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_corrupted_method);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_corrupted_state);
 	RUN_TEST_CASE(coverage_msg2, msg2_compose_tiny_buffer);

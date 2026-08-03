@@ -44,8 +44,9 @@ if LIBEDHOC_ENABLE
             default 1
             help
                 Maximum length, in bytes, of a connection identifier (C_I /
-                C_R). One byte holds the common single-byte integer form
-                (RFC 9528: 3.3.2); raise it for longer byte-string identifiers.
+                C_R). Identifiers are byte strings; one byte covers the range
+                that RFC 9528: 3.3.2 sends as a bare CBOR integer, which is the
+                common case. Raise it for longer identifiers.
     endmenu
 
     menu "Cryptographic buffer sizes"

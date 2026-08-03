@@ -158,6 +158,11 @@ int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
  * the session: C_I for the Initiator (sent in message 1) or C_R for the
  * Responder (sent in message 2) (RFC 9528: 3.3).
  *
+ * A connection identifier is a byte string, at most
+ * \c CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID bytes long; the empty one is legal. The
+ * library copies it and applies the compact CBOR integer encoding of
+ * RFC 9528: 3.3.2 on its own.
+ *
  * \note  C_I and C_R are chosen independently; the library does not require
  *        them to differ.
  *
@@ -169,7 +174,7 @@ int edhoc_set_cipher_suites(struct edhoc_context *edhoc_context,
  * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_set_connection_id(struct edhoc_context *edhoc_context,
-			    const struct edhoc_connection_id *connection_id);
+			    const struct edhoc_buffer *connection_id);
 
 /**
  * \brief Set user context (optional).

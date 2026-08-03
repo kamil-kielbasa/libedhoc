@@ -24,6 +24,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_values_internal.h"
 #include <edhoc/coap.h>
 #include "edhoc_common_internal.h"
+#include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 
 /* CBOR headers: */
@@ -39,28 +40,23 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* Module interface function definitions ----------------------------------- */
 
-bool edhoc_coap_connection_id_equal(const struct edhoc_connection_id *conn_id_1,
-				    const struct edhoc_connection_id *conn_id_2)
+bool edhoc_coap_connection_id_equal(const struct edhoc_buffer *conn_id_1,
+				    const struct edhoc_buffer *conn_id_2)
 {
 	if (NULL == conn_id_1 || NULL == conn_id_2)
 		return false;
 
-	if (conn_id_1->encode_type != conn_id_2->encode_type)
+	if (conn_id_1->length != conn_id_2->length)
 		return false;
 
-	switch (conn_id_1->encode_type) {
-	case EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER:
-		return (conn_id_1->int_value == conn_id_2->int_value);
+	if (0 == conn_id_1->length)
+		return true;
 
-	case EDHOC_CONNECTION_ID_TYPE_BYTE_STRING:
-		return (conn_id_1->bstr_length == conn_id_2->bstr_length) &&
-		       (0 == memcmp(conn_id_1->bstr_value,
-				    conn_id_2->bstr_value,
-				    conn_id_1->bstr_length));
-
-	default:
+	if (NULL == conn_id_1->value || NULL == conn_id_2->value)
 		return false;
-	}
+
+	return 0 ==
+	       memcmp(conn_id_1->value, conn_id_2->value, conn_id_1->length);
 }
 
 int edhoc_coap_prepend_flow(struct edhoc_coap_prepended_fields *prepended_fields)
@@ -90,65 +86,43 @@ int edhoc_coap_prepend_flow(struct edhoc_coap_prepended_fields *prepended_fields
 
 int edhoc_coap_prepend_connection_id(
 	struct edhoc_coap_prepended_fields *prepended_fields,
-	const struct edhoc_connection_id *conn_id)
+	const struct edhoc_buffer *conn_id)
 {
 	if (NULL == prepended_fields || NULL == conn_id ||
-	    NULL == prepended_fields->buffer) {
+	    NULL == prepended_fields->buffer ||
+	    (NULL == conn_id->value && 0 != conn_id->length)) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (0 == prepended_fields->buffer_size) {
-		EDHOC_LOG_ERR("Invalid argument");
+		EDHOC_LOG_ERR("Buffer too small");
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
-	if (conn_id->encode_type == EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER) {
-		prepended_fields->buffer[0] = (uint8_t)conn_id->int_value;
-		prepended_fields->edhoc_message_ptr =
-			prepended_fields->buffer + 1;
-		prepended_fields->edhoc_message_size =
-			prepended_fields->buffer_size - 1;
-	} else if (conn_id->encode_type ==
-		   EDHOC_CONNECTION_ID_TYPE_BYTE_STRING) {
-		if (conn_id->bstr_length == 0 ||
-		    conn_id->bstr_length > CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID) {
-			EDHOC_LOG_ERR("Invalid bstr cid len: %zu",
-				      conn_id->bstr_length);
-			return EDHOC_ERROR_INVALID_ARGUMENT;
-		}
+	struct connection_id cid = { 0 };
+	int ret = edhoc_connection_id_from_bstr(conn_id->value, conn_id->length,
+						&cid);
 
-		struct connection_identifier_r
-			cid_r = { .connection_identifier_choice =
-					  connection_identifier_bstr_c,
-				  .connection_identifier_bstr = {
-					  .value = conn_id->bstr_value,
-					  .len = conn_id->bstr_length } };
-
-		size_t cid_encoded_len = 0;
-		int ret = cbor_encode_connection_identifier(
-			prepended_fields->buffer, prepended_fields->buffer_size,
-			&cid_r, &cid_encoded_len);
-
-		if (ZCBOR_SUCCESS != ret) {
-			EDHOC_LOG_ERR("CBOR encoding: %d", ret);
-			return EDHOC_ERROR_CBOR_FAILURE;
-		}
-
-		if (cid_encoded_len == 0) {
-			EDHOC_LOG_ERR("CBOR encoding: %zu", cid_encoded_len);
-			return EDHOC_ERROR_INVALID_ARGUMENT;
-		}
-
-		prepended_fields->edhoc_message_ptr =
-			prepended_fields->buffer + cid_encoded_len;
-		prepended_fields->edhoc_message_size =
-			prepended_fields->buffer_size - cid_encoded_len;
-	} else {
-		EDHOC_LOG_ERR("Invalid connection ID encode type: %d",
-			      conn_id->encode_type);
-		return EDHOC_ERROR_INVALID_ARGUMENT;
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Connection ID conversion: %d", ret);
+		return ret;
 	}
+
+	size_t encoded_length = 0;
+	ret = edhoc_connection_id_encode(&cid, prepended_fields->buffer,
+					 prepended_fields->buffer_size,
+					 &encoded_length);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Connection ID encoding: %d", ret);
+		return ret;
+	}
+
+	prepended_fields->edhoc_message_ptr =
+		prepended_fields->buffer + encoded_length;
+	prepended_fields->edhoc_message_size =
+		prepended_fields->buffer_size - encoded_length;
 
 	return EDHOC_SUCCESS;
 }
@@ -250,13 +224,9 @@ int edhoc_coap_extract_connection_id(
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	memset(&extracted_fields->extracted_conn_id, 0,
-	       sizeof(extracted_fields->extracted_conn_id));
-
-	/* Decode connection ID from the raw buffer start (connection ID is always prepended at buffer start) */
 	struct connection_identifier_r cid_r = { 0 };
 	size_t decoded_len = 0;
-	int ret = cbor_decode_connection_identifier(
+	const int ret = cbor_decode_connection_identifier(
 		extracted_fields->buffer, extracted_fields->buffer_size, &cid_r,
 		&decoded_len);
 
@@ -265,30 +235,29 @@ int edhoc_coap_extract_connection_id(
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	/* Convert connection_identifier_r to edhoc_connection_id */
+	/* The identifier is a slice of the payload: the compact form is the
+	 * leading byte itself, the byte string form follows its header. */
 	switch (cid_r.connection_identifier_choice) {
 	case connection_identifier_int_c:
-		extracted_fields->extracted_conn_id.encode_type =
-			EDHOC_CONNECTION_ID_TYPE_ONE_BYTE_INTEGER;
-		extracted_fields->extracted_conn_id.int_value =
-			(int8_t)extracted_fields->buffer[0];
+		extracted_fields->extracted_conn_id.value =
+			extracted_fields->buffer;
+		extracted_fields->extracted_conn_id.length = decoded_len;
 		break;
+
 	case connection_identifier_bstr_c:
-		if (cid_r.connection_identifier_bstr.len >
-		    CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID) {
-			EDHOC_LOG_ERR(
-				"Byte string connection ID length exceeds maximum: %zu",
-				cid_r.connection_identifier_bstr.len);
+		if (CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID <
+		    cid_r.connection_identifier_bstr.len) {
+			EDHOC_LOG_ERR("Connection ID too large: %zu",
+				      cid_r.connection_identifier_bstr.len);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
-		extracted_fields->extracted_conn_id.encode_type =
-			EDHOC_CONNECTION_ID_TYPE_BYTE_STRING;
-		extracted_fields->extracted_conn_id.bstr_length =
+
+		extracted_fields->extracted_conn_id.value =
+			cid_r.connection_identifier_bstr.value;
+		extracted_fields->extracted_conn_id.length =
 			cid_r.connection_identifier_bstr.len;
-		memcpy(extracted_fields->extracted_conn_id.bstr_value,
-		       cid_r.connection_identifier_bstr.value,
-		       cid_r.connection_identifier_bstr.len);
 		break;
+
 	default:
 		EDHOC_LOG_ERR("Invalid connection identifier choice: %d",
 			      cid_r.connection_identifier_choice);
