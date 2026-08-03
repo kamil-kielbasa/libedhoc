@@ -499,12 +499,22 @@ STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 
 	ctx->ead.count = ead_4.plaintext_4.EAD_4_count;
 	for (size_t i = 0; i < ead_4.plaintext_4.EAD_4_count; ++i) {
-		ctx->ead.token[i].label =
-			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label;
-		ctx->ead.token[i].value.value =
-			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value;
-		ctx->ead.token[i].value.length =
-			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len;
+		const struct ead_y *token = &ead_4.plaintext_4.EAD_4[i];
+
+		ctx->ead.token[i].label = token->ead_y_ead_label;
+
+		/* zcbor keeps the length read from a bstr header even when
+		 * the value itself did not fit in the payload, so only the
+		 * presence flag may be trusted here. */
+		if (token->ead_y_ead_value_present) {
+			ctx->ead.token[i].value.value =
+				token->ead_y_ead_value.value;
+			ctx->ead.token[i].value.length =
+				token->ead_y_ead_value.len;
+		} else {
+			ctx->ead.token[i].value.value = NULL;
+			ctx->ead.token[i].value.length = 0;
+		}
 	}
 
 	return EDHOC_SUCCESS;

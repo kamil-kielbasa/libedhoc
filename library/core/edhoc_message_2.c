@@ -915,15 +915,23 @@ STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 		ctx->ead.count = cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2_count;
 
 		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			ctx->ead.token[i].label =
-				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
-					.ead_y_ead_label;
-			ctx->ead.token[i].value.value =
-				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
-					.ead_y_ead_value.value;
-			ctx->ead.token[i].value.length =
-				cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i]
-					.ead_y_ead_value.len;
+			const struct ead_y *token =
+				&cbor_ptxt_2.plaintext_2_EAD_2_m.EAD_2[i];
+
+			ctx->ead.token[i].label = token->ead_y_ead_label;
+
+			/* zcbor keeps the length read from a bstr header even
+			 * when the value itself did not fit in the payload, so
+			 * only the presence flag may be trusted here. */
+			if (token->ead_y_ead_value_present) {
+				ctx->ead.token[i].value.value =
+					token->ead_y_ead_value.value;
+				ctx->ead.token[i].value.length =
+					token->ead_y_ead_value.len;
+			} else {
+				ctx->ead.token[i].value.value = NULL;
+				ctx->ead.token[i].value.length = 0;
+			}
 		}
 	}
 

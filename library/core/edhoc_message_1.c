@@ -471,15 +471,23 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 		ctx->ead.count = cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count;
 		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			ctx->ead.token[i].label =
-				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
-					.ead_x_ead_label;
-			ctx->ead.token[i].value.value =
-				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
-					.ead_x_ead_value.value;
-			ctx->ead.token[i].value.length =
-				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i]
-					.ead_x_ead_value.len;
+			const struct ead_x *token =
+				&cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i];
+
+			ctx->ead.token[i].label = token->ead_x_ead_label;
+
+			/* zcbor keeps the length read from a bstr header even
+			 * when the value itself did not fit in the payload, so
+			 * only the presence flag may be trusted here. */
+			if (token->ead_x_ead_value_present) {
+				ctx->ead.token[i].value.value =
+					token->ead_x_ead_value.value;
+				ctx->ead.token[i].value.length =
+					token->ead_x_ead_value.len;
+			} else {
+				ctx->ead.token[i].value.value = NULL;
+				ctx->ead.token[i].value.length = 0;
+			}
 		}
 
 		const struct edhoc_call_context call_context =
