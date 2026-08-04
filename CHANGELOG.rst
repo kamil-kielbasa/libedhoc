@@ -201,8 +201,6 @@ reachable before authentication, from any peer that can deliver a message.
   for no byte string at all and is rejected.
 * What ``edhoc_ead.compose`` returns is validated before it reaches the CBOR
   encoder, which cannot tell a missing buffer from an empty one.
-* A ``kid`` received as a CBOR integer outside the one-byte range -24..23 stands
-  for no byte string at all and is rejected.
 
 Version 1.15.1
 --------------
