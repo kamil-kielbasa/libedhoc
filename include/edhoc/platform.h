@@ -16,6 +16,7 @@
 /* Standard library headers: */
 #include <stddef.h>
 
+/* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 
 /** \defgroup edhoc-interface-platform EDHOC platform interface
@@ -25,10 +26,10 @@
 /**
  * \brief EDHOC platform services.
  *
- * Services that the library needs from the hosting platform. The application
- * supplies the implementation and binds it with \ref edhoc_bind_platform. The
- * binding is mandatory: the message-processing API refuses to run until a
- * platform with a valid \p zeroize callback is bound.
+ * Services the library needs from the hosting platform. The application
+ * supplies them and binds them with \ref edhoc_bind_platform. Every entry is
+ * mandatory, and the binding itself is mandatory: the message-processing API
+ * refuses to run until a complete platform is bound.
  */
 struct edhoc_platform {
 	/**

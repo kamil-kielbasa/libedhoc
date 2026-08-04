@@ -3,6 +3,9 @@
  * \author  Kamil Kielbasa
  * \brief   EDHOC API.
  *
+ *          Umbrella header: including it pulls in every public header of the
+ *          library.
+ *
  * \copyright Copyright (c) 2026
  *
  */
@@ -18,13 +21,14 @@
 #include <stddef.h>
 
 /* EDHOC headers: */
-#include "types.h"
-#include "credentials.h"
-#include "cipher_suite.h"
-#include "crypto.h"
-#include "ead.h"
-#include "platform.h"
-#include "values.h"
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/coap.h>
+#include <edhoc/credentials.h>
+#include <edhoc/crypto.h>
+#include <edhoc/ead.h>
+#include <edhoc/platform.h>
 
 /* Defines ----------------------------------------------------------------- */
 
@@ -116,8 +120,8 @@ int edhoc_context_deinit(struct edhoc_context *edhoc_context);
  * \brief Set EDHOC method(s) (mandatory).
  *
  * Configures the authentication method(s) the context may use (RFC 9528: 3.2).
- * At least one and at most \c CONFIG_LIBEDHOC_MAX_NR_OF_METHODS methods must be
- * provided. The role selects how the list is used:
+ * At least one and at most \c CONFIG_LIBEDHOC_MAX_NR_OF_METHODS entries, each a
+ * value of \ref edhoc_method. The role selects how the list is used:
  * - the Initiator uses the first method when composing message 1;
  * - the Responder accepts message 1 if its method matches any provided entry.
  *
@@ -135,7 +139,8 @@ int edhoc_set_methods(struct edhoc_context *edhoc_context,
 /**
  * \brief Set EDHOC cipher suite(s) (mandatory).
  *
- * Configures the cipher suite(s) the context supports (RFC 9528: 3.6). The
+ * Configures the cipher suite(s) the context supports (RFC 9528: 3.6). At least
+ * one and at most \c CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES entries. The
  * Initiator offers them in SUITES_I and the Responder checks the selected suite
  * against those it supports (RFC 9528: 5.2.1).
  *
@@ -180,6 +185,9 @@ int edhoc_set_connection_id(struct edhoc_context *edhoc_context,
 /**
  * \brief Set user context (optional).
  *
+ * The pointer is stored as it is and handed back to every application
+ * callback. Passing NULL clears a previously set context.
+ *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] user_context              User context.
  *
@@ -194,7 +202,7 @@ int edhoc_set_user_context(struct edhoc_context *edhoc_context,
  * \brief Bind the cryptographic operations interface (mandatory).
  *
  * Provides the crypto primitives the library uses: key exchange, AEAD, hash,
- * signature/MAC and key derivation.
+ * signature/MAC and key derivation. Every entry of \p crypto is mandatory.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] crypto                    EDHOC cryptographic operations structure with callbacks.
@@ -209,8 +217,9 @@ int edhoc_bind_crypto(struct edhoc_context *edhoc_context,
 /**
  * \brief Bind the authentication credentials interface (mandatory).
  *
- * Provides the fetch/verify callbacks the library uses to obtain the local
- * authentication credentials and to verify the peer's (RFC 9528: 3.5).
+ * Provides the \c select_local / \c authenticate_peer callbacks the library
+ * uses to obtain the local authentication credential and to authenticate the
+ * peer's (RFC 9528: 3.5). Both are mandatory.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] credentials               EDHOC authentication credentials structure with callbacks.
@@ -225,7 +234,8 @@ int edhoc_bind_credentials(struct edhoc_context *edhoc_context,
 /**
  * \brief Bind the platform services interface (mandatory).
  *
- * Provides the platform services the library uses.
+ * Provides the platform services the library uses. Every entry of \p platform
+ * is mandatory.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] platform                  EDHOC platform structure with callbacks.
@@ -242,7 +252,7 @@ int edhoc_bind_platform(struct edhoc_context *edhoc_context,
  *
  * Provides the compose/process callbacks for the EAD items carried in the
  * EDHOC messages (RFC 9528: 3.8). Optional; bind it only if the application
- * sends or receives EAD.
+ * sends or receives EAD, and then both callbacks are mandatory.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] ead                       EDHOC EAD structure with callbacks.
@@ -470,11 +480,13 @@ int edhoc_message_error_process(const uint8_t *message_error,
  * bound crypto backend, so the bytes never leave it (e.g. a TrustZone or
  * secure element).
  *
- * Permitted exporter labels (RFC 9528: 10.1) are 0 (OSCORE Master Secret),
- * 1 (OSCORE Master Salt) and the private-use range
- * #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM ..
- * #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM; any other label is rejected with
- * #EDHOC_ERROR_NOT_PERMITTED.
+ * Permitted exporter labels (RFC 9528: 10.1) are:
+ *   - 0, the OSCORE Master Secret;
+ *   - 1, the OSCORE Master Salt;
+ *   - the private-use range #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM to
+ *     #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM.
+ *
+ * Any other label is rejected with #EDHOC_ERROR_NOT_PERMITTED.
  * @{
  */
 
@@ -530,7 +542,9 @@ int edhoc_export_raw(struct edhoc_context *edhoc_context, size_t label,
  *
  *        Implements RFC 9528: 4.4. EDHOC-KeyUpdate(context): rotates PRK_out so
  *        that later OSCORE exports derive fresh keying material bound to the
- *        application-supplied \p context byte string.
+ *        application-supplied \p context byte string. It also re-arms the
+ *        one-shot OSCORE export, so it is the only way to obtain a second
+ *        security context from the same session.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[in] context                   Buffer containing the key-update context.
@@ -559,6 +573,10 @@ int edhoc_export_key_update(struct edhoc_context *edhoc_context,
  *        forbids them being equal. Such a session is rejected with
  *        #EDHOC_ERROR_NOT_PERMITTED; only re-running EDHOC with distinct
  *        identifiers helps.
+ *
+ * \note  A session yields one security context. A further export returns
+ *        #EDHOC_ERROR_BAD_STATE until \ref edhoc_export_key_update() rotates
+ *        PRK_out.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] master_secret_key_id     Buffer holding a key handle (\c CONFIG_LIBEDHOC_KEY_ID_LEN bytes) that receives the master secret.
@@ -594,6 +612,10 @@ int edhoc_export_oscore_context(struct edhoc_context *edhoc_context,
  *        forbids them being equal. Such a session is rejected with
  *        #EDHOC_ERROR_NOT_PERMITTED; only re-running EDHOC with distinct
  *        identifiers helps.
+ *
+ * \note  A session yields one security context. A further export returns
+ *        #EDHOC_ERROR_BAD_STATE until \ref edhoc_export_key_update() rotates
+ *        PRK_out.
  *
  * \param[in,out] edhoc_context         EDHOC context.
  * \param[out] master_secret            Buffer where the exported master secret is to be written.

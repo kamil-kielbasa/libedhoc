@@ -106,7 +106,7 @@ TEST(internals_message1, msg1_process_malformed)
 
 	const uint8_t garbage[4] = { 0xFF, 0xFF, 0xFF, 0xFF };
 	int ret = edhoc_message_1_process(&ctx, garbage, ARRAY_SIZE(garbage));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_1_PROCESS_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -122,7 +122,7 @@ TEST(internals_message1, msg1_process_truncated)
 
 	const uint8_t tiny[1] = { 0x00 };
 	int ret = edhoc_message_1_process(&ctx, tiny, ARRAY_SIZE(tiny));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_1_PROCESS_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

@@ -934,7 +934,7 @@ TEST(coverage_msg3, msg3_process_garbage)
 	uint8_t garbage[] = { 0xFF, 0xFE };
 	coverage_mock_reset(0);
 	ret = edhoc_message_3_process(&resp_ctx, garbage, sizeof(garbage));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_3_PROCESS_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

@@ -14,13 +14,20 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
+/* EDHOC public headers: */
 #include <edhoc/edhoc.h>
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/credentials.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_credentials_internal.h"
+#include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -32,18 +39,13 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
+#include <backend_cbor_edhoc_types.h>
+#include <backend_cbor_x509_types.h>
 #include <backend_cbor_message_2_encode.h>
 #include <backend_cbor_message_2_decode.h>
 #include <backend_cbor_bstr_type_encode.h>
-#include <backend_cbor_bstr_type_decode.h>
-#include <backend_cbor_int_type_encode.h>
-#include <backend_cbor_int_type_decode.h>
-#include <backend_cbor_id_cred_x_encode.h>
-#include <backend_cbor_id_cred_x_decode.h>
-#include <backend_cbor_sig_structure_encode.h>
 #include <backend_cbor_info_encode.h>
 #include <backend_cbor_plaintext_2_decode.h>
-#include <backend_cbor_ead_encode.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -511,7 +513,7 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx, const void *private_key_id,
 		return EDHOC_SUCCESS;
 	}
 
-	case EDHOC_METHOD_MAX:
+	default:
 		EDHOC_LOG_ERR("Invalid method");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
@@ -1668,7 +1670,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
 		EDHOC_MEM_FREE(ciphertext_2);
-		return EDHOC_ERROR_INVALID_MAC_2;
+		return ret;
 	}
 
 	/* 13. Cborise items required by context_2. */

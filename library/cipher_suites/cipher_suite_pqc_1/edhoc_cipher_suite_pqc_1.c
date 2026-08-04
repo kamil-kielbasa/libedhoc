@@ -34,6 +34,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <string.h>
 
 /* EDHOC headers: */
+#include <edhoc/cipher_suite.h>
+#include <edhoc/crypto.h>
 #include <edhoc/values.h>
 #include "edhoc_macros_internal.h"
 #include "edhoc_backend_log.h"
@@ -46,7 +48,9 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <mbedtls/platform_util.h>
 
 /* liboqs headers (ML-KEM-512, ML-DSA-44, incremental SHAKE256): */
-#include <oqs/oqs.h>
+#include <oqs/common.h>
+#include <oqs/kem_ml_kem.h>
+#include <oqs/sig_ml_dsa.h>
 #include <oqs/sha3.h>
 
 /* Threading primitive serializing the keystore and the hash operation pool: */
@@ -900,7 +904,7 @@ static int key_agreement(void *user_context, const void *private_key_id,
 	(void)shared_secret_key_id;
 
 	EDHOC_LOG_ERR("ML-KEM suite does not support static Diffie-Hellman");
-	return EDHOC_ERROR_NOT_PERMITTED;
+	return EDHOC_ERROR_NOT_SUPPORTED;
 }
 
 static int sign(void *user_context, const void *private_key_id,

@@ -15,12 +15,15 @@
 
 /* Build-time configuration (Kconfig provides these on Zephyr): */
 #ifndef __ZEPHYR__
-#include "edhoc_config.h"
+#include <edhoc_config.h>
 #endif
 
 /* EDHOC public headers: */
 #include <edhoc/cipher_suite.h>
 #include <edhoc/crypto.h>
+
+/* Standard library headers: */
+#include <stddef.h>
 
 /* Reference cipher-suite headers (only those enabled at build time): */
 #if CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE

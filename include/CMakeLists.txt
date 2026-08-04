@@ -9,6 +9,8 @@ add_library(libedhoc::api ALIAS libedhoc_api)
 # --- Build-time configuration ------------------------------------------------
 
 # Defaults for the standalone build; the Zephyr build takes these from Kconfig.
+# Deliberately maximal, so a plain build exercises every suite and every limit;
+# Kconfig defaults are minimal instead, sized for a constrained target.
 # CACHE so -DCONFIG_LIBEDHOC_* on the command line wins.
 set(CONFIG_LIBEDHOC_ENABLE                     1  CACHE STRING "")
 set(CONFIG_LIBEDHOC_KEY_ID_LEN                 4  CACHE STRING "")
@@ -17,9 +19,9 @@ set(CONFIG_LIBEDHOC_MAX_NR_OF_METHODS          4  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID         7  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY  800 CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT  768 CACHE STRING "")
-set(CONFIG_LIBEDHOC_MAX_LEN_OF_NIKE_KEY        48  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_LEN_OF_MAC             64  CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS       3  CACHE STRING "")
+set(CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID     32 CACHE STRING "")
 set(CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN 2 CACHE STRING "")
 set(CONFIG_LIBEDHOC_LOG_LEVEL                  3  CACHE STRING "")  # INF
 set(CONFIG_LIBEDHOC_MEM_BACKEND                0  CACHE STRING "")  # STACK

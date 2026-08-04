@@ -14,14 +14,28 @@
 LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
+/* Build-time configuration (Kconfig provides these on Zephyr): */
+#ifndef __ZEPHYR__
+#include <edhoc_config.h>
+#endif
+
+/* EDHOC public headers: */
 #include <edhoc/edhoc.h>
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/credentials.h>
+#include <edhoc/crypto.h>
+#include <edhoc/ead.h>
+#include <edhoc/platform.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
-#include "edhoc_values_internal.h"
-#include "edhoc_macros_internal.h"
+#include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 
 /* Standard library headers: */
+#include <stdint.h>
 #include <stddef.h>
 #include <string.h>
 
@@ -99,6 +113,19 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	for (size_t i = 0; i < method_len; ++i) {
+		switch (method[i]) {
+		case EDHOC_METHOD_0:
+		case EDHOC_METHOD_1:
+		case EDHOC_METHOD_2:
+		case EDHOC_METHOD_3:
+			break;
+		default:
+			EDHOC_LOG_ERR("Invalid method: %d", method[i]);
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
+	}
+
 	if (!ctx->is_init) {
 		EDHOC_LOG_ERR("Bad state");
 		return EDHOC_ERROR_BAD_STATE;
@@ -116,17 +143,13 @@ int edhoc_set_cipher_suites(struct edhoc_context *ctx,
 			    const struct edhoc_cipher_suite *csuite,
 			    size_t csuite_len)
 {
-	if (NULL == ctx || NULL == csuite || 0 == csuite_len) {
+	if (NULL == ctx || NULL == csuite || 0 == csuite_len ||
+	    CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES < csuite_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (!ctx->is_init) {
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	if (ARRAY_SIZE(ctx->negotiation.cipher_suite.entry) < csuite_len) {
 		EDHOC_LOG_ERR("Bad state");
 		return EDHOC_ERROR_BAD_STATE;
 	}
@@ -168,7 +191,7 @@ int edhoc_set_connection_id(struct edhoc_context *ctx,
 
 int edhoc_set_user_context(struct edhoc_context *ctx, void *user_ctx)
 {
-	if (NULL == ctx || NULL == user_ctx) {
+	if (NULL == ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -195,9 +218,9 @@ int edhoc_bind_ead(struct edhoc_context *ctx, const struct edhoc_ead *ead)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	if (NULL == ead->compose && NULL == ead->process) {
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
+	if (NULL == ead->compose || NULL == ead->process) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	ctx->interfaces.ead = *ead;
@@ -227,8 +250,8 @@ int edhoc_bind_crypto(struct edhoc_context *ctx,
 	    NULL == crypto->aead_encrypt || NULL == crypto->aead_decrypt ||
 	    NULL == crypto->hash_init || NULL == crypto->hash_update ||
 	    NULL == crypto->hash_finish || NULL == crypto->hash_abort) {
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	ctx->interfaces.crypto = *crypto;
@@ -251,8 +274,8 @@ int edhoc_bind_credentials(struct edhoc_context *ctx,
 	}
 
 	if (NULL == cred->select_local || NULL == cred->authenticate_peer) {
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	ctx->interfaces.cred = *cred;
@@ -275,8 +298,8 @@ int edhoc_bind_platform(struct edhoc_context *ctx,
 	}
 
 	if (NULL == platform->zeroize) {
-		EDHOC_LOG_ERR("Bad state");
-		return EDHOC_ERROR_BAD_STATE;
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	ctx->interfaces.platform = *platform;

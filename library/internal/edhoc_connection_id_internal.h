@@ -19,7 +19,7 @@
 
 /* Build-time configuration (Kconfig provides these on Zephyr): */
 #ifndef __ZEPHYR__
-#include "edhoc_config.h"
+#include <edhoc_config.h>
 #endif
 
 /* Standard library headers: */

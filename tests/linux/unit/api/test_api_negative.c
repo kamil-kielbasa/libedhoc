@@ -269,7 +269,7 @@ TEST(api_negative, set_cipher_suites_too_many)
 
 	ret = edhoc_set_cipher_suites(
 		&ctx, &suite, CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES + 1);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -333,8 +333,9 @@ TEST(api_negative, set_user_context_null_user_ctx)
 	int ret = edhoc_context_init(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
+	/* NULL clears a previously set user context. */
 	ret = edhoc_set_user_context(&ctx, NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -379,7 +380,7 @@ TEST(api_negative, bind_ead_null_callbacks)
 	const struct edhoc_ead ead = { .compose = NULL, .process = NULL };
 
 	ret = edhoc_bind_ead(&ctx, &ead);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -424,7 +425,7 @@ TEST(api_negative, bind_crypto_null_callbacks)
 	const struct edhoc_crypto crypto = { 0 };
 
 	ret = edhoc_bind_crypto(&ctx, &crypto);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -470,7 +471,7 @@ TEST(api_negative, bind_credentials_null_callbacks)
 						.authenticate_peer = NULL };
 
 	ret = edhoc_bind_credentials(&ctx, &cred);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -514,7 +515,7 @@ TEST(api_negative, bind_platform_null_zeroize)
 	const struct edhoc_platform platform = { .zeroize = NULL };
 
 	ret = edhoc_bind_platform(&ctx, &platform);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

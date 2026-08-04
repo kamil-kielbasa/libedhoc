@@ -96,20 +96,18 @@ enum edhoc_cipher_suite_id {
  *
  * Look up the parameters and reference crypto backend of a bundled suite by its
  * \ref edhoc_cipher_suite_id, to pass to \ref edhoc_set_cipher_suites and
- * \ref edhoc_bind_crypto.
+ * \ref edhoc_bind_crypto. A suite disabled in the build configuration is not
+ * compiled in, so both getters return NULL for it.
  * @{
  */
 
 /**
  * \brief Look up the algorithm lengths of a cipher suite.
  *
- * Available for every identifier in \ref edhoc_cipher_suite_id: the lengths are
- * plain data with no build-time dependency.
- *
  * \param id                            Cipher suite identifier.
  *
- * \return Pointer to the statically allocated cipher suite parameters, or NULL
- *         if \p id is not a known suite.
+ * \return Pointer valid for the lifetime of the program, or NULL if \p id is
+ *         unknown or its suite is not compiled in.
  */
 const struct edhoc_cipher_suite *
 edhoc_cipher_suite_get_params(enum edhoc_cipher_suite_id id);
@@ -117,13 +115,10 @@ edhoc_cipher_suite_get_params(enum edhoc_cipher_suite_id id);
 /**
  * \brief Look up the reference cryptographic operations of a cipher suite.
  *
- * Unlike \ref edhoc_cipher_suite_get_params, a reference crypto backend exists
- * only when its suite is enabled in the build configuration.
- *
  * \param id                            Cipher suite identifier.
  *
- * \return Pointer to the statically allocated crypto vtable, or NULL if \p id is
- *         unknown or its reference backend is not compiled in.
+ * \return Pointer valid for the lifetime of the program, or NULL if \p id is
+ *         unknown or its suite is not compiled in.
  */
 const struct edhoc_crypto *
 edhoc_cipher_suite_get_crypto(enum edhoc_cipher_suite_id id);

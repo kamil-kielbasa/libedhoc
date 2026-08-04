@@ -310,9 +310,9 @@ TEST(cipher_suite_pqc_1_negative, decapsulate_stale_handle)
 	cipher_suite_test_decapsulate_stale_handle(&suite);
 }
 
-TEST(cipher_suite_pqc_1_negative, key_agreement_not_permitted)
+TEST(cipher_suite_pqc_1_negative, key_agreement_not_supported)
 {
-	cipher_suite_test_key_agreement_not_permitted(&suite);
+	cipher_suite_test_key_agreement_not_supported(&suite);
 }
 
 TEST(cipher_suite_pqc_1_negative, sign_null_args)
@@ -497,7 +497,7 @@ TEST_GROUP_RUNNER(cipher_suite_pqc_1_negative)
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative,
 		      decapsulate_bad_ciphertext_length);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, decapsulate_stale_handle);
-	RUN_TEST_CASE(cipher_suite_pqc_1_negative, key_agreement_not_permitted);
+	RUN_TEST_CASE(cipher_suite_pqc_1_negative, key_agreement_not_supported);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, sign_null_args);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, sign_small_buffer);
 	RUN_TEST_CASE(cipher_suite_pqc_1_negative, sign_destroyed_key);

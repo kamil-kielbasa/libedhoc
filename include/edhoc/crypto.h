@@ -12,11 +12,13 @@
 #define EDHOC_CRYPTO_H
 
 /* Include files ----------------------------------------------------------- */
+
+/* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
 
 /* EDHOC headers: */
-#include "cipher_suite.h"
+#include <edhoc/values.h>
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
@@ -44,6 +46,9 @@ enum edhoc_key_usage {
 /**
  * \brief Cryptographic operations vtable (handle-based).
  *
+ *        - Every entry is mandatory; \ref edhoc_bind_crypto rejects a vtable
+ *          with a missing one. A suite that cannot perform an operation still
+ *          supplies the entry and fails it with #EDHOC_ERROR_NOT_SUPPORTED.
  *        - Every long-lived secret is an opaque handle into the backend key
  *          store (a software PSA slot, the TrustZone secure world or a secure
  *          element); it is never serialized into \ref edhoc_context or onto
@@ -76,7 +81,9 @@ struct edhoc_crypto {
 	 *
 	 *        The decapsulation (private) key stays in the key store as a
 	 *        handle; only the encapsulation (public) key leaves, to be sent
-	 *        in \c G_X.
+	 *        in \c G_X. The handle is retained for \ref decapsulate and, on a
+	 *        NIKE suite, for the static-DH \c G_RX agreement in message_2
+	 *        (methods 1 and 3).
 	 *
 	 * \param[in] user_context		User context.
 	 * \param[out] decapsulation_key_id     Handle of the generated private key.
@@ -148,15 +155,18 @@ struct edhoc_crypto {
 			   void *shared_secret_key_id);
 
 	/**
-	 * \brief Compute a static Diffie-Hellman shared secret (methods 1/2/3,
-	 *        NIKE suites).
+	 * \brief Compute a static Diffie-Hellman shared secret (methods 1/2/3).
 	 *
-	 *        Used only for static-DH authentication; the shared secret is
-	 *        produced as a handle, never as raw bytes.
+	 *        Used only for static-DH authentication: \c G_RX in message_2 and
+	 *        \c G_IY in message_3. Each agreement pairs one party's static
+	 *        authentication key with the other's ephemeral key, so which of
+	 *        the two arguments is the static one depends on the local role.
+	 *        A suite without static-DH support fails with
+	 *        #EDHOC_ERROR_NOT_SUPPORTED.
 	 *
 	 * \param[in] user_context		User context.
-	 * \param[in] private_key_id            Handle of the local static private key.
-	 * \param[in] peer_public_key           Peer static public key (raw bytes).
+	 * \param[in] private_key_id            Handle of the local private key, static or ephemeral.
+	 * \param[in] peer_public_key           Peer public key (raw bytes), ephemeral or static.
 	 * \param peer_public_key_length        Size of the \p peer_public_key buffer in bytes.
 	 * \param[out] shared_secret_key_id     Handle of the shared secret.
 	 *
@@ -211,9 +221,6 @@ struct edhoc_crypto {
 
 	/**
 	 * \brief EDHOC_Extract: derive a pseudorandom key handle from a salt.
-	 *
-	 *        The input keying material and the output pseudorandom key are
-	 *        handles; the salt is raw bytes.
 	 *
 	 * \param[in] user_context		User context.
 	 * \param[in] ikm_key_id                Input keying material handle.

@@ -17,22 +17,40 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
-#include <edhoc/edhoc.h>
+/* Build-time configuration (Kconfig provides these on Zephyr): */
+#ifndef __ZEPHYR__
+#include <edhoc_config.h>
+#endif
+
+/* EDHOC public headers: */
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/ead.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
+#include "edhoc_credentials_internal.h"
+#include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_int_type_encode.h>
 #include <backend_cbor_bstr_type_encode.h>
-#include <backend_cbor_ead_encode.h>
+#include <backend_cbor_edhoc_types.h>
+#include <backend_cbor_sig_structure_types.h>
 #include <backend_cbor_sig_structure_encode.h>
+#include <backend_cbor_ead_encode.h>
 #include <backend_cbor_info_encode.h>
+
+/* Standard library headers: */
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -764,7 +782,7 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 			*mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -783,7 +801,7 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 			*mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -924,7 +942,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 			*sign_or_mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -943,7 +961,7 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 			*sign_or_mac_len = csuite->mac_length;
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -981,7 +999,7 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			memcpy(sign, mac, mac_len);
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -1002,7 +1020,7 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 			memcpy(sign, mac, mac_len);
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -1045,7 +1063,7 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg2: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;
@@ -1071,7 +1089,7 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 
 			return EDHOC_SUCCESS;
 
-		case EDHOC_METHOD_MAX:
+		default:
 			EDHOC_LOG_ERR("Invalid method for msg3: %d",
 				      ctx->negotiation.selected_method);
 			return EDHOC_ERROR_NOT_PERMITTED;

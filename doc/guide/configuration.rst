@@ -16,39 +16,73 @@ Kconfig library configuration
     | Enable building *libedhoc* for the Zephyr target.
 
 :C:`LIBEDHOC_KEY_ID_LEN`
-    | Key identifier length in bytes.
+    | Size of the opaque key handle the library stores to reference a key
+      inside the crypto backend's key store.
+    | Must match the handle size of the bound backend.
 
 :C:`LIBEDHOC_MAX_NR_OF_CIPHER_SUITES`
-    | Maximum number of cipher suites in chain for negotiation.
+    | Capacity of the cipher suite list a peer may offer or accept.
     | Values greater than ``3`` require regeneration of the CBOR backend.
 
 :C:`LIBEDHOC_MAX_NR_OF_METHODS`
-    | Maximum number of authentication methods for negotiation.
+    | Capacity of the method list a peer may offer or accept, from ``1`` to
+      ``4``.
 
 :C:`LIBEDHOC_MAX_LEN_OF_CONN_ID`
-    | Maximum length of connection identifier in bytes.
+    | Longest connection identifier (C_I / C_R) this peer accepts.
     | Identifiers are byte strings; one byte covers the range that
       RFC 9528: 3.3.2 sends as a bare CBOR integer, which is the common case.
 
 :C:`LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY`
-    | Maximum length of the KEM encapsulation key (``G_X``) in bytes.
+    | Buffer holding the ephemeral encapsulation key (``G_X``).
+    | Set it to the largest suite you build in: ``32`` for X25519, ``65`` for
+      P-256, ``97`` for P-384, ``800`` for ML-KEM-512.
 
 :C:`LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT`
-    | Maximum length of the KEM ciphertext (``G_Y``) in bytes.
-
-:C:`LIBEDHOC_MAX_LEN_OF_NIKE_KEY`
-    | Maximum length of the static Diffie-Hellman (NIKE) key in bytes.
+    | Buffer holding the ephemeral ciphertext (``G_Y``).
+    | Set it to the largest suite you build in: ``32`` for X25519, ``65`` for
+      P-256, ``97`` for P-384, ``768`` for ML-KEM-512.
 
 :C:`LIBEDHOC_MAX_LEN_OF_MAC`
-    | Maximum length of hash in bytes.
+    | Buffers holding a transcript hash or a MAC.
+    | Set it to the hash length of the largest suite you build in: ``32`` for
+      SHA-256, ``48`` for SHA-384, ``64`` for SHA-512 and SHAKE256.
 
 :C:`LIBEDHOC_MAX_NR_OF_EAD_TOKENS`
-    | Maximum number of EAD (External Authorization Data) tokens.
+    | Capacity of the EAD (External Authorization Data) token list carried in
+      each message. Set to ``0`` to disable EAD.
     | Values greater than ``3`` require regeneration of the CBOR backend.
 
+:C:`LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID`
+    | Longest COSE ``kid`` key identifier this peer accepts, from ``1`` to
+      ``32``.
+
 :C:`LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN`
-    | Maximum number of certificates in X.509 chain, from ``1`` to ``3``.
+    | Capacity of the ``x5chain`` certificate list, from ``1`` to ``3``.
     | Values greater than ``3`` require regeneration of the CBOR backend.
+
+Reference cipher suites
+***********************
+
+Each bundled reference cipher suite has its own gate. A disabled suite is not
+compiled in, and both :c:func:`edhoc_cipher_suite_get_params` and
+:c:func:`edhoc_cipher_suite_get_crypto` return ``NULL`` for it.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Symbol
+     - Suite
+   * - :C:`LIBEDHOC_CIPHER_SUITE_0_ENABLE`
+     - X25519 / EdDSA / AES-CCM-16-64-128 / SHA-256
+   * - :C:`LIBEDHOC_CIPHER_SUITE_2_ENABLE`
+     - P-256 / ES256 / AES-CCM-16-64-128 / SHA-256
+   * - :C:`LIBEDHOC_CIPHER_SUITE_4_ENABLE`
+     - X25519 / EdDSA / ChaCha20-Poly1305 / SHA-256
+   * - :C:`LIBEDHOC_CIPHER_SUITE_24_ENABLE`
+     - P-384 / ES384 / A256GCM / SHA-384
+   * - :C:`LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE`
+     - ML-KEM-512 / ML-DSA-44 / AES-CCM-16-128-128 / SHAKE256
 
 Logging
 *******

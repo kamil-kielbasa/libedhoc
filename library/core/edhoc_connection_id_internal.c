@@ -14,8 +14,15 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
-#include <edhoc/edhoc.h>
+/* Build-time configuration (Kconfig provides these on Zephyr): */
+#ifndef __ZEPHYR__
+#include <edhoc_config.h>
+#endif
+
+/* EDHOC public headers: */
+#include <edhoc/values.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_connection_id_internal.h"

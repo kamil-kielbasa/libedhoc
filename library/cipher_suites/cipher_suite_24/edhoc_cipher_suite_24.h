@@ -19,6 +19,7 @@
 /* Include files ----------------------------------------------------------- */
 
 /* EDHOC header: */
+#include <edhoc/cipher_suite.h>
 #include <edhoc/crypto.h>
 
 /* Standard library headers: */

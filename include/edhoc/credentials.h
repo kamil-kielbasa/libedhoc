@@ -12,49 +12,35 @@
 #define EDHOC_CREDENTIALS_H
 
 /* Include files ----------------------------------------------------------- */
-#include <edhoc/types.h>
 
 /* Build-time configuration (Kconfig provides these on Zephyr): */
 #ifndef __ZEPHYR__
-#include "edhoc_config.h"
+#include <edhoc_config.h>
 #endif
 
 /* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
-#include <stdbool.h>
+
+/* EDHOC headers: */
+#include <edhoc/types.h>
+#include <edhoc/values.h>
 
 /* Defines ----------------------------------------------------------------- */
 
-#ifndef CONFIG_LIBEDHOC_ENABLE
-#error "Library has not been enabled."
-#endif /* CONFIG_LIBEDHOC_ENABLE */
-
-#ifndef CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
-#error "Lack of defined maximum number of certificates in an X.509 chain."
-#endif /* CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN */
-
-#ifndef CONFIG_LIBEDHOC_KEY_ID_LEN
-#error "Lack of defined length of private key identifier in bytes."
-#endif /* CONFIG_LIBEDHOC_KEY_ID_LEN */
-
-/** Maximum length of a COSE 'kid' key identifier in bytes. RFC 9528 puts no
- *  bound on it; this one covers every identifier the reference cipher suites
- *  can produce, including a full SHA-256 thumbprint. */
-#define EDHOC_CREDENTIAL_KID_MAX_LEN (32)
+/** Maximum length of a COSE 'kid' key identifier in bytes. */
+#define EDHOC_CREDENTIAL_KID_MAX_LEN CONFIG_LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID
 
 /** Capacity of a COSE 'x5chain' certificate chain, in certificates. */
 #define EDHOC_CREDENTIAL_X5CHAIN_CAPACITY \
 	CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN
 
 /** Maximum length of a COSE 'x5t' hash algorithm name in bytes. Applies to the
- *  text form only; the integer form carries no buffer. Sized for the longest
- *  COSE algorithm name in the IANA registry. */
+ *  text form only; the integer form carries no buffer. */
 #define EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN (32)
 
-/** Maximum length of a COSE 'x5t' certificate fingerprint in bytes. The longest
- *  hash COSE defines for a certificate thumbprint is SHA-512, so a longer
- *  fingerprint is rejected. */
+/** Maximum length of a COSE 'x5t' certificate fingerprint in bytes, sized for
+ *  the longest hash COSE defines for a certificate thumbprint. */
 #define EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN (64)
 
 /* Types and type definitions ---------------------------------------------- */
@@ -64,12 +50,36 @@
  */
 
 /**
+ * \brief Encoding of a CBOR item that is either a number or a string.
+ */
+enum edhoc_encode_type {
+	/** CBOR integer. */
+	EDHOC_ENCODE_TYPE_INTEGER,
+	/** CBOR byte string or text string, depending on the field. */
+	EDHOC_ENCODE_TYPE_STRING,
+};
+
+/**
+ * \brief A CBOR item that is either a number or a string.
+ */
+struct edhoc_cbor_int_or_string {
+	/** Which member of the union is valid. */
+	enum edhoc_encode_type encode_type;
+
+	union {
+		/** Valid for #EDHOC_ENCODE_TYPE_INTEGER. */
+		int32_t integer;
+		/** Valid for #EDHOC_ENCODE_TYPE_STRING. */
+		struct edhoc_buffer string;
+	};
+};
+
+/**
  * \brief COSE header parameter that identifies the credential in ID_CRED
  *        (RFC 9528: 3.5.3). Selects the active union member.
  */
 enum edhoc_cose_header {
-	/** Not set. A zeroed structure holds this value, so a missing label is
-	 *  rejected instead of selecting a union member by accident. */
+	/** Not set. A zeroed structure holds this value and is rejected. */
 	EDHOC_COSE_HEADER_NONE = 0,
 	/** 'kid' (4): credential referenced by a key identifier, not sent. */
 	EDHOC_COSE_HEADER_KID = 4,
@@ -86,13 +96,11 @@ _Static_assert(0 == EDHOC_COSE_HEADER_NONE,
  * \brief How CRED_I / CRED_R is serialized.
  */
 enum edhoc_credential_format {
-	/** Not set. A zeroed structure holds this value, so the format is
-	 *  always a deliberate choice. */
+	/** Not set. A zeroed structure holds this value and is rejected. */
 	EDHOC_CREDENTIAL_FORMAT_NONE = 0,
 	/** Opaque bytes, wrapped in a CBOR byte string. */
 	EDHOC_CREDENTIAL_FORMAT_RAW,
-	/** A CBOR item, embedded as it is. Admissible only for 'kid', whose
-	 *  CRED may be a CCS or a CWT. */
+	/** A ready CBOR item, embedded as it is. Admissible only for 'kid'. */
 	EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 };
 
@@ -102,9 +110,6 @@ _Static_assert(0 == EDHOC_CREDENTIAL_FORMAT_NONE,
 /**
  * \brief Local credential referenced by a key identifier
  *        (#EDHOC_COSE_HEADER_KID).
- *
- *        A 'kid' is a byte string (RFC 9528: Appendix C.3); the library applies
- *        the compact encoding of RFC 9528: 3.3.2 itself.
  */
 struct edhoc_credential_selected_kid {
 	/** Key identifier, at most #EDHOC_CREDENTIAL_KID_MAX_LEN bytes. */
@@ -122,10 +127,9 @@ struct edhoc_credential_selected_kid {
  *        CRED_I / CRED_R is \p certificate[0], so the library takes it itself.
  */
 struct edhoc_credential_selected_x509_chain {
-	/** Number of certificates, end-entity first, 1 to
-	 *  #EDHOC_CREDENTIAL_X5CHAIN_CAPACITY. */
+	/** Number of certificates, 1 to #EDHOC_CREDENTIAL_X5CHAIN_CAPACITY. */
 	size_t count;
-	/** Certificates, in DER. */
+	/** Certificates, in DER, end-entity first. */
 	struct edhoc_buffer certificate[EDHOC_CREDENTIAL_X5CHAIN_CAPACITY];
 };
 
@@ -134,11 +138,10 @@ struct edhoc_credential_selected_x509_chain {
  *        (#EDHOC_COSE_HEADER_X509_HASH).
  */
 struct edhoc_credential_selected_x509_hash {
-	/** Fingerprint algorithm, an integer or a name of at most
+	/** Fingerprint algorithm; a name is at most
 	 *  #EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN bytes. */
 	struct edhoc_cbor_int_or_string algorithm;
-	/** Fingerprint, at most #EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN
-	 *  bytes. */
+	/** Fingerprint, at most #EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN bytes. */
 	struct edhoc_buffer fingerprint;
 	/** CRED_I / CRED_R: the certificate in DER, not sent. */
 	struct edhoc_buffer certificate;
@@ -174,9 +177,8 @@ struct edhoc_credential_selected {
  * \brief Key identifier received from the peer (#EDHOC_COSE_HEADER_KID).
  */
 struct edhoc_credential_received_kid {
-	/** Key identifier. It may arrive as a CBOR integer, which is only a
-	 *  transport encoding of a one byte string (RFC 9528: 3.3.2); the
-	 *  library resolves it before the callback runs. */
+	/** Key identifier, the same byte string \c select_local presented on the
+	 *  other side. */
 	struct edhoc_buffer identifier;
 };
 
@@ -253,18 +255,19 @@ struct edhoc_credential_trusted {
  *        \ref edhoc_bind_credentials.
  *
  *        EDHOC delegates credential handling to the application
- *        (RFC 9528: 3.5). The library never takes ownership of a buffer and
- *        never frees one.
+ *        (RFC 9528: 3.5). Both entries are mandatory. The library never takes
+ *        ownership of a buffer and never frees one.
  */
 struct edhoc_credentials {
 	/**
 	 * \brief Select the local party's authentication credential.
 	 *
-	 * Called while composing the message that carries it: message 2 for the
-	 * Responder, message 3 for the Initiator. Populate \p selected, which
-	 * the library zeroed beforehand. The library then builds ID_CRED and
-	 * CRED and computes Signature_or_MAC with the referenced key
-	 * (RFC 9528: 5.3.2, 5.4.2).
+	 * Called while composing the message that carries it:
+	 * - the Responder, composing message 2 (RFC 9528: 5.3.2);
+	 * - the Initiator, composing message 3 (RFC 9528: 5.4.2).
+	 *
+	 * The library then builds ID_CRED and CRED from \p selected and computes
+	 * Signature_or_MAC with the referenced key.
 	 *
 	 * \param[in] user_context              User context.
 	 * \param[in] call_context              Parameters of the ongoing session.
@@ -281,15 +284,14 @@ struct edhoc_credentials {
 	/**
 	 * \brief Authenticate the peer's authentication credential.
 	 *
-	 * Called once the peer's ID_CRED has been decoded: from message 2 on
-	 * the Initiator, message 3 on the Responder. Look up what \p received
-	 * points at, validate it against your trust policy — path building,
-	 * trust anchors, revocation — and fill in \p trusted. EDHOC itself only
-	 * proves possession of the private key (RFC 9528: 3.5, Appendix D).
+	 * Called once the peer's ID_CRED has been decoded:
+	 * - the Initiator, processing message 2 (ID_CRED_R);
+	 * - the Responder, processing message 3 (ID_CRED_I).
 	 *
-	 * For #EDHOC_COSE_HEADER_X509_HASH the library does not check that the
-	 * credential matches the fingerprint; that binding is enforced by the
-	 * transcript, so a mismatch surfaces as an invalid Signature_or_MAC.
+	 * Look up what \p received points at, validate it against your trust
+	 * policy — path building, trust anchors, revocation — and fill in
+	 * \p trusted. EDHOC itself only proves possession of the private key
+	 * (RFC 9528: 3.5, Appendix D).
 	 *
 	 * \param[in] user_context              User context.
 	 * \param[in] call_context              Parameters of the ongoing session.

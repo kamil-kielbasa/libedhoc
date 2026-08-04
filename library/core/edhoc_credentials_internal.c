@@ -16,8 +16,12 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
-#include <edhoc/edhoc.h>
+/* EDHOC public headers: */
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/credentials.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_credentials_internal.h"

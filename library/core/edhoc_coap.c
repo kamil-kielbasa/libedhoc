@@ -11,26 +11,36 @@
 
 /* Include files ----------------------------------------------------------- */
 
-#include <string.h>
-
 #ifdef __ZEPHYR__
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC headers: */
-#include <edhoc/edhoc.h>
-#include "edhoc_context_internal.h"
-#include "edhoc_values_internal.h"
+/* Build-time configuration (Kconfig provides these on Zephyr): */
+#ifndef __ZEPHYR__
+#include <edhoc_config.h>
+#endif
+
+/* EDHOC public headers: */
 #include <edhoc/coap.h>
-#include "edhoc_common_internal.h"
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_connection_id_internal.h"
+#include "edhoc_values_internal.h"
 #include "edhoc_backend_log.h"
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_connection_identifier_encode.h>
+#include <backend_cbor_connection_identifier_types.h>
 #include <backend_cbor_connection_identifier_decode.h>
+
+/* Standard library headers: */
+#include <stdint.h>
+#include <stddef.h>
+#include <stdbool.h>
+#include <string.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */

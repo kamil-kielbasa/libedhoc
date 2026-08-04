@@ -20,7 +20,7 @@
 
 /* Build-time configuration (Kconfig provides these on Zephyr): */
 #ifndef __ZEPHYR__
-#include "edhoc_config.h"
+#include <edhoc_config.h>
 #endif
 
 /* EDHOC public headers (types referenced by the context): */
@@ -57,6 +57,26 @@
 			 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT ? \
 		 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY :  \
 		 CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT)
+
+/* Kconfig enforces these ranges; the standalone CMake build does not, and
+ * exceeding a CBOR backend capacity would truncate silently. */
+_Static_assert(CONFIG_LIBEDHOC_MAX_NR_OF_METHODS >= 1 &&
+		       CONFIG_LIBEDHOC_MAX_NR_OF_METHODS <= 4,
+	       "EDHOC defines four authentication methods");
+_Static_assert(CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES >= 1 &&
+		       CONFIG_LIBEDHOC_MAX_NR_OF_CIPHER_SUITES <= 3,
+	       "the bundled CBOR backend holds at most three cipher suites");
+_Static_assert(CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN >= 1 &&
+		       CONFIG_LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN <= 3,
+	       "the bundled CBOR backend holds at most three certificates");
+_Static_assert(CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS <= 3,
+	       "the bundled CBOR backend holds at most three EAD tokens");
+_Static_assert(CONFIG_LIBEDHOC_KEY_ID_LEN >= 1 &&
+		       CONFIG_LIBEDHOC_KEY_ID_LEN <= 32,
+	       "key handle length out of range");
+_Static_assert(CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID >= 1 &&
+		       CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID <= 32,
+	       "connection identifier length out of range");
 
 /* Types and type definitions ---------------------------------------------- */
 

@@ -1077,7 +1077,7 @@ TEST(internals_mac, mac_len_method_max_msg2)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_RESPONDER;
 	ctx.state.message = EDHOC_MESSAGE_2;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1094,7 +1094,7 @@ TEST(internals_mac, mac_len_method_max_msg3)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_INITIATOR;
 	ctx.state.message = EDHOC_MESSAGE_3;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	size_t mac_len = 0;
 	int ret = edhoc_comp_mac_length(&ctx, &mac_len);
@@ -1306,7 +1306,7 @@ TEST(internals_mac, sign_or_mac_len_method_max_msg2)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_RESPONDER;
 	ctx.state.message = EDHOC_MESSAGE_2;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1323,7 +1323,7 @@ TEST(internals_mac, sign_or_mac_len_method_max_msg3)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_INITIATOR;
 	ctx.state.message = EDHOC_MESSAGE_3;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	size_t len = 0;
 	int ret = edhoc_comp_sign_or_mac_length(&ctx, &len);
@@ -1637,7 +1637,7 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg2)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_RESPONDER;
 	ctx.state.message = EDHOC_MESSAGE_2;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
@@ -1665,7 +1665,7 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg3)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_INITIATOR;
 	ctx.state.message = EDHOC_MESSAGE_3;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
@@ -1851,7 +1851,7 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg2)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_RESPONDER;
 	ctx.state.message = EDHOC_MESSAGE_2;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
@@ -1877,7 +1877,7 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg3)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_INITIATOR;
 	ctx.state.message = EDHOC_MESSAGE_3;
-	ctx.negotiation.selected_method = EDHOC_METHOD_MAX;
+	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;

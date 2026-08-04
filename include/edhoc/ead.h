@@ -12,10 +12,14 @@
 #define EDHOC_EAD_H
 
 /* Include files ----------------------------------------------------------- */
-#include <edhoc/types.h>
 
+/* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
+
+/* EDHOC headers: */
+#include <edhoc/types.h>
+#include <edhoc/values.h>
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
@@ -28,8 +32,9 @@
  * \brief A single EAD item: a label and an optional value (RFC 9528: 3.8).
  */
 struct edhoc_ead_token {
-	/** EAD label. A negative label marks the item as critical: if the peer
-	 *  does not recognise it, EDHOC processing fails (RFC 9528: 3.8). */
+	/** EAD label. A negative label marks the item as critical: the library
+	 *  does not act on that, so \ref edhoc_ead.process must fail the session
+	 *  when it does not recognise one (RFC 9528: 3.8). */
 	int32_t label;
 
 	/** Optional EAD value. Empty when the item carries a label only.
@@ -42,7 +47,10 @@ struct edhoc_ead_token {
 };
 
 /**
- * \brief Bind structure for EAD operations.
+ * \brief External authorization data interface, bound with \ref edhoc_bind_ead.
+ *
+ *        Both entries are mandatory. The library never takes ownership of a
+ *        buffer and never frees one.
  */
 struct edhoc_ead {
 	/**

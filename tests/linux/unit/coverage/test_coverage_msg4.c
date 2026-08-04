@@ -641,7 +641,7 @@ TEST(coverage_msg4, msg4_process_truncated)
 	coverage_mock_reset(0);
 
 	ret = edhoc_message_4_process(&init_ctx, msg4, 2);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_4_PROCESS_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -801,7 +801,7 @@ TEST(coverage_msg4, msg4_process_garbage)
 	coverage_mock_reset(0);
 
 	ret = edhoc_message_4_process(&init_ctx, garbage, sizeof(garbage));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_4_PROCESS_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

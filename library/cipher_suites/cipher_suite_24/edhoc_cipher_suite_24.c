@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <string.h>
 
 /* EDHOC headers: */
+#include <edhoc/cipher_suite.h>
 #include <edhoc/crypto.h>
 #include <edhoc/values.h>
 #include "edhoc_macros_internal.h"
@@ -35,6 +36,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <psa/crypto.h>
 
 /* mbedTLS low-level ECP/bignum (P-384 peer-point decompression): */
+#include <mbedtls/private/bignum.h>
 #include <mbedtls/private/ecp.h>
 
 /* Threading primitive serializing the multipart hash operation pool: */

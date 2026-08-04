@@ -3,10 +3,9 @@
  * \author  Kamil Kielbasa
  * \brief   Public EDHOC protocol types.
  *
- *          Method, connection-identifier and error types exchanged across the
- *          public API. The \c edhoc_context handle itself is opaque and is
- *          forward-declared in \c <edhoc/edhoc.h>; its layout is
- *          library-internal.
+ *          Types shared by the whole public API. The \c edhoc_context handle
+ *          itself is opaque and is forward-declared in \c <edhoc/edhoc.h>; its
+ *          layout is library-internal.
  *
  * \copyright Copyright (c) 2026
  *
@@ -18,28 +17,11 @@
 
 /* Include files ----------------------------------------------------------- */
 
-/* Build-time configuration (Kconfig provides these on Zephyr): */
-#ifndef __ZEPHYR__
-#include "edhoc_config.h"
-#endif
-
-/* EDHOC headers: */
-#include <edhoc/values.h>
-
 /* Standard library headers: */
 #include <stdint.h>
 #include <stddef.h>
 
 /* Defines ----------------------------------------------------------------- */
-
-#ifndef CONFIG_LIBEDHOC_ENABLE
-#error "Library has not been enabled."
-#endif
-
-#ifndef CONFIG_LIBEDHOC_MAX_LEN_OF_CONN_ID
-#error "Lack of defined maximum length of connection identifier in bytes."
-#endif
-
 /* Types and type definitions ---------------------------------------------- */
 
 /** \defgroup edhoc-types EDHOC types
@@ -81,32 +63,6 @@ struct edhoc_buffer {
 };
 
 /**
- * \brief Encoding of a CBOR item that is either a number or a string.
- */
-enum edhoc_encode_type {
-	/** CBOR integer. */
-	EDHOC_ENCODE_TYPE_INTEGER,
-	/** CBOR byte string or text string, depending on the field: COSE 'kid'
-	 *  is a bstr, hashAlg in COSE_CertHash is a tstr. */
-	EDHOC_ENCODE_TYPE_STRING,
-};
-
-/**
- * \brief A CBOR item that is either a number or a string.
- */
-struct edhoc_cbor_int_or_string {
-	/** Which member of the union is valid. */
-	enum edhoc_encode_type encode_type;
-
-	union {
-		/** Valid for #EDHOC_ENCODE_TYPE_INTEGER. */
-		int32_t integer;
-		/** Valid for #EDHOC_ENCODE_TYPE_STRING. */
-		struct edhoc_buffer string;
-	};
-};
-
-/**
  * \brief RFC 9528: 3.2. Method.
  */
 enum edhoc_method {
@@ -118,8 +74,6 @@ enum edhoc_method {
 	EDHOC_METHOD_2 = 2,
 	/** Initiator static DH key, Responder static DH key. */
 	EDHOC_METHOD_3 = 3,
-	/** Sentinel: number of methods, not a valid method value. */
-	EDHOC_METHOD_MAX,
 };
 
 /**
@@ -166,10 +120,12 @@ struct edhoc_error_info {
 		int32_t *cipher_suites;
 	};
 
-	/** Capacity of \p text_string or \p cipher_suites, in entries. */
+	/** Capacity of \p text_string in characters, or of \p cipher_suites in
+	 *  entries. */
 	size_t entries_size;
-	/** Number of valid entries in \p text_string or \p cipher_suites (set by
-	 *  the caller on compose, by the library on process). */
+	/** Valid part of \p text_string or \p cipher_suites, in the same unit as
+	 *  \p entries_size (set by the caller on compose, by the library on
+	 *  process). */
 	size_t entries_length;
 };
 

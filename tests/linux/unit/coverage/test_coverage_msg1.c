@@ -219,7 +219,7 @@ TEST(coverage_msg1, msg1_process_bad_cbor)
 	const uint8_t garbage[] = { 0xFF };
 
 	ret = edhoc_message_1_process(&ctx, garbage, sizeof(garbage));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_1_PROCESS_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

@@ -27,7 +27,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <stddef.h>
 
 #include <edhoc/values.h>
-#include "edhoc_macros_internal.h"
 #include "edhoc_backend_log.h"
 
 /* XKCP SP800-185 public API (KMAC128/256, cSHAKE128/256). */

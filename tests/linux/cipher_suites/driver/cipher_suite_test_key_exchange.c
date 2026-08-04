@@ -432,7 +432,7 @@ void cipher_suite_test_key_agreement_destroyed_key(
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
 }
 
-void cipher_suite_test_key_agreement_not_permitted(
+void cipher_suite_test_key_agreement_not_supported(
 	const struct cipher_suite_descriptor *suite)
 {
 	TEST_ASSERT_NOT_NULL(suite);
@@ -443,7 +443,7 @@ void cipher_suite_test_key_agreement_not_permitted(
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
-	/* A KEM suite is not a NIKE: static Diffie-Hellman key agreement is unsupported. */
+	/* A KEM suite is not a NIKE: static Diffie-Hellman is unsupported.  */
 	psa_key_id_t private_key_id = PSA_KEY_ID_NULL;
 	psa_key_id_t shared_secret = PSA_KEY_ID_NULL;
 	const uint8_t peer_public_key[32] = { 0 };
@@ -451,7 +451,7 @@ void cipher_suite_test_key_agreement_not_permitted(
 	ret = crypto->key_agreement(NULL, &private_key_id, peer_public_key,
 				    ARRAY_SIZE(peer_public_key),
 				    &shared_secret);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 }
 
 void cipher_suite_test_destroy_key_null_args(

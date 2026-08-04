@@ -14,8 +14,14 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
+/* EDHOC public headers: */
 #include <edhoc/edhoc.h>
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/cipher_suite.h>
+#include <edhoc/crypto.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
@@ -30,9 +36,12 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <stdbool.h>
 
 /* CBOR headers: */
+#include <zcbor_common.h>
+#include <backend_cbor_edhoc_types.h>
+#include <backend_cbor_x509_types.h>
+#include <backend_cbor_enc_structure_types.h>
 #include <backend_cbor_info_encode.h>
 #include <backend_cbor_enc_structure_encode.h>
-#include <backend_cbor_enc_structure_decode.h>
 #include <backend_cbor_plaintext_4_encode.h>
 #include <backend_cbor_plaintext_4_decode.h>
 #include <backend_cbor_message_4_encode.h>
@@ -770,7 +779,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse message_4: %d", ret);
-		return EDHOC_ERROR_MSG_4_PROCESS_FAILURE;
+		return ret;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(ctxt, ctxt_len, "CIPHERTEXT_4");

@@ -14,14 +14,18 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
+/* EDHOC public headers: */
 #include <edhoc/edhoc.h>
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/cipher_suite.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
-#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
+#include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
-#include "edhoc_backend_memory.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -31,6 +35,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
+#include <backend_cbor_edhoc_types.h>
 #include <backend_cbor_message_1_encode.h>
 #include <backend_cbor_message_1_decode.h>
 
@@ -298,10 +303,15 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	size_t len = 0;
 	ret = cbor_decode_message_1(msg_1, msg_1_len, &cbor_dec_msg_1, &len);
 
-	if (ZCBOR_SUCCESS != ret && msg_1_len <= len) {
-		EDHOC_LOG_ERR("CBOR dec msg1: %d, %zu, %zu", ret, msg_1_len,
-			      len);
+	if (ZCBOR_SUCCESS != ret) {
+		EDHOC_LOG_ERR("CBOR dec msg1: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
+	}
+
+	if (len != msg_1_len) {
+		EDHOC_LOG_ERR("Message 1 length mismatch: %zu, %zu", len,
+			      msg_1_len);
+		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 
 	/* 2. Choose most preferred cipher suite. */

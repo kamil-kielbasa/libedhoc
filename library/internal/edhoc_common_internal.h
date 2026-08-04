@@ -18,13 +18,16 @@
 
 /* Build-time configuration (Kconfig provides these on Zephyr): */
 #ifndef __ZEPHYR__
-#include "edhoc_config.h"
+#include <edhoc_config.h>
 #endif
 
-/* EDHOC headers: */
+/* EDHOC public headers: */
 #include <edhoc/types.h>
 #include <edhoc/ead.h>
 #include <edhoc/credentials.h>
+
+/* EDHOC internal headers: */
+#include "edhoc_context_internal.h"
 #include "edhoc_credentials_internal.h"
 
 /* Standard library headers: */

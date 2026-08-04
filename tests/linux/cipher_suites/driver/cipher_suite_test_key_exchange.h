@@ -88,7 +88,7 @@ void cipher_suite_test_key_agreement_destroyed_key(
 /**
  * \brief Post-quantum: a KEM suite must reject static Diffie-Hellman.
  */
-void cipher_suite_test_key_agreement_not_permitted(
+void cipher_suite_test_key_agreement_not_supported(
 	const struct cipher_suite_descriptor *suite);
 
 /**

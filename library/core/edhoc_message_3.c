@@ -14,8 +14,14 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
+/* EDHOC public headers: */
 #include <edhoc/edhoc.h>
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+#include <edhoc/credentials.h>
+#include <edhoc/crypto.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
@@ -32,20 +38,15 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
+#include <backend_cbor_edhoc_types.h>
+#include <backend_cbor_x509_types.h>
+#include <backend_cbor_enc_structure_types.h>
 #include <backend_cbor_message_3_encode.h>
 #include <backend_cbor_message_3_decode.h>
 #include <backend_cbor_bstr_type_encode.h>
-#include <backend_cbor_bstr_type_decode.h>
-#include <backend_cbor_int_type_encode.h>
-#include <backend_cbor_int_type_decode.h>
-#include <backend_cbor_id_cred_x_encode.h>
-#include <backend_cbor_id_cred_x_decode.h>
-#include <backend_cbor_sig_structure_encode.h>
 #include <backend_cbor_info_encode.h>
 #include <backend_cbor_plaintext_3_decode.h>
 #include <backend_cbor_enc_structure_encode.h>
-#include <backend_cbor_enc_structure_decode.h>
-#include <backend_cbor_ead_encode.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -331,7 +332,7 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx, const void *private_key_id,
 		ctx->state.prk_state = EDHOC_PRK_STATE_4E3M;
 		return EDHOC_SUCCESS;
 	}
-	case EDHOC_METHOD_MAX:
+	default:
 		EDHOC_LOG_ERR("Invalid method");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
@@ -1128,15 +1129,17 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	/* 6c. Compute Message Authentication Code (MAC_3). */
 	size_t mac_length = 0;
 	ret = edhoc_comp_mac_length(ctx, &mac_length);
+
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3 length: %d", ret);
 		EDHOC_MEM_FREE(mac_3_context_buf);
 		EDHOC_MEM_FREE(aad);
 		EDHOC_MEM_FREE(iv);
-		return EDHOC_ERROR_INVALID_MAC_3;
+		return ret;
 	}
 
 	EDHOC_MEM_ALLOC(uint8_t, mac_buf, mac_length);
+
 	if (NULL == mac_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(mac_3_context_buf);
@@ -1144,19 +1147,22 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		EDHOC_MEM_FREE(iv);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
+
 	ret = edhoc_comp_mac(ctx, mac_context, mac_buf, mac_length);
+
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3: %d", ret);
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_3_context_buf);
 		EDHOC_MEM_FREE(aad);
 		EDHOC_MEM_FREE(iv);
-		return EDHOC_ERROR_INVALID_MAC_3;
+		return ret;
 	}
 
 	/* 7. Compute signature if needed (Signature_or_MAC_3). */
 	size_t sign_or_mac_length = 0;
 	ret = edhoc_comp_sign_or_mac_length(ctx, &sign_or_mac_length);
+
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute Signature_or_MAC_3 length: %d", ret);
 		EDHOC_MEM_FREE(mac_buf);
@@ -1168,6 +1174,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	size_t signature_length = 0;
 	EDHOC_MEM_ALLOC(uint8_t, signature, sign_or_mac_length);
+
 	if (NULL == signature) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(mac_buf);
@@ -1176,11 +1183,14 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		EDHOC_MEM_FREE(iv);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
+
 	ret = edhoc_comp_sign_or_mac(ctx, selected.private_key_id, mac_context,
 				     mac_buf, mac_length, signature,
 				     EDHOC_MEM_ALLOC_SIZE(signature),
 				     &signature_length);
+
 	EDHOC_MEM_FREE(mac_buf);
+
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute Signature_or_MAC_3: %d", ret);
 		EDHOC_MEM_FREE(signature);
@@ -1208,6 +1218,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	EDHOC_MEM_ALLOC(uint8_t, plaintext, plaintext_len);
+
 	if (NULL == plaintext) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(signature);
@@ -1238,6 +1249,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	size_t ciphertext_len = 0;
 	EDHOC_MEM_ALLOC(uint8_t, ciphertext,
 			plaintext_len + csuite->aead_tag_length);
+
 	if (NULL == ciphertext) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(plaintext);
@@ -1369,7 +1381,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse msg3: %d", ret);
-		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
+		return ret;
 	}
 
 	if (ctxt_len <= csuite->aead_tag_length) {
@@ -1529,7 +1541,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
 		EDHOC_MEM_FREE(ptxt);
-		return EDHOC_ERROR_INVALID_MAC_3;
+		return ret;
 	}
 
 	/* 9b. Cborise items required by context_3. */
@@ -1565,27 +1577,31 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	/* 9c. Compute Message Authentication Code (MAC_3). */
 	size_t mac_length = 0;
 	ret = edhoc_comp_mac_length(ctx, &mac_length);
+
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3 length: %d", ret);
 		EDHOC_MEM_FREE(mac_3_context_buf);
 		EDHOC_MEM_FREE(ptxt);
-		return EDHOC_ERROR_INVALID_MAC_3;
+		return ret;
 	}
 
 	EDHOC_MEM_ALLOC(uint8_t, mac_buf, mac_length);
+
 	if (NULL == mac_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		EDHOC_MEM_FREE(mac_3_context_buf);
 		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
+
 	ret = edhoc_comp_mac(ctx, mac_context, mac_buf, mac_length);
+
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3: %d", ret);
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_3_context_buf);
 		EDHOC_MEM_FREE(ptxt);
-		return EDHOC_ERROR_INVALID_MAC_3;
+		return ret;
 	}
 
 	/* 10. Verify Signature_or_MAC_3. */
@@ -1593,6 +1609,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		ctx, mac_context, trusted.public_key.value,
 		trusted.public_key.length, parsed_ptxt.sign_or_mac.value,
 		parsed_ptxt.sign_or_mac.length, mac_buf, mac_length);
+
 	EDHOC_MEM_FREE(mac_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -1604,6 +1621,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	/* 11. Compute transcript hash 4. */
 	ret = comp_th_4(ctx, mac_context, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
+
 	EDHOC_MEM_FREE(mac_3_context_buf);
 	EDHOC_MEM_FREE(ptxt);
 

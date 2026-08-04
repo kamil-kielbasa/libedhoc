@@ -14,9 +14,12 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* EDHOC header: */
+/* EDHOC public headers: */
 #include <edhoc/edhoc.h>
-#include "edhoc_context_internal.h"
+#include <edhoc/types.h>
+#include <edhoc/values.h>
+
+/* EDHOC internal headers: */
 #include "edhoc_macros_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -27,6 +30,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <stdbool.h>
 
 /* CBOR headers: */
+#include <zcbor_common.h>
+#include <backend_cbor_edhoc_types.h>
 #include <backend_cbor_message_error_encode.h>
 #include <backend_cbor_message_error_decode.h>
 

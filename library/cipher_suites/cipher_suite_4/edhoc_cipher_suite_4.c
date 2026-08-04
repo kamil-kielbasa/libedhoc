@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <string.h>
 
 /* EDHOC headers: */
+#include <edhoc/cipher_suite.h>
 #include <edhoc/crypto.h>
 #include <edhoc/values.h>
 #include "edhoc_macros_internal.h"
