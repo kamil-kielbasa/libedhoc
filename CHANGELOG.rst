@@ -1,7 +1,7 @@
 Version 2.0.0
 -------------
 
-:Date: September 4, 2026
+:Date: August 4, 2026
 
 **Breaking release.** Every application interface changed: the crypto and key
 interfaces were merged and rebuilt around key handles, credentials and
@@ -37,12 +37,14 @@ Highlights
   credentials and EAD callbacks return is validated before it reaches the
   encoder.
 
-* **Compact byte strings are handled once, by the library.** Connection
-  identifiers and COSE ``kid`` are byte strings everywhere in the API. This fixed
-  a real interoperability defect: the CoAP helpers used to put a byte of the
-  wrong CBOR major type on the wire for negative identifiers and read it back the
-  same wrong way, so two instances of this library agreed with each other and
-  with nobody else.
+* **Compact byte strings are handled once, by the library.** A connection
+  identifier and a COSE ``kid`` are byte strings everywhere in the API, in both
+  directions. The compact CBOR integer encoding of RFC 9528: 3.3.2 is applied
+  and undone inside the library, so an application no longer has to know that a
+  short identifier travels as a bare integer, nor translate it back before
+  matching its own records. In ``1.x`` that encoding leaked into the API and was
+  implemented inconsistently across the call sites that touched it, which
+  produced identifiers that no other implementation could read.
 
 * **The context is opaque.** Its layout, the state machine and the key schedule
   are no longer part of the API, and internally it is grouped by concern —
@@ -90,17 +92,13 @@ Breaking changes
   refuses to run until it is bound.
 
 * **Credentials.** ``fetch`` / ``verify`` become ``select_local`` /
-  ``authenticate_peer``, taking a ``struct edhoc_call_context`` and filling
-  ``struct edhoc_credential_selected`` and ``struct edhoc_credential_trusted``
-  in place of ``struct edhoc_auth_creds``. ``EDHOC_COSE_ANY`` and
-  ``struct edhoc_auth_cred_any`` are removed with no replacement; the supported
-  labels are ``kid``, ``x5chain`` and ``x5t``. ``EDHOC_COSE_HEADER_NONE = 0`` and
-  ``enum edhoc_credential_format`` (replacing ``cred_is_cbor``) make a zeroed
-  structure invalid rather than ambiguous. ``EDHOC_ENCODE_TYPE_BYTE_STRING`` is
-  renamed to ``EDHOC_ENCODE_TYPE_STRING``. Every buffer in
-  ``struct edhoc_credential_received`` is a view into the message being
-  processed: it may be handed back in ``trusted``, but stops being valid once the
-  processing call returns.
+  ``authenticate_peer``. What the application receives and what it returns are
+  now separate types instead of one ``struct edhoc_auth_creds`` serving as both,
+  and a zeroed structure is rejected rather than read as a valid choice. Buffers
+  handed to ``authenticate_peer`` are views into the message being processed and
+  stop being valid once the call returns. ``EDHOC_COSE_ANY``, the only way to
+  pass a pre-encoded ID_CRED, is removed with no replacement; the supported
+  labels are ``kid``, ``x5chain`` and ``x5t``.
 
 * **Connection identifiers are byte strings.** ``struct edhoc_connection_id``
   and ``enum edhoc_connection_id_type`` (``EDHOC_CID_TYPE_*``) are removed;
@@ -116,11 +114,15 @@ Breaking changes
   other; ``edhoc_message_ptr``, ``edhoc_message_size`` and
   ``edhoc_prepend_recalculate_size()`` are gone.
 
-* **Exporters renamed and doubled.** ``edhoc_export_prk_exporter()`` becomes
-  ``edhoc_export_raw()`` and ``edhoc_export_oscore_session()`` becomes
-  ``edhoc_export_oscore_context_raw()``; ``edhoc_export()`` and
-  ``edhoc_export_oscore_context()`` are the new handle-returning forms.
-  ``edhoc_export_key_update()`` takes a context byte string in place of entropy.
+* **Exporters take a context, and come in two forms.**
+  ``edhoc_export_prk_exporter()`` becomes ``edhoc_export_raw()`` and
+  ``edhoc_export_oscore_session()`` becomes ``edhoc_export_oscore_context_raw()``;
+  ``edhoc_export()`` and ``edhoc_export_oscore_context()`` are the new
+  handle-returning forms. The exporter now takes the ``context`` argument that
+  EDHOC_Exporter is defined with (RFC 9528: 4.2.1) and that ``1.x`` omitted
+  entirely, so application keying material can finally be bound to something
+  other than the label. ``edhoc_export_key_update()`` takes the same kind of
+  context byte string in place of the ``entropy`` it used to demand.
 
 * **OSCORE export is single-use and rejects colliding identifiers.** A session
   yields one security context; a further export returns
@@ -146,8 +148,9 @@ Breaking changes
   keyed by ``enum edhoc_cipher_suite_id``.
 
 * **Types and names.** ``EDHOC_INITIATOR`` / ``EDHOC_RESPONDER`` become
-  ``EDHOC_ROLE_INITIATOR`` / ``EDHOC_ROLE_RESPONDER``, and ``EDHOC_MSG_1..4``
-  become ``EDHOC_MESSAGE_1..4``. ``EDHOC_METHOD_MAX`` is removed and
+  ``EDHOC_ROLE_INITIATOR`` / ``EDHOC_ROLE_RESPONDER``, ``EDHOC_MSG_1..4`` become
+  ``EDHOC_MESSAGE_1..4``, and ``EDHOC_ENCODE_TYPE_BYTE_STRING`` becomes
+  ``EDHOC_ENCODE_TYPE_STRING``. ``EDHOC_METHOD_MAX`` is removed and
   ``edhoc_set_methods()`` rejects a value outside 0..3.
   ``edhoc_set_user_context()`` accepts NULL, which clears the context. The
   misspelled ``EDHOC_SM_RECEVIED_M4`` alias is gone with the state enum.
@@ -183,24 +186,21 @@ Breaking changes
 Hardening
 *********
 
-* ``edhoc_message_1_process()`` rejects a message that fails CBOR decoding. The
-  decode result was combined with a length check by ``&&``, so a message that did
-  not decode kept being processed against a zeroed structure — on the Responder's
-  unauthenticated input path.
-* ``edhoc_message_error_process()`` rejects an ``ERR_INFO`` whose variant does not
-  match ``ERR_CODE`` (RFC 9528: 6). The CBOR decoder picks the variant from its
-  shape alone, so a peer could pair a ``SUITES`` array with ``ERR_CODE 1``; the
-  library then read the union as a byte string and copied out of bounds.
-  Reachable before authentication from any peer that can deliver an error
-  message.
-* ``edhoc_message_3_process()`` rejects a ``CIPHERTEXT_3`` that is not longer than
-  the AEAD tag. ``PLAINTEXT_3`` always carries ``ID_CRED_I`` and
-  ``Signature_or_MAC_3``, so an empty plaintext is malformed; accepting it also
-  formed a zero-length VLA in the stack memory backend.
-* ``edhoc_ead.compose`` output is validated: more items than
-  ``CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS``, or a token whose value has a non-zero
-  length but no buffer, are rejected. Such a token used to reach the CBOR encoder,
-  which cannot tell a missing buffer from an empty one.
+Malformed input is now rejected where it used to be processed. Two of these are
+reachable before authentication, from any peer that can deliver a message.
+
+* ``edhoc_message_1_process()`` rejects a message that fails CBOR decoding; it
+  used to keep processing it against a zeroed structure.
+* ``edhoc_message_error_process()`` rejects an ``ERR_INFO`` whose variant does
+  not match ``ERR_CODE`` (RFC 9528: 6); the mismatch used to read a union as a
+  byte string and copy out of bounds.
+* ``edhoc_message_3_process()`` rejects a ``CIPHERTEXT_3`` no longer than the
+  AEAD tag, which is malformed and formed a zero-length VLA in the stack memory
+  backend.
+* A ``kid`` received as a CBOR integer outside the one-byte range -24..23 stands
+  for no byte string at all and is rejected.
+* What ``edhoc_ead.compose`` returns is validated before it reaches the CBOR
+  encoder, which cannot tell a missing buffer from an empty one.
 * A ``kid`` received as a CBOR integer outside the one-byte range -24..23 stands
   for no byte string at all and is rejected.
 

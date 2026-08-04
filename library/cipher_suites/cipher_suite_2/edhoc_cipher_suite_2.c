@@ -507,8 +507,6 @@ static int destroy_key(void *user_context, void *key_id)
 
 	const psa_status_t status = psa_destroy_key(psa_kid);
 
-	psa_kid = PSA_KEY_ID_NULL;
-
 	if (PSA_SUCCESS != status) {
 		EDHOC_LOG_ERR("Destroy key: %d", status);
 		return EDHOC_ERROR_CRYPTO_FAILURE;

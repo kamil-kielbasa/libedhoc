@@ -225,6 +225,43 @@ TEST(coverage_msg1, msg1_process_bad_cbor)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(coverage_msg1, msg1_process_trailing_bytes)
+{
+	struct edhoc_context init_ctx = { 0 };
+	struct edhoc_context resp_ctx = { 0 };
+
+	int ret = coverage_setup_mock_context_initiator(&init_ctx,
+							EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = coverage_setup_mock_context_responder(&resp_ctx, EDHOC_METHOD_0);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	coverage_mock_reset(0);
+
+	uint8_t msg[256] = { 0 };
+	size_t msg_len = 0;
+
+	ret = edhoc_message_1_compose(&init_ctx, msg, sizeof(msg), &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_TRUE(msg_len < sizeof(msg));
+
+	coverage_mock_reset(0);
+
+	/* A well-formed message 1 followed by a byte that is not a CBOR item
+	 * the decoder can append to it. */
+	msg[msg_len] = 0xFF;
+
+	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len + 1);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_MSG_1_PROCESS_FAILURE, ret);
+
+	ret = edhoc_context_deinit(&init_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST(coverage_msg1, msg1_compose_failure_sweep)
 {
 	const int mock_fail_pt_first = 1;
@@ -352,6 +389,7 @@ TEST_GROUP_RUNNER(coverage_msg1)
 	RUN_TEST_CASE(coverage_msg1, msg1_process_method_mismatch);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_hash_fail);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_bad_cbor);
+	RUN_TEST_CASE(coverage_msg1, msg1_process_trailing_bytes);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_ead_failure);
 	RUN_TEST_CASE(coverage_msg1, msg1_process_failure_sweep);
 }

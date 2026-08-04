@@ -473,6 +473,9 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 						    prk_exporter, info, len,
 						    output, output_length);
 		break;
+	default:
+		ret = EDHOC_ERROR_NOT_SUPPORTED;
+		break;
 	}
 	EDHOC_MEM_FREE(info);
 
@@ -483,14 +486,10 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand exporter output: %d", ret);
 		/* Never leave derived keying material in the caller's output. */
-		switch (output_kind) {
-		case EXPORTER_OUTPUT_HANDLE:
-			edhoc_zeroize(ctx, output, CONFIG_LIBEDHOC_KEY_ID_LEN);
-			break;
-		case EXPORTER_OUTPUT_BYTES:
-			edhoc_zeroize(ctx, output, output_length);
-			break;
-		}
+		edhoc_zeroize(ctx, output,
+			      EXPORTER_OUTPUT_HANDLE == output_kind ?
+				      CONFIG_LIBEDHOC_KEY_ID_LEN :
+				      output_length);
 
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}

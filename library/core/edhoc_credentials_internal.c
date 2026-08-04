@@ -132,9 +132,9 @@ cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value)
 	case EDHOC_ENCODE_TYPE_STRING:
 		return value->string.length +
 		       edhoc_cbor_bstr_header_length(value->string.length);
+	default:
+		return 0;
 	}
-
-	return 0;
 }
 
 STATIC bool is_buffer_empty(const uint8_t *buffer, size_t length)

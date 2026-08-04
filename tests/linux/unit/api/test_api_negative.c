@@ -211,6 +211,23 @@ TEST(api_negative, set_methods_too_many)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(api_negative, set_methods_out_of_range)
+{
+	struct edhoc_context ctx = { 0 };
+
+	int ret = edhoc_context_init(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	const enum edhoc_method method[] = { EDHOC_METHOD_0,
+					     (enum edhoc_method)4 };
+
+	ret = edhoc_set_methods(&ctx, method, ARRAY_SIZE(method));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST(api_negative, set_methods_not_initialized)
 {
 	struct edhoc_context ctx = { 0 };
@@ -969,6 +986,7 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, set_methods_null_method);
 	RUN_TEST_CASE(api_negative, set_methods_zero_length);
 	RUN_TEST_CASE(api_negative, set_methods_too_many);
+	RUN_TEST_CASE(api_negative, set_methods_out_of_range);
 	RUN_TEST_CASE(api_negative, set_methods_not_initialized);
 
 	RUN_TEST_CASE(api_negative, set_cipher_suites_null_ctx);

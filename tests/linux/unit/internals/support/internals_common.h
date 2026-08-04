@@ -127,5 +127,7 @@ extern int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
 extern int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 			     size_t ptxt_len);
+extern size_t
+cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value);
 
 #endif /* INTERNALS_COMMON_H */

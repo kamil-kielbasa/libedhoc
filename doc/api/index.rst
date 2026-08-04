@@ -69,6 +69,7 @@ API pages
    :maxdepth: 1
 
    context
+   types
    messages
    crypto
    credentials

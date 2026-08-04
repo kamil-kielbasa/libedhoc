@@ -5,9 +5,9 @@
  *          It contains authentication with ephemeral-static Diffie-Hellman
  *          represented as raw public keys (RPKs), encoded in a CWT Claims Set (CCS)
  *          and identified by the COSE header parameter 'kid'.
- *          
+ *
  * \copyright Copyright (c) 2026
- * 
+ *
  */
 
 /* Header guard ------------------------------------------------------------ */
@@ -202,7 +202,7 @@ static const uint8_t KEYSTREAM_2_info[] = {
 	0x8f, 0xf3, 0x9d, 0x52, 0x36, 0xc1, 0x82, 0xb2, 0x02, 0x08, 0x4b, 0x0b,
 };
 
-static const uint8_t KEYSTERAM_2[] = {
+static const uint8_t KEYSTREAM_2[] = {
 	0xbf, 0x50, 0xe9, 0xe7, 0xba, 0xd0, 0xbb, 0x68, 0x17, 0x33, 0x99,
 };
 

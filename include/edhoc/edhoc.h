@@ -55,7 +55,7 @@
  * Allocate storage of \ref edhoc_context_size bytes and drive it through the
  * public API; the layout is library-internal.
  *
- * \ingroup edhoc-types
+ * \ingroup edhoc-api-context
  */
 struct edhoc_context;
 
@@ -63,23 +63,10 @@ struct edhoc_context;
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
-/** \defgroup edhoc-api-setters EDHOC API setters
+/** \defgroup edhoc-api-context EDHOC API context lifecycle
  *
- * After \ref edhoc_context_init, a context must be fully configured before the
- * message-processing API will run. A message compose or process call made
- * before every **mandatory** input is present returns \ref EDHOC_ERROR_BAD_STATE.
- *
- * **Mandatory** inputs:
- *   - \ref edhoc_set_methods "method(s)"
- *   - \ref edhoc_set_cipher_suites "cipher suite(s)"
- *   - \ref edhoc_set_connection_id "connection identifier"
- *   - \ref edhoc_bind_crypto "crypto interface"
- *   - \ref edhoc_bind_credentials "credentials interface"
- *   - \ref edhoc_bind_platform "platform interface"
- *
- * **Optional** inputs:
- *   - \ref edhoc_set_user_context "user context"
- *   - \ref edhoc_bind_ead "external authorization data (EAD) interface"
+ * The context is opaque: size it with \ref edhoc_context_size, initialise it
+ * with \ref edhoc_context_init, and release it with \ref edhoc_context_deinit.
  * @{
  */
 
@@ -115,6 +102,28 @@ size_t edhoc_context_size(void);
  * \return Negative error code on failure (\ref edhoc-error-codes).
  */
 int edhoc_context_deinit(struct edhoc_context *edhoc_context);
+
+/**@}*/
+
+/** \defgroup edhoc-api-setters EDHOC API setters
+ *
+ * After \ref edhoc_context_init, a context must be fully configured before the
+ * message-processing API will run. A message compose or process call made
+ * before every **mandatory** input is present returns \ref EDHOC_ERROR_BAD_STATE.
+ *
+ * **Mandatory** inputs:
+ *   - \ref edhoc_set_methods "method(s)"
+ *   - \ref edhoc_set_cipher_suites "cipher suite(s)"
+ *   - \ref edhoc_set_connection_id "connection identifier"
+ *   - \ref edhoc_bind_crypto "crypto interface"
+ *   - \ref edhoc_bind_credentials "credentials interface"
+ *   - \ref edhoc_bind_platform "platform interface"
+ *
+ * **Optional** inputs:
+ *   - \ref edhoc_set_user_context "user context"
+ *   - \ref edhoc_bind_ead "external authorization data (EAD) interface"
+ * @{
+ */
 
 /**
  * \brief Set EDHOC method(s) (mandatory).

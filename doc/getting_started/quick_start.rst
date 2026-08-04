@@ -14,7 +14,8 @@ job uses:
 
 .. code-block:: bash
 
-   scripts/ci.sh build --gcc        # or --clang
+   scripts/ci.sh list          # available build presets
+   scripts/ci.sh ci legacy     # configure, build and test one preset
 
 See :doc:`../guide/configuration` for the Kconfig / compile-time options and
 the Zephyr (west) workflow.

@@ -1213,6 +1213,15 @@ TEST(internals_credentials, id_cred_len_x5chain_multi)
 	TEST_ASSERT_GREATER_THAN(sizeof(cert0) + sizeof(cert1), len);
 }
 
+TEST(internals_credentials, cbor_int_or_string_len_unknown_encoding)
+{
+	const struct edhoc_cbor_int_or_string value = {
+		.encode_type = (enum edhoc_encode_type)7,
+	};
+
+	TEST_ASSERT_EQUAL(0, cbor_int_or_string_len(&value));
+}
+
 TEST(internals_credentials, id_cred_len_x5t_int)
 {
 	const uint8_t x5t_fingerprint[32] = { 0 };
@@ -1685,6 +1694,8 @@ TEST_GROUP_RUNNER(internals_credentials)
 	RUN_TEST_CASE(internals_credentials, id_cred_len_x5chain_multi);
 	RUN_TEST_CASE(internals_credentials, id_cred_len_x5t_int);
 	RUN_TEST_CASE(internals_credentials, id_cred_len_x5t_tstr);
+	RUN_TEST_CASE(internals_credentials,
+		      cbor_int_or_string_len_unknown_encoding);
 	RUN_TEST_CASE(internals_credentials, id_cred_len_unsupported);
 	RUN_TEST_CASE(internals_credentials, id_cred_len_null_args);
 	RUN_TEST_CASE(internals_credentials, cred_len_follows_credential);
