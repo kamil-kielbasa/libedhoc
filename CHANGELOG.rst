@@ -1,3 +1,207 @@
+Version 2.0.0
+-------------
+
+:Date: August 4, 2026
+
+**Breaking release.** Every application interface changed: the crypto and key
+interfaces were merged and rebuilt around key handles, credentials and
+connection identifiers were remodelled, the context became opaque and all
+headers moved. Code written against ``1.x`` needs porting throughout; the
+highlights explain why, the breaking changes list what to change.
+
+Highlights
+**********
+
+* **Secrets are key handles, not bytes.** ``struct edhoc_keys`` is gone: the
+  library no longer hands raw key material to the application to import. Every
+  long-lived secret is produced directly as an opaque handle into the backend
+  key store, so it can stay in a PSA slot, the secure world or a secure element
+  for the whole handshake. The exporters gained handle-returning forms, so even
+  the OSCORE Master Secret can be taken out without the application ever seeing
+  the bytes.
+
+* **The ephemeral key exchange is a KEM.** ``encapsulate`` / ``decapsulate``
+  model the exchange and a classical Diffie-Hellman suite implements them as a
+  thin NIKE-as-KEM shim. Nothing changes on the wire and a post-quantum KEM drops
+  in behind the same interface.
+
+* **Cipher suites are part of the library**, including post-quantum suite 1
+  (ML-KEM-512 / ML-DSA-44 / AES-CCM-16-128-128 / SHAKE256), which no longer needs
+  its own vtable or an experimental build flag. ``<edhoc/cipher_suite.h>`` holds
+  the parameters, the identifiers and the getters; each suite has a Kconfig gate
+  and a disabled one is not compiled in.
+
+* **Authentication credentials are enforced, not merely documented.** Selecting
+  the local credential and authenticating the peer's use separate types, CRED
+  lives in the variant that owns it, a missing label is rejected, and what the
+  credentials and EAD callbacks return is validated before it reaches the
+  encoder.
+
+* **Compact byte strings are handled once, by the library.** A connection
+  identifier and a COSE ``kid`` are byte strings everywhere in the API, in both
+  directions. The compact CBOR integer encoding of RFC 9528: 3.3.2 is applied
+  and undone inside the library, so an application no longer has to know that a
+  short identifier travels as a bare integer, nor translate it back before
+  matching its own records. In ``1.x`` that encoding leaked into the API and was
+  implemented inconsistently across the call sites that touched it, which
+  produced identifiers that no other implementation could read.
+
+* **The context is opaque.** Its layout, the state machine and the key schedule
+  are no longer part of the API, and internally it is grouped by concern —
+  negotiation, state, key slots, interfaces — instead of one flat structure.
+
+* **Hashing is multi-part.** ``hash_init`` / ``hash_update`` / ``hash_finish``
+  feed a transcript hash in chunks instead of assembling it into one buffer,
+  which removes the largest working allocation of the handshake.
+
+* **Headers relocated, documentation unified.** Every public header lives under
+  ``include/edhoc/`` with one include convention and one documentation style;
+  ``<edhoc/edhoc.h>`` is an umbrella over all of them.
+
+* **Tests rebuilt around matrices.** Linux and Zephyr have separate trees and the
+  Linux one is split by purpose — integration, robustness, RFC 9529, unit, fuzz —
+  with shared drivers, so a scenario scales across every cipher suite, method,
+  memory backend and a range of build configurations.
+
+* **Toolchain refresh:** mbedTLS 4.1 with TF-PSA-Crypto, and Zephyr 4.4.
+
+Breaking changes
+****************
+
+* **Key interface removed.** ``edhoc_bind_keys()``, ``struct edhoc_keys``,
+  ``enum edhoc_key_type`` and the ``EDHOC_KT_*`` values are gone. Key creation
+  and destruction moved into ``struct edhoc_crypto``, which now produces handles
+  itself; there is nothing left for the application to import.
+
+* **Crypto vtable rebuilt.** ``make_key_pair`` became ``generate_key_pair``,
+  ``signature`` became ``sign``, ``encrypt`` / ``decrypt`` became
+  ``aead_encrypt`` / ``aead_decrypt``, and the one-shot ``hash`` became
+  ``hash_init`` / ``hash_update`` / ``hash_finish`` / ``hash_abort``. New
+  entries: ``encapsulate``, ``decapsulate``, ``expand_raw`` and ``destroy_key``.
+  Every entry is mandatory; a suite that cannot perform an operation supplies it
+  and fails with ``EDHOC_ERROR_NOT_SUPPORTED``.
+
+* **Context opaque.** ``struct edhoc_context`` has no public layout and
+  ``EDHOC_PRIVATE()`` is removed; allocate ``edhoc_context_size()`` bytes, then
+  call ``edhoc_context_init()``. ``enum edhoc_state_machine``,
+  ``enum edhoc_prk_state``, ``enum edhoc_th_state`` and their values are no
+  longer public.
+
+* **Platform binding (new, mandatory).** Bind a ``struct edhoc_platform`` with a
+  non-elidable ``zeroize`` through ``edhoc_bind_platform()``; message processing
+  refuses to run until it is bound.
+
+* **Credentials.** ``fetch`` / ``verify`` become ``select_local`` /
+  ``authenticate_peer``. What the application receives and what it returns are
+  now separate types instead of one ``struct edhoc_auth_creds`` serving as both,
+  and a zeroed structure is rejected rather than read as a valid choice. Buffers
+  handed to ``authenticate_peer`` are views into the message being processed and
+  stop being valid once the call returns. ``EDHOC_COSE_ANY``, the only way to
+  pass a pre-encoded ID_CRED, is removed with no replacement; the supported
+  labels are ``kid``, ``x5chain`` and ``x5t``.
+
+* **Connection identifiers are byte strings.** ``struct edhoc_connection_id``
+  and ``enum edhoc_connection_id_type`` (``EDHOC_CID_TYPE_*``) are removed;
+  ``edhoc_set_connection_id()`` and the CoAP helpers take
+  ``const struct edhoc_buffer *``. Pass the identifier itself, as the bytes it is
+  made of; the CBOR encoding of RFC 9528: 3.3.2 is no longer the application's
+  concern.
+
+* **CoAP helpers.** ``edhoc_helpers.h`` is replaced by ``<edhoc/coap.h>`` and
+  every function gained an ``edhoc_coap_`` prefix. The working buffers now count
+  progress (``buffer`` / ``capacity`` / ``length`` and ``buffer`` / ``length`` /
+  ``consumed``), so prepend and extract calls compose instead of overwriting each
+  other; ``edhoc_message_ptr``, ``edhoc_message_size`` and
+  ``edhoc_prepend_recalculate_size()`` are gone.
+
+* **Exporters take a context, and come in two forms.**
+  ``edhoc_export_prk_exporter()`` becomes ``edhoc_export_raw()`` and
+  ``edhoc_export_oscore_session()`` becomes ``edhoc_export_oscore_context_raw()``;
+  ``edhoc_export()`` and ``edhoc_export_oscore_context()`` are the new
+  handle-returning forms. The exporter now takes the ``context`` argument that
+  EDHOC_Exporter is defined with (RFC 9528: 4.2.1) and that ``1.x`` omitted
+  entirely, so application keying material can finally be bound to something
+  other than the label. ``edhoc_export_key_update()`` takes the same kind of
+  context byte string in place of the ``entropy`` it used to demand.
+
+* **OSCORE export is single-use and rejects colliding identifiers.** A session
+  yields one security context; a further export returns
+  ``EDHOC_ERROR_BAD_STATE`` until ``edhoc_export_key_update()`` rotates PRK_out.
+  A session whose C_I equals C_R is refused with ``EDHOC_ERROR_NOT_PERMITTED``,
+  because the two become the OSCORE Recipient IDs and RFC 9528: 3.3.3 forbids
+  them being equal.
+
+* **Callback context and EAD.** New ``struct edhoc_call_context`` carries the
+  role, method, selected cipher suite and message; ``edhoc_ead.compose`` /
+  ``.process`` take it in place of ``enum edhoc_message`` and both are mandatory
+  when EAD is bound. ``struct edhoc_ead_token`` uses a single
+  ``struct edhoc_buffer value``.
+
+* **Cipher suite parameters.** ``struct edhoc_cipher_suite`` moved to
+  ``<edhoc/cipher_suite.h>``; ``ecc_key_length`` and ``ecc_sign_length`` are
+  replaced by ``kem_encapsulation_key_length``, ``kem_ciphertext_length``,
+  ``nike_key_length``, ``sign_length`` and ``supports_dh_nike``. The per-suite
+  helpers moved into the library, so ``edhoc_cipher_suite_N_get_keys()`` is gone
+  along with the experimental ``edhoc_exp_pqc_cipher_suite_1_*`` API,
+  ``struct edhoc_crypto_pqc`` and ``struct edhoc_cipher_suite_pqc``. New getters
+  ``edhoc_cipher_suite_get_params()`` / ``edhoc_cipher_suite_get_crypto()`` are
+  keyed by ``enum edhoc_cipher_suite_id``.
+
+* **Types and names.** ``EDHOC_INITIATOR`` / ``EDHOC_RESPONDER`` become
+  ``EDHOC_ROLE_INITIATOR`` / ``EDHOC_ROLE_RESPONDER``, ``EDHOC_MSG_1..4`` become
+  ``EDHOC_MESSAGE_1..4``, and ``EDHOC_ENCODE_TYPE_BYTE_STRING`` becomes
+  ``EDHOC_ENCODE_TYPE_STRING``. ``EDHOC_METHOD_MAX`` is removed and
+  ``edhoc_set_methods()`` rejects a value outside 0..3.
+  ``edhoc_set_user_context()`` accepts NULL, which clears the context. The
+  misspelled ``EDHOC_SM_RECEVIED_M4`` alias is gone with the state enum.
+
+* **Error codes.** ``EDHOC_ERROR_EPHEMERAL_DIFFIE_HELLMAN_FAILURE`` becomes
+  ``EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE``.
+  ``EDHOC_ERROR_INVALID_MAC_2`` / ``_3`` are removed: a failed authentication has
+  always been ``EDHOC_ERROR_INVALID_SIGN_OR_MAC_2`` / ``_3``, which is also what
+  RFC 9528 calls the field. Malformed input now consistently yields
+  ``EDHOC_ERROR_CBOR_FAILURE``, while ``EDHOC_ERROR_MSG_x_PROCESS_FAILURE`` means
+  the message decoded but its content was rejected. A missing callback in a bound
+  interface, and a list longer than the configured capacity, report
+  ``EDHOC_ERROR_INVALID_ARGUMENT`` instead of ``EDHOC_ERROR_BAD_STATE``.
+
+* **Private headers.** ``edhoc_context.h``, ``edhoc_common.h`` and
+  ``edhoc_macros.h`` are no longer installed, so the ``edhoc_comp_*`` /
+  ``edhoc_verify_sign_or_mac()`` helpers, the ``edhoc_cbor_*_oh()`` sizing
+  helpers and the ``EDHOC_EXTRACT_PRK_INFO_LABEL_*`` labels are internal.
+
+* **Configuration.** ``CONFIG_LIBEDHOC_MAX_LEN_OF_ECC_KEY`` is replaced by
+  ``CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY`` and
+  ``CONFIG_LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT``, and
+  ``CONFIG_LIBEDHOC_MAX_LEN_OF_HASH_ALG`` by the fixed
+  ``EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN`` (32). New:
+  ``CONFIG_LIBEDHOC_MAX_NR_OF_METHODS``, which sizes the method list, and
+  ``CONFIG_LIBEDHOC_CIPHER_SUITE_{0,2,4,24,PQC_1}_ENABLE``. The limits the CBOR
+  backend caps are checked with ``_Static_assert``, so the standalone build no
+  longer truncates silently.
+
+* **API version.** ``EDHOC_API_VERSION_MAJOR`` is ``2``, ``_MINOR`` is ``0`` and
+  a new ``EDHOC_API_VERSION_PATCH`` completes the triplet.
+
+Hardening
+*********
+
+Malformed input is now rejected where it used to be processed. Two of these are
+reachable before authentication, from any peer that can deliver a message.
+
+* ``edhoc_message_1_process()`` rejects a message that fails CBOR decoding; it
+  used to keep processing it against a zeroed structure.
+* ``edhoc_message_error_process()`` rejects an ``ERR_INFO`` whose variant does
+  not match ``ERR_CODE`` (RFC 9528: 6); the mismatch used to read a union as a
+  byte string and copy out of bounds.
+* ``edhoc_message_3_process()`` rejects a ``CIPHERTEXT_3`` no longer than the
+  AEAD tag, which is malformed and formed a zero-length VLA in the stack memory
+  backend.
+* A ``kid`` received as a CBOR integer outside the one-byte range -24..23 stands
+  for no byte string at all and is rejected.
+* What ``edhoc_ead.compose`` returns is validated before it reaches the CBOR
+  encoder, which cannot tell a missing buffer from an empty one.
+
 Version 1.15.1
 --------------
 
@@ -545,7 +749,7 @@ Version 1.3.0
 
 :Date: January 27, 2026
 
-* `@magdalena-szumny <https://github.com/magdalenaszumny>`__ : 
+* `@magdalena-szumny <https://github.com/magdalenaszumny>`__ :
 
   * Added EDHOC helpers module with connection ID and buffer utilities.
   * Renamed cipher suite files and functions to edhoc_cipher_suite_X for consistency.
@@ -652,7 +856,7 @@ Version 0.4.0
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added EDHOC error message compose & process with unit tests.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Added EDHOC PRK exporter with unit test.
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : Fixed CDDL models for COSE X.509 chain and COSE X.509 hash.
-  
+
   * added unit test with two certificates for X.509 chain for cipher suite 0.
   * added unit test with one certificate for X.509 chain for cipher suite 2 with multiple EAD tokens.
   * added unit test for X.509 hash for cipher suite 2 with single EAD token.

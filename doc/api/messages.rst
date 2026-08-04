@@ -7,7 +7,7 @@ The EDHOC handshake consists of four messages — ``message_1`` through
 :term:`Responder` composes the even-numbered ones; the matching ``process``
 call consumes a message received from the peer.
 
-| Header file: :file:`include/edhoc.h`
+| Header file: :file:`include/edhoc/edhoc.h`
 
 .. doxygengroup:: edhoc-api-messages
    :project: libedhoc

@@ -1,0 +1,78 @@
+common:
+  tags:
+    - libedhoc
+    - benchmark
+    - edhoc
+  harness: ztest
+  platform_allow:
+    - native_sim
+  integration_platforms:
+    - native_sim
+  timeout: 300
+# One scenario per cipher suite (overlays/cipher_suite_*.conf) x memory backend
+# (overlays/memory_backend_*.conf).
+tests:
+  libedhoc.benchmark.cipher_suite_0.stack:
+    extra_conf_files:
+      - overlays/cipher_suite_0.conf
+      - overlays/memory_backend_stack.conf
+  libedhoc.benchmark.cipher_suite_0.heap:
+    extra_conf_files:
+      - overlays/cipher_suite_0.conf
+      - overlays/memory_backend_heap.conf
+  libedhoc.benchmark.cipher_suite_0.custom:
+    extra_conf_files:
+      - overlays/cipher_suite_0.conf
+      - overlays/memory_backend_custom.conf
+
+  libedhoc.benchmark.cipher_suite_2.stack:
+    extra_conf_files:
+      - overlays/cipher_suite_2.conf
+      - overlays/memory_backend_stack.conf
+  libedhoc.benchmark.cipher_suite_2.heap:
+    extra_conf_files:
+      - overlays/cipher_suite_2.conf
+      - overlays/memory_backend_heap.conf
+  libedhoc.benchmark.cipher_suite_2.custom:
+    extra_conf_files:
+      - overlays/cipher_suite_2.conf
+      - overlays/memory_backend_custom.conf
+
+  libedhoc.benchmark.cipher_suite_4.stack:
+    extra_conf_files:
+      - overlays/cipher_suite_4.conf
+      - overlays/memory_backend_stack.conf
+  libedhoc.benchmark.cipher_suite_4.heap:
+    extra_conf_files:
+      - overlays/cipher_suite_4.conf
+      - overlays/memory_backend_heap.conf
+  libedhoc.benchmark.cipher_suite_4.custom:
+    extra_conf_files:
+      - overlays/cipher_suite_4.conf
+      - overlays/memory_backend_custom.conf
+
+  libedhoc.benchmark.cipher_suite_24.stack:
+    extra_conf_files:
+      - overlays/cipher_suite_24.conf
+      - overlays/memory_backend_stack.conf
+  libedhoc.benchmark.cipher_suite_24.heap:
+    extra_conf_files:
+      - overlays/cipher_suite_24.conf
+      - overlays/memory_backend_heap.conf
+  libedhoc.benchmark.cipher_suite_24.custom:
+    extra_conf_files:
+      - overlays/cipher_suite_24.conf
+      - overlays/memory_backend_custom.conf
+
+  libedhoc.benchmark.cipher_suite_pqc_1.stack:
+    extra_conf_files:
+      - overlays/cipher_suite_pqc_1.conf
+      - overlays/memory_backend_stack.conf
+  libedhoc.benchmark.cipher_suite_pqc_1.heap:
+    extra_conf_files:
+      - overlays/cipher_suite_pqc_1.conf
+      - overlays/memory_backend_heap.conf
+  libedhoc.benchmark.cipher_suite_pqc_1.custom:
+    extra_conf_files:
+      - overlays/cipher_suite_pqc_1.conf
+      - overlays/memory_backend_custom.conf

@@ -1,7 +1,8 @@
 # =============================================================================
-# Source and include lists for vendored third-party dependencies.
+# Source and include lists for the vendored third-party dependencies.
+#
 # Consumed by externals/CMakeLists.txt and externals/zcbor-cmake/CMakeLists.txt.
-# All paths are absolute (CMAKE_CURRENT_LIST_DIR is this file's directory).
+# All paths are absolute.
 # =============================================================================
 
 set(LIBEDHOC_EXTERNALS_DIR ${CMAKE_CURRENT_LIST_DIR}/../externals)

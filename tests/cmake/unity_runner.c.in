@@ -1,0 +1,20 @@
+/*
+ * Generated Unity test-runner entry point.
+ *
+ * This file is produced by configure_file() from unity_runner.c.in for a single
+ * test binary. The @EDHOC_RUN_TEST_GROUPS@ placeholder is expanded by
+ * edhoc_add_unity_test() into one RUN_TEST_GROUP() call per Unity fixture group
+ * that the binary owns. Do not edit the generated copy — edit the template.
+ */
+
+#include <unity.h>
+#include <unity_fixture.h>
+
+static void edhoc_run_test_groups(void)
+{
+@EDHOC_RUN_TEST_GROUPS@}
+
+int main(int argc, const char *argv[])
+{
+	return UnityMain(argc, argv, edhoc_run_test_groups);
+}

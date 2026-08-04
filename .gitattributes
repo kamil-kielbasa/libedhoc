@@ -1,0 +1,21 @@
+# Normalise all tracked text to LF in both the index and the working tree, on
+# every platform. Git auto-detects text vs binary (files containing NUL bytes
+# are treated as binary and left untouched); detected text is stored in the
+# repository and checked out with LF line endings.
+* text=auto eol=lf
+
+# Belt-and-suspenders for common binary assets, in case auto-detection is ever
+# wrong for a newly added file.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary
+*.der  binary
+*.crt  binary
+*.p12  binary
+*.bin  binary
+*.a    binary
+*.so   binary
+*.o    binary

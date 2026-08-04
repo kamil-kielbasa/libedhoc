@@ -167,11 +167,15 @@
  * (=-Werror here), comparing a runtime pointer variable does not. The buffer is
  * zero-initialised to match the heap and custom backends.
  */
+/* NOLINTBEGIN(bugprone-macro-parentheses): type/name are a type-specifier and
+ * a declarator name here, not expressions; parenthesising either breaks the
+ * declaration. */
 #define EDHOC_MEM_ALLOC(type, name, size)                    \
 	EDHOC_ASSERT_FREE_STACK_SIZE((size) * sizeof(type)); \
 	type name##_vla_buf[size];                           \
 	type *name = name##_vla_buf;                         \
 	memset(name, 0, sizeof(name##_vla_buf))
+/* NOLINTEND(bugprone-macro-parentheses) */
 
 #define EDHOC_MEM_ALLOC_SIZEOF(name) sizeof(name##_vla_buf)
 

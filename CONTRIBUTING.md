@@ -1,92 +1,67 @@
 # Contributing to libedhoc
 
-Thanks for your interest in contributing! The steps below describe the
-standard workflow. The same content is also published in the
-[hosted contributing page](https://kamil-kielbasa.github.io/libedhoc/project/contributing.html).
-
-## 1. Clone, fork, and branch
-
-Clone the repository with submodules:
+## Getting the sources
 
 ```bash
 git clone --recurse-submodules https://github.com/kamil-kielbasa/libedhoc.git
-cd libedhoc
 ```
 
-Fork the repository on GitHub, add your fork as a remote, and create a topic
-branch:
-
-```bash
-git remote add fork git@github.com:<you>/libedhoc.git
-git checkout -b feature/my-change
-```
-
-## 2. Set up the workspace (Zephyr)
-
-For Zephyr-based development, initialise a shallow west workspace (same
-flags CI uses):
+For Zephyr work, initialise a west workspace on top of the checkout:
 
 ```bash
 west init -l libedhoc
 west update --narrow -o=--depth=1
 ```
 
-## 3. Build
+## Building, testing, checking
 
-All builds go through the unified `scripts/ci.sh` entry point — the same
-script every CI job calls.
-
-**Linux (GCC):**
+Everything goes through `scripts/ci.sh`, the same entry point every CI job
+calls. Run it without arguments for the command list:
 
 ```bash
-scripts/ci.sh build --gcc
+scripts/ci.sh help          # commands
+scripts/ci.sh list          # build presets
 ```
 
-**Linux (Clang):**
+The usual loop is one preset end to end, then the functional matrix:
 
 ```bash
-scripts/ci.sh build --clang
+scripts/ci.sh ci legacy     # configure, build and test one preset
+scripts/ci.sh matrix        # every cipher suite, method and memory backend
 ```
 
-**Zephyr (west):**
+The remaining commands — `format`, `coverage`, `sanitizers`, `valgrind`,
+`fuzz`, `cppcheck`, `clang-tidy`, `check-headers`, `check-matrix` — mirror the
+jobs in [`.github/workflows/`](.github/workflows/). Read those workflows to see
+what actually runs on a pull request; they are the specification, this file is
+not.
+
+Zephyr is the one thing `ci.sh` does not cover. It is built and run by twister,
+from the west workspace root:
 
 ```bash
-west build -b native_sim libedhoc/sample/benchmark
+ZEPHYR_TOOLCHAIN_VARIANT=host ./zephyr/scripts/twister \
+    --testsuite-root libedhoc/tests/zephyr --platform native_sim \
+    --outdir twister-out --disable-warnings-as-errors
 ```
 
-## 4. Code style
+## Documentation
 
-Run the formatter (clang-format under the hood) through `ci.sh`:
-
-```bash
-scripts/ci.sh format
-```
-
-## 5. Test
-
-Run the test suite and check coverage; fuzzers and sanitised builds (ASan /
-UBSan / Valgrind) are exercised by CI:
+Touching a public header or anything under `doc/` means rebuilding the docs
+warning-free:
 
 ```bash
-scripts/ci.sh test
-```
-
-## 6. Documentation
-
-If you touch a public API or a header documented by Doxygen, rebuild the
-docs locally and confirm there are no warnings:
-
-```bash
+pip install -r doc/requirements.txt
 sphinx-build -W -b html doc doc/_build/html
 ```
 
-## 7. Changelog
+Doxygen must be >= 1.17.0; older versions mis-parse the anonymous unions in
+`include/edhoc/credentials.h` and fail the `-W` build.
 
-Every PR must add an entry to `CHANGELOG.rst` under a new (or the current
-unreleased) version section, briefly summarising the user-visible change.
-PRs without a changelog update will be rejected during review.
+## Pull requests
 
-## 8. Pull request
-
-Open a PR against `main` with a clear description and make sure every CI
-workflow is green.
+* Branch off `main`, open the PR against `main`, and keep every CI workflow
+  green.
+* Add an entry to `CHANGELOG.rst` describing the user-visible change. A PR
+  without one is not reviewed.
+* Run `scripts/ci.sh format` before pushing; CI rejects unformatted code.

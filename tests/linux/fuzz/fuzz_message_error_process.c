@@ -1,0 +1,52 @@
+/**
+ * \file    fuzz_message_error_process.c
+ * \author  Kamil Kielbasa
+ * \brief   libFuzzer harness feeding arbitrary input to
+ *          edhoc_message_error_process().
+ *
+ * \copyright Copyright (c) 2026
+ *
+ */
+
+/* Include files ----------------------------------------------------------- */
+
+/* EDHOC headers: */
+#include <edhoc/edhoc.h>
+#include "edhoc_macros_internal.h"
+
+/* Standard library headers: */
+#include <stdint.h>
+#include <stddef.h>
+
+/* Module defines ---------------------------------------------------------- */
+/* Module types and type definitiones -------------------------------------- */
+/* Module interface variables and constants -------------------------------- */
+/* Static function declarations -------------------------------------------- */
+/* Static variables and constants ------------------------------------------ */
+/* Static function definitions --------------------------------------------- */
+/* Module interface function definitions ----------------------------------- */
+
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
+{
+	enum edhoc_error_code error_code = EDHOC_ERROR_CODE_SUCCESS;
+	int32_t cipher_suites[8] = { 0 };
+	char text_buf[256] = { 0 };
+
+	struct edhoc_error_info error_info = {
+		.text_string = text_buf,
+		.entries_size = sizeof(text_buf),
+		.entries_length = 0,
+	};
+
+	(void)edhoc_message_error_process(data, size, &error_code, &error_info);
+
+	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE == error_code) {
+		error_info.cipher_suites = cipher_suites;
+		error_info.entries_size = ARRAY_SIZE(cipher_suites);
+		error_info.entries_length = 0;
+		(void)edhoc_message_error_process(data, size, &error_code,
+						  &error_info);
+	}
+
+	return 0;
+}

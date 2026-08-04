@@ -2,8 +2,7 @@ Glossary
 ========
 
 This glossary collects the protocol- and library-specific terms used across
-the libedhoc documentation. Each term can be cross-referenced from any page
-with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
+the *libedhoc* documentation.
 
 .. glossary::
    :sorted:
@@ -28,9 +27,10 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       messages are transmitted as a CBOR sequence.
 
    cipher suite
-      Ordered set of AEAD, hash, ECDH and signature algorithms used by
-      EDHOC. libedhoc implements suite ``0`` (X25519 / EdDSA) and suite ``2``
-      (P-256 / ES256).
+      Ordered set of key-exchange, signature, AEAD and hash algorithms used by
+      EDHOC. *libedhoc* ships reference suites ``0``, ``2``, ``4`` and ``24`` and
+      the experimental post-quantum suite ``-24``; see
+      :doc:`../api/cipher_suites`.
 
    CoAP
       Constrained Application Protocol (RFC 7252). The most common transport
@@ -39,7 +39,7 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
    connection identifier
       Short byte string — ``C_I`` chosen by the :term:`Initiator`, ``C_R``
       chosen by the :term:`Responder` — used to correlate EDHOC and
-      :term:`OSCORE` state. See :doc:`../api/helpers`.
+      :term:`OSCORE` state. See :doc:`../api/coap`.
 
    context
       The ``struct edhoc_context`` state object that owns all EDHOC
@@ -60,13 +60,20 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       Certificate Revocation List (RFC 5280). The application may consult a
       CRL inside the credentials interface callback.
 
+   DHKEM
+      The RFC 9180 construction that turns a Diffie-Hellman group into a
+      :term:`KEM`. EDHOC does **not** use DHKEM; *libedhoc*'s classical shim
+      exposes bare :term:`ECDH` so the wire format of :term:`RFC 9528` is
+      preserved.
+
    EAD
       External Authorization Data. Optional, application-defined items
       carried in the ``EAD_1`` … ``EAD_4`` fields of the four EDHOC messages.
 
    ECDH
-      Elliptic-Curve Diffie-Hellman. The ephemeral key-agreement primitive
-      that gives EDHOC its forward secrecy.
+      Elliptic-Curve Diffie-Hellman. The classical ephemeral key-agreement
+      primitive behind EDHOC's :term:`forward secrecy`; in *libedhoc* it is
+      exposed through the :term:`KEM` interface by a thin shim.
 
    EdDSA
       Edwards-curve Digital Signature Algorithm. The signature scheme used
@@ -74,7 +81,7 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
 
    EDHOC
       Ephemeral Diffie-Hellman Over COSE — the lightweight authenticated
-      key-exchange protocol implemented by libedhoc and defined in
+      key-exchange protocol implemented by *libedhoc* and defined in
       :term:`RFC 9528`.
 
    ES256
@@ -85,15 +92,14 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       Security property guaranteeing that past session keys remain safe
       even if long-term authentication keys are later compromised.
 
-   identity protection
-      Security property guaranteeing that a peer's credential identifier is
-      not exposed to passive eavesdroppers (and, for the responder, also
-      not to active attackers). See RFC 9528 §9.
+   handle
+      Opaque reference to a key held in the backend :term:`key store`. *libedhoc*
+      passes secrets by handle, never as raw bytes.
 
-   mutual authentication
-      Security property guaranteeing that, at the end of a successful
-      handshake, each peer has cryptographic evidence of the other peer's
-      identity. See RFC 9528 §9.
+   HKDF
+      HMAC-based Key Derivation Function (RFC 5869). The EDHOC key schedule
+      instantiates ``EDHOC_Extract`` / ``EDHOC_Expand`` with HKDF for the SHA-2
+      suites (and KMAC256 for the SHAKE256 suite).
 
    ID_CRED_I
       COSE-encoded identifier of :term:`CRED_I`.
@@ -101,9 +107,25 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
    ID_CRED_R
       COSE-encoded identifier of :term:`CRED_R`.
 
+   identity protection
+      Security property guaranteeing that a peer's credential identifier is
+      not exposed to passive eavesdroppers (and, for the responder, also
+      not to active attackers). See RFC 9528 §9.
+
    Initiator
       The EDHOC peer that sends ``message_1`` and picks its
       :term:`connection identifier` ``C_I``.
+
+   KEM
+      Key Encapsulation Mechanism. The shape of *libedhoc*'s ephemeral
+      key-exchange interface (``generate_key_pair`` / ``encapsulate`` /
+      ``decapsulate``): :term:`ML-KEM` maps to it directly and classical
+      :term:`ECDH` maps to it through a shim.
+
+   key store
+      Where key :term:`handle`\ s resolve inside the crypto backend — volatile
+      key slots in software, a :term:`TrustZone` secure world or a
+      :term:`secure element`. Secrets never leave it.
 
    kid
       COSE Key Identifier header parameter (RFC 9052, label ``4``). One of
@@ -113,9 +135,31 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       Lightweight Authenticated Key Exchange — the IETF Working Group that
       standardised EDHOC.
 
+   ML-DSA
+      Module-Lattice Digital Signature Algorithm (FIPS 204). The post-quantum
+      signature scheme of the experimental cipher suite ``-24``.
+
+   ML-KEM
+      Module-Lattice Key Encapsulation Mechanism (FIPS 203). The post-quantum
+      :term:`KEM` of the experimental cipher suite ``-24``.
+
+   mutual authentication
+      Security property guaranteeing that, at the end of a successful
+      handshake, each peer has cryptographic evidence of the other peer's
+      identity. See RFC 9528 §9.
+
+   NIKE
+      Non-Interactive Key Exchange — a Diffie-Hellman-style primitive where
+      both parties hold long-lived key pairs. Static-DH authentication
+      (methods 1/2/3) requires a NIKE suite.
+
    OSCORE
       Object Security for Constrained RESTful Environments (RFC 8613). The
       primary consumer of the keys exported by EDHOC.
+
+   PQC
+      Post-Quantum Cryptography — algorithms designed to resist attacks by a
+      quantum computer, such as :term:`ML-KEM` and :term:`ML-DSA`.
 
    PRK
       Pseudo-Random Key — intermediate value in the EDHOC key schedule
@@ -124,6 +168,11 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
    PRK exporter
       The interface that derives application keys (e.g. OSCORE Master Secret
       and Master Salt) from ``PRK_out``.
+
+   PSA
+      Platform Security Architecture. The Arm-defined crypto API (implemented
+      by mbed TLS and by secure enclaves) whose key-handle model *libedhoc*
+      follows.
 
    Responder
       The EDHOC peer that replies with ``message_2`` and picks its
@@ -139,6 +188,19 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       al., IETF Informational, March 2024. The test-vector traces used for
       conformance testing.
 
+   RFC 9668
+      *Using EDHOC with the Constrained Application Protocol (CoAP) and OSCORE*
+      — IETF Standards Track. Profiles EDHOC over CoAP and the combined
+      EDHOC + OSCORE flow.
+
+   secure element
+      A dedicated tamper-resistant chip that stores keys and performs
+      cryptography, exposing keys only by :term:`handle`.
+
+   SHAKE256
+      Extendable-output function from the SHA-3 family (FIPS 202), used as the
+      hash of the experimental post-quantum cipher suite ``-24``.
+
    signature key
       Long-term private key used to sign EDHOC handshake messages when the
       selected :term:`authentication method` calls for signature-based
@@ -148,12 +210,21 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       Long-term Diffie-Hellman key used for authentication when the selected
       :term:`authentication method` calls for static-DH authentication.
 
+   TF-M
+      Trusted Firmware-M — the reference secure-world firmware for Arm
+      :term:`TrustZone`-M; it can host the :term:`key store` on Cortex-M
+      devices.
+
    transcript hash
       Running hash (``TH_2``, ``TH_3``, ``TH_4``) that binds the EDHOC
       messages together cryptographically.
 
+   TrustZone
+      Arm's hardware security extension that partitions a CPU into a normal and
+      a secure world; the secure world can host the :term:`key store`.
+
    VLA
-      Variable-Length Array — the C99 feature used by libedhoc's default
+      Variable-Length Array — the C99 feature used by *libedhoc*'s default
       stack memory backend to keep handshake state on the stack with no heap
       allocations. Optional heap and custom memory backends are also available.
 
@@ -165,10 +236,15 @@ with the ``:term:`` role, e.g. :literal:`:term:\`EDHOC\``.
       COSE header parameter ``34`` (RFC 9360) carrying the hash of an X.509
       certificate.
 
+   zeroize
+      Overwrite a buffer to erase sensitive data in a way the compiler may not
+      elide. *libedhoc*'s mandatory platform ``zeroize`` callback (see
+      :doc:`../api/platform`) wipes every transient secret after use.
+
 .. seealso::
 
-   :doc:`../getting_started/concepts`
-       Higher-level explanation of the EDHOC mental model.
+   :doc:`../getting_started/introduction`
+       Higher-level introduction to EDHOC and *libedhoc*.
 
    :doc:`links`
        Index of the RFCs and external resources referenced from the

@@ -1,6 +1,10 @@
 Configuration
 =============
 
+*libedhoc* is configured at compile time. On Zephyr the options below are
+ordinary ``CONFIG_*`` Kconfig symbols; on other targets they are passed as
+compiler defines (see `Supported targets`_).
+
 Kconfig library configuration
 *****************************
 
@@ -9,106 +13,128 @@ Kconfig library configuration
   :class: highlight
 
 :C:`LIBEDHOC_ENABLE`
-    | Enable building libedhoc for Zephyr target.
+    | Enable building *libedhoc* for the Zephyr target.
 
 :C:`LIBEDHOC_KEY_ID_LEN`
-    | Key identifier length in bytes.
+    | Size of the opaque key handle the library stores to reference a key
+      inside the crypto backend's key store.
+    | Must match the handle size of the bound backend.
 
 :C:`LIBEDHOC_MAX_NR_OF_CIPHER_SUITES`
-    | Maximum number of cipher suites in chain for negotiation.
+    | Capacity of the cipher suite list a peer may offer or accept.
     | Values greater than ``3`` require regeneration of the CBOR backend.
+
+:C:`LIBEDHOC_MAX_NR_OF_METHODS`
+    | Capacity of the method list a peer may offer or accept, from ``1`` to
+      ``4``.
 
 :C:`LIBEDHOC_MAX_LEN_OF_CONN_ID`
-    | Maximum length of connection identifier in bytes.
+    | Longest connection identifier (C_I / C_R) this peer accepts.
+    | Identifiers are byte strings; one byte covers the range that
+      RFC 9528: 3.3.2 sends as a bare CBOR integer, which is the common case.
 
-:C:`LIBEDHOC_MAX_LEN_OF_ECC_KEY`
-    | Maximum length of ECC (Elliptic Curve Cryptography) key in bytes.
+:C:`LIBEDHOC_MAX_LEN_OF_KEM_ENCAPSULATION_KEY`
+    | Buffer holding the ephemeral encapsulation key (``G_X``).
+    | Set it to the largest suite you build in: ``32`` for X25519, ``65`` for
+      P-256, ``97`` for P-384, ``800`` for ML-KEM-512.
+
+:C:`LIBEDHOC_MAX_LEN_OF_KEM_CIPHERTEXT`
+    | Buffer holding the ephemeral ciphertext (``G_Y``).
+    | Set it to the largest suite you build in: ``32`` for X25519, ``65`` for
+      P-256, ``97`` for P-384, ``768`` for ML-KEM-512.
 
 :C:`LIBEDHOC_MAX_LEN_OF_MAC`
-    | Maximum length of hash in bytes.
+    | Buffers holding a transcript hash or a MAC.
+    | Set it to the hash length of the largest suite you build in: ``32`` for
+      SHA-256, ``48`` for SHA-384, ``64`` for SHA-512 and SHAKE256.
 
 :C:`LIBEDHOC_MAX_NR_OF_EAD_TOKENS`
-    | Maximum number of EAD (External Authorization Data) tokens.
-    | Values greater than ``3`` require regeneration of the CBOR backend.
-
-:C:`LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN`
-    | Maximum number of certificates in X.509 chain.
+    | Capacity of the EAD (External Authorization Data) token list carried in
+      each message. Set to ``0`` to disable EAD.
     | Values greater than ``3`` require regeneration of the CBOR backend.
 
 :C:`LIBEDHOC_MAX_LEN_OF_CRED_KEY_ID`
-    | Maximum length of authentication credentials key identifier in bytes.
+    | Longest COSE ``kid`` key identifier this peer accepts, from ``1`` to
+      ``32``.
 
-:C:`LIBEDHOC_MAX_LEN_OF_HASH_ALG`
-    | Maximum length of authentication credentials hash algorithm in bytes.
+:C:`LIBEDHOC_MAX_NR_OF_CERTS_IN_X509_CHAIN`
+    | Capacity of the ``x5chain`` certificate list, from ``1`` to ``3``.
+    | Values greater than ``3`` require regeneration of the CBOR backend.
 
-Linux target
-************
+Reference cipher suites
+***********************
 
-| All configuration parameters listed above must be passed as compiler defines during the build.
-| Each must be prefixed with :C:`CONFIG_`.
+Each bundled reference cipher suite has its own gate. A disabled suite is not
+compiled in, and both :c:func:`edhoc_cipher_suite_get_params` and
+:c:func:`edhoc_cipher_suite_get_crypto` return ``NULL`` for it.
 
-| The build generates a :file:`edhoc_config.h` header (from
-  :file:`cmake/edhoc_config.h.in`) on the public include path, capturing the
-  values the library was built with. Each value is guarded with ``#ifndef``, so
-  a command-line :C:`-DCONFIG_LIBEDHOC_*` still wins. This header is installed
-  next to the public headers, so a consumer compiling against an installed
-  libedhoc (or via :C:`find_package(libedhoc)`) inherits the exact build-time
-  configuration without re-passing any defines.
+.. list-table::
+   :header-rows: 1
 
-Zephyr target
-*************
-
-| The library can be used as a Zephyr module. A west manifest is provided for easy integration.
-
-**Initialize workspace:**
-
-.. code-block:: bash
-
-   west init -l libedhoc
-   west update
-
-**Build sample application:**
-
-.. code-block:: bash
-
-   west build -b native_sim libedhoc/sample/benchmark
-
-| All Kconfig options are automatically prefixed with :C:`CONFIG_` by the Zephyr build system.
-| Dependencies (zcbor, mbedtls) are automatically pulled via the west manifest.
+   * - Symbol
+     - Suite
+   * - :C:`LIBEDHOC_CIPHER_SUITE_0_ENABLE`
+     - X25519 / EdDSA / AES-CCM-16-64-128 / SHA-256
+   * - :C:`LIBEDHOC_CIPHER_SUITE_2_ENABLE`
+     - P-256 / ES256 / AES-CCM-16-64-128 / SHA-256
+   * - :C:`LIBEDHOC_CIPHER_SUITE_4_ENABLE`
+     - X25519 / EdDSA / ChaCha20-Poly1305 / SHA-256
+   * - :C:`LIBEDHOC_CIPHER_SUITE_24_ENABLE`
+     - P-384 / ES384 / A256GCM / SHA-384
+   * - :C:`LIBEDHOC_CIPHER_SUITE_PQC_1_ENABLE`
+     - ML-KEM-512 / ML-DSA-44 / AES-CCM-16-128-128 / SHAKE256
 
 Logging
 *******
 
-The logging module provides compile-time configurable log levels via
-``CONFIG_LIBEDHOC_LOG_LEVEL``. It is a single, self-contained backend header:
-
-* :file:`backends/log/include/edhoc_backend_log.h`
+Set the compile-time log level with ``CONFIG_LIBEDHOC_LOG_LEVEL``; each level
+enables the ones below it:
 
 .. list-table::
    :header-rows: 1
 
    * - Level
-     - Macro
      - Value
-   * - None
-     - ``EDHOC_LOG_LEVEL_NONE``
+   * - ``EDHOC_LOG_LEVEL_NONE`` (default)
      - 0
-   * - Error
-     - ``EDHOC_LOG_LEVEL_ERR``
+   * - ``EDHOC_LOG_LEVEL_ERR``
      - 1
-   * - Warning
-     - ``EDHOC_LOG_LEVEL_WRN``
+   * - ``EDHOC_LOG_LEVEL_WRN``
      - 2
-   * - Info
-     - ``EDHOC_LOG_LEVEL_INF``
+   * - ``EDHOC_LOG_LEVEL_INF``
      - 3
-   * - Debug
-     - ``EDHOC_LOG_LEVEL_DBG``
+   * - ``EDHOC_LOG_LEVEL_DBG``
      - 4
 
-Set ``CONFIG_LIBEDHOC_LOG_LEVEL`` to the desired level during compilation.
-Each level enables all levels below it. The backend selects its
-implementation at compile time with the ``__ZEPHYR__`` preprocessor macro:
-on Zephyr it delegates to the Zephyr logging subsystem, and on every other
-build it outputs timestamped, colour-coded messages to ``stdout`` /
-``stderr``.
+Memory backend
+**************
+
+*libedhoc* allocates its handshake working buffers through a compile-time
+selectable backend, chosen with ``CONFIG_LIBEDHOC_MEM_BACKEND``:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Backend
+     - Value
+     - Notes
+   * - Stack
+     - ``0``
+     - C99 variable-length arrays; no heap, zero static RAM (default).
+   * - Heap
+     - ``1``
+     - ``calloc`` / ``k_calloc``; needs a heap sized for the working set.
+   * - Custom
+     - ``2``
+     - Application-provided ``edhoc_mem_alloc`` / ``edhoc_mem_free``.
+
+Supported targets
+*****************
+
+*libedhoc* is portable C and is regularly built and tested on:
+
+* **Linux** — via CMake. Pass the options above as ``-DCONFIG_LIBEDHOC_*``, or
+  consume an installed build through ``find_package(libedhoc)`` (the generated
+  :file:`edhoc_config.h` carries the build-time configuration).
+* **Zephyr RTOS** — as a west module. The options above are ordinary Kconfig
+  symbols and the dependencies (zcbor, mbedTLS) are pulled by the manifest.

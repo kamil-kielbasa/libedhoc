@@ -1,16 +1,12 @@
 # =============================================================================
 # libedhoc_target_warnings(<target> <STRICT|TEST>)
 #
-# Single source of truth for the project's warning flags.
+# STRICT — production code. TEST — test and fuzz code, which relaxes the few
+# warnings that Unity macros and CBOR test vectors legitimately trip.
+# All flags are PRIVATE and never propagate to consumers.
 #
-# Two profiles, sharing one common base:
-#   STRICT — production code (the core library). Maximal strictness.
-#   TEST   — test / fuzz code. Same base, but a few warnings are turned into
-#            -Wno-* because Unity macros and CBOR test vectors legitimately
-#            trip them (nested externs, missing declarations, sign conversion).
-#
-# All flags are added PRIVATE: warnings are a build concern of THIS target and
-# must never propagate to consumers.
+# Clang's -Weverything is a development tool, tied to one clang version by the
+# denials below, so it applies only when libedhoc is the top-level project.
 # =============================================================================
 
 function(libedhoc_target_warnings target profile)
@@ -30,14 +26,29 @@ function(libedhoc_target_warnings target profile)
     # --- Profile-specific additions ------------------------------------------
     if(profile STREQUAL "STRICT")
         list(APPEND base -Wsign-conversion -Wmissing-declarations -Wnested-externs)
-        set(extra_gcc   -Wswitch-enum -Wjump-misses-init)
-        set(extra_clang -Wno-vla -Wno-declaration-after-statement
-                        -Wno-covered-switch-default -Wno-padded -Wno-switch-default)
+        set(extra_gcc   -Wswitch-enum -Wswitch-default -Wjump-misses-init)
+        set(extra_clang "")
+        # -Weverything must come first; everything after it is a deliberate
+        # exception, each of which fights C itself rather than a defect.
+        if(PROJECT_IS_TOP_LEVEL)
+            set(extra_clang
+                -Weverything
+                -Wno-cast-qual                    # one key-slot accessor serves
+                                                  # the backend's read and write roles
+                -Wno-covered-switch-default       # every enum switch carries a
+                                                  # default for out-of-range values
+                -Wno-declaration-after-statement  # the project is C11
+                -Wno-padded                       # informational; struct layout
+                -Wno-unsafe-buffer-usage          # C has no bounds-safe alternative
+                -Wno-vla)                         # the stack backend allocates VLAs
+            if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 20)
+                list(APPEND extra_clang
+                    -Wno-format-signedness
+                    -Wno-pre-c11-compat)          # the project is C11
+            endif()
+        endif()
     elseif(profile STREQUAL "TEST")
-        # Suppressed for test code:
-        #  - missing-declarations / nested-externs: Unity declares test
-        #    functions via macros and uses nested extern declarations.
-        #  - sign-conversion: test vectors store negative CBOR ints in uint8_t.
+        # Unity declares tests via macros; test vectors store negative CBOR ints.
         list(APPEND base -Wno-missing-declarations -Wno-sign-conversion)
         set(extra_gcc   -Wno-nested-externs)
         set(extra_clang "")
@@ -51,14 +62,5 @@ function(libedhoc_target_warnings target profile)
         target_compile_options(${target} PRIVATE ${base} ${base_gcc} ${extra_gcc})
     elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
         target_compile_options(${target} PRIVATE ${base} ${extra_clang})
-        # -Wunsafe-buffer-usage is a newer Clang warning that is far too noisy
-        # for this code base; silence it only on STRICT and only where supported.
-        if(profile STREQUAL "STRICT")
-            include(CheckCCompilerFlag)
-            check_c_compiler_flag(-Wunsafe-buffer-usage HAS_WUNSAFE_BUFFER_USAGE)
-            if(HAS_WUNSAFE_BUFFER_USAGE)
-                target_compile_options(${target} PRIVATE -Wno-unsafe-buffer-usage)
-            endif()
-        endif()
     endif()
 endfunction()

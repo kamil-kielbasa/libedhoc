@@ -2,21 +2,19 @@ name: CI / Zephyr
 
 on: [push, pull_request]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build-zephyr-benchmark:
+  twister:
+    name: Twister (native_sim benchmark)
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/zephyrproject-rtos/ci-base:v0.26.13
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Default stack (VLA) backend.
-          - backend: stack
-            build_args: ""
-          # Heap backend exercises the k_calloc / k_free allocation path.
-          - backend: heap
-            build_args: '-- -DEXTRA_CONF_FILE=overlays/overlay-heap.conf'
+      image: ghcr.io/zephyrproject-rtos/ci-base:v0.29.2
 
     steps:
       - name: Checkout
@@ -36,36 +34,45 @@ jobs:
         run: |
           pip install -r zephyr/scripts/requirements-base.txt
 
-      - name: Build benchmark for native_sim (${{ matrix.backend }})
+      # -W: liboqs (third-party) isn't -Werror-clean; our code is checked by the
+      # Linux matrix.
+      - name: Twister - build + run libedhoc benchmark (native_sim)
         env:
           ZEPHYR_TOOLCHAIN_VARIANT: host
         run: |
-          west build -b native_sim libedhoc/sample/benchmark -p always ${{ matrix.build_args }}
+          ./zephyr/scripts/twister \
+            --testsuite-root libedhoc/tests/zephyr \
+            --platform native_sim \
+            --outdir twister-out \
+            --disable-warnings-as-errors \
+            --inline-logs --verbose
 
-      - name: Flash / RAM analysis
+      # Re-run each benchmark binary (one per cipher suite x memory backend, e.g.
+      # cipher_suite_2.stack) to capture its libedhoc flash footprint and
+      # per-phase timing JSON.
+      - name: Benchmark flash / RAM + timing analysis
+        if: always()
         run: |
-          echo "=== libedhoc flash footprint (from nm) ===" | tee build/flash_report.txt
-          nm --print-size --size-sort --defined-only build/zephyr/zephyr.exe \
-            | grep -i edhoc \
-            | awk '{printf "%6d  %s\n", strtonum("0x"$2), $4}' \
-            | sort -rn \
-            | tee -a build/flash_report.txt
-          echo "---" | tee -a build/flash_report.txt
-          nm --print-size --size-sort --defined-only build/zephyr/zephyr.exe \
-            | grep -i edhoc \
-            | awk '{sum += strtonum("0x"$2)} END {printf "libedhoc total: %d bytes (%.1f KiB)\n", sum, sum/1024}' \
-            | tee -a build/flash_report.txt
+          report=twister-out/flash_report.txt
+          : > "$report"
+          for exe in $(find twister-out -name zephyr.exe -path '*benchmark*' | sort); do
+            # .../<scenario>/zephyr/zephyr.exe -> scenario label
+            label=$(basename "$(dirname "$(dirname "$exe")")" | sed 's/^libedhoc\.benchmark\.//')
+            echo "=== ${label}: libedhoc flash footprint (bytes) ===" | tee -a "$report"
+            nm --print-size --size-sort --radix=d --defined-only "$exe" \
+              | awk '/edhoc/ { total += $2; printf "%8d  %s\n", $2, $4 }
+                     END     { printf "total: %d bytes (%.1f KiB)\n", total, total / 1024 }' \
+              | tee -a "$report"
+            "$exe" 2>/dev/null | sed -n '/^{/,/^}/p' > "twister-out/benchmark_timing_${label}.json"
+          done
 
-      - name: Run benchmark
-        run: |
-          ./build/zephyr/zephyr.exe 2>/dev/null \
-            | sed -n '/^{/,/^}/p' \
-            | tee build/benchmark_timing.json
-
-      - name: Upload benchmark artifacts
+      - name: Upload Twister + benchmark artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: zephyr-benchmark-native_sim-${{ matrix.backend }}
+          name: zephyr-twister-native_sim
           path: |
-            build/flash_report.txt
-            build/benchmark_timing.json
+            twister-out/twister.xml
+            twister-out/flash_report.txt
+            twister-out/benchmark_timing_*.json
+

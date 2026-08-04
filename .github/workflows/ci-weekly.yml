@@ -2,8 +2,11 @@ name: CI / Weekly
 
 on:
   schedule:
-    - cron: '0 3 * * 1'  # Every Monday at 03:00 UTC
-  workflow_dispatch:       # Allow manual trigger
+    - cron: '0 8 * * 1'  # Mondays 09:00 CET (08:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   full-pipeline:
@@ -20,18 +23,29 @@ jobs:
       - name: Install dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y lcov clang clang-tidy cppcheck ninja-build valgrind xsltproc"
+          command: "sudo apt-get update && sudo apt-get install -y gcovr clang-tidy cppcheck xsltproc ninja-build valgrind"
+
+      # clang-20 is not in the Ubuntu 24.04 repos. The version is pinned because
+      # -Weverything makes every new clang diagnostic a build error.
+      - name: Install clang-20 (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && sudo bash /tmp/llvm.sh 20"
+
+      - name: Check matrix (anti-skip)
+        run: bash scripts/ci.sh check-matrix
+
+      - name: Full functional matrix
+        run: bash scripts/ci.sh matrix
 
       - name: GCC + Coverage
         run: bash scripts/ci.sh coverage
 
       - name: Clang build + test
-        run: |
-          bash scripts/ci.sh build --clang
-          bash scripts/ci.sh test
+        run: bash scripts/ci.sh ci clang
 
       - name: ASan + UBSan
-        run: bash scripts/ci.sh sanitizers asan-ubsan
+        run: bash scripts/ci.sh sanitizers
 
       - name: Valgrind
         run: bash scripts/ci.sh valgrind

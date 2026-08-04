@@ -1,20 +1,21 @@
 # =============================================================================
 # Standalone zcbor build for the sandbox / find_package install flow.
-# Source lists come from cmake/externals_sources.cmake.
+#
+# Source lists come from externals/sources.cmake.
 # =============================================================================
 
 cmake_minimum_required(VERSION 3.20)
 project(zcbor)
 enable_language(C)
 
-include(${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/externals_sources.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../sources.cmake)
 
 # --- Library -----------------------------------------------------------------
 
 add_library(${PROJECT_NAME} STATIC ${LIBEDHOC_ZCBOR_SOURCES})
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE ${LIBEDHOC_ZCBOR_COMPILE_DEFINITIONS})
-target_include_directories(${PROJECT_NAME} PUBLIC ${LIBEDHOC_ZCBOR_INCLUDE_DIR})
+target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${LIBEDHOC_ZCBOR_INCLUDE_DIR})
 
 # --- Install -----------------------------------------------------------------
 

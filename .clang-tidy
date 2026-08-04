@@ -11,8 +11,13 @@ Checks: >
   -cert-dcl51-c,
   -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
 
-WarningsAsErrors: ''
+WarningsAsErrors: 'misc-include-cleaner'
 
-HeaderFilterRegex: '/(include/edhoc|library/|helpers/|port/|backends/).*\.h$'
+HeaderFilterRegex: '/(include/edhoc|library/|port/|backends/).*\.h$'
+
+CheckOptions:
+  # Third-party umbrella headers are the documented entry point; include-cleaner
+  # would otherwise demand their private sub-headers.
+  misc-include-cleaner.IgnoreHeaders: 'psa/.*;mbedtls/.*;tf-psa-crypto/.*;oqs/.*;compact_.*;SP800-185\.h;KeccakHash\.h;zephyr/.*;bits/.*;sys/.*;pthread\.h;unity.*;.*/unity.*'
 
 FormatStyle: none

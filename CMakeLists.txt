@@ -1,9 +1,13 @@
+# =============================================================================
+# libedhoc — EDHOC (RFC 9528) implementation.
+#
+# Standalone (host) build. The Zephyr build enters through zephyr/CMakeLists.txt
+# and never reads this file.
+# =============================================================================
+
 cmake_minimum_required(VERSION 3.21)
 project(libedhoc VERSION 1.15.1 LANGUAGES C)
 
-# The public headers use C11 anonymous unions, so the library is C11. (The old
-# `set_property(GLOBAL PROPERTY C_STANDARD 99)` was a no-op — C_STANDARD is a
-# target property — so this was silently compiling as the gnu11 default.)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
@@ -11,76 +15,79 @@ set(CMAKE_C_EXTENSIONS ON)
 include(GNUInstallDirs)
 
 # --- Options -----------------------------------------------------------------
-# Tests default ON only when libedhoc is the top-level project: a parent doing
-# add_subdirectory()/FetchContent gets the library, not the tests.
+
+# Tests default ON only when libedhoc is the top-level project.
 option(LIBEDHOC_ENABLE_TESTS "Build module tests" ${PROJECT_IS_TOP_LEVEL})
 option(LIBEDHOC_BUILD_EXTERNAL_DEPS "Use vendored submodule dependencies"  ON)
 option(LIBEDHOC_ENABLE_COVERAGE     "Code coverage instrumentation (gcov)" OFF)
 option(LIBEDHOC_ENABLE_SANITIZERS   "AddressSanitizer + UndefinedBehaviorSanitizer" OFF)
 option(LIBEDHOC_ENABLE_FUZZING      "libFuzzer fuzz targets (Clang)"       OFF)
-option(LIBEDHOC_ENABLE_EXPERIMENTAL_PQC "Build experimental PQC cipher suite 1 helper (liboqs)" OFF)
 
-# --- Shared CMake helpers ----------------------------------------------------
-# Defined at top scope so libedhoc_target_warnings() is visible in every
-# add_subdirectory() (library, tests, fuzz).
+# Included at top scope so libedhoc_target_warnings() is visible in every subdirectory.
 include(cmake/warnings.cmake)
 
-# --- Dependencies (submodules OR find_package) -------------------------------
-include(cmake/dependencies.cmake)
-
 # --- Targets -----------------------------------------------------------------
-# Order matters: backends define backend_* (used by include/library/helpers).
-add_subdirectory(backends)
+
+# include/ sets the CONFIG_* cache defaults that externals/ gates on, so it must
+# be processed before dependencies.cmake.
 add_subdirectory(include)
-add_subdirectory(helpers)
+include(cmake/dependencies.cmake)
+add_subdirectory(backends)
 add_subdirectory(library)
 
 if(LIBEDHOC_ENABLE_TESTS)
+    enable_testing()
     add_subdirectory(tests)
 endif()
 if(LIBEDHOC_ENABLE_FUZZING)
-    add_subdirectory(tests/fuzz)
+    add_subdirectory(tests/linux/fuzz)
 endif()
 
 # --- Install / packaging -----------------------------------------------------
+
 # Only meaningful for a standalone install against system dependencies.
 if(PROJECT_IS_TOP_LEVEL AND NOT LIBEDHOC_BUILD_EXTERNAL_DEPS)
     include(CMakePackageConfigHelpers)
+    # LIBEDHOC_CIPHER_SUITE_SOURCES is set in library/ and does not reach here.
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/sources.cmake)
     set(LIBEDHOC_CMAKE_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/libedhoc)
 
-    # All targets reachable from the export must be installed together. Backends
-    # are PRIVATE on the core but still appear as $<LINK_ONLY:> in the export, so
-    # they have to travel with it.
+    # Backends are PRIVATE on the core but still appear in the export, so they
+    # have to be installed with it.
     install(TARGETS libedhoc libedhoc_api
                     backend_cbor backend_memory backend_log
-                    libedhoc_helpers
+                    libedhoc_cipher_suites
         EXPORT  libedhoc-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-    # NAMESPACE makes the imported targets match the in-tree aliases exactly:
-    # consumers always write libedhoc::edhoc, whether via find_package,
-    # add_subdirectory, or FetchContent.
     install(EXPORT libedhoc-targets
         NAMESPACE   libedhoc::
         DESTINATION ${LIBEDHOC_CMAKE_DIR})
 
-    # Public headers + generated config, flat in <prefix>/include. Backend +
-    # helper headers go here too, so the helper sources can be recompiled by a
-    # downstream consumer (they #include "edhoc_backend_log.h" unqualified).
+    # Public headers and the generated config, flat in <prefix>/include.
     install(DIRECTORY include/ ${LIBEDHOC_GENERATED_DIR}/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+
+    # Backend and internal headers are included unqualified by the reference
+    # cipher-suite sources, so a consumer recompiling them needs these too.
     install(DIRECTORY backends/cbor/include/ backends/memory/include/
-                      backends/log/include/ helpers/include/
+                      backends/log/include/
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+    install(FILES library/internal/edhoc_macros_internal.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    install(DIRECTORY library/cipher_suites/cipher_suite_0/
+                      library/cipher_suites/cipher_suite_2/
+                      library/cipher_suites/cipher_suite_24/
+                      library/cipher_suites/cipher_suite_pqc_1/
+                      library/cipher_suites/common/
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
 
-    # Helper *sources* are examples/convenience, not library code → share/,
-    # never the cmake-package dir.
-    install(FILES ${LIBEDHOC_HELPERS_SOURCES}
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/libedhoc/helpers/src)
+    # Reference cipher-suite sources are examples, not library code.
+    install(FILES ${LIBEDHOC_CIPHER_SUITE_SOURCES}
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/libedhoc/cipher_suites/src)
 
-    # find_package(libedhoc) re-resolves zcbor (PUBLIC on backend_cbor) — without
-    # this, the imported backend_cbor would reference an unknown 'zcbor' target.
+    # zcbor is PUBLIC on backend_cbor, so find_package(libedhoc) must re-resolve it.
     configure_package_config_file(
         cmake/project-config.cmake.in
         ${CMAKE_CURRENT_BINARY_DIR}/libedhoc-config.cmake

@@ -1,23 +1,32 @@
 Cryptographic Interface
 =======================
 
-libedhoc never touches raw key material directly: all cryptographic primitives
-are reached through two user-supplied callback interfaces — the **keys
-interface** for key import/generation/destruction by identifier, and the
-**operations interface** for ECDH, AEAD, hash, HKDF, signing and
-verification. Private :term:`signature key`\ s and :term:`static DH key`\ s
-are referenced by identifier only.
+*libedhoc* computes no cryptography itself: every primitive is reached through a
+single user-supplied callback interface, the **operations interface**:
 
-A pair of ready-made bindings for :term:`cipher suite` 0 and 2 against
-mbed TLS / PSA Crypto lives under ``helpers/`` and is documented on
-:doc:`helpers`.
+* **Ephemeral key exchange** — a :term:`KEM`: ``generate_key_pair`` /
+  ``encapsulate`` / ``decapsulate``.
+* **Static Diffie-Hellman** — ``key_agreement`` (:term:`NIKE` suites, methods
+  1/2/3).
+* **AEAD** — ``aead_encrypt`` / ``aead_decrypt``.
+* **Hash** — multipart ``hash_init`` / ``hash_update`` / ``hash_finish``.
+* **Key derivation** — :term:`HKDF` ``extract`` / ``expand`` (handle and raw
+  forms).
+* **Signature** — ``sign`` / ``verify``.
 
-| Header file: :file:`include/edhoc_crypto.h`
+Keys never cross the boundary as raw bytes: they live in the backend
+:term:`key store` and are passed by opaque :term:`handle` only, and each
+derived handle carries the key-usage policy it will serve.
 
-Keys
-----
+Ready-made, production-ready bindings for every supported suite live under
+``library/cipher_suites/``; see :doc:`cipher_suites`.
 
-.. doxygengroup:: edhoc-interface-crypto-keys
+| Header file: :file:`include/edhoc/crypto.h`
+
+Key usage
+---------
+
+.. doxygengroup:: edhoc-interface-crypto-usage
    :project: libedhoc
    :members:
 

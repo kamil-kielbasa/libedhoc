@@ -10,6 +10,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docs:
     runs-on: ubuntu-latest
@@ -21,7 +25,13 @@ jobs:
       - name: Install apt dependencies (with retry)
         uses: ./.github/actions/retry
         with:
-          command: "sudo apt-get update && sudo apt-get install -y doxygen graphviz"
+          command: "sudo apt-get update && sudo apt-get install -y graphviz"
+      # apt's doxygen 1.9.8 mis-parses the anonymous unions in credentials.h
+      # under -W; pin 1.17.0 from the GitHub release (doxygen.nl returns 415).
+      - name: Install doxygen 1.17.0
+        run: |
+          curl -fsSL --retry 3 https://github.com/doxygen/doxygen/releases/download/Release_1_17_0/doxygen-1.17.0.linux.bin.tar.gz | sudo tar -xz -C /opt
+          echo "/opt/doxygen-1.17.0/bin" >> "$GITHUB_PATH"
       - name: Install Python dependencies
         run: pip install -r doc/requirements.txt
       - name: Sphinx build

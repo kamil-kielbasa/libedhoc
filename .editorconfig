@@ -1,0 +1,55 @@
+# EditorConfig — https://editorconfig.org
+#
+# Mirrors .clang-format (UseTab: Always, IndentWidth/TabWidth 8, ColumnLimit 80)
+# and the repository's LF line-ending policy (see .gitattributes).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# C sources and headers: tab indentation, 8-wide, 80-column limit.
+[*.{c,h}]
+indent_style = tab
+indent_size = 8
+max_line_length = 80
+
+# Kconfig: 4-space indentation.
+[{Kconfig,Kconfig.*}]
+indent_style = space
+indent_size = 4
+
+# Shell scripts: 4-space indentation.
+[*.sh]
+indent_style = space
+indent_size = 4
+
+# CMake: 4-space indentation.
+[{CMakeLists.txt,*.cmake}]
+indent_style = space
+indent_size = 4
+
+# Data / markup: 2-space indentation.
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Python: PEP 8, 4-space indentation.
+[*.py]
+indent_style = space
+indent_size = 4
+
+# reStructuredText documentation.
+[*.rst]
+indent_style = space
+indent_size = 3
+
+# Markdown: keep trailing whitespace (hard line breaks).
+[*.md]
+trim_trailing_whitespace = false
+
+# Makefiles require real tabs.
+[Makefile]
+indent_style = tab
