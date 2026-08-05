@@ -342,7 +342,7 @@ TEST(internals_mac, mac_ctx_x509_chain)
 				.length = sizeof(dummy_cert) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -383,7 +383,7 @@ TEST(internals_mac, mac_ctx_x509_hash_int)
 				.length = sizeof(dummy_cert) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -426,7 +426,7 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr)
 				.length = sizeof(dummy_cert) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -461,7 +461,7 @@ TEST(internals_mac, mac_ctx_kid_int)
 				.length = sizeof(dummy_cred) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -498,7 +498,7 @@ TEST(internals_mac, mac_ctx_kid_bstr)
 				.length = sizeof(dummy_cred) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -537,7 +537,7 @@ TEST(internals_mac, mac_ctx_bstr_cid)
 				.length = sizeof(dummy_cert) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -581,7 +581,7 @@ TEST(internals_mac, mac_ctx_with_ead)
 				.length = sizeof(dummy_cert) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -619,7 +619,7 @@ TEST(internals_mac, mac_ctx_initiator_msg2)
 				.length = sizeof(dummy_cert) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -641,7 +641,7 @@ TEST(internals_mac, mac_ctx_null_args)
 
 	const struct edhoc_credential_material_asymmetric material = { 0 };
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -670,7 +670,7 @@ TEST(internals_mac, mac_ctx_invalid_role)
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -693,7 +693,7 @@ TEST(internals_mac, mac_ctx_invalid_message)
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -721,7 +721,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg2)
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -747,7 +747,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg3)
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -775,7 +775,7 @@ TEST(internals_mac, mac_ctx_unsupported_cred)
 		.label = 99,
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -810,7 +810,7 @@ TEST(internals_mac, mac_ctx_buffer_too_small)
 				.length = sizeof(dummy_cert) },
 	};
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = 4;
 
@@ -862,7 +862,7 @@ TEST(internals_mac, mac_ctx_kid_bstr_short_form)
 								     &material);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1345,7 +1345,7 @@ TEST(internals_mac, comp_mac_null_args)
 	ctx.state.message = EDHOC_MESSAGE_2;
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1378,7 +1378,7 @@ TEST(internals_mac, comp_mac_msg1)
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1402,7 +1402,7 @@ TEST(internals_mac, comp_mac_invalid_message)
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1426,7 +1426,7 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg2)
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1450,7 +1450,7 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg3)
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1492,7 +1492,7 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 								     &material);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1545,7 +1545,7 @@ TEST(internals_mac, comp_sign_or_mac_method2_msg3)
 								     &material);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1579,7 +1579,7 @@ TEST(internals_mac, comp_sign_or_mac_null_args)
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1621,7 +1621,7 @@ TEST(internals_mac, comp_sign_or_mac_invalid_message)
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1649,7 +1649,7 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg2)
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1677,7 +1677,7 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg3)
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1703,7 +1703,7 @@ TEST(internals_mac, verify_sign_or_mac_method1_msg2)
 	ctx.state.message = EDHOC_MESSAGE_2;
 	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1729,7 +1729,7 @@ TEST(internals_mac, verify_sign_or_mac_method3_msg3)
 	ctx.state.message = EDHOC_MESSAGE_3;
 	ctx.negotiation.selected_method = EDHOC_METHOD_3;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1755,7 +1755,7 @@ TEST(internals_mac, verify_sign_or_mac_mismatch_msg2)
 	ctx.state.message = EDHOC_MESSAGE_2;
 	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1782,7 +1782,7 @@ TEST(internals_mac, verify_sign_or_mac_mismatch_msg3)
 	ctx.state.message = EDHOC_MESSAGE_3;
 	ctx.negotiation.selected_method = EDHOC_METHOD_2;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1810,7 +1810,7 @@ TEST(internals_mac, verify_sign_or_mac_null_mac)
 	ctx.state.message = EDHOC_MESSAGE_2;
 	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1835,7 +1835,7 @@ TEST(internals_mac, verify_sign_or_mac_invalid_message)
 	ctx.state.message = EDHOC_MESSAGE_4;
 	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1861,7 +1861,7 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg2)
 	ctx.state.message = EDHOC_MESSAGE_2;
 	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
@@ -1887,7 +1887,7 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg3)
 	ctx.state.message = EDHOC_MESSAGE_3;
 	ctx.negotiation.selected_method = (enum edhoc_method)4;
 
-	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
+	_Alignas(struct mac_context) uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context *mac_ctx = (struct mac_context *)buf;
 	mac_ctx->buf_len = sizeof(buf) - sizeof(struct mac_context);
 

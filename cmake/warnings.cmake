@@ -9,6 +9,17 @@
 # denials below, so it applies only when libedhoc is the top-level project.
 # =============================================================================
 
+include(CheckCCompilerFlag)
+
+if(PROJECT_IS_TOP_LEVEL AND CMAKE_C_COMPILER_ID MATCHES "Clang")
+    check_c_compiler_flag("-Wpre-c11-compat"
+        LIBEDHOC_COMPILER_HAS_WPRE_C11_COMPAT)
+    check_c_compiler_flag("-Wimplicit-int-enum-cast"
+        LIBEDHOC_COMPILER_HAS_WIMPLICIT_INT_ENUM_CAST)
+    check_c_compiler_flag("-Wimplicit-void-ptr-cast"
+        LIBEDHOC_COMPILER_HAS_WIMPLICIT_VOID_PTR_CAST)
+endif()
+
 function(libedhoc_target_warnings target profile)
     # --- Common base (identical for both profiles) ---------------------------
     set(base
@@ -39,10 +50,30 @@ function(libedhoc_target_warnings target profile)
                 -Wno-padded                       # informational; struct layout
                 -Wno-unsafe-buffer-usage          # C has no bounds-safe alternative
                 -Wno-vla)                         # the stack backend allocates VLAs
-            if(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 20)
+            if(LIBEDHOC_COMPILER_HAS_WPRE_C11_COMPAT)
                 list(APPEND extra_clang
-                    -Wno-format-signedness
-                    -Wno-pre-c11-compat)          # the project is C11
+                    -Wno-pre-c11-compat)           # the project is C11
+            endif()
+            if(LIBEDHOC_COMPILER_HAS_WIMPLICIT_INT_ENUM_CAST)
+                list(APPEND extra_clang
+                    -Wno-implicit-int-enum-cast)   # valid in C, not in C++
+            endif()
+            if(LIBEDHOC_COMPILER_HAS_WIMPLICIT_VOID_PTR_CAST)
+                list(APPEND extra_clang
+                    -Wno-implicit-void-ptr-cast)   # implicit void * is defined by C
+            endif()
+            if(APPLE)
+                list(APPEND extra_clang
+                    -Wno-poison-system-directories) # Apple Clang diagnoses its
+                                                    # own /usr/local/include path
+            endif()
+            if(CMAKE_C_COMPILER_ID STREQUAL "AppleClang")
+                # Apple Clang versions that lack -Wformat-signedness report
+                # enum underlying-type differences under the broad -Wformat
+                # group. Keep the diagnostics visible without failing macOS.
+                list(APPEND extra_clang -Wno-error=format)
+            elseif(CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL 20)
+                list(APPEND extra_clang -Wno-format-signedness)
             endif()
         endif()
     elseif(profile STREQUAL "TEST")

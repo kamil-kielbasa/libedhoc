@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# libedhoc Linux CI helper: a thin wrapper around the CMake presets. Every step
+# libedhoc host CI helper: a thin wrapper around the CMake presets. Every step
 # is one `scripts/ci.sh <cmd>`, reproducible locally. (Zephyr uses west/twister.)
 #
 set -euo pipefail
@@ -28,22 +28,34 @@ ok()      { echo -e "${GREEN}$*${NC}"; }
 err()     { echo -e "${RED}$*${NC}" >&2; }
 require() { command -v "$1" >/dev/null 2>&1 || { err "Error: '$1' is not installed"; exit 1; }; }
 
+parallel_jobs() {
+    if command -v nproc >/dev/null 2>&1; then
+        nproc
+    elif command -v sysctl >/dev/null 2>&1; then
+        sysctl -n hw.logicalcpu 2>/dev/null || echo 2
+    else
+        echo 2
+    fi
+}
+
 # ctest wrapper: fail if a preset unexpectedly has zero tests, and disable ASLR
 # for the sanitizer preset (ASan cannot initialise under high mmap_rnd_bits).
 run_ctest() {
     local preset="$1"; shift || true
-    local wrap=()
     if [[ "$preset" == "asan" ]] && command -v setarch >/dev/null 2>&1; then
-        wrap=(setarch -R)
+        CTEST_NO_TESTS_ACTION=error setarch -R \
+            ctest --preset "$preset" --output-on-failure "$@"
+    else
+        CTEST_NO_TESTS_ACTION=error \
+            ctest --preset "$preset" --output-on-failure "$@"
     fi
-    CTEST_NO_TESTS_ACTION=error "${wrap[@]}" ctest --preset "$preset" --output-on-failure "$@"
 }
 
 # --- build / test / ci (per preset) ------------------------------------------
 cmd_build() {
     section "build ${1}${2:+ (target ${2})}"
     cmake --preset "$1" >/dev/null
-    cmake --build --preset "$1" -j"$(nproc)" ${2:+--target "$2"}
+    cmake --build --preset "$1" -j"$(parallel_jobs)" ${2:+--target "$2"}
     ok "built ${1}"
 }
 
@@ -126,7 +138,7 @@ cmd_valgrind() {
     local preset="${1:-valgrind}"
     section "valgrind memcheck + DRD (${preset})"
     cmake --preset "$preset" >/dev/null
-    cmake --build --preset "$preset" -j"$(nproc)"
+    cmake --build --preset "$preset" -j"$(parallel_jobs)"
 
     local found=0 bin
     while IFS= read -r bin; do
