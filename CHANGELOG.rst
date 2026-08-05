@@ -1,3 +1,17 @@
+Version 2.0.2
+-------------
+
+:Date: August 5, 2026
+
+* `@emiltin <https://github.com/emiltin>`__ : CI: added Apple Clang build and
+  test jobs for Arm64 (``macos-latest``) and x86_64 (``macos-15-intel``). The
+  host CI script now selects build parallelism portably and runs tests with the
+  system Bash on Linux and macOS. The macOS preset uses liboqs's portable CPU
+  target on both architectures. Apple Clang's enum-format compatibility
+  diagnostics remain visible without failing the build, while its warning
+  about its own :file:`/usr/local/include` search path is ignored. No library
+  code changed.
+
 Version 2.0.1
 -------------
 

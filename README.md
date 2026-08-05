@@ -1,6 +1,7 @@
 # libedhoc
 
 [![CI / Linux](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-linux.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-linux.yml)
+[![CI / macOS](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-macos.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-macos.yml)
 [![CI / Zephyr](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-zephyr.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-zephyr.yml)
 [![CI / Sandbox](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-sandbox.yml/badge.svg?branch=main)](https://github.com/kamil-kielbasa/libedhoc/actions/workflows/ci-sandbox.yml)
 [![codecov](https://codecov.io/gh/kamil-kielbasa/libedhoc/branch/main/graph/badge.svg)](https://codecov.io/gh/kamil-kielbasa/libedhoc)
@@ -23,7 +24,7 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol �
 - **Clean interfaces** — separate callback groups for cryptography, credentials, platform and optional EAD, keeping your application code cleanly separated from the protocol engine.
 - **Transport-agnostic** — the library only produces and consumes CBOR message buffers, so you carry them over CoAP or any transport; all CBOR encoding/decoding is hidden.
 - **Predictable footprint** — handshake buffers come from a stack (VLA, default, no heap), heap or custom memory backend, and the protocol core keeps no static state, so RAM use is bounded and known up front.
-- **Portable** — builds with GCC and Clang; runs on Linux and Zephyr RTOS (as a west module).
+- **Portable** — builds with GCC and Clang; runs on Linux, macOS and Zephyr RTOS (as a west module).
 - **Quality-gated** — cppcheck, clang-tidy, ASan, UBSan, Valgrind and LibFuzzer in CI.
 
 ### Cipher Suites

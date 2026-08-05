@@ -20,6 +20,13 @@ List every preset with ``scripts/ci.sh list`` (or ``cmake --list-presets``).
 Preset names follow ``<suite-family>_<memory-backend>`` — e.g. ``p384_heap`` or
 ``mlkem512_custom``.
 
+On macOS, use the Apple Clang preset. It configures liboqs for a portable CPU
+target that works on both Arm64 and x86_64:
+
+.. code-block:: console
+
+   $ scripts/ci.sh ci macos
+
 Whole matrix and instrumentation
 --------------------------------
 

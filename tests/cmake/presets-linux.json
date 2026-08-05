@@ -149,6 +149,16 @@
       "cacheVariables": { "CMAKE_C_COMPILER": "clang" }
     },
     {
+      "name": "macos",
+      "displayName": "Apple Clang (all suites, portable liboqs)",
+      "inherits": "legacy",
+      "binaryDir": "${sourceDir}/build/macos",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "OQS_OPT_TARGET": "generic"
+      }
+    },
+    {
       "name": "coverage",
       "displayName": "GCC + gcov (all suites)",
       "inherits": "legacy",
@@ -216,6 +226,7 @@
     { "name": "legacy",          "configurePreset": "legacy" },
     { "name": "clang",           "configurePreset": "clang" },
     { "name": "clang-latest",    "configurePreset": "clang-latest" },
+    { "name": "macos",           "configurePreset": "macos" },
     { "name": "coverage",        "configurePreset": "coverage" },
     { "name": "valgrind",        "configurePreset": "valgrind" },
     { "name": "asan",            "configurePreset": "asan" },
@@ -240,6 +251,7 @@
     { "name": "legacy",          "configurePreset": "legacy",          "output": { "outputOnFailure": true } },
     { "name": "clang",           "configurePreset": "clang",           "output": { "outputOnFailure": true } },
     { "name": "clang-latest",    "configurePreset": "clang-latest",    "output": { "outputOnFailure": true } },
+    { "name": "macos",           "configurePreset": "macos",           "output": { "outputOnFailure": true } },
     { "name": "coverage",        "configurePreset": "coverage",        "output": { "outputOnFailure": true } },
     { "name": "asan",            "configurePreset": "asan",            "output": { "outputOnFailure": true } }
   ]
