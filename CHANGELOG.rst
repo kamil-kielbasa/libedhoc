@@ -1,3 +1,15 @@
+Version 2.0.1
+-------------
+
+:Date: August 5, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI: publishing a
+  release no longer leaves the version badge stale. It starts two runs of the
+  documentation job — ``release`` and a tag ``push`` — sharing one
+  ``github.ref``, and the concurrency key ignored the event name, so the tag
+  run cancelled the release run, the only one that deploys. The key now
+  includes it. No library code changed.
+
 Version 2.0.0
 -------------
 
