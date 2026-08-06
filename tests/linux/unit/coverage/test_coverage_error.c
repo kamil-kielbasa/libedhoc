@@ -104,6 +104,17 @@ TEST(coverage_error, error_msg_process_text_too_small)
 
 	ret = edhoc_message_error_process(buf, len, &code, &recv_info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+
+	struct edhoc_context ctx = { 0 };
+	ret = edhoc_context_init(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_message_error_process_with_context(&ctx, buf, len,
+						       &recv_info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(coverage_error, error_msg_process_suites_too_small)
@@ -132,6 +143,17 @@ TEST(coverage_error, error_msg_process_suites_too_small)
 
 	ret = edhoc_message_error_process(buf, len, &code, &recv_info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+
+	struct edhoc_context ctx = { 0 };
+	ret = edhoc_context_init(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_message_error_process_with_context(&ctx, buf, len,
+						       &recv_info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(coverage_error, error_msg_compose_suites_null_info)

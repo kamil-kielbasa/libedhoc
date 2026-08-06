@@ -461,8 +461,9 @@ int edhoc_message_error_compose(uint8_t *message_error,
  * \brief Process a received EDHOC error message.
  *
  *        Decodes a received error message into its error code and error
- *        information; receiving one indicates the peer aborted the session
- *        (RFC 9528: 6).
+ *        information without modifying an EDHOC context. Use
+ *        \ref edhoc_message_error_process_with_context to record a received
+ *        error in a session (RFC 9528: 6).
  *
  * \param[in] message_error             Buffer containing the message error.
  * \param message_error_length          Length of the \p message_error in bytes.
@@ -477,6 +478,32 @@ int edhoc_message_error_process(const uint8_t *message_error,
 				size_t message_error_length,
 				enum edhoc_error_code *error_code,
 				struct edhoc_error_info *error_info);
+
+/**
+ * \brief Process a received EDHOC error message into a session context.
+ *
+ *        Decodes the error, records its code in \p edhoc_context and aborts the
+ *        current session. For
+ *        #EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE, it also records the
+ *        peer's suites so \ref edhoc_error_get_cipher_suites returns both the
+ *        local and peer lists needed for recovery (RFC 9528: 6.3.1).
+ *
+ *        The optional \p error_info receives the decoded information just as
+ *        in \ref edhoc_message_error_process. The context is updated even when
+ *        \p error_info is NULL or has no output buffer.
+ *
+ * \param[in,out] edhoc_context         EDHOC session that received the error.
+ * \param[in] message_error             Buffer containing the message error.
+ * \param message_error_length          Length of the \p message_error in bytes.
+ * \param[out] error_info               Optional EDHOC error information.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
+ */
+int edhoc_message_error_process_with_context(
+	struct edhoc_context *edhoc_context, const uint8_t *message_error,
+	size_t message_error_length, struct edhoc_error_info *error_info);
 
 /**@}*/
 

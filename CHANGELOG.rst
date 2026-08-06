@@ -1,3 +1,9 @@
+Unreleased
+----------
+
+* Add context-aware error-message processing so cipher-suite negotiation
+  recovery can retrieve both local and peer suite lists through the error API.
+
 Version 2.0.1
 -------------
 

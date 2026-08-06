@@ -821,6 +821,35 @@ TEST(api_negative, message_error_process_null_buf)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
+TEST(api_negative, message_error_process_with_context_null_params)
+{
+	const uint8_t msg[] = { 0x00 };
+	struct edhoc_context ctx = { 0 };
+
+	int ret = edhoc_context_init(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_message_error_process_with_context(NULL, msg,
+						       ARRAY_SIZE(msg), NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_message_error_process_with_context(&ctx, NULL, 0, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(api_negative, message_error_process_with_context_not_initialized)
+{
+	const uint8_t msg[] = { 0x00 };
+	struct edhoc_context ctx = { 0 };
+
+	int ret = edhoc_message_error_process_with_context(
+		&ctx, msg, ARRAY_SIZE(msg), NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+}
+
 TEST(api_negative, export_raw_null_ctx)
 {
 	uint8_t secret[32] = { 0 };
@@ -1047,6 +1076,10 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, message_4_process_null_ctx);
 	RUN_TEST_CASE(api_negative, message_error_compose_null_buf);
 	RUN_TEST_CASE(api_negative, message_error_process_null_buf);
+	RUN_TEST_CASE(api_negative,
+		      message_error_process_with_context_null_params);
+	RUN_TEST_CASE(api_negative,
+		      message_error_process_with_context_not_initialized);
 
 	RUN_TEST_CASE(api_negative, export_raw_null_ctx);
 	RUN_TEST_CASE(api_negative, export_oscore_context_raw_null_ctx);

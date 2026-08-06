@@ -11,6 +11,7 @@
 
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_macros_internal.h"
 
 /* Standard library headers: */
@@ -200,6 +201,49 @@ TEST(error_message, unknown_credential_referenced)
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 }
 
+TEST(error_message, unspecified_error_with_context)
+{
+	size_t buffer_len = 0;
+	uint8_t buffer[100] = { 0 };
+
+	const char text[] = "diagnostic";
+	const struct edhoc_error_info error_info = {
+		.text_string = (char *)text,
+		.entries_size = sizeof(text) - 1,
+		.entries_length = sizeof(text) - 1,
+	};
+	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
+					  &buffer_len,
+					  EDHOC_ERROR_CODE_UNSPECIFIED_ERROR,
+					  &error_info);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	struct edhoc_context ctx = { 0 };
+	ret = edhoc_context_init(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	char received_text[100] = { 0 };
+	struct edhoc_error_info received_info = {
+		.text_string = received_text,
+		.entries_size = ARRAY_SIZE(received_text),
+	};
+	ret = edhoc_message_error_process_with_context(&ctx, buffer, buffer_len,
+						       &received_info);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+	ret = edhoc_error_get_code(&ctx, &code);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_UNSPECIFIED_ERROR, code);
+	TEST_ASSERT_EQUAL(sizeof(text) - 1, received_info.entries_length);
+	TEST_ASSERT_EQUAL_STRING_LEN(text, received_text,
+				     received_info.entries_length);
+	TEST_ASSERT_EQUAL(EDHOC_SM_ABORTED, ctx.state.machine);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST(error_message, compose_unknown_code)
 {
 	uint8_t buffer[100] = { 0 };
@@ -352,6 +396,7 @@ TEST_GROUP_RUNNER(error_message)
 	RUN_TEST_CASE(error_message, wrong_selected_cipher_suite_one);
 	RUN_TEST_CASE(error_message, wrong_selected_cipher_suite_many);
 	RUN_TEST_CASE(error_message, unknown_credential_referenced);
+	RUN_TEST_CASE(error_message, unspecified_error_with_context);
 	RUN_TEST_CASE(error_message, compose_unknown_code);
 	RUN_TEST_CASE(error_message, compose_cipher_suite_written_gt_total);
 	RUN_TEST_CASE(error_message, compose_tiny_buffer);

@@ -247,21 +247,29 @@ TEST(rfc9528_negotiation, example_1)
 
 	/* 5a. Initiator process error message. */
 	enum edhoc_error_code error_code_init = -1;
-	int32_t cipher_suites_init[1] = { 0 };
-	struct edhoc_error_info error_info_init = {
-		.cipher_suites = cipher_suites_init,
-		.entries_size = ARRAY_SIZE(cipher_suites_init),
-		.entries_length = 0,
-	};
-	ret = edhoc_message_error_process(msg_err, msg_err_len,
-					  &error_code_init, &error_info_init);
+	ret = edhoc_message_error_process_with_context(&init_ctx, msg_err,
+						       msg_err_len, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_error_get_code(&init_ctx, &error_code_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE,
 			  error_code_init);
-	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_resp),
-			  error_info_init.entries_length);
-	TEST_ASSERT_EQUAL(csuites_resp[0].value,
-			  error_info_init.cipher_suites[0]);
+	TEST_ASSERT_EQUAL(EDHOC_SM_ABORTED, init_ctx.state.machine);
+
+	size_t own_csuites_init_len = 0;
+	int32_t own_csuites_init[1] = { 0 };
+	size_t peer_csuites_init_len = 0;
+	int32_t peer_csuites_init[1] = { 0 };
+	ret = edhoc_error_get_cipher_suites(
+		&init_ctx, own_csuites_init, ARRAY_SIZE(own_csuites_init),
+		&own_csuites_init_len, peer_csuites_init,
+		ARRAY_SIZE(peer_csuites_init), &peer_csuites_init_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_init), own_csuites_init_len);
+	TEST_ASSERT_EQUAL(csuites_init[0].value, own_csuites_init[0]);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_resp), peer_csuites_init_len);
+	TEST_ASSERT_EQUAL(csuites_resp[0].value, peer_csuites_init[0]);
 
 	/* 5b. Initiator reinitialize context with new cipher suites. */
 	ret = edhoc_context_init(&init_ctx);
@@ -490,8 +498,11 @@ TEST(rfc9528_negotiation, example_2)
 		.entries_length = 0,
 	};
 
-	ret = edhoc_message_error_process(msg_err, msg_err_len,
-					  &error_code_init, &error_info_init);
+	ret = edhoc_message_error_process_with_context(
+		&init_ctx, msg_err, msg_err_len, &error_info_init);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_error_get_code(&init_ctx, &error_code_init);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE,
 			  error_code_init);
@@ -501,6 +512,23 @@ TEST(rfc9528_negotiation, example_2)
 			  error_info_init.cipher_suites[0]);
 	TEST_ASSERT_EQUAL(csuites_resp[1].value,
 			  error_info_init.cipher_suites[1]);
+	TEST_ASSERT_EQUAL(EDHOC_SM_ABORTED, init_ctx.state.machine);
+
+	size_t own_csuites_init_len = 0;
+	int32_t own_csuites_init[2] = { 0 };
+	size_t peer_csuites_init_len = 0;
+	int32_t peer_csuites_init[2] = { 0 };
+	ret = edhoc_error_get_cipher_suites(
+		&init_ctx, own_csuites_init, ARRAY_SIZE(own_csuites_init),
+		&own_csuites_init_len, peer_csuites_init,
+		ARRAY_SIZE(peer_csuites_init), &peer_csuites_init_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_init), own_csuites_init_len);
+	TEST_ASSERT_EQUAL(csuites_init[0].value, own_csuites_init[0]);
+	TEST_ASSERT_EQUAL(csuites_init[1].value, own_csuites_init[1]);
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(csuites_resp), peer_csuites_init_len);
+	TEST_ASSERT_EQUAL(csuites_resp[0].value, peer_csuites_init[0]);
+	TEST_ASSERT_EQUAL(csuites_resp[1].value, peer_csuites_init[1]);
 
 	/* 5b. Initiator reinitialize context with new cipher suites. */
 	ret = edhoc_context_init(&init_ctx);

@@ -62,6 +62,21 @@ To send an EDHOC error message to the peer:
    edhoc_message_error_compose(buf, buf_size, &buf_len,
                                EDHOC_ERROR_CODE_UNSPECIFIED_ERROR, &info);
 
+To receive an error into the current session and retain its negotiation state:
+
+.. code-block:: c
+
+   int ret = edhoc_message_error_process_with_context(ctx, buf, buf_len, NULL);
+   if (ret == EDHOC_SUCCESS) {
+       enum edhoc_error_code err;
+       edhoc_error_get_code(ctx, &err);
+
+       if (err == EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
+           edhoc_error_get_cipher_suites(ctx, own, own_size, &own_len,
+                                         peer, peer_size, &peer_len);
+       }
+   }
+
 API pages
 ---------
 
