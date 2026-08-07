@@ -1,3 +1,13 @@
+Version 2.0.2
+-------------
+
+:Date: August 7, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : message 1 no longer
+  turns a label-only EAD_1 item into one carrying an empty byte string. The
+  presence of the optional value is now derived from the value pointer, as
+  messages 2 to 4 already did.
+
 Version 2.0.1
 -------------
 

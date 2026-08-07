@@ -39,6 +39,7 @@ struct ead_token_buf {
 	int32_t label;
 	uint8_t value[EAD_TOKEN_BUFFER_LEN];
 	size_t value_length;
+	const uint8_t *value_ptr;
 };
 
 struct ead_context {
@@ -68,6 +69,11 @@ static int test_ead_process_stub(void *user_ctx,
 				 const struct edhoc_ead_token *ead_token,
 				 size_t ead_token_size);
 static int ead_compose_msg1(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_ead_token *ead_token,
+			    size_t ead_token_size, size_t *ead_token_len);
+static int
+ead_compose_msg1_label_only(void *user_ctx,
 			    const struct edhoc_call_context *call_ctx,
 			    struct edhoc_ead_token *ead_token,
 			    size_t ead_token_size, size_t *ead_token_len);
@@ -212,6 +218,27 @@ static int ead_compose_msg1(void *user_ctx,
 	return EDHOC_SUCCESS;
 }
 
+static int
+ead_compose_msg1_label_only(void *user_ctx,
+			    const struct edhoc_call_context *call_ctx,
+			    struct edhoc_ead_token *ead_token,
+			    size_t ead_token_size, size_t *ead_token_len)
+{
+	(void)user_ctx;
+	(void)ead_token_size;
+
+	if (EDHOC_MESSAGE_1 == call_ctx->message) {
+		ead_token[0].label = MSG1_EAD_LABEL;
+		ead_token[0].value.value = NULL;
+		ead_token[0].value.length = 0;
+		*ead_token_len = 1;
+	} else {
+		*ead_token_len = 0;
+	}
+
+	return EDHOC_SUCCESS;
+}
+
 static int ead_process_track(void *user_ctx,
 			     const struct edhoc_call_context *call_ctx,
 			     const struct edhoc_ead_token *ead_token,
@@ -226,6 +253,7 @@ static int ead_process_track(void *user_ctx,
 	     ++i) {
 		ead_ctx->token[i].label = ead_token[i].label;
 		ead_ctx->token[i].value_length = ead_token[i].value.length;
+		ead_ctx->token[i].value_ptr = ead_token[i].value.value;
 		if (ead_token[i].value.length > 0 &&
 		    ead_token[i].value.length <= EAD_TOKEN_BUFFER_LEN)
 			memcpy(ead_ctx->token[i].value,
@@ -588,6 +616,61 @@ TEST(message_paths, msg1_process_with_ead)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(message_paths, msg1_roundtrip_ead_label_only)
+{
+	struct edhoc_context init_ctx = { 0 };
+	struct edhoc_context resp_ctx = { 0 };
+	struct ead_context ead_ctx = { 0 };
+
+	setup_initiator(&init_ctx);
+	setup_responder(&resp_ctx);
+
+	const struct edhoc_ead ead_init = {
+		.compose = ead_compose_msg1_label_only,
+		.process = test_ead_process_stub,
+	};
+
+	int ret = edhoc_bind_ead(&init_ctx, &ead_init);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	const struct edhoc_ead ead_resp = {
+		.compose = test_ead_compose_stub,
+		.process = ead_process_track,
+	};
+
+	ret = edhoc_bind_ead(&resp_ctx, &ead_resp);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_set_user_context(&resp_ctx, &ead_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	uint8_t msg[512] = { 0 };
+	size_t msg_len = 0;
+	ret = edhoc_message_1_compose(&init_ctx, msg, ARRAY_SIZE(msg),
+				      &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	/* EAD_1 is the bare label: a CBOR unsigned int taking its argument from
+	 * the next byte (0x18), with no byte string after it. */
+	const uint8_t expected_ead_1[] = { 0x18, MSG1_EAD_LABEL };
+	TEST_ASSERT_GREATER_THAN_size_t(ARRAY_SIZE(expected_ead_1), msg_len);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(
+		expected_ead_1, &msg[msg_len - ARRAY_SIZE(expected_ead_1)],
+		ARRAY_SIZE(expected_ead_1));
+
+	ret = edhoc_message_1_process(&resp_ctx, msg, msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(1, ead_ctx.recv_tokens);
+	TEST_ASSERT_EQUAL(MSG1_EAD_LABEL, ead_ctx.token[0].label);
+	TEST_ASSERT_NULL(ead_ctx.token[0].value_ptr);
+	TEST_ASSERT_EQUAL_size_t(0, ead_ctx.token[0].value_length);
+
+	ret = edhoc_context_deinit(&init_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	ret = edhoc_context_deinit(&resp_ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST(message_paths, msg1_process_bad_state)
 {
 	struct edhoc_context init_ctx = { 0 };
@@ -871,6 +954,7 @@ TEST_GROUP_RUNNER(message_paths)
 	RUN_TEST_CASE(message_paths, msg1_process_bstr_cid);
 	RUN_TEST_CASE(message_paths, msg1_compose_ead_value_without_buffer);
 	RUN_TEST_CASE(message_paths, msg1_process_with_ead);
+	RUN_TEST_CASE(message_paths, msg1_roundtrip_ead_label_only);
 	RUN_TEST_CASE(message_paths, msg1_process_bad_state);
 	RUN_TEST_CASE(message_paths, msg1_process_no_cipher_suites);
 	RUN_TEST_CASE(message_paths, msg1_roundtrip_bstr_cid_and_ead);
