@@ -199,8 +199,9 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	if (EDHOC_SM_RECEIVED_M1 != ctx->state.machine ||
 	    EDHOC_TH_STATE_1 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_INVALID != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -283,7 +284,9 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 7a. Compute required buffer length for context_2. */
-	struct edhoc_credential_material_asymmetric material = { 0 };
+	struct edhoc_credential_material_asymmetric material = {
+		.label = (enum edhoc_cose_header)0,
+	};
 	ret = edhoc_credential_asymmetric_material_from_selected(&selected,
 								 &material);
 
@@ -299,15 +302,17 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 7b. Cborise items required by context_2. */
-	EDHOC_MEM_ALLOC(uint8_t, mac_ctx_buf,
-			sizeof(struct mac_context) + mac_ctx_len);
+	EDHOC_MEM_ALLOC(uint8_t, mac_ctx_buf, mac_ctx_len);
 	if (NULL == mac_ctx_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	struct mac_context *mac_ctx = (void *)mac_ctx_buf;
-	mac_ctx->buf_len = mac_ctx_len;
+	struct mac_context mac_ctx_storage = {
+		.buf = mac_ctx_buf,
+		.buf_len = mac_ctx_len,
+	};
+	struct mac_context *mac_ctx = &mac_ctx_storage;
 
 	ret = edhoc_mac_context_compose(ctx, &material, mac_ctx);
 	if (EDHOC_SUCCESS != ret) {
@@ -585,8 +590,9 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	if (EDHOC_SM_WAIT_M2 != ctx->state.machine ||
 	    EDHOC_TH_STATE_1 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_INVALID != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -700,7 +706,11 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	EDHOC_LOG_HEXDUMP_DBG(plaintext, plaintext_len, "PLAINTEXT_2");
 
 	/* 8. Parse plaintext (PLAINTEXT_2). */
-	struct plaintext parsed_ptxt = { 0 };
+	struct plaintext parsed_ptxt = {
+		.peer_credential_id = {
+			.label = (enum edhoc_cose_header)0,
+		},
+	};
 	ret = edhoc_plaintext_parse(ctx, EDHOC_PLAINTEXT_CLASSIC_2, plaintext,
 				    plaintext_len, &parsed_ptxt);
 
@@ -770,7 +780,9 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	}
 
 	/* 12. Compute required buffer length for context_2. */
-	struct edhoc_credential_material_asymmetric material = { 0 };
+	struct edhoc_credential_material_asymmetric material = {
+		.label = (enum edhoc_cose_header)0,
+	};
 	ret = edhoc_credential_asymmetric_material_from_trusted(
 		&parsed_ptxt.peer_credential_id, &trusted, &material);
 
@@ -793,8 +805,7 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	}
 
 	/* 13. Cborise items required by context_2. */
-	EDHOC_MEM_ALLOC(uint8_t, mac_ctx_buf,
-			sizeof(struct mac_context) + mac_context_len);
+	EDHOC_MEM_ALLOC(uint8_t, mac_ctx_buf, mac_context_len);
 	if (NULL == mac_ctx_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		edhoc_zeroize(ctx, ciphertext_2,
@@ -803,8 +814,11 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	struct mac_context *mac_ctx = (void *)mac_ctx_buf;
-	mac_ctx->buf_len = mac_context_len;
+	struct mac_context mac_ctx_storage = {
+		.buf = mac_ctx_buf,
+		.buf_len = mac_context_len,
+	};
+	struct mac_context *mac_ctx = &mac_ctx_storage;
 
 	ret = edhoc_mac_context_compose(ctx, &material, mac_ctx);
 	if (EDHOC_SUCCESS != ret) {

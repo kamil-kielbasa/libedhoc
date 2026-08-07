@@ -136,7 +136,9 @@ Supported targets
 * **Linux** — via CMake. Pass the options above as ``-DCONFIG_LIBEDHOC_*``, or
   consume an installed build through ``find_package(libedhoc)`` (the generated
   :file:`edhoc_config.h` carries the build-time configuration).
-* **macOS** — via CMake and Apple Clang on Arm64 and x86_64. The same presets
-  and configuration options as the Linux host build are supported.
+* **macOS** — via CMake and Apple Clang on Arm64 and x86_64. Host build, test,
+  matrix, formatting, header-check, cppcheck, and sanitizer commands are
+  supported. Coverage, Valgrind, clang-tidy, and fuzzing remain Linux-only CI
+  jobs.
 * **Zephyr RTOS** — as a west module. The options above are ordinary Kconfig
   symbols and the dependencies (zcbor, mbedTLS) are pulled by the manifest.

@@ -54,7 +54,7 @@ int edhoc_error_encode(uint8_t *msg_err, size_t msg_err_size,
 
 	if (EDHOC_ERROR_CODE_SUCCESS > code ||
 	    EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED < code) {
-		EDHOC_LOG_ERR("Unknown error code: %d", code);
+		EDHOC_LOG_ERR("Unknown error code: %d", (int)code);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -141,7 +141,7 @@ int edhoc_error_encode(uint8_t *msg_err, size_t msg_err_size,
 	}
 
 	default:
-		EDHOC_LOG_ERR("Unknown error code: %d", code);
+		EDHOC_LOG_ERR("Unknown error code: %d", (int)code);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -197,7 +197,7 @@ int edhoc_error_decode(const uint8_t *msg_err, size_t msg_err_len,
 		if (message_error_ERR_INFO_tstr_c !=
 		    result.message_error_ERR_INFO.message_error_ERR_INFO_choice) {
 			EDHOC_LOG_ERR("ERR_INFO does not match ERR_CODE: %d",
-				      result.message_error_ERR_INFO
+				      (int)result.message_error_ERR_INFO
 					      .message_error_ERR_INFO_choice);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -234,7 +234,7 @@ int edhoc_error_decode(const uint8_t *msg_err, size_t msg_err_len,
 		if (message_error_ERR_INFO_suites_m_c !=
 		    result.message_error_ERR_INFO.message_error_ERR_INFO_choice) {
 			EDHOC_LOG_ERR("ERR_INFO does not match ERR_CODE: %d",
-				      result.message_error_ERR_INFO
+				      (int)result.message_error_ERR_INFO
 					      .message_error_ERR_INFO_choice);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
@@ -273,7 +273,7 @@ int edhoc_error_decode(const uint8_t *msg_err, size_t msg_err_len,
 
 		default:
 			EDHOC_LOG_ERR("Invalid suites choice: %d",
-				      suites->suites_choice);
+				      (int)suites->suites_choice);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 

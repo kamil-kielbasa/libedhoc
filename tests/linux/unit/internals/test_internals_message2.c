@@ -109,9 +109,12 @@ TEST(internals_message2, comp_plaintext_2_len_null)
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
 
-	_Alignas(struct mac_context) uint8_t buf[256] = { 0 };
-	struct mac_context *mc = (struct mac_context *)buf;
-	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
+	uint8_t buf[256] = { 0 };
+	struct mac_context mc_storage = {
+		.buf = buf,
+		.buf_len = sizeof(buf),
+	};
+	struct mac_context *mc = &mc_storage;
 
 	struct edhoc_plaintext_input input = {
 		.id = EDHOC_PLAINTEXT_CLASSIC_2,

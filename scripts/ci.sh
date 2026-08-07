@@ -42,13 +42,12 @@ parallel_jobs() {
 # for the sanitizer preset (ASan cannot initialise under high mmap_rnd_bits).
 run_ctest() {
     local preset="$1"; shift || true
+    local wrap=()
     if [[ "$preset" == "asan" ]] && command -v setarch >/dev/null 2>&1; then
-        CTEST_NO_TESTS_ACTION=error setarch -R \
-            ctest --preset "$preset" --output-on-failure "$@"
-    else
-        CTEST_NO_TESTS_ACTION=error \
-            ctest --preset "$preset" --output-on-failure "$@"
+        wrap=(setarch -R)
     fi
+    CTEST_NO_TESTS_ACTION=error ${wrap[@]+"${wrap[@]}"} \
+        ctest --preset "$preset" --output-on-failure "$@"
 }
 
 # --- build / test / ci (per preset) ------------------------------------------
@@ -184,8 +183,10 @@ cmd_format() {
     require clang-format; require git
     local check=false
     [[ "${1:-}" == "--check" ]] && check=true
-    local files=()
-    mapfile -t files < <(git ls-files '*.c' '*.h' ':!:backends/**')
+    local files=() file
+    while IFS= read -r file; do
+        files+=("$file")
+    done < <(git ls-files '*.c' '*.h' ':!:backends/**')
     [[ ${#files[@]} -gt 0 ]] || { err "No source files found."; exit 1; }
     if [[ "$check" == true ]]; then
         section "format --check"
