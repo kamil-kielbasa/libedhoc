@@ -207,7 +207,8 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 
 		for (size_t i = 0; i < ctx->ead.count; ++i) {
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
-				.ead_x_ead_value_present = true;
+				.ead_x_ead_value_present =
+				(NULL != ctx->ead.token[i].value.value);
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
 				.ead_x_ead_label = ctx->ead.token[i].label;
 			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
