@@ -204,7 +204,10 @@ cmd_cppcheck() {
     require cppcheck
     section "cppcheck"
     cmake --preset legacy -B build/cppcheck >/dev/null
+    # This command uses the generated host configuration. Zephyr is analysed
+    # by Twister with its real Kconfig values instead of a synthetic variant.
     cppcheck --enable=warning,style --inline-suppr --error-exitcode=1 \
+        -U__ZEPHYR__ \
         -I include/ -I library/internal/ -I backends/cbor/include/ \
         -I build/cppcheck/include/generated/ \
         library/core/*.c library/core/classic/*.c
