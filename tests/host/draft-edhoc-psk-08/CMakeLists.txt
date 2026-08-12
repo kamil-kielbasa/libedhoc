@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux/draft-edhoc-psk-08 — EDHOC-PSK test vectors, Appendix B.
+# tests/host/draft-edhoc-psk-08 — EDHOC-PSK test vectors, Appendix B.
 #
 # The vectors replay cipher suite 2, so the binary is guarded by that suite.
 # =============================================================================

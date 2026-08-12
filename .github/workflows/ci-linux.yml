@@ -82,7 +82,7 @@ jobs:
       # -Weverything makes every new clang diagnostic a build error.
       - uses: ./.github/actions/retry
         with:
-          command: "wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && sudo bash /tmp/llvm.sh 20"
+          command: "wget -qO /tmp/llvm.sh https://apt.llvm.org/llvm.sh && sudo bash /tmp/llvm.sh 20 && sudo ln -sf /usr/bin/clang-20 /usr/local/bin/clang"
       - uses: ./.github/actions/retry
         with:
           command: "sudo apt-get update && sudo apt-get install -y xsltproc ninja-build"

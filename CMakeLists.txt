@@ -40,7 +40,7 @@ if(LIBEDHOC_ENABLE_TESTS)
     add_subdirectory(tests)
 endif()
 if(LIBEDHOC_ENABLE_FUZZING)
-    add_subdirectory(tests/linux/fuzz)
+    add_subdirectory(tests/host/fuzz)
 endif()
 
 # --- Install / packaging -----------------------------------------------------

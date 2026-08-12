@@ -345,7 +345,7 @@ TEST(internals_mac, mac_ctx_x509_chain)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -389,7 +389,7 @@ TEST(internals_mac, mac_ctx_x509_hash_int)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -435,7 +435,7 @@ TEST(internals_mac, mac_ctx_x509_hash_bstr)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -473,7 +473,7 @@ TEST(internals_mac, mac_ctx_kid_int)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -513,7 +513,7 @@ TEST(internals_mac, mac_ctx_kid_bstr)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -555,7 +555,7 @@ TEST(internals_mac, mac_ctx_bstr_cid)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -602,7 +602,7 @@ TEST(internals_mac, mac_ctx_with_ead)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -643,7 +643,7 @@ TEST(internals_mac, mac_ctx_initiator_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -668,7 +668,7 @@ TEST(internals_mac, mac_ctx_null_args)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -700,7 +700,7 @@ TEST(internals_mac, mac_ctx_invalid_role)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -726,7 +726,7 @@ TEST(internals_mac, mac_ctx_invalid_message)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -757,7 +757,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -786,7 +786,7 @@ TEST(internals_mac, mac_ctx_bad_th_state_msg3)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -817,7 +817,7 @@ TEST(internals_mac, mac_ctx_unsupported_cred)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -910,7 +910,7 @@ TEST(internals_mac, mac_ctx_kid_bstr_short_form)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1396,7 +1396,7 @@ TEST(internals_mac, comp_mac_null_args)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1432,7 +1432,7 @@ TEST(internals_mac, comp_mac_msg1)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1459,7 +1459,7 @@ TEST(internals_mac, comp_mac_invalid_message)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1486,7 +1486,7 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1513,7 +1513,7 @@ TEST(internals_mac, comp_mac_bad_prk_state_msg3)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1558,7 +1558,7 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1614,7 +1614,7 @@ TEST(internals_mac, comp_sign_or_mac_method2_msg3)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1651,7 +1651,7 @@ TEST(internals_mac, comp_sign_or_mac_null_args)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1696,7 +1696,7 @@ TEST(internals_mac, comp_sign_or_mac_invalid_message)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1727,7 +1727,7 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1758,7 +1758,7 @@ TEST(internals_mac, comp_sign_or_mac_method_max_msg3)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1787,7 +1787,7 @@ TEST(internals_mac, verify_sign_or_mac_method1_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1816,7 +1816,7 @@ TEST(internals_mac, verify_sign_or_mac_method3_msg3)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1845,7 +1845,7 @@ TEST(internals_mac, verify_sign_or_mac_mismatch_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1875,7 +1875,7 @@ TEST(internals_mac, verify_sign_or_mac_mismatch_msg3)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1906,7 +1906,7 @@ TEST(internals_mac, verify_sign_or_mac_null_mac)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1934,7 +1934,7 @@ TEST(internals_mac, verify_sign_or_mac_invalid_message)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1963,7 +1963,7 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg2)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 
@@ -1992,7 +1992,7 @@ TEST(internals_mac, verify_sign_or_mac_method_max_msg3)
 	uint8_t buf[MAC_CTX_BUF_LEN] = { 0 };
 	struct mac_context mac_ctx_storage = {
 		.buf = buf,
-		.buf_len = sizeof(buf),
+		.buf_len = ARRAY_SIZE(buf),
 	};
 	struct mac_context *mac_ctx = &mac_ctx_storage;
 

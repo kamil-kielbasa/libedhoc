@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux/cipher_suites — one standalone Unity binary per reference suite.
+# tests/host/cipher_suites — one standalone Unity binary per reference suite.
 #
 # Each binary is guarded by its suite's CONFIG_..._ENABLE and links the enabled
 # cipher-suite sources, because the tests go through the suite dispatcher.

@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux/rfc9529 — RFC 9529 trace vectors and RFC 9528 suite negotiation.
+# tests/host/rfc9529 — RFC 9529 trace vectors and RFC 9528 suite negotiation.
 #
 # chapter2 replays suite 0, chapter3 and the negotiation trace replay suite 2,
 # so each binary is guarded by the suite it needs.

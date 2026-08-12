@@ -1,7 +1,7 @@
 # =============================================================================
-# Helpers for the libedhoc Linux (Unity + CTest) test tree.
+# Helpers for the libedhoc host (Unity + CTest) test tree.
 #
-# Every category under tests/linux/ builds standalone Unity binaries through
+# Every category under tests/host/ builds standalone Unity binaries through
 # edhoc_add_unity_test(): each compiles only the sources it needs, gets a
 # generated main() running its own TEST_GROUPs, and registers itself with CTest
 # and with the orphan reconcile below.
@@ -24,7 +24,7 @@ edhoc_assert_registry_nonempty().")
 define_property(GLOBAL PROPERTY EDHOC_TEST_CONSUMED_SOURCES
     BRIEF_DOCS "Absolute paths of every test .c consumed by a binary"
     FULL_DOCS  "Populated by edhoc_add_unity_test(); reconciled against on-disk \
-test_*.c by edhoc_reconcile_linux_tree() to catch orphans.")
+test_*.c by edhoc_reconcile_host_tree() to catch orphans.")
 
 
 # -----------------------------------------------------------------------------
@@ -134,13 +134,13 @@ function(edhoc_assert_registry_nonempty)
     if(NOT _reg)
         message(FATAL_ERROR
             "No test binaries were registered for this configuration. A preset "
-            "that builds tests/linux must enable at least one cipher suite.")
+            "that builds tests/host must enable at least one cipher suite.")
     endif()
 endfunction()
 
 
 # -----------------------------------------------------------------------------
-# edhoc_reconcile_linux_tree(<root>)
+# edhoc_reconcile_host_tree(<root>)
 #
 # Fails the configure if a test_*.c under <root> is wired into no binary and
 # would therefore silently never run.
@@ -150,7 +150,7 @@ endfunction()
 # excluded because the default build uses the stack backend. The CI check-matrix
 # job covers the per-preset union across the whole matrix.
 # -----------------------------------------------------------------------------
-function(edhoc_reconcile_linux_tree root)
+function(edhoc_reconcile_host_tree root)
     if(NOT (CONFIG_LIBEDHOC_CIPHER_SUITE_0_ENABLE AND
             CONFIG_LIBEDHOC_CIPHER_SUITE_2_ENABLE AND
             CONFIG_LIBEDHOC_CIPHER_SUITE_4_ENABLE AND

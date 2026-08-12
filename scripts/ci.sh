@@ -79,7 +79,7 @@ cmd_matrix() {
 }
 
 # --- check-matrix ------------------------------------------------------------
-# Fail if any test_*.c under tests/linux is built by no preset (it would
+# Fail if any test_*.c under tests/host is built by no preset (it would
 # silently never run). Bundled tiers (unit/, robustness/) compile many files
 # into one binary, so they are excluded here.
 cmd_check_matrix() {
@@ -98,7 +98,7 @@ cmd_check_matrix() {
         t="$(basename "$f" .c)"
         grep -qxF "$t" <<<"$union" \
             || { err "  '$t' is built by NO preset — it would silently never run"; missing=1; }
-    done < <(find tests/linux -name 'test_*.c' -not -path '*/support/*' -not -path '*/unit/*' -not -path '*/robustness/*' | sort -u)
+    done < <(find tests/host -name 'test_*.c' -not -path '*/support/*' -not -path '*/unit/*' -not -path '*/robustness/*' | sort -u)
 
     if [[ $missing -ne 0 ]]; then
         err "check-matrix FAILED: orphaned test file(s) above."
@@ -159,7 +159,7 @@ cmd_fuzz() {
     rm -rf "$artifacts"
     mkdir -p "$artifacts"
     local found=0 failed=() target status
-    for target in build/fuzz/tests/linux/fuzz/fuzz_*; do
+    for target in build/fuzz/tests/host/fuzz/fuzz_*; do
         [[ -x "$target" && ! "$target" == *.o ]] || continue
         found=1
         echo "--- $(basename "$target") ---"
@@ -169,7 +169,7 @@ cmd_fuzz() {
         [[ $status -eq 0 || $status -eq 124 ]] ||
             failed+=("$(basename "$target") (exit ${status})")
     done
-    [[ $found -eq 1 ]] || { err "No fuzz targets in build/fuzz/tests/linux/fuzz/"; exit 1; }
+    [[ $found -eq 1 ]] || { err "No fuzz targets in build/fuzz/tests/host/fuzz/"; exit 1; }
     if [[ ${#failed[@]} -ne 0 ]]; then
         err "fuzz failed: ${failed[*]}"
         err "reproducers in ${artifacts}/"
