@@ -16,6 +16,7 @@
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
 
 /* Defines ----------------------------------------------------------------- */

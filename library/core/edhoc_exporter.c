@@ -29,7 +29,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
@@ -189,10 +189,10 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT);
+	len += edhoc_cbor_int_head_length(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT);
 	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
-	len += edhoc_cbor_int_length((int32_t)csuite->hash_length);
+	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
+	len += edhoc_cbor_int_head_length((int32_t)csuite->hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -267,9 +267,10 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
-	len += context_len + edhoc_cbor_bstr_header_length(context_len);
-	len += edhoc_cbor_int_length((int32_t)csuite->hash_length);
+	len += edhoc_cbor_int_head_length(
+		EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
+	len += context_len + edhoc_cbor_bstr_head_length(context_len);
+	len += edhoc_cbor_int_head_length((int32_t)csuite->hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -345,9 +346,10 @@ STATIC int compute_prk_exporter(struct edhoc_context *ctx)
 		edhoc_selected_cipher_suite(ctx);
 
 	size_t len = 0;
-	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
-	len += edhoc_cbor_bstr_header_length(0); /* cbor empty byte string. */
-	len += edhoc_cbor_int_length((int32_t)csuite->hash_length);
+	len += edhoc_cbor_int_head_length(
+		EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
+	len += edhoc_cbor_bstr_head_length(0); /* cbor empty byte string. */
+	len += edhoc_cbor_int_head_length((int32_t)csuite->hash_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -423,9 +425,9 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 
 	/* 2. Cborise the exporter info (label, context, output length). */
 	size_t len = 0;
-	len += edhoc_cbor_int_length((int32_t)label);
-	len += context_len + edhoc_cbor_bstr_header_length(context_len);
-	len += edhoc_cbor_int_length((int32_t)output_length);
+	len += edhoc_cbor_int_head_length((int32_t)label);
+	len += context_len + edhoc_cbor_bstr_head_length(context_len);
+	len += edhoc_cbor_int_head_length((int32_t)output_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {

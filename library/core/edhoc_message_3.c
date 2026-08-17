@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_backend_log.h"
@@ -361,7 +362,7 @@ STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
 	}
 
 	len += sign_len;
-	len += edhoc_cbor_bstr_header_length(sign_len);
+	len += edhoc_cbor_bstr_head_length(sign_len);
 	len += mac_ctx->ead_len;
 
 	*plaintext_3_len = len;
@@ -399,8 +400,7 @@ STATIC int prepare_plaintext_3(const struct mac_context *mac_ctx,
 
 	size_t len = 0;
 	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset],
-		sign_len + edhoc_cbor_bstr_header_length(sign_len),
+		&ptxt[offset], sign_len + edhoc_cbor_bstr_head_length(sign_len),
 		&cbor_sign_or_mac_3, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
@@ -437,10 +437,10 @@ STATIC int comp_aad_3_len(const struct edhoc_context *ctx, size_t *aad_3_len)
 	size_t len = 0;
 
 	len += sizeof("Encrypt0") +
-	       edhoc_cbor_tstr_header_length(sizeof("Encrypt0"));
+	       edhoc_cbor_tstr_head_length(sizeof("Encrypt0"));
 	len += 1; /* One byte for cbor bstr with 0 value. */
 	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
+	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
 
 	*aad_3_len = len;
 	return EDHOC_SUCCESS;
@@ -470,10 +470,10 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
+	len += edhoc_cbor_int_head_length(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_3);
 	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
-	len += edhoc_cbor_int_length((int32_t)csuite->aead_key_length);
+	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
+	len += edhoc_cbor_int_head_length((int32_t)csuite->aead_key_length);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -611,10 +611,10 @@ STATIC int comp_th_4(struct edhoc_context *ctx,
 	 * hash_finish overwrites it. */
 	const size_t th_3_len = ctx->state.th.length;
 
-	uint8_t th_3_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
+	uint8_t th_3_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
 
 	const struct hash_segment segments[] = {
-		{ th_3_hdr, edhoc_cbor_bstr_header(th_3_hdr, th_3_len) },
+		{ th_3_hdr, edhoc_cbor_bstr_head_write(th_3_hdr, th_3_len) },
 		{ ctx->state.th.value, th_3_len },
 		{ ptxt, ptxt_len },
 		{ mac_ctx->cred, mac_ctx->cred_len },
@@ -840,10 +840,11 @@ STATIC int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
 	};
 
 	size_t len = 0;
-	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M);
+	len += edhoc_cbor_int_head_length(
+		EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_4E3M);
 	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
-	len += edhoc_cbor_int_length((int32_t)hash_len);
+	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
+	len += edhoc_cbor_int_head_length((int32_t)hash_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {

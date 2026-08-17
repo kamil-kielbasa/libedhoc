@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_connection_id_internal.h"
@@ -369,14 +370,14 @@ STATIC int comp_th_2(struct edhoc_context *ctx)
 	 * hash_finish overwrites it. */
 	const size_t h_msg_1_len = ctx->state.th.length;
 
-	uint8_t g_y_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
-	uint8_t h_msg_1_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
+	uint8_t g_y_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
+	uint8_t h_msg_1_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
 
 	const struct hash_segment segments[] = {
-		{ g_y_hdr, edhoc_cbor_bstr_header(g_y_hdr, g_y_len) },
+		{ g_y_hdr, edhoc_cbor_bstr_head_write(g_y_hdr, g_y_len) },
 		{ g_y, g_y_len },
 		{ h_msg_1_hdr,
-		  edhoc_cbor_bstr_header(h_msg_1_hdr, h_msg_1_len) },
+		  edhoc_cbor_bstr_head_write(h_msg_1_hdr, h_msg_1_len) },
 		{ ctx->state.th.value, h_msg_1_len },
 	};
 
@@ -545,7 +546,7 @@ STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
 	}
 
 	len += sign_len;
-	len += edhoc_cbor_bstr_header_length(sign_len);
+	len += edhoc_cbor_bstr_head_length(sign_len);
 	len += mac_ctx->ead_len;
 
 	*plaintext_2_len = len;
@@ -586,8 +587,7 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset],
-		sign_len + edhoc_cbor_bstr_header_length(sign_len),
+		&ptxt[offset], sign_len + edhoc_cbor_bstr_head_length(sign_len),
 		&cbor_sign_or_mac_2, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
@@ -637,10 +637,11 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 	};
 
 	size_t len = 0;
-	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2);
+	len += edhoc_cbor_int_head_length(
+		EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2);
 	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
-	len += edhoc_cbor_int_length((int32_t)keystream_len);
+	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
+	len += edhoc_cbor_int_head_length((int32_t)keystream_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {
@@ -960,10 +961,10 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
 	 * hash_finish overwrites it. */
 	const size_t th_2_len = ctx->state.th.length;
 
-	uint8_t th_2_hdr[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
+	uint8_t th_2_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
 
 	const struct hash_segment segments[] = {
-		{ th_2_hdr, edhoc_cbor_bstr_header(th_2_hdr, th_2_len) },
+		{ th_2_hdr, edhoc_cbor_bstr_head_write(th_2_hdr, th_2_len) },
 		{ ctx->state.th.value, th_2_len },
 		{ ptxt, ptxt_len },
 		{ mac_ctx->cred, mac_ctx->cred_len },
@@ -1011,10 +1012,11 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 	};
 
 	size_t len = 0;
-	len += edhoc_cbor_int_length(EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M);
+	len += edhoc_cbor_int_head_length(
+		EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M);
 	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_header_length(ctx->state.th.length);
-	len += edhoc_cbor_int_length((int32_t)hash_len);
+	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
+	len += edhoc_cbor_int_head_length((int32_t)hash_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info, len);
 	if (NULL == info) {

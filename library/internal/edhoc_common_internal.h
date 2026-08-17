@@ -2,7 +2,6 @@
  * \file    edhoc_common_internal.h
  * \author  Kamil Kielbasa
  * \brief   EDHOC common implementations:
- *          - CBOR utilities.
  *          - MAC context.
  *          - MAC & Signature_or_MAC.
  *
@@ -36,11 +35,6 @@
 #include <stdbool.h>
 
 /* Defines ----------------------------------------------------------------- */
-
-/** Maximum number of bytes \ref edhoc_cbor_bstr_header can emit: a one-byte
- *  initial byte plus a four-byte length, for payloads up to \c UINT32_MAX. */
-#define EDHOC_CBOR_BSTR_HEADER_MAX_LEN (5)
-
 /* Types and type definitions ---------------------------------------------- */
 
 /** \defgroup edhoc-common-structures EDHOC common structures
@@ -132,82 +126,6 @@ struct hash_segment {
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
-
-/** \defgroup edhoc-common-cbor EDHOC common CBOR
- * @{
- */
-
-/**
- * \brief Length of the CBOR encoding of an integer.
- *
- * \param value                         Integer value to encode.
- *
- * \return Number of bytes the encoding of \p value occupies.
- */
-size_t edhoc_cbor_int_length(int32_t value);
-
-/**
- * \brief Length of the CBOR header framing a text string.
- *
- * \param length                        Length of the text string in bytes.
- *
- * \return Number of header bytes, excluding the string itself.
- */
-size_t edhoc_cbor_tstr_header_length(size_t length);
-
-/**
- * \brief Length of the CBOR header framing a byte string.
- *
- * \param length                        Length of the byte string in bytes.
- *
- * \return Number of header bytes, excluding the string itself.
- */
-size_t edhoc_cbor_bstr_header_length(size_t length);
-
-/**
- * \brief Check whether a byte is a complete one byte CBOR integer.
- *
- *        RFC 9528: 3.3.2 represents such a byte string by that integer. Applies
- *        to connection identifiers and to a COSE 'kid'.
- *
- * \param value                         Byte to check.
- *
- * \return True if \p value encodes an integer in the range -24..23.
- */
-bool edhoc_cbor_is_one_byte_int(uint8_t value);
-
-/**
- * \brief Emit the CBOR byte-string header framing a payload of \p length
- *        bytes, so it can be streamed (e.g. into a hash) without a contiguous
- *        copy of the header and the payload.
- *
- * \param[out] header   Buffer of at least \ref EDHOC_CBOR_BSTR_HEADER_MAX_LEN
- *                      bytes receiving the header.
- * \param length        Length of the byte-string payload.
- *
- * \return Number of header bytes written, zero on invalid arguments.
- */
-size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length);
-
-/**
- * \brief Compute CBOR overhead for a map.
- *
- * \param items                         Number of key-value pairs in the map.
- *
- * \return Number of CBOR overhead bytes for encoding a map of \p items pairs.
- */
-size_t edhoc_cbor_map_oh(size_t items);
-
-/**
- * \brief Compute CBOR overhead for an array.
- *
- * \param items                         Number of elements in the array.
- *
- * \return Number of CBOR overhead bytes for encoding an array of \p items elements.
- */
-size_t edhoc_cbor_array_oh(size_t items);
-
-/**@}*/
 
 /** \defgroup edhoc-common-hash EDHOC common transcript hash
  * @{

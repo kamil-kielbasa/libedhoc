@@ -34,98 +34,112 @@ TEST_TEAR_DOWN(coverage_cbor)
 {
 }
 
-TEST(coverage_cbor, cbor_int_mem_req_ranges)
+TEST(coverage_cbor, cbor_int_head_length_ranges)
 {
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_length(0));
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_length(23));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_int_length(24));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_int_length(255));
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_int_length(256));
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_int_length(65535));
-	TEST_ASSERT_EQUAL(4, edhoc_cbor_int_length(65536));
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_length(-1));
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_length(-24));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_int_length(-25));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_head_length(0));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_head_length(23));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_int_head_length(24));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_int_head_length(255));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_int_head_length(256));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_int_head_length(65535));
+	TEST_ASSERT_EQUAL(5, edhoc_cbor_int_head_length(65536));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_head_length(-1));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_int_head_length(-24));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_int_head_length(-25));
+	TEST_ASSERT_EQUAL(5, edhoc_cbor_int_head_length(-65537));
 }
 
-TEST(coverage_cbor, cbor_bstr_oh_ranges)
+TEST(coverage_cbor, cbor_bstr_head_length_ranges)
 {
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_header_length(0));
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_header_length(23));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_header_length(24));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_header_length(255));
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_header_length(256));
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_header_length(65535));
-	TEST_ASSERT_EQUAL(4, edhoc_cbor_bstr_header_length(65536));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_head_length(0));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_head_length(23));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_head_length(24));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_head_length(255));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_head_length(256));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_head_length(65535));
+	TEST_ASSERT_EQUAL(5, edhoc_cbor_bstr_head_length(65536));
+	TEST_ASSERT_EQUAL(9,
+			  edhoc_cbor_bstr_head_length((size_t)UINT32_MAX + 1));
 }
 
-TEST(coverage_cbor, cbor_bstr_header_ranges)
+TEST(coverage_cbor, cbor_bstr_head_write_ranges)
 {
-	uint8_t header[EDHOC_CBOR_BSTR_HEADER_MAX_LEN] = { 0 };
+	uint8_t head[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
 
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_header(header, 0));
-	TEST_ASSERT_EQUAL(0x40, header[0]);
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_head_write(head, 0));
+	TEST_ASSERT_EQUAL(0x40, head[0]);
 
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_header(header, 23));
-	TEST_ASSERT_EQUAL(0x57, header[0]);
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_bstr_head_write(head, 23));
+	TEST_ASSERT_EQUAL(0x57, head[0]);
 
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_header(header, 24));
-	TEST_ASSERT_EQUAL(0x58, header[0]);
-	TEST_ASSERT_EQUAL(24, header[1]);
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_head_write(head, 24));
+	TEST_ASSERT_EQUAL(0x58, head[0]);
+	TEST_ASSERT_EQUAL(24, head[1]);
 
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_header(header, 255));
-	TEST_ASSERT_EQUAL(0x58, header[0]);
-	TEST_ASSERT_EQUAL(255, header[1]);
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_bstr_head_write(head, 255));
+	TEST_ASSERT_EQUAL(0x58, head[0]);
+	TEST_ASSERT_EQUAL(255, head[1]);
 
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_header(header, 256));
-	TEST_ASSERT_EQUAL(0x59, header[0]);
-	TEST_ASSERT_EQUAL(0x01, header[1]);
-	TEST_ASSERT_EQUAL(0x00, header[2]);
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_head_write(head, 256));
+	TEST_ASSERT_EQUAL(0x59, head[0]);
+	TEST_ASSERT_EQUAL(0x01, head[1]);
+	TEST_ASSERT_EQUAL(0x00, head[2]);
 
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_header(header, 65535));
-	TEST_ASSERT_EQUAL(0x59, header[0]);
-	TEST_ASSERT_EQUAL(0xFF, header[1]);
-	TEST_ASSERT_EQUAL(0xFF, header[2]);
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_bstr_head_write(head, 65535));
+	TEST_ASSERT_EQUAL(0x59, head[0]);
+	TEST_ASSERT_EQUAL(0xFF, head[1]);
+	TEST_ASSERT_EQUAL(0xFF, head[2]);
 
-	TEST_ASSERT_EQUAL(5, edhoc_cbor_bstr_header(header, 65536));
-	TEST_ASSERT_EQUAL(0x5A, header[0]);
-	TEST_ASSERT_EQUAL(0x00, header[1]);
-	TEST_ASSERT_EQUAL(0x01, header[2]);
-	TEST_ASSERT_EQUAL(0x00, header[3]);
-	TEST_ASSERT_EQUAL(0x00, header[4]);
+	TEST_ASSERT_EQUAL(5, edhoc_cbor_bstr_head_write(head, 65536));
+	TEST_ASSERT_EQUAL(0x5A, head[0]);
+	TEST_ASSERT_EQUAL(0x00, head[1]);
+	TEST_ASSERT_EQUAL(0x01, head[2]);
+	TEST_ASSERT_EQUAL(0x00, head[3]);
+	TEST_ASSERT_EQUAL(0x00, head[4]);
+
+	TEST_ASSERT_EQUAL(0, edhoc_cbor_bstr_head_write(NULL, 0));
+
+	const size_t too_long = (size_t)UINT32_MAX + 1;
+
+	TEST_ASSERT_EQUAL(0, edhoc_cbor_bstr_head_write(head, too_long));
 }
 
-TEST(coverage_cbor, cbor_tstr_oh_ranges)
+TEST(coverage_cbor, cbor_tstr_head_length_ranges)
 {
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_tstr_header_length(0));
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_tstr_header_length(23));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_tstr_header_length(24));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_tstr_header_length(255));
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_tstr_header_length(256));
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_tstr_header_length(65535));
-	TEST_ASSERT_EQUAL(4, edhoc_cbor_tstr_header_length(65536));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_tstr_head_length(0));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_tstr_head_length(23));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_tstr_head_length(24));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_tstr_head_length(255));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_tstr_head_length(256));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_tstr_head_length(65535));
+	TEST_ASSERT_EQUAL(5, edhoc_cbor_tstr_head_length(65536));
 }
 
-TEST(coverage_cbor, cbor_map_oh)
+TEST(coverage_cbor, cbor_map_head_length_ranges)
 {
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_map_oh(1));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_map_head_length(1));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_map_head_length(23));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_map_head_length(24));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_map_head_length(256));
 }
 
-TEST(coverage_cbor, cbor_array_oh_ranges)
+TEST(coverage_cbor, cbor_array_head_length_ranges)
 {
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_array_oh(0));
-	TEST_ASSERT_EQUAL(1, edhoc_cbor_array_oh(23));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_array_oh(24));
-	TEST_ASSERT_EQUAL(2, edhoc_cbor_array_oh(255));
-	TEST_ASSERT_EQUAL(3, edhoc_cbor_array_oh(256));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_array_head_length(0));
+	TEST_ASSERT_EQUAL(1, edhoc_cbor_array_head_length(23));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_array_head_length(24));
+	TEST_ASSERT_EQUAL(2, edhoc_cbor_array_head_length(255));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_array_head_length(256));
+	TEST_ASSERT_EQUAL(3, edhoc_cbor_array_head_length(65535));
+	TEST_ASSERT_EQUAL(5, edhoc_cbor_array_head_length(65536));
 }
 
 TEST_GROUP_RUNNER(coverage_cbor)
 {
-	RUN_TEST_CASE(coverage_cbor, cbor_int_mem_req_ranges);
-	RUN_TEST_CASE(coverage_cbor, cbor_bstr_oh_ranges);
-	RUN_TEST_CASE(coverage_cbor, cbor_bstr_header_ranges);
-	RUN_TEST_CASE(coverage_cbor, cbor_tstr_oh_ranges);
-	RUN_TEST_CASE(coverage_cbor, cbor_map_oh);
-	RUN_TEST_CASE(coverage_cbor, cbor_array_oh_ranges);
+	RUN_TEST_CASE(coverage_cbor, cbor_int_head_length_ranges);
+	RUN_TEST_CASE(coverage_cbor, cbor_bstr_head_length_ranges);
+	RUN_TEST_CASE(coverage_cbor, cbor_bstr_head_write_ranges);
+	RUN_TEST_CASE(coverage_cbor, cbor_tstr_head_length_ranges);
+	RUN_TEST_CASE(coverage_cbor, cbor_map_head_length_ranges);
+	RUN_TEST_CASE(coverage_cbor, cbor_array_head_length_ranges);
 }

@@ -23,7 +23,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_macros_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -128,10 +128,10 @@ cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value)
 
 	switch (value->encode_type) {
 	case EDHOC_ENCODE_TYPE_INTEGER:
-		return edhoc_cbor_int_length(value->integer);
+		return edhoc_cbor_int_head_length(value->integer);
 	case EDHOC_ENCODE_TYPE_STRING:
 		return value->string.length +
-		       edhoc_cbor_bstr_header_length(value->string.length);
+		       edhoc_cbor_bstr_head_length(value->string.length);
 	default:
 		return 0;
 	}
@@ -665,12 +665,14 @@ int edhoc_credential_id_cred_length(
 
 	const size_t nr_of_items = 1;
 
-	*length = edhoc_cbor_map_oh(nr_of_items);
+	/* The COSE header label is the map key. */
+	*length = edhoc_cbor_map_head_length(nr_of_items) +
+		  edhoc_cbor_int_head_length((int32_t)material->label);
 
 	switch (material->label) {
 	case EDHOC_COSE_HEADER_KID:
 		*length += material->kid.length +
-			   edhoc_cbor_bstr_header_length(material->kid.length);
+			   edhoc_cbor_bstr_head_length(material->kid.length);
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
@@ -678,22 +680,22 @@ int edhoc_credential_id_cred_length(
 			const size_t len =
 				material->x509_chain.certificate[i].length;
 
-			*length += len + edhoc_cbor_bstr_header_length(len);
+			*length += len + edhoc_cbor_bstr_head_length(len);
 		}
 
 		if (1 < material->x509_chain.count) {
-			*length +=
-				edhoc_cbor_array_oh(material->x509_chain.count);
+			*length += edhoc_cbor_array_head_length(
+				material->x509_chain.count);
 		}
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		*length += edhoc_cbor_array_oh(nr_of_items);
+		*length += edhoc_cbor_array_head_length(nr_of_items);
 		*length +=
 			cbor_int_or_string_len(&material->x509_hash.algorithm);
 		*length += material->x509_hash.fingerprint.length;
-		*length += edhoc_cbor_bstr_header_length(
+		*length += edhoc_cbor_bstr_head_length(
 			material->x509_hash.fingerprint.length);
 		break;
 
@@ -729,7 +731,7 @@ int edhoc_credential_cred_length(
 	}
 
 	*length = material->credential.length +
-		  edhoc_cbor_bstr_header_length(material->credential.length);
+		  edhoc_cbor_bstr_head_length(material->credential.length);
 
 	return EDHOC_SUCCESS;
 }

@@ -15,6 +15,7 @@ set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_4.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_error.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_exporter.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_cbor_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_common_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_connection_id_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_credentials_internal.c

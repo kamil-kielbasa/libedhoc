@@ -2,7 +2,6 @@
  * \file    edhoc_common_internal.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC common implementations:
- *          - CBOR utilities.
  *          - MAC context.
  *          - MAC & Signature_or_MAC.
  *
@@ -32,6 +31,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_connection_id_internal.h"
@@ -131,7 +131,7 @@ STATIC int comp_th_len(size_t th_len, size_t *len)
 
 	*len = 0;
 	*len += th_len;
-	*len += edhoc_cbor_bstr_header_length(th_len);
+	*len += edhoc_cbor_bstr_head_length(th_len);
 
 	return EDHOC_SUCCESS;
 }
@@ -144,9 +144,9 @@ STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 	}
 
 	for (size_t i = 0; i < ctx->ead.count; ++i) {
-		*len += edhoc_cbor_int_length(ctx->ead.token[i].label);
+		*len += edhoc_cbor_int_head_length(ctx->ead.token[i].label);
 		*len += ctx->ead.token[i].value.length;
-		*len += edhoc_cbor_bstr_header_length(
+		*len += edhoc_cbor_bstr_head_length(
 			ctx->ead.token[i].value.length);
 	}
 
@@ -173,14 +173,14 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	len += sizeof("Signature1");
-	len += edhoc_cbor_tstr_header_length(sizeof("Signature1"));
+	len += edhoc_cbor_tstr_head_length(sizeof("Signature1"));
 	len += mac_ctx->id_cred_len;
-	len += edhoc_cbor_bstr_header_length(mac_ctx->id_cred_len);
+	len += edhoc_cbor_bstr_head_length(mac_ctx->id_cred_len);
 	len += mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len;
-	len += edhoc_cbor_bstr_header_length(
-		mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len);
+	len += edhoc_cbor_bstr_head_length(mac_ctx->th_len + mac_ctx->cred_len +
+					   mac_ctx->ead_len);
 	len += mac_len;
-	len += edhoc_cbor_int_length((int32_t)mac_len);
+	len += edhoc_cbor_int_head_length((int32_t)mac_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
 	if (NULL == cose_sign_1_buf) {
@@ -232,14 +232,14 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 	size_t len = 0;
 	len += sizeof("Signature1");
-	len += edhoc_cbor_tstr_header_length(sizeof("Signature1"));
+	len += edhoc_cbor_tstr_head_length(sizeof("Signature1"));
 	len += mac_ctx->id_cred_len;
-	len += edhoc_cbor_bstr_header_length(mac_ctx->id_cred_len);
+	len += edhoc_cbor_bstr_head_length(mac_ctx->id_cred_len);
 	len += mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len;
-	len += edhoc_cbor_bstr_header_length(
-		mac_ctx->th_len + mac_ctx->cred_len + mac_ctx->ead_len);
+	len += edhoc_cbor_bstr_head_length(mac_ctx->th_len + mac_ctx->cred_len +
+					   mac_ctx->ead_len);
 	len += mac_len;
-	len += edhoc_cbor_int_length((int32_t)mac_len);
+	len += edhoc_cbor_int_head_length((int32_t)mac_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
 	if (NULL == cose_sign_1_buf) {
@@ -274,114 +274,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 }
 
 /* Module interface function definitions ----------------------------------- */
-
-size_t edhoc_cbor_int_length(int32_t value)
-{
-	if (value >= EDHOC_ONE_BYTE_CBOR_INT_MIN &&
-	    value <= EDHOC_ONE_BYTE_CBOR_INT_MAX) {
-		return 1;
-	} else if (value >= -(UINT8_MAX + 1) && value <= UINT8_MAX) {
-		return 2;
-	} else if (value >= -(UINT16_MAX + 1) && value <= UINT16_MAX) {
-		return 3;
-	} else {
-		return 4;
-	}
-}
-
-size_t edhoc_cbor_tstr_header_length(size_t length)
-{
-	if (length <= 23) {
-		return 1;
-	} else if (length <= UINT8_MAX) {
-		return 2;
-	} else if (length <= UINT16_MAX) {
-		return 3;
-	} else if (length <= UINT32_MAX) {
-		return 4;
-	} else {
-		return 5;
-	}
-}
-
-size_t edhoc_cbor_bstr_header_length(size_t length)
-{
-	if (length <= 23) {
-		return 1; // canonical CBOR
-	} else if (length <= UINT8_MAX) {
-		return 2;
-	} else if (length <= UINT16_MAX) {
-		return 3;
-	} else if (length <= UINT32_MAX) {
-		return 4;
-	} else {
-		return 5;
-	}
-}
-
-bool edhoc_cbor_is_one_byte_int(uint8_t value)
-{
-	const uint8_t cbor_unsigned_max = 0x17u;
-	const uint8_t cbor_negative_min = 0x20u;
-	const uint8_t cbor_negative_max = 0x37u;
-
-	return value <= cbor_unsigned_max ||
-	       (cbor_negative_min <= value && value <= cbor_negative_max);
-}
-
-size_t edhoc_cbor_bstr_header(uint8_t *header, size_t length)
-{
-	if (NULL == header || EDHOC_CBOR_BSTR_HEADER_MAX_LEN <
-				      edhoc_cbor_bstr_header_length(length)) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return 0;
-	}
-
-	if (length <= 23) {
-		header[0] = (uint8_t)(0x40u | length);
-		return 1;
-	}
-
-	if (length <= UINT8_MAX) {
-		header[0] = 0x58u;
-		header[1] = (uint8_t)length;
-		return 2;
-	}
-
-	if (length <= UINT16_MAX) {
-		header[0] = 0x59u;
-		header[1] = (uint8_t)(length >> 8);
-		header[2] = (uint8_t)(length & 0xFFu);
-		return 3;
-	}
-
-	header[0] = 0x5Au;
-	header[1] = (uint8_t)(length >> 24);
-	header[2] = (uint8_t)(length >> 16);
-	header[3] = (uint8_t)(length >> 8);
-	header[4] = (uint8_t)(length & 0xFFu);
-
-	return 5;
-}
-
-size_t edhoc_cbor_map_oh(size_t items)
-{
-	(void)items;
-
-	return 3;
-}
-
-size_t edhoc_cbor_array_oh(size_t items)
-{
-	if (items < 24)
-		return 1;
-	if (items < 256)
-		return 2;
-	if (items < 65535)
-		return 3;
-
-	return 4;
-}
 
 int edhoc_comp_hash(const struct edhoc_context *ctx,
 		    const struct hash_segment *segments, size_t nr_of_segments,
@@ -857,10 +749,9 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 
 	/* Calculate struct info cbor overhead. */
 	size_t len = 0;
-	len += edhoc_cbor_int_length(info.info_label);
-	len += mac_ctx->buf_len +
-	       edhoc_cbor_bstr_header_length(mac_ctx->buf_len);
-	len += edhoc_cbor_int_length((int32_t)mac_len);
+	len += edhoc_cbor_int_head_length(info.info_label);
+	len += mac_ctx->buf_len + edhoc_cbor_bstr_head_length(mac_ctx->buf_len);
+	len += edhoc_cbor_int_head_length((int32_t)mac_len);
 
 	EDHOC_MEM_ALLOC(uint8_t, info_buf, len);
 	if (NULL == info_buf) {

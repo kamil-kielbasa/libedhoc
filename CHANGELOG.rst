@@ -1,3 +1,11 @@
+Unreleased
+----------
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : fixed the CBOR head
+  length helpers. They reported four bytes where CBOR uses five, and five where
+  it uses nine, so a buffer sized for an EAD label above 65535 was one byte too
+  small.
+
 Version 2.0.2
 -------------
 
