@@ -31,6 +31,7 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_key_slot_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 

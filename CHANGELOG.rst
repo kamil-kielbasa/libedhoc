@@ -1,6 +1,15 @@
 Unreleased
 ----------
 
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the library core is
+  being split into modules, so that a future protocol flow reuses the
+  primitives instead of copying them. Modules created so far:
+
+  * ``edhoc_cbor_internal`` : CBOR head sizes and byte-string head encoding.
+  * ``edhoc_key_slot_internal`` : key-store handle slots.
+
+  The public API is unchanged.
+
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : fixed the CBOR head
   length helpers. They reported four bytes where CBOR uses five, and five where
   it uses nine, so a buffer sized for an EAD label above 65535 was one byte too

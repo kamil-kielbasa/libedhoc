@@ -27,6 +27,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_key_slot_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
@@ -223,7 +224,7 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 		ctx->user_context,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M), info, len,
 		EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_OUT));
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -305,7 +306,7 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 
 	ret = edhoc_crypto(ctx)->expand(
 		ctx->user_context, old_prk_out, info, len, EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_OUT));
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -380,7 +381,7 @@ STATIC int compute_prk_exporter(struct edhoc_context *ctx)
 		ctx->user_context,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_OUT), info, len,
 		EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER));
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {

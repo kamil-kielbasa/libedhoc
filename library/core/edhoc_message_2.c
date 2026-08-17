@@ -23,6 +23,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_key_slot_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
@@ -287,8 +288,8 @@ STATIC int comp_encapsulate(struct edhoc_context *ctx)
 	const int ret = edhoc_crypto(ctx)->encapsulate(
 		ctx->user_context, ctx->ephemeral.peer.value,
 		ctx->ephemeral.peer.length,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
 		ctx->ephemeral.own.value, sizeof(ctx->ephemeral.own.value),
 		&ctx->ephemeral.own.length);
 
@@ -319,7 +320,7 @@ STATIC int comp_decapsulate(struct edhoc_context *ctx)
 		ctx->user_context,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 		ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET));
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_SHARED_SECRET));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decapsulate: %d", ret);
@@ -419,7 +420,7 @@ STATIC int comp_prk_2e(struct edhoc_context *ctx)
 		ctx->user_context,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
 		ctx->state.th.value, ctx->state.th.length,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E));
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_2E));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Extract PRK_2e: %d", ret);
@@ -499,7 +500,7 @@ STATIC int comp_prk_3e2m(struct edhoc_context *ctx, const void *private_key_id,
 			ctx->user_context,
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_RX), salt_3e2m,
 			EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M));
+			edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_3E2M));
 
 		edhoc_zeroize(ctx, salt_3e2m, EDHOC_MEM_ALLOC_SIZE(salt_3e2m));
 		EDHOC_MEM_FREE(salt_3e2m);
@@ -1059,7 +1060,7 @@ STATIC int comp_grx(struct edhoc_context *ctx, const void *private_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	void *grx_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_RX);
+	void *grx_key_id = edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_G_RX);
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	switch (ctx->state.role) {

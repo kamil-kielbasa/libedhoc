@@ -22,6 +22,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_key_slot_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_connection_id_internal.h"
@@ -108,7 +109,7 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	ctx->ephemeral.own.length = 0;
 	ret = edhoc_crypto(ctx)->generate_key_pair(
 		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
 		ctx->ephemeral.own.value, ARRAY_SIZE(ctx->ephemeral.own.value),
 		&ctx->ephemeral.own.length);
 

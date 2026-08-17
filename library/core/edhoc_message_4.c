@@ -23,6 +23,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_key_slot_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
@@ -324,7 +325,7 @@ STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
 		ctx->user_context,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M), info, len,
 		EDHOC_KEY_USAGE_AEAD,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_4));
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_K_4));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand K_4: %d", ret);

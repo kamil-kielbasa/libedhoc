@@ -33,8 +33,6 @@ function(libedhoc_target_warnings target profile)
         if(PROJECT_IS_TOP_LEVEL)
             set(extra_clang
                 -Weverything
-                -Wno-cast-qual                    # one key-slot accessor serves
-                                                  # the backend's read and write roles
                 -Wno-covered-switch-default       # every enum switch carries a
                                                   # default for out-of-range values
                 -Wno-declaration-after-statement  # the project is C11

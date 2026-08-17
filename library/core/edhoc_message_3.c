@@ -23,6 +23,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_key_slot_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
@@ -319,7 +320,7 @@ STATIC int comp_prk_4e3m(struct edhoc_context *ctx, const void *private_key_id,
 			ctx->user_context,
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_IY), salt_4e3m,
 			EDHOC_MEM_ALLOC_SIZE(salt_4e3m),
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M));
+			edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_4E3M));
 
 		edhoc_zeroize(ctx, salt_4e3m, EDHOC_MEM_ALLOC_SIZE(salt_4e3m));
 		EDHOC_MEM_FREE(salt_4e3m);
@@ -504,7 +505,7 @@ STATIC int comp_key_iv_aad_3(struct edhoc_context *ctx, uint8_t *iv,
 		ctx->user_context,
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M), info, len,
 		EDHOC_KEY_USAGE_AEAD,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_3));
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_K_3));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Expand K_3: %d", ret);
@@ -887,7 +888,7 @@ STATIC int comp_giy(struct edhoc_context *ctx, const void *private_key_id,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	void *giy_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_IY);
+	void *giy_key_id = edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_G_IY);
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	switch (ctx->state.role) {
