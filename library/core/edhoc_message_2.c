@@ -24,7 +24,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
-#include "edhoc_values_internal.h"
+#include "edhoc_kdf_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
@@ -41,12 +41,10 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_edhoc_types.h>
 #include <backend_cbor_x509_types.h>
 #include <backend_cbor_message_2_encode.h>
 #include <backend_cbor_message_2_decode.h>
 #include <backend_cbor_bstr_type_encode.h>
-#include <backend_cbor_info_encode.h>
 #include <backend_cbor_plaintext_2_decode.h>
 
 /* Module defines ---------------------------------------------------------- */
@@ -628,55 +626,23 @@ STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	const struct info input_info = {
-		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2,
-		.info_context.value = ctx->state.th.value,
-		.info_context.len = ctx->state.th.length,
-		.info_length = (uint32_t)keystream_len,
-	};
-
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length(
-		EDHOC_EXTRACT_PRK_INFO_LABEL_KEYSTREAM_2);
-	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
-	len += edhoc_cbor_int_head_length((int32_t)keystream_len);
-
-	EDHOC_MEM_ALLOC(uint8_t, info, len);
-	if (NULL == info) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret || EDHOC_MEM_ALLOC_SIZE(info) != len) {
-		EDHOC_LOG_ERR("CBOR enc info for keystream_2: %d, %zu, %zu",
-			      ret, EDHOC_MEM_ALLOC_SIZE(info), len);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* EDHOC_Expand(PRK_2e, info) -> KEYSTREAM_2 (raw public output). For
-	 * methods 0/2 PRK_2e was moved into PRK_3e2m, so read whichever handle
-	 * still holds it. */
+	/* For methods 0/2 PRK_2e was moved into PRK_3e2m, so read whichever
+	 * handle still holds it. */
 	const void *prk_2e_key_id =
 		edhoc_key_slot_present(ctx, EDHOC_KEY_SLOT_PRK_2E) ?
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E) :
 			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
-	ret = edhoc_crypto(ctx)->expand_raw(ctx->user_context, prk_2e_key_id,
-					    info, EDHOC_MEM_ALLOC_SIZE(info),
-					    keystream, keystream_len);
-	EDHOC_MEM_FREE(info);
+
+	const int ret = edhoc_kdf_expand_raw(ctx, prk_2e_key_id,
+					     EDHOC_KDF_LABEL_KEYSTREAM_2,
+					     ctx->state.th.value,
+					     ctx->state.th.length, keystream,
+					     keystream_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand keystream_2: %d, %zu", ret,
+		EDHOC_LOG_ERR("Derive KEYSTREAM_2: %d, %zu", ret,
 			      keystream_len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		return ret;
 	}
 
 	return EDHOC_SUCCESS;
@@ -1002,50 +968,14 @@ STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	const size_t hash_len = edhoc_selected_cipher_suite(ctx)->hash_length;
-
-	const struct info input_info = {
-		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M,
-		.info_context.value = ctx->state.th.value,
-		.info_context.len = ctx->state.th.length,
-		.info_length = (uint32_t)hash_len,
-	};
-
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length(
-		EDHOC_EXTRACT_PRK_INFO_LABEL_SALT_3E2M);
-	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
-	len += edhoc_cbor_int_head_length((int32_t)hash_len);
-
-	EDHOC_MEM_ALLOC(uint8_t, info, len);
-	if (NULL == info) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret || EDHOC_MEM_ALLOC_SIZE(info) != len) {
-		EDHOC_LOG_ERR("CBOR enc info for salt_3e2m: %d, %zu, %zu", ret,
-			      EDHOC_MEM_ALLOC_SIZE(info), len);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* EDHOC_Expand(PRK_2e, info) -> SALT_3e2m (raw). */
-	ret = edhoc_crypto(ctx)->expand_raw(
-		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E), info,
-		EDHOC_MEM_ALLOC_SIZE(info), salt, salt_len);
-	EDHOC_MEM_FREE(info);
+	const int ret = edhoc_kdf_expand_raw(
+		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E),
+		EDHOC_KDF_LABEL_SALT_3E2M, ctx->state.th.value,
+		ctx->state.th.length, salt, salt_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand salt_3e2m: %d, %zu", ret, salt_len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		EDHOC_LOG_ERR("Derive SALT_3e2m: %d, %zu", ret, salt_len);
+		return ret;
 	}
 
 	return EDHOC_SUCCESS;

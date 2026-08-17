@@ -30,7 +30,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
-#include "edhoc_values_internal.h"
+#include "edhoc_kdf_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
@@ -46,7 +46,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <backend_cbor_sig_structure_types.h>
 #include <backend_cbor_sig_structure_encode.h>
 #include <backend_cbor_ead_encode.h>
-#include <backend_cbor_info_encode.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -734,73 +733,34 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	struct info info = {
-		.info_context.value = mac_ctx->buf,
-		.info_context.len = mac_ctx->buf_len,
-		.info_length = (uint32_t)mac_len,
-	};
-
-	if (EDHOC_MESSAGE_2 == ctx->state.message)
-		info.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_2;
-
-	if (EDHOC_MESSAGE_3 == ctx->state.message)
-		info.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_MAC_3;
-
-	/* Calculate struct info cbor overhead. */
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length(info.info_label);
-	len += mac_ctx->buf_len + edhoc_cbor_bstr_head_length(mac_ctx->buf_len);
-	len += edhoc_cbor_int_head_length((int32_t)mac_len);
-
-	EDHOC_MEM_ALLOC(uint8_t, info_buf, len);
-	if (NULL == info_buf) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	len = 0;
-	ret = cbor_encode_info(info_buf, EDHOC_MEM_ALLOC_SIZE(info_buf), &info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc MAC info: %d", ret);
-		EDHOC_MEM_FREE(info_buf);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
+	int32_t label = 0;
+	const void *prk_key_id = NULL;
 
 	switch (ctx->state.message) {
 	case EDHOC_MESSAGE_2:
-		EDHOC_LOG_HEXDUMP_DBG(info_buf, len, "MAC_2 info");
+		label = EDHOC_KDF_LABEL_MAC_2;
+		prk_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
 		break;
 	case EDHOC_MESSAGE_3:
-		EDHOC_LOG_HEXDUMP_DBG(info_buf, len, "MAC_3 info");
+		label = EDHOC_KDF_LABEL_MAC_3;
+		prk_key_id = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 		break;
 
 	case EDHOC_MESSAGE_1:
 	case EDHOC_MESSAGE_4:
 	default:
-		EDHOC_LOG_ERR("Invalid message for MAC logging: %d",
+		EDHOC_LOG_ERR("Invalid message for MAC: %d",
 			      ctx->state.message);
-		EDHOC_MEM_FREE(info_buf);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	/* MAC = EDHOC_Expand(PRK, info) as raw output. The PRK is the message's
-	 * own handle: PRK_3e2m for message 2, PRK_4e3m for message 3. */
-	const void *prk_key_id =
-		(EDHOC_MESSAGE_2 == ctx->state.message) ?
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M) :
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
-
-	ret = edhoc_crypto(ctx)->expand_raw(ctx->user_context, prk_key_id,
-					    info_buf, len, mac, mac_len);
-	EDHOC_MEM_FREE(info_buf);
+	const int ret = edhoc_kdf_expand_raw(ctx, prk_key_id, label,
+					     mac_ctx->buf, mac_ctx->buf_len,
+					     mac, mac_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand MAC: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		EDHOC_LOG_ERR("Derive MAC: %d", ret);
+		return ret;
 	}
 
 	return EDHOC_SUCCESS;

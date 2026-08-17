@@ -24,7 +24,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
-#include "edhoc_values_internal.h"
+#include "edhoc_kdf_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
@@ -39,10 +39,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_edhoc_types.h>
 #include <backend_cbor_x509_types.h>
 #include <backend_cbor_enc_structure_types.h>
-#include <backend_cbor_info_encode.h>
 #include <backend_cbor_enc_structure_encode.h>
 #include <backend_cbor_plaintext_4_encode.h>
 #include <backend_cbor_plaintext_4_decode.h>
@@ -282,88 +280,30 @@ STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
+	const void *prk_4e3m = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
-	struct info input_info = { 0 };
-
-	/* Calculate struct info cbor overhead. */
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length(EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4);
-	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
-	len += edhoc_cbor_int_head_length((int32_t)csuite->aead_key_length);
-
-	EDHOC_MEM_ALLOC(uint8_t, info, len);
-	if (NULL == info) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	/* Generate K_4 as an AEAD key handle (its own context slot). */
-	input_info = (struct info){
-		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_K_4,
-		.info_context.value = ctx->state.th.value,
-		.info_context.len = ctx->state.th.length,
-		.info_length = (uint32_t)csuite->aead_key_length,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc info for K_4: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* EDHOC_Expand(PRK_4e3m, info) -> K_4 (AEAD key handle). */
-	ret = edhoc_crypto(ctx)->expand(
-		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M), info, len,
-		EDHOC_KEY_USAGE_AEAD,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_K_4));
+	int ret = edhoc_kdf_expand(
+		ctx, prk_4e3m, EDHOC_KDF_LABEL_K_4, ctx->state.th.value,
+		ctx->state.th.length, EDHOC_KEY_USAGE_AEAD,
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_K_4),
+		csuite->aead_key_length);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand K_4: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		EDHOC_LOG_ERR("Derive K_4: %d", ret);
+		return ret;
 	}
 
 	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_K_4);
 
-	/* Generate IV_4 (raw). */
-	input_info = (struct info){
-		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_IV_4,
-		.info_context.value = ctx->state.th.value,
-		.info_context.len = ctx->state.th.length,
-		.info_length = (uint32_t)csuite->aead_iv_length,
-	};
-
-	memset(info, 0, EDHOC_MEM_ALLOC_SIZEOF(info));
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc info for IV_4: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* EDHOC_Expand(PRK_4e3m, info) -> IV_4 (raw). */
-	ret = edhoc_crypto(ctx)->expand_raw(
-		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M), info, len, iv,
-		iv_len);
-	EDHOC_MEM_FREE(info);
+	ret = edhoc_kdf_expand_raw(ctx, prk_4e3m, EDHOC_KDF_LABEL_IV_4,
+				   ctx->state.th.value, ctx->state.th.length,
+				   iv, iv_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand IV_4: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		EDHOC_LOG_ERR("Derive IV_4: %d", ret);
+		return ret;
 	}
 
 	/* Generate AAD_4. */
@@ -374,7 +314,7 @@ STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
 		.enc_structure_external_aad.len = ctx->state.th.length,
 	};
 
-	len = 0;
+	size_t len = 0;
 	ret = cbor_encode_enc_structure(aad, aad_len, &cose_enc_0, &len);
 
 	if (EDHOC_SUCCESS != ret) {

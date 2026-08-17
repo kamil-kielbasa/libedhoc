@@ -7,6 +7,7 @@ Unreleased
 
   * ``edhoc_cbor_internal`` : CBOR head sizes and byte-string head encoding.
   * ``edhoc_key_slot_internal`` : key-store handle slots.
+  * ``edhoc_kdf_internal`` : EDHOC_Extract and EDHOC_KDF.
 
   The public API is unchanged.
 

@@ -28,17 +28,11 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
+#include "edhoc_kdf_internal.h"
 #include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
-#include "edhoc_cbor_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
-#include "edhoc_backend_memory.h"
-
-/* CBOR headers: */
-#include <zcbor_common.h>
-#include <backend_cbor_edhoc_types.h>
-#include <backend_cbor_info_encode.h>
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -183,53 +177,19 @@ STATIC int compute_prk_out(struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
 
-	/* Calculate struct info cbor overhead. */
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length(EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT);
-	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
-	len += edhoc_cbor_int_head_length((int32_t)csuite->hash_length);
-
-	EDHOC_MEM_ALLOC(uint8_t, info, len);
-	if (NULL == info) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	/* Generate PRK_out. */
-	const struct info input_info = {
-		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_OUT,
-		.info_context.value = ctx->state.th.value,
-		.info_context.len = ctx->state.th.length,
-		.info_length = (uint32_t)csuite->hash_length,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc PRK_out info: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* EDHOC_Expand(PRK_4e3m, info) -> PRK_out (KDF key handle). */
-	ret = edhoc_crypto(ctx)->expand(
-		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M), info, len,
-		EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT));
-	EDHOC_MEM_FREE(info);
+	int ret = edhoc_kdf_expand(
+		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M),
+		EDHOC_KDF_LABEL_PRK_OUT, ctx->state.th.value,
+		ctx->state.th.length, EDHOC_KEY_USAGE_KDF,
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT),
+		csuite->hash_length);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand PRK_out: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		EDHOC_LOG_ERR("Derive PRK_out: %d", ret);
+		return ret;
 	}
 
 	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_OUT);
@@ -261,61 +221,29 @@ STATIC int compute_new_prk_out(struct edhoc_context *ctx,
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
 
-	/* Calculate struct info cbor overhead. */
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length(
-		EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT);
-	len += context_len + edhoc_cbor_bstr_head_length(context_len);
-	len += edhoc_cbor_int_head_length((int32_t)csuite->hash_length);
-
-	EDHOC_MEM_ALLOC(uint8_t, info, len);
-	if (NULL == info) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	/* Generate PRK_out. */
-	const struct info input_info = {
-		.info_label = EDHOC_EXTRACT_PRK_INFO_LABEL_NEW_PRK_OUT,
-		.info_context.value = context,
-		.info_context.len = context_len,
-		.info_length = (uint32_t)csuite->hash_length,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc new PRK_out info: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* new PRK_out = EDHOC_Expand(PRK_out, info(context)). The old PRK_out
-	 * handle is taken from a local copy so the derivation can write the new
-	 * handle straight into the PRK_out slot; the old handle is destroyed
+	/* new PRK_out = EDHOC_KDF(PRK_out, ...). The old PRK_out handle is
+	 * taken from a local copy so the derivation can write the new handle
+	 * straight into the PRK_out slot; the old handle is destroyed
 	 * afterwards. */
 	uint8_t old_prk_out[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	edhoc_key_slot_snapshot(ctx, EDHOC_KEY_SLOT_PRK_OUT, old_prk_out);
 
-	ret = edhoc_crypto(ctx)->expand(
-		ctx->user_context, old_prk_out, info, len, EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT));
-	EDHOC_MEM_FREE(info);
+	int ret = edhoc_kdf_expand(
+		ctx, old_prk_out, EDHOC_KDF_LABEL_NEW_PRK_OUT, context,
+		context_len, EDHOC_KEY_USAGE_KDF,
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT),
+		csuite->hash_length);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand new PRK_out: %d", ret);
+		EDHOC_LOG_ERR("Derive new PRK_out: %d", ret);
 		/* Restore the old PRK_out handle so the slot stays valid. */
 		edhoc_key_slot_restore(ctx, EDHOC_KEY_SLOT_PRK_OUT,
 				       old_prk_out);
 		edhoc_zeroize(ctx, old_prk_out, sizeof(old_prk_out));
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		return ret;
 	}
 
 	/* The new PRK_out handle now owns the slot; destroy the old one. */
@@ -341,52 +269,18 @@ STATIC int compute_prk_exporter(struct edhoc_context *ctx)
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
 
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length(
-		EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER);
-	len += edhoc_cbor_bstr_head_length(0); /* cbor empty byte string. */
-	len += edhoc_cbor_int_head_length((int32_t)csuite->hash_length);
-
-	EDHOC_MEM_ALLOC(uint8_t, info, len);
-	if (NULL == info) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	const struct info input_info = {
-		.info_label =
-			(int32_t)EDHOC_EXTRACT_PRK_INFO_LABEL_PRK_EXPORTER,
-		.info_context.value = NULL,
-		.info_context.len = 0,
-		.info_length = (uint32_t)csuite->hash_length,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc PRK_exporter info: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* EDHOC_Expand(PRK_out, info) -> PRK_exporter (KDF key handle). */
-	ret = edhoc_crypto(ctx)->expand(
-		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_OUT), info, len,
-		EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER));
-	EDHOC_MEM_FREE(info);
+	const int ret = edhoc_kdf_expand(
+		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_OUT),
+		EDHOC_KDF_LABEL_PRK_EXPORTER, NULL, 0, EDHOC_KEY_USAGE_KDF,
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER),
+		csuite->hash_length);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand PRK_exporter: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+		EDHOC_LOG_ERR("Derive PRK_exporter: %d", ret);
+		return ret;
 	}
 
 	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER);
@@ -424,65 +318,35 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 		}
 	}
 
-	/* 2. Cborise the exporter info (label, context, output length). */
-	size_t len = 0;
-	len += edhoc_cbor_int_head_length((int32_t)label);
-	len += context_len + edhoc_cbor_bstr_head_length(context_len);
-	len += edhoc_cbor_int_head_length((int32_t)output_length);
-
-	EDHOC_MEM_ALLOC(uint8_t, info, len);
-	if (NULL == info) {
-		EDHOC_LOG_ERR("Memory allocation failed");
-		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-	}
-
-	const struct info input_info = (struct info){
-		.info_label = (int32_t)label,
-		.info_context.value = context,
-		.info_context.len = context_len,
-		.info_length = (uint32_t)output_length,
-	};
-
-	len = 0;
-	ret = cbor_encode_info(info, EDHOC_MEM_ALLOC_SIZE(info), &input_info,
-			       &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc exporter info: %d", ret);
-		EDHOC_MEM_FREE(info);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* 3. Compute the transient PRK_exporter. */
+	/* 2. Compute the transient PRK_exporter. */
 	ret = compute_prk_exporter(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_exporter: %d", ret);
-		EDHOC_MEM_FREE(info);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	/* 4. Derive the keying material as a key handle or raw bytes. */
+	/* 3. Derive the keying material as a key handle or raw bytes. */
 	const void *prk_exporter =
 		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER);
 
 	switch (output_kind) {
 	case EXPORTER_OUTPUT_HANDLE:
-		ret = edhoc_crypto(ctx)->expand(ctx->user_context, prk_exporter,
-						info, len, usage, output);
+		ret = edhoc_kdf_expand(ctx, prk_exporter, (int32_t)label,
+				       context, context_len, usage, output,
+				       output_length);
 		break;
 	case EXPORTER_OUTPUT_BYTES:
-		ret = edhoc_crypto(ctx)->expand_raw(ctx->user_context,
-						    prk_exporter, info, len,
-						    output, output_length);
+		ret = edhoc_kdf_expand_raw(ctx, prk_exporter, (int32_t)label,
+					   context, context_len, output,
+					   output_length);
 		break;
 	default:
 		ret = EDHOC_ERROR_NOT_SUPPORTED;
 		break;
 	}
-	EDHOC_MEM_FREE(info);
 
-	/* 5. Release the transient PRK_exporter. */
+	/* 4. Release the transient PRK_exporter. */
 	const int destroy_ret =
 		edhoc_key_slot_release(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER);
 
