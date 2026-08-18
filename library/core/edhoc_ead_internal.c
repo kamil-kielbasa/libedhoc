@@ -98,7 +98,10 @@ bool edhoc_ead_is_present(const struct edhoc_context *ctx)
 
 bool edhoc_ead_may_compose(const struct edhoc_context *ctx)
 {
-	return NULL != ctx->interfaces.ead.compose && 0 != EDHOC_EAD_CAPACITY;
+	/* The host analysis sees one fixed capacity; no-EAD builds return zero. */
+	return NULL != ctx->interfaces.ead.compose &&
+	       // cppcheck-suppress knownConditionTrueFalse
+	       0 != EDHOC_EAD_CAPACITY;
 }
 
 bool edhoc_ead_may_process(const struct edhoc_context *ctx)
