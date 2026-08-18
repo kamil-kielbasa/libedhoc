@@ -10,6 +10,7 @@ Unreleased
   * ``edhoc_kdf_internal`` : EDHOC_Extract and EDHOC_KDF.
   * ``edhoc_transcript_hash_internal`` : TH_1 to TH_4.
   * ``edhoc_ead_internal`` : external authorization data.
+  * ``edhoc_mac_internal`` : MAC context, MAC and Signature_or_MAC.
 
   The public API is unchanged.
 

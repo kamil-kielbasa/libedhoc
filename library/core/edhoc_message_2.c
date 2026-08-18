@@ -29,7 +29,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_mac_internal.h"
+#include "edhoc_plaintext_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
@@ -1057,7 +1058,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	size_t mac_ctx_len = 0;
-	ret = edhoc_comp_mac_context_length(ctx, &material, &mac_ctx_len);
+	ret = edhoc_mac_context_length(ctx, &material, &mac_ctx_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		return ret;
@@ -1074,7 +1075,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	struct mac_context *mac_ctx = (void *)mac_ctx_buf;
 	mac_ctx->buf_len = mac_ctx_len;
 
-	ret = edhoc_comp_mac_context(ctx, &material, mac_ctx);
+	ret = edhoc_mac_context_compose(ctx, &material, mac_ctx);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		return ret;
@@ -1089,7 +1090,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	/* 7c. Compute Message Authentication Code (MAC_2). */
 	size_t mac_length = 0;
-	ret = edhoc_comp_mac_length(ctx, &mac_length);
+	ret = edhoc_mac_length(ctx, &mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		return ret;
@@ -1101,7 +1102,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
-	ret = edhoc_comp_mac(ctx, mac_ctx, mac_buf, mac_length);
+	ret = edhoc_mac_compute(ctx, mac_ctx, mac_buf, mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_ctx_buf);
@@ -1110,7 +1111,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	/* 8. Compute signature if needed (Signature_or_MAC_2). */
 	size_t sign_or_mac_length = 0;
-	ret = edhoc_comp_sign_or_mac_length(ctx, &sign_or_mac_length);
+	ret = edhoc_sign_or_mac_length(ctx, &sign_or_mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_ctx_buf);
@@ -1125,10 +1126,10 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
-	ret = edhoc_comp_sign_or_mac(ctx, selected.private_key_id, mac_ctx,
-				     mac_buf, mac_length, signature,
-				     EDHOC_MEM_ALLOC_SIZE(signature),
-				     &signature_length);
+	ret = edhoc_sign_or_mac_compute(ctx, selected.private_key_id, mac_ctx,
+					mac_buf, mac_length, signature,
+					EDHOC_MEM_ALLOC_SIZE(signature),
+					&signature_length);
 	EDHOC_MEM_FREE(mac_buf);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(signature);
@@ -1454,7 +1455,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	}
 
 	size_t mac_context_len = 0;
-	ret = edhoc_comp_mac_context_length(ctx, &material, &mac_context_len);
+	ret = edhoc_mac_context_length(ctx, &material, &mac_context_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
@@ -1474,7 +1475,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	struct mac_context *mac_ctx = (void *)mac_ctx_buf;
 	mac_ctx->buf_len = mac_context_len;
 
-	ret = edhoc_comp_mac_context(ctx, &material, mac_ctx);
+	ret = edhoc_mac_context_compose(ctx, &material, mac_ctx);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		EDHOC_MEM_FREE(ciphertext_2);
@@ -1490,7 +1491,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	/* 14. Compute Message Authentication Code (MAC_2). */
 	size_t mac_length = 0;
-	ret = edhoc_comp_mac_length(ctx, &mac_length);
+	ret = edhoc_mac_length(ctx, &mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		EDHOC_MEM_FREE(ciphertext_2);
@@ -1504,7 +1505,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		EDHOC_MEM_FREE(ciphertext_2);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
-	ret = edhoc_comp_mac(ctx, mac_ctx, mac_buf, mac_length);
+	ret = edhoc_mac_compute(ctx, mac_ctx, mac_buf, mac_length);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(mac_buf);
 		EDHOC_MEM_FREE(mac_ctx_buf);
@@ -1513,7 +1514,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	}
 
 	/* 15. Verify Signature_or_MAC_2. */
-	ret = edhoc_verify_sign_or_mac(ctx, mac_ctx, trusted.public_key.value,
+	ret = edhoc_sign_or_mac_verify(ctx, mac_ctx, trusted.public_key.value,
 				       trusted.public_key.length,
 				       parsed_ptxt.sign_or_mac.value,
 				       parsed_ptxt.sign_or_mac.length, mac_buf,

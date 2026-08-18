@@ -17,7 +17,8 @@
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_mac_internal.h"
+#include "edhoc_plaintext_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>

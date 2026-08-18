@@ -1,9 +1,7 @@
 /**
- * \file    edhoc_common_internal.c
+ * \file    edhoc_mac_internal.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC common implementations:
- *          - MAC context.
- *          - MAC & Signature_or_MAC.
+ * \brief   EDHOC MAC context, MAC and Signature_or_MAC implementation.
  *
  * \copyright Copyright (c) 2026
  *
@@ -29,7 +27,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_ead_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_mac_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
@@ -49,6 +47,15 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
+
+/** How the party that authenticates in a message proves its identity. */
+enum auth_kind {
+	/** Signature over COSE_Sign1 (methods 0 and 2 in message 2, 0 and 1
+	 *  in message 3). */
+	AUTH_SIGNATURE,
+	/** Static Diffie-Hellman: Signature_or_MAC is the MAC itself. */
+	AUTH_STATIC_DH,
+};
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
@@ -92,6 +99,30 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 			      const uint8_t *pub_key, size_t pub_key_len,
 			      const uint8_t *mac, size_t mac_len,
 			      const uint8_t *sign, size_t sign_len);
+
+/**
+ * \brief How the party that authenticates in the current message proves its
+ *        identity (RFC 9528: 3.2).
+ *
+ * \param[in] ctx               EDHOC context.
+ * \param[out] kind             On success, the authentication kind.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+STATIC int comp_auth_kind(const struct edhoc_context *ctx,
+			  enum auth_kind *kind);
+
+/**
+ * \brief Connection identifier that goes into context_2 (RFC 9528: 5.3.2).
+ *
+ * \param[in] ctx               EDHOC context.
+ * \param[out] connection_id    On success, the identifier to encode.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+STATIC int
+comp_context_2_connection_id(const struct edhoc_context *ctx,
+			     const struct connection_id **connection_id);
 
 /* Static function definitions --------------------------------------------- */
 
@@ -215,11 +246,68 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
+STATIC int comp_auth_kind(const struct edhoc_context *ctx, enum auth_kind *kind)
+{
+	/* Method numbering pairs the Initiator's and the Responder's
+	 * authentication, so the same method means signature in one message and
+	 * static DH in the other. */
+	switch (ctx->state.message) {
+	case EDHOC_MESSAGE_2:
+		switch (ctx->negotiation.selected_method) {
+		case EDHOC_METHOD_0:
+		case EDHOC_METHOD_2:
+			*kind = AUTH_SIGNATURE;
+			return EDHOC_SUCCESS;
+		case EDHOC_METHOD_1:
+		case EDHOC_METHOD_3:
+			*kind = AUTH_STATIC_DH;
+			return EDHOC_SUCCESS;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+
+	case EDHOC_MESSAGE_3:
+		switch (ctx->negotiation.selected_method) {
+		case EDHOC_METHOD_0:
+		case EDHOC_METHOD_1:
+			*kind = AUTH_SIGNATURE;
+			return EDHOC_SUCCESS;
+		case EDHOC_METHOD_2:
+		case EDHOC_METHOD_3:
+			*kind = AUTH_STATIC_DH;
+			return EDHOC_SUCCESS;
+		default:
+			return EDHOC_ERROR_NOT_PERMITTED;
+		}
+
+	case EDHOC_MESSAGE_1:
+	case EDHOC_MESSAGE_4:
+	default:
+		return EDHOC_ERROR_BAD_STATE;
+	}
+}
+
+STATIC int
+comp_context_2_connection_id(const struct edhoc_context *ctx,
+			     const struct connection_id **connection_id)
+{
+	switch (ctx->state.role) {
+	case EDHOC_ROLE_INITIATOR:
+		*connection_id = &ctx->negotiation.peer_connection_id;
+		return EDHOC_SUCCESS;
+	case EDHOC_ROLE_RESPONDER:
+		*connection_id = &ctx->negotiation.connection_id;
+		return EDHOC_SUCCESS;
+	default:
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
+}
+
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_comp_mac_context_length(
-	const struct edhoc_context *ctx,
-	const struct edhoc_credential_material *material, size_t *mac_ctx_len)
+int edhoc_mac_context_length(const struct edhoc_context *ctx,
+			     const struct edhoc_credential_material *material,
+			     size_t *mac_ctx_len)
 {
 	if (NULL == ctx || NULL == material || NULL == mac_ctx_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -246,16 +334,11 @@ int edhoc_comp_mac_context_length(
 	if (EDHOC_MESSAGE_2 == ctx->state.message) {
 		const struct connection_id *cid = NULL;
 
-		switch (ctx->state.role) {
-		case EDHOC_ROLE_INITIATOR:
-			cid = &ctx->negotiation.peer_connection_id;
-			break;
-		case EDHOC_ROLE_RESPONDER:
-			cid = &ctx->negotiation.connection_id;
-			break;
-		default:
+		ret = comp_context_2_connection_id(ctx, &cid);
+
+		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
-			return EDHOC_ERROR_NOT_PERMITTED;
+			return ret;
 		}
 
 		*mac_ctx_len += edhoc_connection_id_encoded_length(cid);
@@ -300,9 +383,9 @@ int edhoc_comp_mac_context_length(
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_comp_mac_context(const struct edhoc_context *ctx,
-			   const struct edhoc_credential_material *material,
-			   struct mac_context *mac_ctx)
+int edhoc_mac_context_compose(const struct edhoc_context *ctx,
+			      const struct edhoc_credential_material *material,
+			      struct mac_context *mac_ctx)
 {
 	if (NULL == ctx || NULL == material || NULL == mac_ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -341,16 +424,11 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	if (EDHOC_MESSAGE_2 == ctx->state.message) {
 		const struct connection_id *cid = NULL;
 
-		switch (ctx->state.role) {
-		case EDHOC_ROLE_INITIATOR:
-			cid = &ctx->negotiation.peer_connection_id;
-			break;
-		case EDHOC_ROLE_RESPONDER:
-			cid = &ctx->negotiation.connection_id;
-			break;
-		default:
+		ret = comp_context_2_connection_id(ctx, &cid);
+
+		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
-			return EDHOC_ERROR_NOT_PERMITTED;
+			return ret;
 		}
 
 		mac_ctx->conn_id = &mac_ctx->buf[0];
@@ -503,7 +581,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
+int edhoc_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 {
 	if (NULL == ctx || NULL == mac_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -518,51 +596,32 @@ int edhoc_comp_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
 
-	if (EDHOC_MESSAGE_2 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_2:
-			*mac_len = csuite->hash_length;
-			return EDHOC_SUCCESS;
+	enum auth_kind kind = AUTH_SIGNATURE;
+	const int ret = comp_auth_kind(ctx, &kind);
 
-		case EDHOC_METHOD_1:
-		case EDHOC_METHOD_3:
-			*mac_len = csuite->mac_length;
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("MAC length: message %d, method %d",
+			      ctx->state.message,
+			      ctx->negotiation.selected_method);
+		return ret;
 	}
 
-	if (EDHOC_MESSAGE_3 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
-			*mac_len = csuite->hash_length;
-			return EDHOC_SUCCESS;
-
-		case EDHOC_METHOD_2:
-		case EDHOC_METHOD_3:
-			*mac_len = csuite->mac_length;
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	switch (kind) {
+	case AUTH_SIGNATURE:
+		*mac_len = csuite->hash_length;
+		return EDHOC_SUCCESS;
+	case AUTH_STATIC_DH:
+		*mac_len = csuite->mac_length;
+		return EDHOC_SUCCESS;
+	default:
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
-
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
-	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
-int edhoc_comp_mac(const struct edhoc_context *ctx,
-		   const struct mac_context *mac_ctx, uint8_t *mac,
-		   size_t mac_len)
+int edhoc_mac_compute(const struct edhoc_context *ctx,
+		      const struct mac_context *mac_ctx, uint8_t *mac,
+		      size_t mac_len)
 {
 	if (NULL == ctx || NULL == mac_ctx || NULL == mac || 0 == mac_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -622,8 +681,8 @@ int edhoc_comp_mac(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
-				  size_t *sign_or_mac_len)
+int edhoc_sign_or_mac_length(const struct edhoc_context *ctx,
+			     size_t *sign_or_mac_len)
 {
 	if (NULL == ctx || NULL == sign_or_mac_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -638,53 +697,34 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *ctx,
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
 
-	if (EDHOC_MESSAGE_2 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_2:
-			*sign_or_mac_len = csuite->sign_length;
-			return EDHOC_SUCCESS;
+	enum auth_kind kind = AUTH_SIGNATURE;
+	const int ret = comp_auth_kind(ctx, &kind);
 
-		case EDHOC_METHOD_1:
-		case EDHOC_METHOD_3:
-			*sign_or_mac_len = csuite->mac_length;
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Signature_or_MAC length: message %d, method %d",
+			      ctx->state.message,
+			      ctx->negotiation.selected_method);
+		return ret;
 	}
 
-	if (EDHOC_MESSAGE_3 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
-			*sign_or_mac_len = csuite->sign_length;
-			return EDHOC_SUCCESS;
-
-		case EDHOC_METHOD_2:
-		case EDHOC_METHOD_3:
-			*sign_or_mac_len = csuite->mac_length;
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	switch (kind) {
+	case AUTH_SIGNATURE:
+		*sign_or_mac_len = csuite->sign_length;
+		return EDHOC_SUCCESS;
+	case AUTH_STATIC_DH:
+		*sign_or_mac_len = csuite->mac_length;
+		return EDHOC_SUCCESS;
+	default:
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		return EDHOC_ERROR_NOT_PERMITTED;
 	}
-
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
-	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
-int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
-			   const void *private_key_id,
-			   const struct mac_context *mac_ctx,
-			   const uint8_t *mac, size_t mac_len, uint8_t *sign,
-			   size_t sign_size, size_t *sign_len)
+int edhoc_sign_or_mac_compute(const struct edhoc_context *ctx,
+			      const void *private_key_id,
+			      const struct mac_context *mac_ctx,
+			      const uint8_t *mac, size_t mac_len, uint8_t *sign,
+			      size_t sign_size, size_t *sign_len)
 {
 	if (NULL == ctx || NULL == private_key_id || NULL == mac_ctx ||
 	    NULL == mac || 0 == mac_len || NULL == sign || 0 == sign_size ||
@@ -693,53 +733,39 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_MESSAGE_2 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_2:
-			return sign_cose_sign_1(ctx, private_key_id, mac_ctx,
-						mac, mac_len, sign, sign_size,
-						sign_len);
+	enum auth_kind kind = AUTH_SIGNATURE;
+	const int ret = comp_auth_kind(ctx, &kind);
 
-		case EDHOC_METHOD_1:
-		case EDHOC_METHOD_3:
-			*sign_len = mac_len;
-			memcpy(sign, mac, mac_len);
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Signature_or_MAC: message %d, method %d",
+			      ctx->state.message,
+			      ctx->negotiation.selected_method);
+		return ret;
 	}
 
-	if (EDHOC_MESSAGE_3 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
-			return sign_cose_sign_1(ctx, private_key_id, mac_ctx,
-						mac, mac_len, sign, sign_size,
-						sign_len);
+	switch (kind) {
+	case AUTH_SIGNATURE:
+		return sign_cose_sign_1(ctx, private_key_id, mac_ctx, mac,
+					mac_len, sign, sign_size, sign_len);
 
-		case EDHOC_METHOD_2:
-		case EDHOC_METHOD_3:
-			*sign_len = mac_len;
-			memcpy(sign, mac, mac_len);
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
+	case AUTH_STATIC_DH:
+		if (mac_len > sign_size) {
+			EDHOC_LOG_ERR("Buffer too small: %zu > %zu", mac_len,
+				      sign_size);
+			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
-	}
 
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
-	return EDHOC_ERROR_BAD_STATE;
+		*sign_len = mac_len;
+		memcpy(sign, mac, mac_len);
+		return EDHOC_SUCCESS;
+
+	default:
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
 }
 
-int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
+int edhoc_sign_or_mac_verify(const struct edhoc_context *ctx,
 			     const struct mac_context *mac_ctx,
 			     const uint8_t *pub_key, size_t pub_key_len,
 			     const uint8_t *sign_or_mac, size_t sign_or_mac_len,
@@ -752,58 +778,37 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_MESSAGE_2 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_2:
-			return verify_cose_sign_1(ctx, mac_ctx, pub_key,
-						  pub_key_len, mac, mac_len,
-						  sign_or_mac, sign_or_mac_len);
+	enum auth_kind kind = AUTH_SIGNATURE;
+	const int ret = comp_auth_kind(ctx, &kind);
 
-		case EDHOC_METHOD_1:
-		case EDHOC_METHOD_3:
-			if (mac_len != sign_or_mac_len ||
-			    0 != memcmp(sign_or_mac, mac, mac_len)) {
-				EDHOC_LOG_ERR(
-					"Invalid Signature_or_MAC_2: MAC mismatch");
-				return EDHOC_ERROR_INVALID_SIGN_OR_MAC_2;
-			}
-
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg2: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Signature_or_MAC: message %d, method %d",
+			      ctx->state.message,
+			      ctx->negotiation.selected_method);
+		return ret;
 	}
 
-	if (EDHOC_MESSAGE_3 == ctx->state.message) {
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
-			return verify_cose_sign_1(ctx, mac_ctx, pub_key,
-						  pub_key_len, mac, mac_len,
-						  sign_or_mac, sign_or_mac_len);
+	switch (kind) {
+	case AUTH_SIGNATURE:
+		return verify_cose_sign_1(ctx, mac_ctx, pub_key, pub_key_len,
+					  mac, mac_len, sign_or_mac,
+					  sign_or_mac_len);
 
-		case EDHOC_METHOD_2:
-		case EDHOC_METHOD_3:
-			if (mac_len != sign_or_mac_len ||
-			    0 != memcmp(sign_or_mac, mac, mac_len)) {
-				EDHOC_LOG_ERR(
-					"Invalid Signature_or_MAC_3: MAC mismatch");
-				return EDHOC_ERROR_INVALID_SIGN_OR_MAC_3;
-			}
-
-			return EDHOC_SUCCESS;
-
-		default:
-			EDHOC_LOG_ERR("Invalid method for msg3: %d",
-				      ctx->negotiation.selected_method);
-			return EDHOC_ERROR_NOT_PERMITTED;
+	case AUTH_STATIC_DH:
+		if (mac_len != sign_or_mac_len ||
+		    0 != memcmp(sign_or_mac, mac, mac_len)) {
+			EDHOC_LOG_ERR(
+				"Invalid Signature_or_MAC_%d: MAC mismatch",
+				ctx->state.message + 1);
+			return (EDHOC_MESSAGE_2 == ctx->state.message) ?
+				       EDHOC_ERROR_INVALID_SIGN_OR_MAC_2 :
+				       EDHOC_ERROR_INVALID_SIGN_OR_MAC_3;
 		}
-	}
 
-	EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
-	return EDHOC_ERROR_BAD_STATE;
+		return EDHOC_SUCCESS;
+
+	default:
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		return EDHOC_ERROR_NOT_PERMITTED;
+	}
 }

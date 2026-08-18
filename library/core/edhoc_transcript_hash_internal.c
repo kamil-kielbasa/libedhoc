@@ -155,6 +155,9 @@ int edhoc_th_compute(struct edhoc_context *ctx,
 
 	int ret = 0;
 	uint8_t previous_head[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
+	/* A segment points into this buffer and the hash is computed after the
+	 * switch, so the scope cannot be narrowed to the case block. */
+	/* cppcheck-suppress variableScope */
 	uint8_t ephemeral_head[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
 	struct th_segment segments[EDHOC_TH_MAX_NR_OF_SEGMENTS] = { 0 };
 	size_t nr_of_segments = 0;

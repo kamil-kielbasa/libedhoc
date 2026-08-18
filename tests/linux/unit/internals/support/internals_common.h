@@ -18,7 +18,8 @@
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_transcript_hash_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_mac_internal.h"
+#include "edhoc_plaintext_internal.h"
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */

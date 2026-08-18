@@ -17,7 +17,7 @@
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
 #include "edhoc_cbor_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_mac_internal.h"
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */

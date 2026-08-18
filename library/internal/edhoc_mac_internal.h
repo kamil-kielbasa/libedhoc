@@ -1,17 +1,19 @@
 /**
- * \file    edhoc_common_internal.h
+ * \file    edhoc_mac_internal.h
  * \author  Kamil Kielbasa
- * \brief   EDHOC common implementations:
- *          - MAC context.
- *          - MAC & Signature_or_MAC.
+ * \brief   EDHOC MAC context, MAC and Signature_or_MAC (RFC 9528: 5.3.2, 5.4.2).
+ *
+ *          Which of the two forms a message carries follows from the method
+ *          and the message number alone, so that mapping lives in one place
+ *          here and every entry point reads it from there.
  *
  * \copyright Copyright (c) 2026
  *
  */
 
 /* Header guard ------------------------------------------------------------ */
-#ifndef EDHOC_COMMON_INTERNAL_H
-#define EDHOC_COMMON_INTERNAL_H
+#ifndef EDHOC_MAC_INTERNAL_H
+#define EDHOC_MAC_INTERNAL_H
 
 /* Include files ----------------------------------------------------------- */
 
@@ -37,7 +39,7 @@
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
 
-/** \defgroup edhoc-common-structures EDHOC common structures
+/** \defgroup edhoc-mac-types EDHOC MAC types
  * @{
  */
 
@@ -89,35 +91,13 @@ struct mac_context {
 	uint8_t buf[];
 };
 
-/**
- * \brief RFC 9528:
- *        - 5.3.2. Responder Composition of Message 2.
- *          - PLAINTEXT_2.
- *        - 5.4.2. Initiator Composition of Message 3.
- *          - PLAINTEXT_3.
- */
-struct plaintext {
-	/** ID_CRED_x, as received from the peer. */
-	struct edhoc_credential_received peer_credential_id;
-
-	/** Backing store for a 'kid' that arrived in the CBOR integer form
-	 *  (RFC 9528: 3.3.2). */
-	uint8_t kid_byte;
-
-	/** Cborised Signature_or_MAC (2/3). */
-	struct edhoc_buffer sign_or_mac;
-
-	/** Cborised EAD (2/3). */
-	struct edhoc_buffer ead;
-};
-
 /**@}*/
 
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
-/** \defgroup edhoc-common-mac-context EDHOC common MAC context
+/** \defgroup edhoc-mac-context EDHOC MAC context
  * @{
  */
 
@@ -132,7 +112,7 @@ struct plaintext {
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_mac_context_length(
+int edhoc_mac_context_length(
 	const struct edhoc_context *edhoc_context,
 	const struct edhoc_credential_material *credential_material,
 	size_t *mac_context_length);
@@ -148,14 +128,14 @@ int edhoc_comp_mac_context_length(
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_mac_context(
+int edhoc_mac_context_compose(
 	const struct edhoc_context *edhoc_context,
 	const struct edhoc_credential_material *credential_material,
 	struct mac_context *mac_context);
 
 /**@}*/
 
-/** \defgroup edhoc-common-sign-or-mac EDHOC common Signature_or_MAC
+/** \defgroup edhoc-sign-or-mac EDHOC Signature_or_MAC
  * @{
  */
 
@@ -170,8 +150,8 @@ int edhoc_comp_mac_context(
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_mac_length(const struct edhoc_context *edhoc_context,
-			  size_t *mac_length);
+int edhoc_mac_length(const struct edhoc_context *edhoc_context,
+		     size_t *mac_length);
 
 /**
  * \brief Compute MAC 2/3 buffer.
@@ -185,9 +165,9 @@ int edhoc_comp_mac_length(const struct edhoc_context *edhoc_context,
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_mac(const struct edhoc_context *edhoc_context,
-		   const struct mac_context *mac_context, uint8_t *mac,
-		   size_t mac_length);
+int edhoc_mac_compute(const struct edhoc_context *edhoc_context,
+		      const struct mac_context *mac_context, uint8_t *mac,
+		      size_t mac_length);
 
 /**
  * \brief Compute required buffer length for Signature_or_MAC 2/3.
@@ -200,8 +180,8 @@ int edhoc_comp_mac(const struct edhoc_context *edhoc_context,
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_sign_or_mac_length(const struct edhoc_context *edhoc_context,
-				  size_t *sign_or_mac_length);
+int edhoc_sign_or_mac_length(const struct edhoc_context *edhoc_context,
+			     size_t *sign_or_mac_length);
 
 /**
  * \brief Compute Signature_or_MAC 2/3 buffer.
@@ -221,12 +201,12 @@ int edhoc_comp_sign_or_mac_length(const struct edhoc_context *edhoc_context,
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_comp_sign_or_mac(const struct edhoc_context *edhoc_context,
-			   const void *private_key_id,
-			   const struct mac_context *mac_context,
-			   const uint8_t *mac, size_t mac_len,
-			   uint8_t *signature, size_t signature_size,
-			   size_t *signature_length);
+int edhoc_sign_or_mac_compute(const struct edhoc_context *edhoc_context,
+			      const void *private_key_id,
+			      const struct mac_context *mac_context,
+			      const uint8_t *mac, size_t mac_len,
+			      uint8_t *signature, size_t signature_size,
+			      size_t *signature_length);
 
 /**
  * \brief Verify Signature_or_MAC 2/3 buffer.
@@ -244,7 +224,7 @@ int edhoc_comp_sign_or_mac(const struct edhoc_context *edhoc_context,
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_verify_sign_or_mac(const struct edhoc_context *edhoc_context,
+int edhoc_sign_or_mac_verify(const struct edhoc_context *edhoc_context,
 			     const struct mac_context *mac_context,
 			     const uint8_t *public_key,
 			     size_t public_key_length, const uint8_t *signature,
@@ -253,4 +233,4 @@ int edhoc_verify_sign_or_mac(const struct edhoc_context *edhoc_context,
 
 /**@}*/
 
-#endif /* EDHOC_COMMON_INTERNAL_H */
+#endif /* EDHOC_MAC_INTERNAL_H */

@@ -29,7 +29,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_mac_internal.h"
+#include "edhoc_plaintext_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
@@ -928,8 +929,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	size_t mac_context_length = 0;
-	ret = edhoc_comp_mac_context_length(ctx, &material,
-					    &mac_context_length);
+	ret = edhoc_mac_context_length(ctx, &material, &mac_context_length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
@@ -951,7 +951,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	struct mac_context *mac_context = (void *)mac_3_context_buf;
 	mac_context->buf_len = mac_context_length;
 
-	ret = edhoc_comp_mac_context(ctx, &material, mac_context);
+	ret = edhoc_mac_context_compose(ctx, &material, mac_context);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context: %d", ret);
 		EDHOC_MEM_FREE(mac_3_context_buf);
@@ -970,7 +970,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	/* 6c. Compute Message Authentication Code (MAC_3). */
 	size_t mac_length = 0;
-	ret = edhoc_comp_mac_length(ctx, &mac_length);
+	ret = edhoc_mac_length(ctx, &mac_length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3 length: %d", ret);
@@ -990,7 +990,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_comp_mac(ctx, mac_context, mac_buf, mac_length);
+	ret = edhoc_mac_compute(ctx, mac_context, mac_buf, mac_length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3: %d", ret);
@@ -1003,7 +1003,7 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	/* 7. Compute signature if needed (Signature_or_MAC_3). */
 	size_t sign_or_mac_length = 0;
-	ret = edhoc_comp_sign_or_mac_length(ctx, &sign_or_mac_length);
+	ret = edhoc_sign_or_mac_length(ctx, &sign_or_mac_length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute Signature_or_MAC_3 length: %d", ret);
@@ -1026,10 +1026,9 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_comp_sign_or_mac(ctx, selected.private_key_id, mac_context,
-				     mac_buf, mac_length, signature,
-				     EDHOC_MEM_ALLOC_SIZE(signature),
-				     &signature_length);
+	ret = edhoc_sign_or_mac_compute(
+		ctx, selected.private_key_id, mac_context, mac_buf, mac_length,
+		signature, EDHOC_MEM_ALLOC_SIZE(signature), &signature_length);
 
 	EDHOC_MEM_FREE(mac_buf);
 
@@ -1356,7 +1355,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	size_t mac_context_len = 0;
-	ret = edhoc_comp_mac_context_length(ctx, &material, &mac_context_len);
+	ret = edhoc_mac_context_length(ctx, &material, &mac_context_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context length: %d", ret);
@@ -1376,7 +1375,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	struct mac_context *mac_context = (void *)mac_3_context_buf;
 	mac_context->buf_len = mac_context_len;
 
-	ret = edhoc_comp_mac_context(ctx, &material, mac_context);
+	ret = edhoc_mac_context_compose(ctx, &material, mac_context);
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC context: %d", ret);
 		EDHOC_MEM_FREE(mac_3_context_buf);
@@ -1396,7 +1395,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	/* 9c. Compute Message Authentication Code (MAC_3). */
 	size_t mac_length = 0;
-	ret = edhoc_comp_mac_length(ctx, &mac_length);
+	ret = edhoc_mac_length(ctx, &mac_length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3 length: %d", ret);
@@ -1414,7 +1413,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_comp_mac(ctx, mac_context, mac_buf, mac_length);
+	ret = edhoc_mac_compute(ctx, mac_context, mac_buf, mac_length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute MAC_3: %d", ret);
@@ -1425,7 +1424,7 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 10. Verify Signature_or_MAC_3. */
-	ret = edhoc_verify_sign_or_mac(
+	ret = edhoc_sign_or_mac_verify(
 		ctx, mac_context, trusted.public_key.value,
 		trusted.public_key.length, parsed_ptxt.sign_or_mac.value,
 		parsed_ptxt.sign_or_mac.length, mac_buf, mac_length);

@@ -20,7 +20,7 @@ set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_transcript_hash_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_ead_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_key_slot_internal.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_common_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_mac_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_connection_id_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_credentials_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_coap.c)
