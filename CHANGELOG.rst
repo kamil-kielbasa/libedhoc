@@ -3,11 +3,12 @@ Unreleased
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the library core is
   being split into modules, so that a future protocol flow reuses the
-  primitives instead of copying them. Modules created so far:
+  primitives instead of copying them. Created modules:
 
   * ``edhoc_cbor_internal`` : CBOR head sizes and byte-string head encoding.
   * ``edhoc_key_slot_internal`` : key-store handle slots.
   * ``edhoc_kdf_internal`` : EDHOC_Extract and EDHOC_KDF.
+  * ``edhoc_transcript_hash_internal`` : TH_1 to TH_4.
 
   The public API is unchanged.
 

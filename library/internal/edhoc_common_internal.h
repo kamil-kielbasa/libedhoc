@@ -111,47 +111,11 @@ struct plaintext {
 	struct edhoc_buffer ead;
 };
 
-/**
- * \brief A single input segment for the multipart transcript-hash helper.
- */
-struct hash_segment {
-	/** Pointer to the segment bytes. */
-	const uint8_t *ptr;
-	/** Number of bytes in the segment. */
-	size_t len;
-};
-
 /**@}*/
 
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
-
-/** \defgroup edhoc-common-hash EDHOC common transcript hash
- * @{
- */
-
-/**
- * \brief Compute a hash over an ordered list of byte segments using the
- *        multipart backend interface (init / update.. / finish), avoiding a
- *        contiguous assembly buffer. A single-input caller passes one segment.
- *
- * \param[in] ctx                       EDHOC context.
- * \param[in] segments                  Ordered input segments to hash.
- * \param nr_of_segments                Number of entries in \p segments.
- * \param[out] hash                     Buffer receiving the computed hash.
- * \param hash_size                     Size of the \p hash buffer in bytes.
- * \param[out] hash_len                 On success, number of hash bytes written.
- *
- * \retval #EDHOC_SUCCESS
- *         Success.
- * \return Negative error code on failure.
- */
-int edhoc_comp_hash(const struct edhoc_context *ctx,
-		    const struct hash_segment *segments, size_t nr_of_segments,
-		    uint8_t *hash, size_t hash_size, size_t *hash_len);
-
-/**@}*/
 
 /** \defgroup edhoc-common-ead EDHOC common external authorization data
  * @{

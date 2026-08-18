@@ -167,20 +167,20 @@ TEST(internals_common, connection_id_from_bstr)
 		edhoc_connection_id_from_bstr(value, ARRAY_SIZE(value), NULL));
 }
 
-TEST(internals_common, comp_th_len_success)
+TEST(internals_common, th_encoded_length_success)
 {
 	size_t len = 0;
 
-	int ret = comp_th_len(32, &len);
+	int ret = edhoc_th_encoded_length(32, &len);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(34, len);
 }
 
-TEST(internals_common, comp_th_len_zero)
+TEST(internals_common, th_encoded_length_zero)
 {
 	size_t len = 0;
 
-	int ret = comp_th_len(0, &len);
+	int ret = edhoc_th_encoded_length(0, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -779,8 +779,8 @@ TEST_GROUP_RUNNER(internals_common)
 	RUN_TEST_CASE(internals_common, connection_id_from_bstr);
 
 	/* comp_th_len */
-	RUN_TEST_CASE(internals_common, comp_th_len_success);
-	RUN_TEST_CASE(internals_common, comp_th_len_zero);
+	RUN_TEST_CASE(internals_common, th_encoded_length_success);
+	RUN_TEST_CASE(internals_common, th_encoded_length_zero);
 
 	/* comp_ead_len */
 	RUN_TEST_CASE(internals_common, comp_ead_len_no_tokens);

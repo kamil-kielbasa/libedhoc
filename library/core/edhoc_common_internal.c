@@ -31,6 +31,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_transcript_hash_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
@@ -57,17 +58,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
-
-/**
- * \brief Compute required buffer length for TH (2/3).
- *
- * \param th_len                Transcript hash length.
- * \param[out] len              On success, number of bytes that make up
- *                              TH length requirements.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_th_len(size_t th_len, size_t *len);
 
 /**
  * \brief Compute required buffer length for EAD (2/3).
@@ -121,20 +111,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 			      const uint8_t *sign, size_t sign_len);
 
 /* Static function definitions --------------------------------------------- */
-
-STATIC int comp_th_len(size_t th_len, size_t *len)
-{
-	if (0 == th_len || NULL == len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	*len = 0;
-	*len += th_len;
-	*len += edhoc_cbor_bstr_head_length(th_len);
-
-	return EDHOC_SUCCESS;
-}
 
 STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
 {
@@ -275,49 +251,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_comp_hash(const struct edhoc_context *ctx,
-		    const struct hash_segment *segments, size_t nr_of_segments,
-		    uint8_t *hash, size_t hash_size, size_t *hash_len)
-{
-	void *op = NULL;
-	int rc = EDHOC_SUCCESS;
-	int ret = edhoc_crypto(ctx)->hash_init(ctx->user_context, &op);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Hash init: %d", ret);
-		return ret;
-	}
-
-	for (size_t i = 0; i < nr_of_segments; ++i) {
-		ret = edhoc_crypto(ctx)->hash_update(ctx->user_context, op,
-						     segments[i].ptr,
-						     segments[i].len);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Hash update: %d", ret);
-			goto abort;
-		}
-	}
-
-	ret = edhoc_crypto(ctx)->hash_finish(ctx->user_context, op, hash,
-					     hash_size, hash_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Hash finish: %d", ret);
-		goto abort;
-	}
-
-	return EDHOC_SUCCESS;
-
-abort:
-	rc = edhoc_crypto(ctx)->hash_abort(ctx->user_context, op);
-	if (EDHOC_SUCCESS != rc) {
-		EDHOC_LOG_ERR("Hash abort: %d", rc);
-	}
-
-	return ret;
-}
-
 int edhoc_validate_ead_composed(const struct edhoc_ead_token *tokens,
 				size_t nr_of_tokens)
 {
@@ -411,7 +344,7 @@ int edhoc_comp_mac_context_length(
 
 	/* TH length. */
 	len = 0;
-	ret = comp_th_len(ctx->state.th.length, &len);
+	ret = edhoc_th_encoded_length(ctx->state.th.length, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -544,7 +477,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	mac_ctx->th = &mac_ctx->id_cred[mac_ctx->id_cred_len];
 
 	len = 0;
-	ret = comp_th_len(ctx->state.th.length, &len);
+	ret = edhoc_th_encoded_length(ctx->state.th.length, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;

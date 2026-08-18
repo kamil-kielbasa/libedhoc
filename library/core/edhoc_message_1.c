@@ -23,6 +23,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
+#include "edhoc_transcript_hash_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_connection_id_internal.h"
@@ -236,24 +237,23 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	EDHOC_LOG_HEXDUMP_DBG(msg_1, *msg_1_len, "message_1");
 
 	/* 5. Compute H(cbor(msg_1)) and cache it. */
-	ctx->state.th.length = csuite->hash_length;
-	size_t hash_len = 0;
-	const struct hash_segment segments[] = { { msg_1, *msg_1_len } };
-	ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-			      ctx->state.th.value, ctx->state.th.length,
-			      &hash_len);
+	const struct edhoc_th_input th_input = {
+		.target = EDHOC_TH_STATE_1,
+		.message_1 = msg_1,
+		.message_1_length = *msg_1_len,
+	};
 
-	if (EDHOC_SUCCESS != ret || csuite->hash_length != hash_len) {
-		EDHOC_LOG_ERR("Hash: %d, %zu, %zu", ret, csuite->hash_length,
-			      hash_len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+	ret = edhoc_th_compute(ctx, &th_input);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Compute TH_1: %d", ret);
+		return ret;
 	}
 
 	EDHOC_LOG_INF("Compose msg1 end");
 
 	edhoc_ead_reset(ctx);
 
-	ctx->state.th.stage = EDHOC_TH_STATE_1;
 	ctx->state.machine = EDHOC_SM_WAIT_M2;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;
@@ -532,22 +532,21 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 	}
 
 	/* 5. Compute H(cbor(msg_1)) and cache it. */
-	ctx->state.th.length = csuite->hash_length;
-	size_t hash_len = 0;
-	const struct hash_segment segments[] = { { msg_1, msg_1_len } };
-	ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-			      ctx->state.th.value, ctx->state.th.length,
-			      &hash_len);
+	const struct edhoc_th_input th_input = {
+		.target = EDHOC_TH_STATE_1,
+		.message_1 = msg_1,
+		.message_1_length = msg_1_len,
+	};
 
-	if (EDHOC_SUCCESS != ret || csuite->hash_length != hash_len) {
-		EDHOC_LOG_ERR("Hash: %d, %zu, %zu", ret, csuite->hash_length,
-			      hash_len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
+	ret = edhoc_th_compute(ctx, &th_input);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Compute TH_1: %d", ret);
+		return ret;
 	}
 
 	EDHOC_LOG_INF("Process msg1 end");
 
-	ctx->state.th.stage = EDHOC_TH_STATE_1;
 	ctx->state.machine = EDHOC_SM_RECEIVED_M1;
 	ctx->error_code = EDHOC_ERROR_CODE_SUCCESS;
 	return EDHOC_SUCCESS;

@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_transcript_hash_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
@@ -536,45 +537,20 @@ STATIC int comp_th_4(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len)
 {
-	if (NULL == ctx || NULL == mac_ctx || NULL == ptxt || 0 == ptxt_len) {
+	if (NULL == mac_ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_3 != ctx->state.th.stage) {
-		EDHOC_LOG_ERR("Invalid TH state: %d", ctx->state.th.stage);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	/* TH_4 = H(TH_3, PLAINTEXT_3, CRED_I) streamed as:
-	 * bstr(TH_3) || PLAINTEXT_3 || CRED_I. ctx->state.th.value holds TH_3 on input and
-	 * receives TH_4 on output; the multipart update consumes it before
-	 * hash_finish overwrites it. */
-	const size_t th_3_len = ctx->state.th.length;
-
-	uint8_t th_3_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
-
-	const struct hash_segment segments[] = {
-		{ th_3_hdr, edhoc_cbor_bstr_head_write(th_3_hdr, th_3_len) },
-		{ ctx->state.th.value, th_3_len },
-		{ ptxt, ptxt_len },
-		{ mac_ctx->cred, mac_ctx->cred_len },
+	const struct edhoc_th_input input = {
+		.target = EDHOC_TH_STATE_4,
+		.plaintext = ptxt,
+		.plaintext_length = ptxt_len,
+		.credential = mac_ctx->cred,
+		.credential_length = mac_ctx->cred_len,
 	};
 
-	ctx->state.th.length = edhoc_selected_cipher_suite(ctx)->hash_length;
-
-	size_t hash_len = 0;
-	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-					ctx->state.th.value,
-					ctx->state.th.length, &hash_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Hash TH_4: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ctx->state.th.stage = EDHOC_TH_STATE_4;
-	return EDHOC_SUCCESS;
+	return edhoc_th_compute(ctx, &input);
 }
 
 STATIC int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,

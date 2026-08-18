@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_transcript_hash_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
@@ -331,70 +332,11 @@ STATIC int comp_decapsulate(struct edhoc_context *ctx)
 
 STATIC int comp_th_2(struct edhoc_context *ctx)
 {
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_TH_STATE_1 != ctx->state.th.stage) {
-		EDHOC_LOG_ERR("Invalid TH state: %d, %d", EDHOC_TH_STATE_1,
-			      ctx->state.th.stage);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	/* G_Y: own for the Responder, peer's for the Initiator. */
-	const uint8_t *g_y = NULL;
-	size_t g_y_len = 0;
-
-	switch (ctx->state.role) {
-	case EDHOC_ROLE_INITIATOR:
-		g_y = ctx->ephemeral.peer.value;
-		g_y_len = ctx->ephemeral.peer.length;
-		break;
-	case EDHOC_ROLE_RESPONDER:
-		g_y = ctx->ephemeral.own.value;
-		g_y_len = ctx->ephemeral.own.length;
-		break;
-	default:
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	const struct edhoc_cipher_suite *csuite =
-		edhoc_selected_cipher_suite(ctx);
-
-	/* TH_2 = H(G_Y, H(message_1)) streamed as CBOR byte-string segments:
-	 * bstr(G_Y) || bstr(H(message_1)). ctx->state.th.value holds H(message_1) on input
-	 * and receives TH_2 on output; the multipart update consumes it before
-	 * hash_finish overwrites it. */
-	const size_t h_msg_1_len = ctx->state.th.length;
-
-	uint8_t g_y_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
-	uint8_t h_msg_1_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
-
-	const struct hash_segment segments[] = {
-		{ g_y_hdr, edhoc_cbor_bstr_head_write(g_y_hdr, g_y_len) },
-		{ g_y, g_y_len },
-		{ h_msg_1_hdr,
-		  edhoc_cbor_bstr_head_write(h_msg_1_hdr, h_msg_1_len) },
-		{ ctx->state.th.value, h_msg_1_len },
+	const struct edhoc_th_input input = {
+		.target = EDHOC_TH_STATE_2,
 	};
 
-	ctx->state.th.length = csuite->hash_length;
-
-	size_t hash_length = 0;
-	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-					ctx->state.th.value,
-					ctx->state.th.length, &hash_length);
-
-	if (EDHOC_SUCCESS != ret || csuite->hash_length != hash_length) {
-		EDHOC_LOG_ERR("TH_2 hash: %d, %zu, %zu", ret,
-			      csuite->hash_length, hash_length);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ctx->state.th.stage = EDHOC_TH_STATE_2;
-	return EDHOC_SUCCESS;
+	return edhoc_th_compute(ctx, &input);
 }
 
 STATIC int comp_prk_2e(struct edhoc_context *ctx)
@@ -912,45 +854,20 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len)
 {
-	if (NULL == ctx || NULL == mac_ctx || NULL == ptxt || 0 == ptxt_len) {
+	if (NULL == mac_ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_2 != ctx->state.th.stage) {
-		EDHOC_LOG_ERR("Invalid TH state: %d", ctx->state.th.stage);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	/* TH_3 = H(TH_2, PLAINTEXT_2, CRED_R) streamed as:
-	 * bstr(TH_2) || PLAINTEXT_2 || CRED_R. ctx->state.th.value holds TH_2 on input and
-	 * receives TH_3 on output; the multipart update consumes it before
-	 * hash_finish overwrites it. */
-	const size_t th_2_len = ctx->state.th.length;
-
-	uint8_t th_2_hdr[EDHOC_CBOR_BSTR_HEAD_MAX_LEN] = { 0 };
-
-	const struct hash_segment segments[] = {
-		{ th_2_hdr, edhoc_cbor_bstr_head_write(th_2_hdr, th_2_len) },
-		{ ctx->state.th.value, th_2_len },
-		{ ptxt, ptxt_len },
-		{ mac_ctx->cred, mac_ctx->cred_len },
+	const struct edhoc_th_input input = {
+		.target = EDHOC_TH_STATE_3,
+		.plaintext = ptxt,
+		.plaintext_length = ptxt_len,
+		.credential = mac_ctx->cred,
+		.credential_length = mac_ctx->cred_len,
 	};
 
-	ctx->state.th.length = edhoc_selected_cipher_suite(ctx)->hash_length;
-
-	size_t hash_len = 0;
-	const int ret = edhoc_comp_hash(ctx, segments, ARRAY_SIZE(segments),
-					ctx->state.th.value,
-					ctx->state.th.length, &hash_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Hash TH_3: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ctx->state.th.stage = EDHOC_TH_STATE_3;
-	return EDHOC_SUCCESS;
+	return edhoc_th_compute(ctx, &input);
 }
 
 STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,

@@ -17,6 +17,7 @@
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
+#include "edhoc_transcript_hash_internal.h"
 #include "edhoc_common_internal.h"
 
 /* Defines ----------------------------------------------------------------- */
@@ -45,7 +46,6 @@ void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
 
 /* Library-internal functions under test (white-box) ----------------------- */
 
-extern int comp_th_len(size_t th_len, size_t *len);
 extern int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
 extern int compute_prk_out(struct edhoc_context *ctx);
 extern int compute_new_prk_out(struct edhoc_context *ctx,
