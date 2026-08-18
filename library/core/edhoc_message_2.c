@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_cipher_internal.h"
 #include "edhoc_transcript_hash_internal.h"
 #include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
@@ -143,29 +144,6 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 			       const uint8_t *sign, size_t sign_len,
 			       uint8_t *ptxt, size_t ptxt_size,
 			       size_t *ptxt_len);
-
-/**
- * \brief Compute KEYSTREAM_2 from the context PRK_2e handle (or PRK_3e2m for
- *        methods 0/2, into which PRK_2e was moved).
- *
- * \param[in] ctx		EDHOC context.
- * \param[out] keystream	Buffer where the generated keystream is to be written.
- * \param keystream_len		Size of the \p keystream buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
-			  size_t keystream_len);
-
-/**
- * \brief Compute CIPHERTEXT_2.
- *
- * \param[out] dst		Memory location to XOR to.
- * \param[in] src		Memory location to XOR from.
- * \param count			Number of bytes to XOR.
- */
-STATIC void xor_arrays(uint8_t *restrict dst, const uint8_t *restrict src,
-		       size_t count);
 
 /**
  * \brief Prepare MESSAGE_2.
@@ -554,48 +532,6 @@ STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
 	*ptxt_len = offset;
 
 	return EDHOC_SUCCESS;
-}
-
-STATIC int comp_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
-			  size_t keystream_len)
-{
-	if (NULL == ctx || NULL == keystream || 0 == keystream_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_TH_STATE_2 != ctx->state.th.stage) {
-		EDHOC_LOG_ERR("Invalid TH state for keystream_2: %d",
-			      ctx->state.th.stage);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	/* For methods 0/2 PRK_2e was moved into PRK_3e2m, so read whichever
-	 * handle still holds it. */
-	const void *prk_2e_key_id =
-		edhoc_key_slot_present(ctx, EDHOC_KEY_SLOT_PRK_2E) ?
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E) :
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
-
-	const int ret = edhoc_kdf_expand_raw(ctx, prk_2e_key_id,
-					     EDHOC_KDF_LABEL_KEYSTREAM_2,
-					     ctx->state.th.value,
-					     ctx->state.th.length, keystream,
-					     keystream_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive KEYSTREAM_2: %d, %zu", ret,
-			      keystream_len);
-		return ret;
-	}
-
-	return EDHOC_SUCCESS;
-}
-
-STATIC void xor_arrays(uint8_t *dst, const uint8_t *src, size_t count)
-{
-	for (size_t i = 0; i < count; ++i)
-		dst[i] ^= src[i];
 }
 
 STATIC int prepare_message_2(const struct edhoc_context *ctx,
@@ -1184,7 +1120,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = comp_keystream(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
+	ret = edhoc_cipher_keystream(ctx, keystream,
+				     EDHOC_MEM_ALLOC_SIZE(keystream));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute keystream_2: %d", ret);
@@ -1212,7 +1149,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			      "TH_3");
 
 	/* 12. Compute ciphertext (CIPHERTEXT_2). */
-	xor_arrays(plaintext, keystream, plaintext_len);
+	edhoc_cipher_xor(plaintext, keystream, plaintext_len);
 	EDHOC_MEM_FREE(keystream);
 	const uint8_t *ciphertext = plaintext;
 	const size_t ciphertext_len = plaintext_len;
@@ -1367,7 +1304,8 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = comp_keystream(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
+	ret = edhoc_cipher_keystream(ctx, keystream,
+				     EDHOC_MEM_ALLOC_SIZE(keystream));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute keystream: %d", ret);
@@ -1380,7 +1318,8 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			      "KEYSTREAM_2");
 
 	/* 7. Compute plaintext (PLAINTEXT_2). */
-	xor_arrays(ciphertext_2, keystream, EDHOC_MEM_ALLOC_SIZE(ciphertext_2));
+	edhoc_cipher_xor(ciphertext_2, keystream,
+			 EDHOC_MEM_ALLOC_SIZE(ciphertext_2));
 	EDHOC_MEM_FREE(keystream);
 	const uint8_t *plaintext = ciphertext_2;
 	const size_t plaintext_len = EDHOC_MEM_ALLOC_SIZE(ciphertext_2);

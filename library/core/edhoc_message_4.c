@@ -19,12 +19,12 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <edhoc/types.h>
 #include <edhoc/values.h>
 #include <edhoc/cipher_suite.h>
-#include <edhoc/crypto.h>
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_cipher_internal.h"
 #include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
@@ -40,7 +40,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_types.h>
-#include <backend_cbor_enc_structure_encode.h>
 #include <backend_cbor_plaintext_4_encode.h>
 #include <backend_cbor_plaintext_4_decode.h>
 #include <backend_cbor_message_4_encode.h>
@@ -77,52 +76,6 @@ STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 			       size_t ptxt_size, size_t *ptxt_len);
 
 /**
- * \brief Compute required length in bytes for AAD_4.
- *
- * \param[in] ctx	        EDHOC context.
- *
- * \retval Value different than 0 is success, otherwise failure.
- */
-STATIC size_t compute_aad_4_len(const struct edhoc_context *ctx);
-
-/**
- * \brief Compute K_4 (AEAD key handle), IV_4 and AAD_4.
- *
- * \param[in,out] ctx	        EDHOC context.
- * \param[out] iv	        Buffer where the generated IV_4 is to be written.
- * \param iv_len                Size of the \p iv buffer in bytes.
- * \param[out] aad	        Buffer where the generated AAD_4 is to be written.
- * \param aad_len               Size of the \p aad buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
-				size_t iv_len, uint8_t *aad, size_t aad_len);
-
-/**
- * \brief Compute CIPHERTEXT_4.
- *
- * \param[in] ctx	        EDHOC context.
- * \param[in] iv	        Buffer containing the IV_4.
- * \param iv_len                Size of the \p iv buffer in bytes.
- * \param[in] aad	        Buffer containing the AAD_4.
- * \param aad_len               Size of the \p aad buffer in bytes.
- * \param[in] ptxt	        Buffer containing the PLAINTEXT_4.
- * \param ptxt_len              Size of the \p ptxt buffer in bytes.
- * \param[out] ctxt	        Buffer where the generated ciphertext is to be written.
- * \param ctxt_size	        Size of the \p ctxt buffer in bytes.
- * \param[out] ctxt_len         On success, the number of bytes that make up the CIPHERTEXT_4.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int compute_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ptxt, size_t ptxt_len,
-			      uint8_t *ctxt, size_t ctxt_size,
-			      size_t *ctxt_len);
-
-/**
  * \brief Generate edhoc message 4.
  *
  * \param[in] ctxt	        Buffer continas the ciphertext.
@@ -148,27 +101,6 @@ STATIC int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
  */
 STATIC int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
-
-/**
- * \brief Decrypt CIPHERTEXT_4.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] iv	        Buffer containing the IV_4.
- * \param iv_len                Size of the \p iv buffer in bytes.
- * \param[in] aad	        Buffer containing the AAD_4.
- * \param aad_len               Size of the \p aad buffer in bytes.
- * \param[in] ctxt	        Pointer to buffer containing the CIPHERTEXT_4.
- * \param ctxt_len	        Size of the \p ctxt buffer in bytes.
- * \param[out] ptxt	        Buffer where the decrypted PLAINTEXT_4 is to be written.
- * \param ptxt_len	        Size of the \p ptxt buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int decrypt_ciphertext_4(const struct edhoc_context *ctx,
-				const uint8_t *iv, size_t iv_len,
-				const uint8_t *aad, size_t aad_len,
-				const uint8_t *ctxt, size_t ctxt_len,
-				uint8_t *ptxt, size_t ptxt_len);
 
 /**
  * \brief Parsed cborised PLAINTEXT_4.
@@ -239,101 +171,6 @@ STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 	return EDHOC_SUCCESS;
 }
 
-STATIC size_t compute_aad_4_len(const struct edhoc_context *ctx)
-{
-	size_t len = 0;
-
-	len += sizeof("Encrypt0") +
-	       edhoc_cbor_tstr_head_length(sizeof("Encrypt0"));
-	len += edhoc_cbor_bstr_head_length(0);
-	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
-
-	return len;
-}
-
-STATIC int compute_key_iv_aad_4(struct edhoc_context *ctx, uint8_t *iv,
-				size_t iv_len, uint8_t *aad, size_t aad_len)
-{
-	if (NULL == ctx || NULL == iv || 0 == iv_len || NULL == aad ||
-	    0 == aad_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_TH_STATE_4 != ctx->state.th.stage ||
-	    EDHOC_PRK_STATE_4E3M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.th.stage,
-			      ctx->state.prk_state);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	const struct edhoc_cipher_suite *csuite =
-		edhoc_selected_cipher_suite(ctx);
-	const void *prk_4e3m = edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
-
-	int ret = edhoc_kdf_expand(
-		ctx, prk_4e3m, EDHOC_KDF_LABEL_K_4, ctx->state.th.value,
-		ctx->state.th.length, EDHOC_KEY_USAGE_AEAD,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_K_4),
-		csuite->aead_key_length);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive K_4: %d", ret);
-		return ret;
-	}
-
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_K_4);
-
-	ret = edhoc_kdf_expand_raw(ctx, prk_4e3m, EDHOC_KDF_LABEL_IV_4,
-				   ctx->state.th.value, ctx->state.th.length,
-				   iv, iv_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive IV_4: %d", ret);
-		return ret;
-	}
-
-	/* Generate AAD_4. */
-	struct enc_structure cose_enc_0 = {
-		.enc_structure_protected.value = NULL,
-		.enc_structure_protected.len = 0,
-		.enc_structure_external_aad.value = ctx->state.th.value,
-		.enc_structure_external_aad.len = ctx->state.th.length,
-	};
-
-	size_t len = 0;
-	ret = cbor_encode_enc_structure(aad, aad_len, &cose_enc_0, &len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc AAD_4: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	return EDHOC_SUCCESS;
-}
-
-STATIC int compute_ciphertext(const struct edhoc_context *ctx,
-			      const uint8_t *iv, size_t iv_len,
-			      const uint8_t *aad, size_t aad_len,
-			      const uint8_t *ptxt, size_t ptxt_len,
-			      uint8_t *ctxt, size_t ctxt_size, size_t *ctxt_len)
-{
-	/* AEAD-encrypt PLAINTEXT_4 under K_4 (its context slot handle), with
-	 * IV_4 as the nonce and AAD_4 as associated data. */
-	const int ret = edhoc_crypto(ctx)->aead_encrypt(
-		ctx->user_context, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_4),
-		iv, iv_len, aad, aad_len, ptxt, ptxt_len, ctxt, ctxt_size,
-		ctxt_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Encrypt CIPHERTEXT_4: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	return EDHOC_SUCCESS;
-}
-
 STATIC int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
 		     size_t msg_4_size, size_t *msg_4_len)
 {
@@ -384,28 +221,6 @@ STATIC int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 
 	*ctxt_4 = dec_msg_4.value;
 	*ctxt_4_len = dec_msg_4.len;
-
-	return EDHOC_SUCCESS;
-}
-
-STATIC int decrypt_ciphertext_4(const struct edhoc_context *ctx,
-				const uint8_t *iv, size_t iv_len,
-				const uint8_t *aad, size_t aad_len,
-				const uint8_t *ctxt, size_t ctxt_len,
-				uint8_t *ptxt, size_t ptxt_len)
-{
-	/* AEAD-decrypt CIPHERTEXT_4 under K_4 (its context slot handle), with
-	 * IV_4 as the nonce and AAD_4 as associated data. */
-	size_t len = 0;
-	const int ret = edhoc_crypto(ctx)->aead_decrypt(
-		ctx->user_context, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_K_4),
-		iv, iv_len, aad, aad_len, ctxt, ctxt_len, ptxt, ptxt_len, &len);
-
-	if (EDHOC_SUCCESS != ret || ptxt_len != len) {
-		EDHOC_LOG_ERR("Decrypt CIPHERTEXT_4: %d, %zu, %zu", ret,
-			      ptxt_len, len);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
 
 	return EDHOC_SUCCESS;
 }
@@ -527,7 +342,15 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	const size_t aad_len = compute_aad_4_len(ctx);
+	size_t aad_len = 0;
+	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_MEM_FREE(iv);
+		EDHOC_MEM_FREE(plaintext);
+		return ret;
+	}
+
 	EDHOC_MEM_ALLOC(uint8_t, aad, aad_len);
 	if (NULL == aad) {
 		EDHOC_LOG_ERR("Memory allocation failed");
@@ -536,8 +359,8 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = compute_key_iv_aad_4(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
-				   EDHOC_MEM_ALLOC_SIZE(aad));
+	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_4/IV_4/AAD_4: %d", ret);
@@ -562,11 +385,11 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = compute_ciphertext(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
-				 EDHOC_MEM_ALLOC_SIZE(aad), plaintext,
-				 plaintext_len, ciphertext,
-				 EDHOC_MEM_ALLOC_SIZE(ciphertext),
-				 &ciphertext_len);
+	ret = edhoc_cipher_encrypt(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+				   EDHOC_MEM_ALLOC_SIZE(aad), plaintext,
+				   plaintext_len, ciphertext,
+				   EDHOC_MEM_ALLOC_SIZE(ciphertext),
+				   &ciphertext_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute CIPHERTEXT_4: %d", ret);
@@ -684,7 +507,14 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	const size_t aad_len = compute_aad_4_len(ctx);
+	size_t aad_len = 0;
+	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_MEM_FREE(iv);
+		return ret;
+	}
+
 	EDHOC_MEM_ALLOC(uint8_t, aad, aad_len);
 	if (NULL == aad) {
 		EDHOC_LOG_ERR("Memory allocation failed");
@@ -692,8 +522,8 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = compute_key_iv_aad_4(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
-				   EDHOC_MEM_ALLOC_SIZE(aad));
+	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_4/IV_4/AAD_4: %d", ret);
@@ -717,7 +547,7 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = decrypt_ciphertext_4(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+	ret = edhoc_cipher_decrypt(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
 				   EDHOC_MEM_ALLOC_SIZE(aad), ctxt, ctxt_len,
 				   ptxt, plaintext_len);
 

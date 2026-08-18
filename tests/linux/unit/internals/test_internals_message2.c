@@ -79,7 +79,7 @@ TEST(internals_message2, comp_decapsulate_null)
 TEST(internals_message2, comp_keystream_null)
 {
 	uint8_t ks[64] = { 0 };
-	int ret = comp_keystream(NULL, ks, ARRAY_SIZE(ks));
+	int ret = edhoc_cipher_keystream(NULL, ks, ARRAY_SIZE(ks));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -92,7 +92,7 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 
 	uint8_t ks[64] = { 0 };
-	int ret = comp_keystream(&ctx, ks, ARRAY_SIZE(ks));
+	int ret = edhoc_cipher_keystream(&ctx, ks, ARRAY_SIZE(ks));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);

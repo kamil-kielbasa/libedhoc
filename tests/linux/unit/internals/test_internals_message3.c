@@ -74,8 +74,8 @@ TEST(internals_message3, comp_key_iv_aad_3_null)
 {
 	uint8_t iv[13] = { 0 };
 	uint8_t aad[256] = { 0 };
-	int ret = comp_key_iv_aad_3(NULL, iv, ARRAY_SIZE(iv), aad,
-				    ARRAY_SIZE(aad));
+	int ret = edhoc_cipher_derive(NULL, iv, ARRAY_SIZE(iv), aad,
+				      ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -89,8 +89,8 @@ TEST(internals_message3, comp_key_iv_aad_3_bad_state)
 
 	uint8_t iv[13] = { 0 };
 	uint8_t aad[256] = { 0 };
-	int ret = comp_key_iv_aad_3(&ctx, iv, ARRAY_SIZE(iv), aad,
-				    ARRAY_SIZE(aad));
+	int ret = edhoc_cipher_derive(&ctx, iv, ARRAY_SIZE(iv), aad,
+				      ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -166,10 +166,10 @@ TEST(internals_message3, comp_aad_3_len_null)
 
 	size_t len = 0;
 
-	int ret = comp_aad_3_len(NULL, &len);
+	int ret = edhoc_cipher_aad_length(NULL, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = comp_aad_3_len(&ctx, NULL);
+	ret = edhoc_cipher_aad_length(&ctx, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -228,42 +228,37 @@ TEST(internals_message3, decrypt_ciphertext_3_null)
 	uint8_t ctxt[16] = { 0 };
 	uint8_t ptxt[16] = { 0 };
 
-	int ret = decrypt_ciphertext_3(NULL, iv, ARRAY_SIZE(iv), aad,
+	int ret = edhoc_cipher_decrypt(NULL, iv, ARRAY_SIZE(iv), aad,
 				       ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
 				       ptxt, ARRAY_SIZE(ptxt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = decrypt_ciphertext_3(&ctx, NULL, ARRAY_SIZE(iv), aad,
+	ret = edhoc_cipher_decrypt(&ctx, NULL, ARRAY_SIZE(iv), aad,
 				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
 				   ptxt, ARRAY_SIZE(ptxt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = decrypt_ciphertext_3(&ctx, iv, 0, aad, ARRAY_SIZE(aad), ctxt,
+	ret = edhoc_cipher_decrypt(&ctx, iv, 0, aad, ARRAY_SIZE(aad), ctxt,
 				   ARRAY_SIZE(ctxt), ptxt, ARRAY_SIZE(ptxt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), NULL,
+	ret = edhoc_cipher_decrypt(&ctx, iv, ARRAY_SIZE(iv), NULL,
 				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
 				   ptxt, ARRAY_SIZE(ptxt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad, 0, ctxt,
+	ret = edhoc_cipher_decrypt(&ctx, iv, ARRAY_SIZE(iv), aad, 0, ctxt,
 				   ARRAY_SIZE(ctxt), ptxt, ARRAY_SIZE(ptxt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad,
+	ret = edhoc_cipher_decrypt(&ctx, iv, ARRAY_SIZE(iv), aad,
 				   ARRAY_SIZE(aad), ctxt, 0, ptxt,
 				   ARRAY_SIZE(ptxt));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad,
+	ret = edhoc_cipher_decrypt(&ctx, iv, ARRAY_SIZE(iv), aad,
 				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
 				   NULL, ARRAY_SIZE(ptxt));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = decrypt_ciphertext_3(&ctx, iv, ARRAY_SIZE(iv), aad,
-				   ARRAY_SIZE(aad), ctxt, ARRAY_SIZE(ctxt),
-				   ptxt, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);

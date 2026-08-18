@@ -11,6 +11,7 @@ Unreleased
   * ``edhoc_transcript_hash_internal`` : TH_1 to TH_4.
   * ``edhoc_ead_internal`` : external authorization data.
   * ``edhoc_mac_internal`` : MAC context, MAC and Signature_or_MAC.
+  * ``edhoc_cipher_internal`` : message encryption (AEAD, keystream, XOR).
 
   The public API is unchanged.
 
