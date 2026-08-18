@@ -33,7 +33,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_connection_identifier_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_connection_identifier_decode.h>
 
 /* Standard library headers: */

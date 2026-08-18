@@ -35,7 +35,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_x509_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_id_cred_x_encode.h>
 #include <backend_cbor_int_type_encode.h>
 #include <backend_cbor_bstr_type_encode.h>
@@ -323,7 +323,7 @@ int edhoc_credential_parse_kid_bstr(const uint8_t *key_id, size_t key_id_length,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_credential_parse_map(const struct map *id_cred_map,
+int edhoc_credential_parse_map(const struct id_cred_x *id_cred_map,
 			       struct edhoc_credential_received *received)
 {
 	if (NULL == id_cred_map || NULL == received) {
@@ -337,23 +337,26 @@ int edhoc_credential_parse_map(const struct map *id_cred_map,
 	 * means either that the peer ignored the mandatory compact encoding, or
 	 * that the map carries 'kid' alongside header parameters this library
 	 * does not support. In both cases the credential cannot be resolved. */
-	if (id_cred_map->map_kid_present) {
+	if (id_cred_map->id_cred_x_kid_present) {
 		EDHOC_LOG_ERR("ID_CRED 'kid' must use the compact encoding");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	if (id_cred_map->map_x5chain_present && id_cred_map->map_x5t_present) {
+	if (id_cred_map->id_cred_x_x5chain_present &&
+	    id_cred_map->id_cred_x_x5t_present) {
 		EDHOC_LOG_ERR("Ambiguous ID_CRED: 'x5chain' and 'x5t'");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	if (id_cred_map->map_x5chain_present) {
-		return parse_x5chain(&id_cred_map->map_x5chain.map_x5chain,
-				     received);
+	if (id_cred_map->id_cred_x_x5chain_present) {
+		return parse_x5chain(
+			&id_cred_map->id_cred_x_x5chain.id_cred_x_x5chain,
+			received);
 	}
 
-	if (id_cred_map->map_x5t_present) {
-		return parse_x5t(&id_cred_map->map_x5t.map_x5t, received);
+	if (id_cred_map->id_cred_x_x5t_present) {
+		return parse_x5t(&id_cred_map->id_cred_x_x5t.id_cred_x_x5t,
+				 received);
 	}
 
 	/* Header parameters outside the CDDL model are rejected earlier, by the

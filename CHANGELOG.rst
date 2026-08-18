@@ -9,8 +9,16 @@ Unreleased
   * ``edhoc_key_slot_internal`` : key-store handle slots.
   * ``edhoc_kdf_internal`` : EDHOC_Extract and EDHOC_KDF.
   * ``edhoc_transcript_hash_internal`` : TH_1 to TH_4.
+  * ``edhoc_ead_internal`` : external authorization data.
 
   The public API is unchanged.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : merged the five CDDL
+  schemas into ``scripts/cddls/libedhoc.cddl`` and the generated type headers
+  into ``backend_cbor_types.h``. Rules that were textually identical but held
+  different names produced one C structure each: ``ead_x``/``ead_y`` and
+  ``EAD_1`` to ``EAD_4`` collapse into ``ead_x`` and ``ead``, and ``map`` into
+  ``id_cred_x``. The wire format is unchanged.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : fixed the CBOR head
   length helpers. They reported four bytes where CBOR uses five, and five where

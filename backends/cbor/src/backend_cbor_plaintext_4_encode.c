@@ -16,18 +16,18 @@
 #error "The type file was generated with a different default_max_qty than this file"
 #endif
 
-static bool encode_ead_y(zcbor_state_t *state, const struct ead_y *input);
-static bool encode_EAD_4(zcbor_state_t *state, const struct EAD_4 *input);
+static bool encode_ead_x(zcbor_state_t *state, const struct ead_x *input);
+static bool encode_ead(zcbor_state_t *state, const struct ead *input);
 static bool encode_plaintext_4(zcbor_state_t *state, const struct plaintext_4 *input);
 
 
-static bool encode_ead_y(
-		zcbor_state_t *state, const struct ead_y *input)
+static bool encode_ead_x(
+		zcbor_state_t *state, const struct ead_x *input)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((((zcbor_int32_encode(state, (&(*input).ead_y_ead_label))))
-	&& (!(*input).ead_y_ead_value_present || zcbor_bstr_encode(state, (&(*input).ead_y_ead_value))))));
+	bool tmp_result = (((((zcbor_int32_encode(state, (&(*input).ead_x_ead_label))))
+	&& (!(*input).ead_x_ead_value_present || zcbor_bstr_encode(state, (&(*input).ead_x_ead_value))))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -39,12 +39,12 @@ static bool encode_ead_y(
 	return tmp_result;
 }
 
-static bool encode_EAD_4(
-		zcbor_state_t *state, const struct EAD_4 *input)
+static bool encode_ead(
+		zcbor_state_t *state, const struct ead *input)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (zcbor_multi_encode_minmax(1, 3, &(*input).EAD_4_count, (zcbor_encoder_t *)encode_ead_y, state, (&(*input).EAD_4), sizeof(struct ead_y)));
+	bool tmp_result = (zcbor_multi_encode_minmax(1, 3, &(*input).ead_count, (zcbor_encoder_t *)encode_ead_x, state, (&(*input).ead), sizeof(struct ead_x)));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -61,7 +61,7 @@ static bool encode_plaintext_4(
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = ((!(*input).plaintext_4_present || encode_EAD_4(state, (&(*input).plaintext_4))));
+	bool tmp_result = ((!(*input).plaintext_4_present || encode_ead(state, (&(*input).plaintext_4))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);

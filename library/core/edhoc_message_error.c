@@ -31,7 +31,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_edhoc_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_message_error_encode.h>
 #include <backend_cbor_message_error_decode.h>
 

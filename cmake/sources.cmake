@@ -18,6 +18,7 @@ set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_cbor_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_kdf_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_transcript_hash_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_ead_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_key_slot_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_common_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_connection_id_internal.c

@@ -184,102 +184,6 @@ TEST(internals_common, th_encoded_length_zero)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(internals_common, comp_ead_len_no_tokens)
-{
-	struct edhoc_context ctx = { 0 };
-	size_t len = 0;
-
-	int ret = edhoc_context_init(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	ctx.ead.count = 0;
-
-	ret = comp_ead_len(&ctx, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL(0, len);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_common, comp_ead_len_with_tokens)
-{
-	uint8_t val0[4] = { 0x01, 0x02, 0x03, 0x04 };
-	uint8_t val1[2] = { 0xAA, 0xBB };
-	struct edhoc_context ctx = { 0 };
-	size_t len = 0;
-
-	int ret = edhoc_context_init(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ctx.ead.count = 2;
-	ctx.ead.token[0].label = 1;
-	ctx.ead.token[0].value.value = val0;
-	ctx.ead.token[0].value.length = sizeof(val0);
-	ctx.ead.token[1].label = 2;
-	ctx.ead.token[1].value.value = val1;
-	ctx.ead.token[1].value.length = sizeof(val1);
-
-	ret = comp_ead_len(&ctx, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_GREATER_THAN(0, len);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_common, validate_ead_composed_accepts)
-{
-	static const uint8_t val[3] = { 0x01, 0x02, 0x03 };
-	const struct edhoc_ead_token tokens[] = {
-		{ .label = 1,
-		  .value = { .value = val, .length = sizeof(val) } },
-		{ .label = 2, .value = { .value = NULL, .length = 0 } },
-	};
-
-	const int ret = edhoc_validate_ead_composed(tokens, ARRAY_SIZE(tokens));
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_common, validate_ead_composed_no_tokens)
-{
-	const int ret = edhoc_validate_ead_composed(NULL, 0);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_common, validate_ead_composed_null_tokens)
-{
-	const int ret = edhoc_validate_ead_composed(NULL, 1);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(internals_common, validate_ead_composed_value_without_buffer)
-{
-	const struct edhoc_ead_token tokens[] = {
-		{ .label = 1, .value = { .value = NULL, .length = 4 } },
-	};
-
-	const int ret = edhoc_validate_ead_composed(tokens, ARRAY_SIZE(tokens));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_EAD_COMPOSE_FAILURE, ret);
-}
-
-TEST(internals_common, comp_ead_len_null_args)
-{
-	struct edhoc_context ctx = { 0 };
-	size_t len = 0;
-
-	int ret = edhoc_context_init(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-
-	ret = comp_ead_len(NULL, &len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = comp_ead_len(&ctx, NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(internals_common, comp_prk_2e_bad_state)
 {
 	struct edhoc_context ctx = { 0 };
@@ -781,16 +685,6 @@ TEST_GROUP_RUNNER(internals_common)
 	/* comp_th_len */
 	RUN_TEST_CASE(internals_common, th_encoded_length_success);
 	RUN_TEST_CASE(internals_common, th_encoded_length_zero);
-
-	/* comp_ead_len */
-	RUN_TEST_CASE(internals_common, comp_ead_len_no_tokens);
-	RUN_TEST_CASE(internals_common, comp_ead_len_with_tokens);
-	RUN_TEST_CASE(internals_common, validate_ead_composed_accepts);
-	RUN_TEST_CASE(internals_common, validate_ead_composed_no_tokens);
-	RUN_TEST_CASE(internals_common, validate_ead_composed_null_tokens);
-	RUN_TEST_CASE(internals_common,
-		      validate_ead_composed_value_without_buffer);
-	RUN_TEST_CASE(internals_common, comp_ead_len_null_args);
 
 	/* comp_prk_2e */
 	RUN_TEST_CASE(internals_common, comp_prk_2e_bad_state);

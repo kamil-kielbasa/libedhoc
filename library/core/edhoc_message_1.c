@@ -24,8 +24,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_transcript_hash_internal.h"
+#include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
-#include "edhoc_common_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -37,7 +37,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_edhoc_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_message_1_encode.h>
 #include <backend_cbor_message_1_decode.h>
 
@@ -181,48 +181,24 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
 	}
 
 	/* 3e. Fill CBOR structure for message 1 - external authorization data if present. */
-	if (edhoc_ead_may_compose(ctx)) {
-		const struct edhoc_call_context call_context =
-			edhoc_call_context(ctx);
+	ret = edhoc_ead_compose(ctx);
 
-		ret = ctx->interfaces.ead.compose(ctx->user_context,
-						  &call_context, ctx->ead.token,
-						  edhoc_ead_capacity(ctx),
-						  &ctx->ead.count);
+	if (EDHOC_SUCCESS != ret) {
+		return ret;
+	}
 
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("EAD_1 compose: %d", ret);
-			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
-		}
+	if (edhoc_ead_is_present(ctx)) {
+		cbor_enc_msg_1.message_1_ead_m_present = true;
 
-		ret = edhoc_validate_ead_composed(ctx->ead.token,
-						  ctx->ead.count);
+		ret = edhoc_ead_tokens_encode(ctx,
+					      &cbor_enc_msg_1.message_1_ead_m);
 
 		if (EDHOC_SUCCESS != ret) {
 			return ret;
 		}
-	}
-
-	if (edhoc_ead_is_present(ctx)) {
-		cbor_enc_msg_1.message_1_EAD_1_m_present = true;
-		cbor_enc_msg_1.message_1_EAD_1_m.EAD_1_count = ctx->ead.count;
-
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
-				.ead_x_ead_value_present =
-				(NULL != ctx->ead.token[i].value.value);
-			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
-				.ead_x_ead_label = ctx->ead.token[i].label;
-			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
-				.ead_x_ead_value.value =
-				ctx->ead.token[i].value.value;
-			cbor_enc_msg_1.message_1_EAD_1_m.EAD_1[i]
-				.ead_x_ead_value.len =
-				ctx->ead.token[i].value.length;
-		}
 	} else {
-		cbor_enc_msg_1.message_1_EAD_1_m_present = false;
-		cbor_enc_msg_1.message_1_EAD_1_m.EAD_1_count = 0;
+		cbor_enc_msg_1.message_1_ead_m_present = false;
+		cbor_enc_msg_1.message_1_ead_m.ead_count = 0;
 	}
 
 	/* 4. Encode cbor sequence of message 1. */
@@ -470,64 +446,21 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 			      "C_I");
 
 	/* 4. Process EAD if present. */
-	if (true == cbor_dec_msg_1.message_1_EAD_1_m_present &&
+	if (true == cbor_dec_msg_1.message_1_ead_m_present &&
 	    NULL != ctx->interfaces.ead.process) {
-		if (edhoc_ead_capacity(ctx) <
-		    cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count) {
-			EDHOC_LOG_ERR(
-				"EAD buffer too small: %zu, %zu",
-				cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count,
-				edhoc_ead_capacity(ctx));
-			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		ret = edhoc_ead_tokens_decode(ctx,
+					      &cbor_dec_msg_1.message_1_ead_m);
+
+		if (EDHOC_SUCCESS != ret) {
+			return ret;
 		}
 
-		ctx->ead.count = cbor_dec_msg_1.message_1_EAD_1_m.EAD_1_count;
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			const struct ead_x *token =
-				&cbor_dec_msg_1.message_1_EAD_1_m.EAD_1[i];
-
-			ctx->ead.token[i].label = token->ead_x_ead_label;
-
-			/* zcbor keeps the length read from a bstr header even
-			 * when the value itself did not fit in the payload, so
-			 * only the presence flag may be trusted here. */
-			if (token->ead_x_ead_value_present) {
-				ctx->ead.token[i].value.value =
-					token->ead_x_ead_value.value;
-				ctx->ead.token[i].value.length =
-					token->ead_x_ead_value.len;
-			} else {
-				ctx->ead.token[i].value.value = NULL;
-				ctx->ead.token[i].value.length = 0;
-			}
-		}
-
-		const struct edhoc_call_context call_context =
-			edhoc_call_context(ctx);
-
-		ret = ctx->interfaces.ead.process(ctx->user_context,
-						  &call_context, ctx->ead.token,
-						  ctx->ead.count);
-
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead.token[i].label,
-				sizeof(ctx->ead.token[i].label),
-				"EAD_1 process token label");
-
-			if (0 != ctx->ead.token[i].value.length) {
-				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value.value,
-					ctx->ead.token[i].value.length,
-					"EAD_1 process token value");
-			}
-		}
+		ret = edhoc_ead_process(ctx);
 
 		edhoc_ead_reset(ctx);
 
 		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("EAD process: %d", ret);
-			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
+			return ret;
 		}
 	}
 

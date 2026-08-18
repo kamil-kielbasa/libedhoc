@@ -18,7 +18,7 @@
 
 static bool decode_suites(zcbor_state_t *state, struct suites_r *result);
 static bool decode_ead_x(zcbor_state_t *state, struct ead_x *result);
-static bool decode_EAD_1(zcbor_state_t *state, struct EAD_1 *result);
+static bool decode_ead(zcbor_state_t *state, struct ead *result);
 static bool decode_message_1(zcbor_state_t *state, struct message_1 *result);
 
 
@@ -59,12 +59,12 @@ static bool decode_ead_x(
 	return tmp_result;
 }
 
-static bool decode_EAD_1(
-		zcbor_state_t *state, struct EAD_1 *result)
+static bool decode_ead(
+		zcbor_state_t *state, struct ead *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (zcbor_multi_decode(1, 3, &(*result).EAD_1_count, (zcbor_decoder_t *)decode_ead_x, state, (&(*result).EAD_1), sizeof(struct ead_x)));
+	bool tmp_result = (zcbor_multi_decode(1, 3, &(*result).ead_count, (zcbor_decoder_t *)decode_ead_x, state, (&(*result).ead), sizeof(struct ead_x)));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -89,7 +89,7 @@ static bool decode_message_1(
 	|| (((zcbor_int32_decode(state, (&(*result).message_1_C_I_int)))
 	&& ((((*result).message_1_C_I_int >= -24)
 	&& ((*result).message_1_C_I_int <= 23)) || (zcbor_error(state, ZCBOR_ERR_WRONG_RANGE), false))) && (((*result).message_1_C_I_choice = message_1_C_I_int_c), true))), zcbor_union_end_code(state), int_res)))
-	&& ((*result).message_1_EAD_1_m_present = ((decode_EAD_1(state, (&(*result).message_1_EAD_1_m)))), 1))));
+	&& ((*result).message_1_ead_m_present = ((decode_ead(state, (&(*result).message_1_ead_m)))), 1))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);

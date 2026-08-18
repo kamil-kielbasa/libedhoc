@@ -117,31 +117,6 @@ struct plaintext {
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
 
-/** \defgroup edhoc-common-ead EDHOC common external authorization data
- * @{
- */
-
-/**
- * \brief Validate the EAD items the application produced in
- *        \ref edhoc_ead.compose, then hex-dump the accepted ones at debug
- *        level.
- *
- *        Both the count and the item buffers go straight to the CBOR encoder,
- *        which can neither tell a missing buffer from an empty one nor notice
- *        that a callback reported more items than it was given room for.
- *
- * \param[in] tokens                    EAD items to send.
- * \param nr_of_tokens                  Number of entries in \p tokens.
- *
- * \retval #EDHOC_SUCCESS
- *         Success.
- * \return Negative error code on failure.
- */
-int edhoc_validate_ead_composed(const struct edhoc_ead_token *tokens,
-				size_t nr_of_tokens);
-
-/**@}*/
-
 /** \defgroup edhoc-common-mac-context EDHOC common MAC context
  * @{
  */

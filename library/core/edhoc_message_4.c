@@ -25,9 +25,9 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
-#include "edhoc_common_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -39,8 +39,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_x509_types.h>
-#include <backend_cbor_enc_structure_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_enc_structure_encode.h>
 #include <backend_cbor_plaintext_4_encode.h>
 #include <backend_cbor_plaintext_4_decode.h>
@@ -218,24 +217,13 @@ STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
 
 	struct plaintext_4 ead_4 = { .plaintext_4_present = false };
 
-	if (ARRAY_SIZE(ead_4.plaintext_4.EAD_4) < ctx->ead.count) {
-		EDHOC_LOG_ERR("EAD_4 buffer too small: %zu", ctx->ead.count);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
 	if (edhoc_ead_is_present(ctx)) {
 		ead_4.plaintext_4_present = true;
-		ead_4.plaintext_4.EAD_4_count = ctx->ead.count;
 
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			ead_4.plaintext_4.EAD_4[i].ead_y_ead_label =
-				ctx->ead.token[i].label;
-			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.value =
-				ctx->ead.token[i].value.value;
-			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value.len =
-				ctx->ead.token[i].value.length;
-			ead_4.plaintext_4.EAD_4[i].ead_y_ead_value_present =
-				(NULL != ctx->ead.token[i].value.value);
+		ret = edhoc_ead_tokens_encode(ctx, &ead_4.plaintext_4);
+
+		if (EDHOC_SUCCESS != ret) {
+			return ret;
 		}
 	} else {
 		ead_4.plaintext_4_present = false;
@@ -441,34 +429,7 @@ STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	if (edhoc_ead_capacity(ctx) < ead_4.plaintext_4.EAD_4_count) {
-		EDHOC_LOG_ERR("EAD buffer too small: %zu, %zu",
-			      ead_4.plaintext_4.EAD_4_count,
-			      edhoc_ead_capacity(ctx));
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	ctx->ead.count = ead_4.plaintext_4.EAD_4_count;
-	for (size_t i = 0; i < ead_4.plaintext_4.EAD_4_count; ++i) {
-		const struct ead_y *token = &ead_4.plaintext_4.EAD_4[i];
-
-		ctx->ead.token[i].label = token->ead_y_ead_label;
-
-		/* zcbor keeps the length read from a bstr header even when
-		 * the value itself did not fit in the payload, so only the
-		 * presence flag may be trusted here. */
-		if (token->ead_y_ead_value_present) {
-			ctx->ead.token[i].value.value =
-				token->ead_y_ead_value.value;
-			ctx->ead.token[i].value.length =
-				token->ead_y_ead_value.len;
-		} else {
-			ctx->ead.token[i].value.value = NULL;
-			ctx->ead.token[i].value.length = 0;
-		}
-	}
-
-	return EDHOC_SUCCESS;
+	return edhoc_ead_tokens_decode(ctx, &ead_4.plaintext_4);
 }
 
 /* Module interface function definitions ----------------------------------- */
@@ -521,26 +482,10 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		edhoc_selected_cipher_suite(ctx);
 
 	/* 2. Compose EAD_4 if present. */
-	if (edhoc_ead_may_compose(ctx)) {
-		const struct edhoc_call_context call_context =
-			edhoc_call_context(ctx);
+	ret = edhoc_ead_compose(ctx);
 
-		ret = ctx->interfaces.ead.compose(ctx->user_context,
-						  &call_context, ctx->ead.token,
-						  edhoc_ead_capacity(ctx),
-						  &ctx->ead.count);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("EAD_4 compose: %d", ret);
-			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
-		}
-
-		ret = edhoc_validate_ead_composed(ctx->ead.token,
-						  ctx->ead.count);
-
-		if (EDHOC_SUCCESS != ret) {
-			return ret;
-		}
+	if (EDHOC_SUCCESS != ret) {
+		return ret;
 	}
 
 	/* 3a. Compute plaintext length (PLAINTEXT_4). */
@@ -804,33 +749,11 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	 * plaintext buffer, so it must remain allocated until the EAD process
 	 * callback has consumed the tokens.
 	 */
-	if (edhoc_ead_may_process(ctx)) {
-		const struct edhoc_call_context call_context =
-			edhoc_call_context(ctx);
+	ret = edhoc_ead_process(ctx);
 
-		ret = ctx->interfaces.ead.process(ctx->user_context,
-						  &call_context, ctx->ead.token,
-						  ctx->ead.count);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Process EAD_4: %d", ret);
-			EDHOC_MEM_FREE(ptxt);
-			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
-		}
-
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead.token[i].label,
-				sizeof(ctx->ead.token[i].label),
-				"EAD_4 process label");
-
-			if (0 != ctx->ead.token[i].value.length) {
-				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value.value,
-					ctx->ead.token[i].value.length,
-					"EAD_4 process value");
-			}
-		}
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_MEM_FREE(ptxt);
+		return ret;
 	}
 
 	EDHOC_MEM_FREE(ptxt);

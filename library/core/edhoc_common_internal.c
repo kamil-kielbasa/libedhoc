@@ -16,16 +16,10 @@
 LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
-/* Build-time configuration (Kconfig provides these on Zephyr): */
-#ifndef __ZEPHYR__
-#include <edhoc_config.h>
-#endif
-
 /* EDHOC public headers: */
 #include <edhoc/types.h>
 #include <edhoc/values.h>
 #include <edhoc/cipher_suite.h>
-#include <edhoc/ead.h>
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
@@ -34,6 +28,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_transcript_hash_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
+#include "edhoc_ead_internal.h"
 #include "edhoc_common_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_connection_id_internal.h"
@@ -43,8 +38,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* CBOR headers: */
 #include <zcbor_common.h>
 #include <backend_cbor_bstr_type_encode.h>
-#include <backend_cbor_edhoc_types.h>
-#include <backend_cbor_sig_structure_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_sig_structure_encode.h>
 #include <backend_cbor_ead_encode.h>
 
@@ -58,17 +52,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
-
-/**
- * \brief Compute required buffer length for EAD (2/3).
- *
- * \param[in] ctx               EDHOC context.
- * \param[out] len              On success, number of bytes that make up
- *                              EAD buffer length requirements.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
 
 /**
  * \brief Compute COSE_Sign1.
@@ -111,23 +94,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 			      const uint8_t *sign, size_t sign_len);
 
 /* Static function definitions --------------------------------------------- */
-
-STATIC int comp_ead_len(const struct edhoc_context *ctx, size_t *len)
-{
-	if (NULL == ctx || NULL == len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	for (size_t i = 0; i < ctx->ead.count; ++i) {
-		*len += edhoc_cbor_int_head_length(ctx->ead.token[i].label);
-		*len += ctx->ead.token[i].value.length;
-		*len += edhoc_cbor_bstr_head_length(
-			ctx->ead.token[i].value.length);
-	}
-
-	return EDHOC_SUCCESS;
-}
 
 STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 			    const void *private_key_id,
@@ -251,44 +217,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_validate_ead_composed(const struct edhoc_ead_token *tokens,
-				size_t nr_of_tokens)
-{
-	if (NULL == tokens && 0 != nr_of_tokens) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS < nr_of_tokens) {
-		EDHOC_LOG_ERR("Too many EAD tokens: %zu (max %d)", nr_of_tokens,
-			      CONFIG_LIBEDHOC_MAX_NR_OF_EAD_TOKENS);
-		return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
-	}
-
-	for (size_t i = 0; i < nr_of_tokens; ++i) {
-		if (NULL == tokens[i].value.value &&
-		    0 != tokens[i].value.length) {
-			EDHOC_LOG_ERR("EAD token %zu: no value for length %zu",
-				      i, tokens[i].value.length);
-			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
-		}
-	}
-
-	for (size_t i = 0; i < nr_of_tokens; ++i) {
-		EDHOC_LOG_HEXDUMP_DBG((const uint8_t *)&tokens[i].label,
-				      sizeof(tokens[i].label),
-				      "EAD compose token label");
-
-		if (0 != tokens[i].value.length) {
-			EDHOC_LOG_HEXDUMP_DBG(tokens[i].value.value,
-					      tokens[i].value.length,
-					      "EAD compose token value");
-		}
-	}
-
-	return EDHOC_SUCCESS;
-}
-
 int edhoc_comp_mac_context_length(
 	const struct edhoc_context *ctx,
 	const struct edhoc_credential_material *material, size_t *mac_ctx_len)
@@ -362,7 +290,7 @@ int edhoc_comp_mac_context_length(
 
 	/* EAD length. */
 	len = 0;
-	ret = comp_ead_len(ctx, &len);
+	ret = edhoc_ead_encoded_length(ctx, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -525,7 +453,7 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 	/* EAD length. */
 	if (edhoc_ead_is_present(ctx)) {
 		len = 0;
-		ret = comp_ead_len(ctx, &len);
+		ret = edhoc_ead_encoded_length(ctx, &len);
 
 		if (EDHOC_SUCCESS != ret)
 			return ret;
@@ -541,17 +469,12 @@ int edhoc_comp_mac_context(const struct edhoc_context *ctx,
 
 	/* EAD cborising. */
 	if (true == mac_ctx->is_ead) {
-		struct ead tmp_ead = { .ead_count = ctx->ead.count };
+		struct ead tmp_ead = { 0 };
 
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			tmp_ead.ead[i].ead_x_ead_label =
-				ctx->ead.token[i].label;
-			tmp_ead.ead[i].ead_x_ead_value_present =
-				(NULL != ctx->ead.token[i].value.value);
-			tmp_ead.ead[i].ead_x_ead_value.value =
-				ctx->ead.token[i].value.value;
-			tmp_ead.ead[i].ead_x_ead_value.len =
-				ctx->ead.token[i].value.length;
+		ret = edhoc_ead_tokens_encode(ctx, &tmp_ead);
+
+		if (EDHOC_SUCCESS != ret) {
+			return ret;
 		}
 
 		len = 0;

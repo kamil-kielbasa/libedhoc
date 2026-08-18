@@ -46,7 +46,6 @@ void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
 
 /* Library-internal functions under test (white-box) ----------------------- */
 
-extern int comp_ead_len(const struct edhoc_context *ctx, size_t *len);
 extern int compute_prk_out(struct edhoc_context *ctx);
 extern int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len);

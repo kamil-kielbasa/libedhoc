@@ -26,6 +26,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
 #include "edhoc_transcript_hash_internal.h"
+#include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
 #include "edhoc_common_internal.h"
@@ -41,8 +42,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_x509_types.h>
-#include <backend_cbor_enc_structure_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_message_3_encode.h>
 #include <backend_cbor_message_3_decode.h>
 #include <backend_cbor_bstr_type_encode.h>
@@ -671,9 +671,9 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 			&parsed_ptxt->peer_credential_id);
 		break;
 
-	case plaintext_3_ID_CRED_I_map_m_c:
+	case plaintext_3_ID_CRED_I_id_cred_x_m_c:
 		ret = edhoc_credential_parse_map(
-			&cbor_ptxt_3.plaintext_3_ID_CRED_I_map_m,
+			&cbor_ptxt_3.plaintext_3_ID_CRED_I_id_cred_x_m,
 			&parsed_ptxt->peer_credential_id);
 		break;
 
@@ -695,36 +695,12 @@ STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
 		cbor_ptxt_3.plaintext_3_Signature_or_MAC_3.len;
 
 	/* EAD_3 if present */
-	if (cbor_ptxt_3.plaintext_3_EAD_3_m_present) {
-		if (edhoc_ead_capacity(ctx) <
-		    cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count) {
-			EDHOC_LOG_ERR(
-				"EAD buffer too small: %zu, %zu",
-				cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count,
-				edhoc_ead_capacity(ctx));
-			return EDHOC_ERROR_BUFFER_TOO_SMALL;
-		}
+	if (cbor_ptxt_3.plaintext_3_ead_m_present) {
+		ret = edhoc_ead_tokens_decode(ctx,
+					      &cbor_ptxt_3.plaintext_3_ead_m);
 
-		ctx->ead.count = cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3_count;
-
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			const struct ead_y *token =
-				&cbor_ptxt_3.plaintext_3_EAD_3_m.EAD_3[i];
-
-			ctx->ead.token[i].label = token->ead_y_ead_label;
-
-			/* zcbor keeps the length read from a bstr header even
-			 * when the value itself did not fit in the payload, so
-			 * only the presence flag may be trusted here. */
-			if (token->ead_y_ead_value_present) {
-				ctx->ead.token[i].value.value =
-					token->ead_y_ead_value.value;
-				ctx->ead.token[i].value.length =
-					token->ead_y_ead_value.len;
-			} else {
-				ctx->ead.token[i].value.value = NULL;
-				ctx->ead.token[i].value.length = 0;
-			}
+		if (EDHOC_SUCCESS != ret) {
+			return ret;
 		}
 	}
 
@@ -871,26 +847,10 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		edhoc_selected_cipher_suite(ctx);
 
 	/* 2. Compose EAD_3 if present. */
-	if (edhoc_ead_may_compose(ctx)) {
-		const struct edhoc_call_context call_context =
-			edhoc_call_context(ctx);
+	ret = edhoc_ead_compose(ctx);
 
-		ret = ctx->interfaces.ead.compose(ctx->user_context,
-						  &call_context, ctx->ead.token,
-						  edhoc_ead_capacity(ctx),
-						  &ctx->ead.count);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("EAD_3 compose: %d", ret);
-			return EDHOC_ERROR_EAD_COMPOSE_FAILURE;
-		}
-
-		ret = edhoc_validate_ead_composed(ctx->ead.token,
-						  ctx->ead.count);
-
-		if (EDHOC_SUCCESS != ret) {
-			return ret;
-		}
+	if (EDHOC_SUCCESS != ret) {
+		return ret;
 	}
 
 	/* 3. Select authentication credential. */
@@ -1343,33 +1303,11 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	}
 
 	/* 6. Process EAD_3 if present. */
-	if (edhoc_ead_may_process(ctx)) {
-		const struct edhoc_call_context call_context =
-			edhoc_call_context(ctx);
+	ret = edhoc_ead_process(ctx);
 
-		ret = ctx->interfaces.ead.process(ctx->user_context,
-						  &call_context, ctx->ead.token,
-						  ctx->ead.count);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Process EAD_3: %d", ret);
-			EDHOC_MEM_FREE(ptxt);
-			return EDHOC_ERROR_EAD_PROCESS_FAILURE;
-		}
-
-		for (size_t i = 0; i < ctx->ead.count; ++i) {
-			EDHOC_LOG_HEXDUMP_DBG(
-				(const uint8_t *)&ctx->ead.token[i].label,
-				sizeof(ctx->ead.token[i].label),
-				"EAD_3 process label");
-
-			if (0 != ctx->ead.token[i].value.length) {
-				EDHOC_LOG_HEXDUMP_DBG(
-					ctx->ead.token[i].value.value,
-					ctx->ead.token[i].value.length,
-					"EAD_3 process value");
-			}
-		}
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_MEM_FREE(ptxt);
+		return ret;
 	}
 
 	/* 7. Verify if credentials from peer are trusted. */
