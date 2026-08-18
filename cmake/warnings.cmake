@@ -50,8 +50,10 @@ function(libedhoc_target_warnings target profile)
                 -Wno-vla)                         # the stack backend allocates VLAs
             if(APPLE)
                 list(APPEND extra_clang
-                    -Wno-poison-system-directories) # Apple Clang diagnoses its
+                    -Wno-poison-system-directories  # Apple Clang diagnoses its
                                                     # own /usr/local/include path
+                    -Wno-constant-logical-operand)  # configured array capacity
+                                                    # is intentionally constant
             endif()
             if(LIBEDHOC_COMPILER_HAS_WPRE_C11_COMPAT)
                 list(APPEND extra_clang -Wno-pre-c11-compat)

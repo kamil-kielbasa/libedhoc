@@ -210,8 +210,8 @@ Highlights
   ``include/edhoc/`` with one include convention and one documentation style;
   ``<edhoc/edhoc.h>`` is an umbrella over all of them.
 
-* **Tests rebuilt around matrices.** Host and Zephyr have separate trees and the
-  host one is split by purpose — integration, robustness, RFC 9529, unit, fuzz —
+* **Tests rebuilt around matrices.** Linux and Zephyr have separate trees and the
+  Linux one is split by purpose — integration, robustness, RFC 9529, unit, fuzz —
   with shared drivers, so a scenario scales across every cipher suite, method,
   memory backend and a range of build configurations.
 

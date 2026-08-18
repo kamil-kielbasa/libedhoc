@@ -284,9 +284,7 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 7a. Compute required buffer length for context_2. */
-	struct edhoc_credential_material_asymmetric material = {
-		.label = (enum edhoc_cose_header)0,
-	};
+	struct edhoc_credential_material_asymmetric material = { 0 };
 	ret = edhoc_credential_asymmetric_material_from_selected(&selected,
 								 &material);
 
@@ -706,11 +704,7 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	EDHOC_LOG_HEXDUMP_DBG(plaintext, plaintext_len, "PLAINTEXT_2");
 
 	/* 8. Parse plaintext (PLAINTEXT_2). */
-	struct plaintext parsed_ptxt = {
-		.peer_credential_id = {
-			.label = (enum edhoc_cose_header)0,
-		},
-	};
+	struct plaintext parsed_ptxt = { 0 };
 	ret = edhoc_plaintext_parse(ctx, EDHOC_PLAINTEXT_CLASSIC_2, plaintext,
 				    plaintext_len, &parsed_ptxt);
 
@@ -780,9 +774,7 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	}
 
 	/* 12. Compute required buffer length for context_2. */
-	struct edhoc_credential_material_asymmetric material = {
-		.label = (enum edhoc_cose_header)0,
-	};
+	struct edhoc_credential_material_asymmetric material = { 0 };
 	ret = edhoc_credential_asymmetric_material_from_trusted(
 		&parsed_ptxt.peer_credential_id, &trusted, &material);
 

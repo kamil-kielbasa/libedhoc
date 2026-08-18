@@ -141,6 +141,19 @@ jobs:
         with:
           command: "HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake libxslt ninja"
 
+      - name: Install stable Clang (with retry)
+        if: matrix.preset == 'clang'
+        uses: ./.github/actions/retry
+        with:
+          command: "HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@20"
+
+      - name: Expose stable Clang executable
+        if: matrix.preset == 'clang'
+        run: |
+          mkdir -p "$RUNNER_TEMP/llvm-bin"
+          ln -s "$(brew --prefix llvm@20)/bin/clang" "$RUNNER_TEMP/llvm-bin/clang-20"
+          echo "$RUNNER_TEMP/llvm-bin" >> "$GITHUB_PATH"
+
       - name: Add Homebrew libxslt to PATH
         run: echo "$(brew --prefix libxslt)/bin" >> "$GITHUB_PATH"
 
