@@ -15,6 +15,10 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC public headers: */
+#ifndef __ZEPHYR__
+#include <edhoc_config.h>
+#endif
+
 #include <edhoc/types.h>
 #include <edhoc/values.h>
 #include <edhoc/cipher_suite.h>
@@ -453,4 +457,128 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
+}
+int edhoc_key_schedule_prk_out(struct edhoc_context *ctx)
+{
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (EDHOC_TH_STATE_4 != ctx->state.th.stage ||
+	    EDHOC_PRK_STATE_4E3M != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.th.stage,
+			      ctx->state.prk_state);
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
+
+	int ret = edhoc_kdf_expand(
+		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M),
+		EDHOC_KDF_LABEL_PRK_OUT, ctx->state.th.value,
+		ctx->state.th.length, EDHOC_KEY_USAGE_KDF,
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT),
+		csuite->hash_length);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Derive PRK_out: %d", ret);
+		return ret;
+	}
+
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_OUT);
+
+	/* PRK_4e3m is spent; release it. After the handshake messages have
+	 * freed their secrets it is the only live slot below PRK_out, so the
+	 * prefix release destroys exactly that handle. */
+	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_OUT);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Release spent key slots: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	ctx->state.prk_state = EDHOC_PRK_STATE_OUT;
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_key_schedule_prk_out_update(struct edhoc_context *ctx,
+				      const uint8_t *context,
+				      size_t context_len)
+{
+	if (NULL == ctx || (NULL == context && 0 != context_len)) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (EDHOC_PRK_STATE_OUT != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d", ctx->state.prk_state);
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
+
+	/* new PRK_out = EDHOC_KDF(PRK_out, ...). The old PRK_out handle is
+	 * taken from a local copy so the derivation can write the new handle
+	 * straight into the PRK_out slot; the old handle is destroyed
+	 * afterwards. */
+	uint8_t old_prk_out[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	edhoc_key_slot_snapshot(ctx, EDHOC_KEY_SLOT_PRK_OUT, old_prk_out);
+
+	int ret = edhoc_kdf_expand(
+		ctx, old_prk_out, EDHOC_KDF_LABEL_NEW_PRK_OUT, context,
+		context_len, EDHOC_KEY_USAGE_KDF,
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT),
+		csuite->hash_length);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Derive new PRK_out: %d", ret);
+		/* Restore the old PRK_out handle so the slot stays valid. */
+		edhoc_key_slot_restore(ctx, EDHOC_KEY_SLOT_PRK_OUT,
+				       old_prk_out);
+		edhoc_zeroize(ctx, old_prk_out, sizeof(old_prk_out));
+		return ret;
+	}
+
+	/* The new PRK_out handle now owns the slot; destroy the old one. */
+	ret = edhoc_key_destroy(ctx, old_prk_out);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Destroy old PRK_out: %d", ret);
+		return EDHOC_ERROR_CRYPTO_FAILURE;
+	}
+
+	return EDHOC_SUCCESS;
+}
+
+int edhoc_key_schedule_prk_exporter(struct edhoc_context *ctx)
+{
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (EDHOC_PRK_STATE_OUT != ctx->state.prk_state) {
+		EDHOC_LOG_ERR("Bad state: %d", ctx->state.prk_state);
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	const struct edhoc_cipher_suite *csuite =
+		edhoc_selected_cipher_suite(ctx);
+
+	const int ret = edhoc_kdf_expand(
+		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_OUT),
+		EDHOC_KDF_LABEL_PRK_EXPORTER, NULL, 0, EDHOC_KEY_USAGE_KDF,
+		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER),
+		csuite->hash_length);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Derive PRK_exporter: %d", ret);
+		return ret;
+	}
+
+	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER);
+	return EDHOC_SUCCESS;
 }

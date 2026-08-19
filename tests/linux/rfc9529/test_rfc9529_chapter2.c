@@ -14,7 +14,6 @@
 #include "test_rfc9529_support.h"
 #include "test_key_agreement.h"
 #include "edhoc_context_internal.h"
-#include "edhoc_values_internal.h"
 #include "test_vector_rfc9529_chapter_2.h"
 
 /* Cipher suite 0 header: */
@@ -1214,9 +1213,9 @@ TEST(rfc9529_chapter2, prk_exporter)
 	uint8_t master_secret[ARRAY_SIZE(OSCORE_Master_Secret)] = { 0 };
 
 	/* EDHOC PRK exporter - OSCORE master secret. */
-	ret = edhoc_export_raw(init_ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
-			       NULL, 0, master_secret,
-			       ARRAY_SIZE(master_secret));
+	ret = edhoc_export_raw(init_ctx,
+			       EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET, NULL,
+			       0, master_secret, ARRAY_SIZE(master_secret));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Secret, master_secret,
 				      ARRAY_SIZE(OSCORE_Master_Secret));
@@ -1224,8 +1223,9 @@ TEST(rfc9529_chapter2, prk_exporter)
 	uint8_t master_salt[ARRAY_SIZE(OSCORE_Master_Salt)] = { 0 };
 
 	/* EDHOC PRK exporter - OSCORE master salt. */
-	ret = edhoc_export_raw(init_ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT, NULL,
-			       0, master_salt, ARRAY_SIZE(master_salt));
+	ret = edhoc_export_raw(init_ctx,
+			       EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT, NULL, 0,
+			       master_salt, ARRAY_SIZE(master_salt));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(OSCORE_Master_Salt, master_salt,
 				      ARRAY_SIZE(OSCORE_Master_Salt));

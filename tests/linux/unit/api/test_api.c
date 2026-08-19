@@ -13,7 +13,6 @@
 #include <edhoc/edhoc.h>
 #include <edhoc/cipher_suite.h>
 #include "edhoc_context_internal.h"
-#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 
 /* Standard library headers: */

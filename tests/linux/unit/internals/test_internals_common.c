@@ -447,7 +447,7 @@ TEST(internals_common, compute_prk_out_success)
 
 	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_4E3M, prk, sizeof(prk));
 
-	int ret = compute_prk_out(&ctx);
+	int ret = edhoc_key_schedule_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, ctx.state.prk_state);
 
@@ -464,7 +464,7 @@ TEST(internals_common, compute_prk_out_bad_th_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
 	ctx.state.th.length = 32;
 
-	int ret = compute_prk_out(&ctx);
+	int ret = edhoc_key_schedule_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -480,7 +480,7 @@ TEST(internals_common, compute_prk_out_bad_prk_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.length = 32;
 
-	int ret = compute_prk_out(&ctx);
+	int ret = edhoc_key_schedule_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -489,7 +489,7 @@ TEST(internals_common, compute_prk_out_bad_prk_state)
 
 TEST(internals_common, compute_prk_out_null_args)
 {
-	int ret = compute_prk_out(NULL);
+	int ret = edhoc_key_schedule_prk_out(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -511,10 +511,10 @@ TEST(internals_common, compute_new_prk_out_success)
 
 	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_4E3M, prk, sizeof(prk));
 
-	int ret = compute_prk_out(&ctx);
+	int ret = edhoc_key_schedule_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = compute_new_prk_out(&ctx, entropy, sizeof(entropy));
+	ret = edhoc_key_schedule_prk_out_update(&ctx, entropy, sizeof(entropy));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -529,7 +529,8 @@ TEST(internals_common, compute_new_prk_out_bad_state)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
 
-	int ret = compute_new_prk_out(&ctx, entropy, sizeof(entropy));
+	int ret = edhoc_key_schedule_prk_out_update(&ctx, entropy,
+						    sizeof(entropy));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -540,7 +541,8 @@ TEST(internals_common, compute_new_prk_out_null_args)
 {
 	uint8_t entropy[16] = { 0 };
 
-	int ret = compute_new_prk_out(NULL, entropy, sizeof(entropy));
+	int ret = edhoc_key_schedule_prk_out_update(NULL, entropy,
+						    sizeof(entropy));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -561,10 +563,10 @@ TEST(internals_common, compute_prk_exporter_success)
 
 	internals_inject_prk(&ctx, EDHOC_KEY_SLOT_PRK_4E3M, prk, sizeof(prk));
 
-	int ret = compute_prk_out(&ctx);
+	int ret = edhoc_key_schedule_prk_out(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = compute_prk_exporter(&ctx);
+	ret = edhoc_key_schedule_prk_exporter(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(
 		edhoc_key_slot_present(&ctx, EDHOC_KEY_SLOT_PRK_EXPORTER));
@@ -580,7 +582,7 @@ TEST(internals_common, compute_prk_exporter_bad_state)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.prk_state = EDHOC_PRK_STATE_4E3M;
 
-	int ret = compute_prk_exporter(&ctx);
+	int ret = edhoc_key_schedule_prk_exporter(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -589,7 +591,7 @@ TEST(internals_common, compute_prk_exporter_bad_state)
 
 TEST(internals_common, compute_prk_exporter_null_args)
 {
-	int ret = compute_prk_exporter(NULL);
+	int ret = edhoc_key_schedule_prk_exporter(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 

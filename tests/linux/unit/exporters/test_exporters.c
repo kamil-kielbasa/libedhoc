@@ -12,7 +12,6 @@
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
-#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 
 /* PSA crypto header: */
@@ -258,12 +257,13 @@ TEST(exporters, export_kdf_handle_matches_raw)
 	setup_export_ready(&ctx);
 
 	/* Raw bytes and a KDF key handle for the same label must agree. */
-	int ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+	int ret = edhoc_export_raw(&ctx,
+				   EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
 				   NULL, 0, raw, sizeof(raw));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0,
-			   EDHOC_KEY_USAGE_KDF, key_id);
+	ret = edhoc_export(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			   NULL, 0, EDHOC_KEY_USAGE_KDF, key_id);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* The handle is a DERIVE key holding exactly the raw bytes: expanding
@@ -290,8 +290,8 @@ TEST(exporters, export_aead_handle_is_aes_128)
 
 	setup_export_ready(&ctx);
 
-	int ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,
-			       0, EDHOC_KEY_USAGE_AEAD, key_id);
+	int ret = edhoc_export(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			       NULL, 0, EDHOC_KEY_USAGE_AEAD, key_id);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	/* The AEAD handle is a real 128-bit AES key owned by the caller. */
@@ -462,7 +462,8 @@ TEST(exporters, oscore_context_handle_matches_raw)
 TEST(exporters, export_null_ctx)
 {
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	const int ret = edhoc_export(NULL, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+	const int ret = edhoc_export(NULL,
+				     EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
 				     NULL, 0, EDHOC_KEY_USAGE_KDF, key_id);
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
@@ -475,8 +476,8 @@ TEST(exporters, export_null_key_id)
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0,
-			   EDHOC_KEY_USAGE_KDF, NULL);
+	ret = edhoc_export(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			   NULL, 0, EDHOC_KEY_USAGE_KDF, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -491,8 +492,8 @@ TEST(exporters, export_context_null_with_nonzero_length)
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 8,
-			   EDHOC_KEY_USAGE_KDF, key_id);
+	ret = edhoc_export(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			   NULL, 8, EDHOC_KEY_USAGE_KDF, key_id);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -524,8 +525,8 @@ TEST(exporters, export_invalid_usage)
 	ctx.state.machine = EDHOC_SM_COMPLETED;
 	ctx.state.prk_state = EDHOC_PRK_STATE_OUT;
 
-	int ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,
-			       0, (enum edhoc_key_usage)99, key_id);
+	int ret = edhoc_export(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			       NULL, 0, (enum edhoc_key_usage)99, key_id);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -541,8 +542,8 @@ TEST(exporters, export_bad_state)
 	ctx.state.machine = EDHOC_SM_START;
 	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
-	int ret = edhoc_export(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,
-			       0, EDHOC_KEY_USAGE_KDF, key_id);
+	int ret = edhoc_export(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			       NULL, 0, EDHOC_KEY_USAGE_KDF, key_id);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -556,8 +557,8 @@ TEST(exporters, export_raw_null_secret)
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,
-			       0, NULL, 32);
+	ret = edhoc_export_raw(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			       NULL, 0, NULL, 32);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -572,8 +573,8 @@ TEST(exporters, export_raw_zero_length)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	uint8_t secret[EXPORTERS_SHA256_LEN] = { 0 };
-	ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL,
-			       0, secret, 0);
+	ret = edhoc_export_raw(&ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			       NULL, 0, secret, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -605,7 +606,8 @@ TEST(exporters, export_raw_bad_state)
 	ctx.state.machine = EDHOC_SM_START;
 	ctx.state.prk_state = EDHOC_PRK_STATE_INVALID;
 
-	int ret = edhoc_export_raw(&ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET,
+	int ret = edhoc_export_raw(&ctx,
+				   EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
 				   NULL, 0, secret, sizeof(secret));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 

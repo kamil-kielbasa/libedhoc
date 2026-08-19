@@ -11,7 +11,6 @@
 
 /* EDHOC headers: */
 #include <edhoc/coap.h>
-#include "edhoc_values_internal.h"
 #include "edhoc_macros_internal.h"
 
 /* Standard library headers: */
@@ -24,6 +23,10 @@
 #include <unity_fixture.h>
 
 /* Module defines ---------------------------------------------------------- */
+
+/* RFC 9528: A.2.1 - the EDHOC indicator is CBOR true. */
+#define EDHOC_INDICATOR_BYTE ((uint8_t)0xf5)
+
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
@@ -121,7 +124,7 @@ TEST(coap, prepend_flow_success)
 
 	int ret = edhoc_coap_prepend_flow(&prepended_fields);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL_HEX8(EDHOC_CBOR_TRUE, buffer[0]);
+	TEST_ASSERT_EQUAL_HEX8(EDHOC_INDICATOR_BYTE, buffer[0]);
 	TEST_ASSERT_EQUAL_size_t(1, prepended_fields.length);
 }
 
@@ -272,7 +275,7 @@ TEST(coap, prepend_calls_follow_each_other)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_coap_prepend_connection_id(
 						 &prepended_fields, &conn_id));
 
-	TEST_ASSERT_EQUAL_HEX8(EDHOC_CBOR_TRUE, buffer[0]);
+	TEST_ASSERT_EQUAL_HEX8(EDHOC_INDICATOR_BYTE, buffer[0]);
 	TEST_ASSERT_EQUAL_HEX8(0x2b, buffer[1]);
 	TEST_ASSERT_EQUAL_size_t(2, prepended_fields.length);
 }
@@ -317,7 +320,7 @@ TEST(coap, prepend_rejects_length_past_capacity)
 
 TEST(coap, extract_rejects_consumed_past_length)
 {
-	const uint8_t buffer[] = { EDHOC_CBOR_TRUE, 0x2b };
+	const uint8_t buffer[] = { EDHOC_INDICATOR_BYTE, 0x2b };
 	struct edhoc_coap_extracted_fields extracted_fields = {
 		.buffer = buffer,
 		.length = sizeof(buffer),
@@ -332,7 +335,7 @@ TEST(coap, extract_rejects_consumed_past_length)
 
 TEST(coap, extract_flow_info_forward_flow)
 {
-	const uint8_t buffer[] = { EDHOC_CBOR_TRUE, 0x01, 0x02, 0x03 };
+	const uint8_t buffer[] = { EDHOC_INDICATOR_BYTE, 0x01, 0x02, 0x03 };
 	struct edhoc_coap_extracted_fields extracted_fields = {
 		.buffer = buffer,
 		.length = sizeof(buffer),
@@ -395,7 +398,7 @@ TEST(coap, extract_flow_info_null_fields)
 
 TEST(coap, extract_flow_info_indicator_without_message)
 {
-	const uint8_t buffer[] = { EDHOC_CBOR_TRUE };
+	const uint8_t buffer[] = { EDHOC_INDICATOR_BYTE };
 	struct edhoc_coap_extracted_fields extracted_fields = {
 		.buffer = buffer,
 		.length = sizeof(buffer),
@@ -458,7 +461,7 @@ TEST(coap, extract_connection_id_empty)
 
 TEST(coap, extract_calls_advance_each_other)
 {
-	const uint8_t buffer[] = { EDHOC_CBOR_TRUE, 0x2b, 0x01, 0x02 };
+	const uint8_t buffer[] = { EDHOC_INDICATOR_BYTE, 0x2b, 0x01, 0x02 };
 	struct edhoc_coap_extracted_fields extracted_fields = {
 		.buffer = buffer,
 		.length = sizeof(buffer),

@@ -29,7 +29,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
-#include "edhoc_values_internal.h"
+#include "edhoc_key_schedule_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
@@ -65,36 +65,6 @@ enum exporter_output_kind {
  * \return \c true when \p label is permitted.
  */
 STATIC bool is_exporter_label_permitted(size_t label);
-
-/**
- * \brief Compute output pseudo random key (PRK_out).
- *
- * \param[in] ctx		EDHOC context.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int compute_prk_out(struct edhoc_context *ctx);
-
-/**
- * \brief Compute a new output pseudo random key (PRK_out) for KeyUpdate.
- *
- * \param[in,out] ctx		EDHOC context.
- * \param[in] context		KeyUpdate context byte string.
- * \param context_len		Size of \p context in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int compute_new_prk_out(struct edhoc_context *ctx,
-			       const uint8_t *context, size_t context_len);
-
-/**
- * \brief Compute exporter pseudo random key (PRK_exporter) into its key slot.
- *
- * \param[in,out] ctx		EDHOC context.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int compute_prk_exporter(struct edhoc_context *ctx);
 
 /**
  * \brief Shared exporter core: derive \p output_length bytes of keying material
@@ -157,134 +127,10 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 
 STATIC bool is_exporter_label_permitted(size_t label)
 {
-	return OSCORE_EXTRACT_LABEL_MASTER_SECRET == label ||
-	       OSCORE_EXTRACT_LABEL_MASTER_SALT == label ||
+	return EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET == label ||
+	       EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT == label ||
 	       (EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM <= label &&
 		label <= EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM);
-}
-
-STATIC int compute_prk_out(struct edhoc_context *ctx)
-{
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_TH_STATE_4 != ctx->state.th.stage ||
-	    EDHOC_PRK_STATE_4E3M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.th.stage,
-			      ctx->state.prk_state);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	const struct edhoc_cipher_suite *csuite =
-		edhoc_selected_cipher_suite(ctx);
-
-	int ret = edhoc_kdf_expand(
-		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_4E3M),
-		EDHOC_KDF_LABEL_PRK_OUT, ctx->state.th.value,
-		ctx->state.th.length, EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT),
-		csuite->hash_length);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive PRK_out: %d", ret);
-		return ret;
-	}
-
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_OUT);
-
-	/* PRK_4e3m is spent; release it. After the handshake messages have
-	 * freed their secrets it is the only live slot below PRK_out, so the
-	 * prefix release destroys exactly that handle. */
-	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_OUT);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Release spent key slots: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	ctx->state.prk_state = EDHOC_PRK_STATE_OUT;
-	return EDHOC_SUCCESS;
-}
-
-STATIC int compute_new_prk_out(struct edhoc_context *ctx,
-			       const uint8_t *context, size_t context_len)
-{
-	if (NULL == ctx || (NULL == context && 0 != context_len)) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_PRK_STATE_OUT != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d", ctx->state.prk_state);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	const struct edhoc_cipher_suite *csuite =
-		edhoc_selected_cipher_suite(ctx);
-
-	/* new PRK_out = EDHOC_KDF(PRK_out, ...). The old PRK_out handle is
-	 * taken from a local copy so the derivation can write the new handle
-	 * straight into the PRK_out slot; the old handle is destroyed
-	 * afterwards. */
-	uint8_t old_prk_out[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	edhoc_key_slot_snapshot(ctx, EDHOC_KEY_SLOT_PRK_OUT, old_prk_out);
-
-	int ret = edhoc_kdf_expand(
-		ctx, old_prk_out, EDHOC_KDF_LABEL_NEW_PRK_OUT, context,
-		context_len, EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_OUT),
-		csuite->hash_length);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive new PRK_out: %d", ret);
-		/* Restore the old PRK_out handle so the slot stays valid. */
-		edhoc_key_slot_restore(ctx, EDHOC_KEY_SLOT_PRK_OUT,
-				       old_prk_out);
-		edhoc_zeroize(ctx, old_prk_out, sizeof(old_prk_out));
-		return ret;
-	}
-
-	/* The new PRK_out handle now owns the slot; destroy the old one. */
-	ret = edhoc_key_destroy(ctx, old_prk_out);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Destroy old PRK_out: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	return EDHOC_SUCCESS;
-}
-
-STATIC int compute_prk_exporter(struct edhoc_context *ctx)
-{
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_PRK_STATE_OUT != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d", ctx->state.prk_state);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	const struct edhoc_cipher_suite *csuite =
-		edhoc_selected_cipher_suite(ctx);
-
-	const int ret = edhoc_kdf_expand(
-		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_OUT),
-		EDHOC_KDF_LABEL_PRK_EXPORTER, NULL, 0, EDHOC_KEY_USAGE_KDF,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER),
-		csuite->hash_length);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive PRK_exporter: %d", ret);
-		return ret;
-	}
-
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER);
-	return EDHOC_SUCCESS;
 }
 
 STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
@@ -310,7 +156,7 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	if (EDHOC_PRK_STATE_4E3M == ctx->state.prk_state) {
-		ret = compute_prk_out(ctx);
+		ret = edhoc_key_schedule_prk_out(ctx);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute PRK_out: %d", ret);
@@ -319,7 +165,7 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 	}
 
 	/* 2. Compute the transient PRK_exporter. */
-	ret = compute_prk_exporter(ctx);
+	ret = edhoc_key_schedule_prk_exporter(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_exporter: %d", ret);
@@ -418,8 +264,8 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 	}
 
 	/* 1. Derive OSCORE master salt. */
-	int ret = edhoc_export_raw(ctx, OSCORE_EXTRACT_LABEL_MASTER_SALT, NULL,
-				   0, salt, salt_len);
+	int ret = edhoc_export_raw(ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT,
+				   NULL, 0, salt, salt_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master salt: %d", ret);
@@ -536,7 +382,7 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 
 	if (EDHOC_PRK_STATE_4E3M == ctx->state.prk_state) {
-		ret = compute_prk_out(ctx);
+		ret = edhoc_key_schedule_prk_out(ctx);
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute PRK_out for key update: %d",
@@ -545,7 +391,7 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
 		}
 	}
 
-	ret = compute_new_prk_out(ctx, context, context_len);
+	ret = edhoc_key_schedule_prk_out_update(ctx, context, context_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute new PRK_out: %d", ret);
@@ -600,8 +446,8 @@ int edhoc_export_oscore_context(struct edhoc_context *ctx,
 	 * A.1 the OSCORE Master Secret length defaults to the application AEAD
 	 * key length, so it is derived as an AEAD key. The derive scrubs its own
 	 * output on failure, so nothing leaks here. */
-	ret = edhoc_export(ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0,
-			   EDHOC_KEY_USAGE_AEAD, master_secret_key_id);
+	ret = edhoc_export(ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET, NULL,
+			   0, EDHOC_KEY_USAGE_AEAD, master_secret_key_id);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master secret: %d", ret);
@@ -654,8 +500,8 @@ int edhoc_export_oscore_context_raw(struct edhoc_context *ctx, uint8_t *secret,
 
 	/* 2. Derive OSCORE master secret (raw bytes). The derive scrubs its
 	 * own output on failure, so nothing leaks here. */
-	ret = edhoc_export_raw(ctx, OSCORE_EXTRACT_LABEL_MASTER_SECRET, NULL, 0,
-			       secret, secret_len);
+	ret = edhoc_export_raw(ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+			       NULL, 0, secret, secret_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master secret: %d", ret);

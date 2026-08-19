@@ -110,6 +110,12 @@
 /** Maximum value for EDHOC exporter label for private usage. */
 #define EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM ((size_t)65535)
 
+/** OSCORE Master Secret, for \ref edhoc_export and \ref edhoc_export_raw. */
+#define EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET ((size_t)0)
+
+/** OSCORE Master Salt, for \ref edhoc_export and \ref edhoc_export_raw. */
+#define EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT ((size_t)1)
+
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */

@@ -135,6 +135,47 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 				   const uint8_t *peer_public_key,
 				   size_t peer_public_key_length);
 
+/**
+ * \brief Derive PRK_out, the key the handshake hands over to the application
+ *        (RFC 9528: 4.1.3).
+ *
+ *        Ends the handshake part of the chain: PRK_4e3m is spent and released.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_key_schedule_prk_out(struct edhoc_context *ctx);
+
+/**
+ * \brief Replace PRK_out with a key derived from it (RFC 9528: I.2).
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param[in] context                   Application context bound into the new
+ *                                      key.
+ * \param context_length                Size of \p context in bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_key_schedule_prk_out_update(struct edhoc_context *ctx,
+				      const uint8_t *context,
+				      size_t context_length);
+
+/**
+ * \brief Derive PRK_exporter from PRK_out (RFC 9528: 4.2.1).
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_key_schedule_prk_exporter(struct edhoc_context *ctx);
+
 /**@}*/
 
 #endif /* EDHOC_KEY_SCHEDULE_INTERNAL_H */
