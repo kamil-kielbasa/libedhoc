@@ -48,29 +48,35 @@ jobs:
             --inline-logs --verbose
 
       # Re-run each benchmark binary (one per cipher suite x memory backend, e.g.
-      # cipher_suite_2.stack) to capture its libedhoc footprint and per-phase
-      # timing JSON.
-      - name: Benchmark flash / RAM + timing analysis
+      # cipher_suite_2.stack) for its libedhoc footprint and per-phase timing.
+      - name: Benchmark footprint and timing
         if: always()
         run: |
           report=twister-out/flash_report.txt
           : > "$report"
+
           for exe in $(find twister-out -name zephyr.exe -path '*benchmark*' | sort); do
-            # .../<scenario>/zephyr/zephyr.exe -> scenario label and build dir
+            # .../<scenario>/zephyr/zephyr.exe -> build directory and label
             build=$(dirname "$(dirname "$exe")")
             label=$(basename "$build" | sed 's/^libedhoc\.benchmark\.//')
 
-            echo "=== ${label}: libedhoc footprint (bytes, after --gc-sections) ===" | tee -a "$report"
-            python3 scripts/zephyr_footprint.py "${build}/zephyr/zephyr.map" | tee -a "$report"
+            # The library archive, not the image: symbols named "edhoc" in the
+            # image also belong to the benchmark application, its ztest nodes,
+            # its allocator and its 32 KiB heap pool among them.
+            lib=$(find "$build" -name libedhoc.a | head -1)
+            test -n "$lib" || { echo "::error::${label}: no libedhoc.a"; exit 1; }
+
+            {
+              echo "=== ${label}: libedhoc footprint (bytes) ==="
+              size -t "$lib" | tail -1
+            } | tee -a "$report"
 
             timing="twister-out/benchmark_timing_${label}.json"
-            "$exe" 2>&1 \
-              | sed -n '/===EDHOC_BENCHMARK_JSON_BEGIN===/,/===EDHOC_BENCHMARK_JSON_END===/p' \
+            "$exe" \
+              | sed -n '/EDHOC_BENCHMARK_JSON_BEGIN/,/EDHOC_BENCHMARK_JSON_END/p' \
               | sed '1d;$d' > "$timing"
-            if [ ! -s "$timing" ]; then
-              echo "::error::${label} produced no timing JSON"
-              exit 1
-            fi
+            test -s "$timing" || { echo "::error::${label}: no timing JSON"; exit 1; }
+
             echo "=== ${label}: timing ==="
             cat "$timing"
           done
