@@ -172,7 +172,6 @@ STATIC int comp_expand(const struct edhoc_context *ctx, const void *prk_key_id,
 		break;
 	}
 
-	EDHOC_LOG_HEXDUMP_DBG(info, info_length, "EDHOC_KDF info");
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {

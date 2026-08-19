@@ -1,7 +1,7 @@
 /**
  * \file    test_internals_message3.c
  * \author  Kamil Kielbasa
- * \brief   Unit tests for edhoc_message_3.c internal functions.
+ * \brief   Unit tests for edhoc_classic_message_3.c internal functions.
  *
  * \copyright Copyright (c) 2026
  *
@@ -41,33 +41,6 @@ TEST_SETUP(internals_message3)
 TEST_TEAR_DOWN(internals_message3)
 {
 	mbedtls_psa_crypto_free();
-}
-
-TEST(internals_message3, comp_th_3_null)
-{
-	int ret = comp_th_3(NULL, NULL, NULL, 0);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(internals_message3, comp_th_3_bad_state)
-{
-	struct edhoc_context ctx = { 0 };
-	internals_setup_crypto_context(&ctx);
-
-	ctx.state.th.stage = EDHOC_TH_STATE_1;
-
-	uint8_t buf[512] = { 0 };
-	struct mac_context *mc = (struct mac_context *)buf;
-	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
-
-	mc->th_len = 32;
-
-	uint8_t ptxt[32] = { 0 };
-	int ret = comp_th_3(&ctx, mc, ptxt, ARRAY_SIZE(ptxt));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(internals_message3, comp_key_iv_aad_3_null)
@@ -201,49 +174,6 @@ TEST(internals_message3, comp_aad_3_len_null)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(internals_message3, gen_msg_3_null)
-{
-	const uint8_t ctxt[] = { 0x40 };
-	uint8_t msg[64] = { 0 };
-	size_t msg_len = 0;
-
-	int ret = gen_msg_3(NULL, ARRAY_SIZE(ctxt), msg, ARRAY_SIZE(msg),
-			    &msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = gen_msg_3(ctxt, 0, msg, ARRAY_SIZE(msg), &msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = gen_msg_3(ctxt, ARRAY_SIZE(ctxt), NULL, ARRAY_SIZE(msg),
-			&msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = gen_msg_3(ctxt, ARRAY_SIZE(ctxt), msg, 0, &msg_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = gen_msg_3(ctxt, ARRAY_SIZE(ctxt), msg, ARRAY_SIZE(msg), NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(internals_message3, parse_msg_3_null)
-{
-	const uint8_t msg[] = { 0x40 };
-	const uint8_t *ctxt = NULL;
-	size_t ctxt_len = 0;
-
-	int ret = parse_msg_3(NULL, ARRAY_SIZE(msg), &ctxt, &ctxt_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = parse_msg_3(msg, 0, &ctxt, &ctxt_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = parse_msg_3(msg, ARRAY_SIZE(msg), NULL, &ctxt_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-
-	ret = parse_msg_3(msg, ARRAY_SIZE(msg), &ctxt, NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
 TEST(internals_message3, decrypt_ciphertext_3_null)
 {
 	struct edhoc_context ctx = { 0 };
@@ -336,17 +266,59 @@ TEST(internals_message3, parse_plaintext_3_garbage)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(internals_message3, compose_ciphertext_3_null)
+{
+	uint8_t ctxt[16] = { 0 };
+	uint8_t msg[32] = { 0 };
+	size_t msg_len = 0;
+
+	int ret = compose_ciphertext_3(NULL, ARRAY_SIZE(ctxt), msg,
+				       ARRAY_SIZE(msg), &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = compose_ciphertext_3(ctxt, 0, msg, ARRAY_SIZE(msg), &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = compose_ciphertext_3(ctxt, ARRAY_SIZE(ctxt), NULL,
+				   ARRAY_SIZE(msg), &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = compose_ciphertext_3(ctxt, ARRAY_SIZE(ctxt), msg, 0, &msg_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = compose_ciphertext_3(ctxt, ARRAY_SIZE(ctxt), msg, ARRAY_SIZE(msg),
+				   NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(internals_message3, parse_ciphertext_3_null)
+{
+	uint8_t msg[32] = { 0 };
+	const uint8_t *ctxt = NULL;
+	size_t ctxt_len = 0;
+
+	int ret = parse_ciphertext_3(NULL, ARRAY_SIZE(msg), &ctxt, &ctxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_ciphertext_3(msg, 0, &ctxt, &ctxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_ciphertext_3(msg, ARRAY_SIZE(msg), NULL, &ctxt_len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	ret = parse_ciphertext_3(msg, ARRAY_SIZE(msg), &ctxt, NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
 TEST_GROUP_RUNNER(internals_message3)
 {
-	RUN_TEST_CASE(internals_message3, comp_th_3_null);
-	RUN_TEST_CASE(internals_message3, comp_th_3_bad_state);
+	RUN_TEST_CASE(internals_message3, compose_ciphertext_3_null);
+	RUN_TEST_CASE(internals_message3, parse_ciphertext_3_null);
 	RUN_TEST_CASE(internals_message3, comp_key_iv_aad_3_null);
 	RUN_TEST_CASE(internals_message3, comp_key_iv_aad_3_bad_state);
 	RUN_TEST_CASE(internals_message3, comp_plaintext_3_len_null);
 	RUN_TEST_CASE(internals_message3, prepare_plaintext_3_null);
 	RUN_TEST_CASE(internals_message3, comp_aad_3_len_null);
-	RUN_TEST_CASE(internals_message3, gen_msg_3_null);
-	RUN_TEST_CASE(internals_message3, parse_msg_3_null);
 	RUN_TEST_CASE(internals_message3, decrypt_ciphertext_3_null);
 	RUN_TEST_CASE(internals_message3, parse_plaintext_3_null);
 	RUN_TEST_CASE(internals_message3, parse_plaintext_3_garbage);

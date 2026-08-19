@@ -2,8 +2,11 @@ Unreleased
 ----------
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the library core is
-  being split into modules, so that a future protocol flow reuses the
-  primitives instead of copying them. Created modules:
+  split into modules, so that a future protocol flow reuses the primitives
+  instead of copying them, and so that a fault can be traced to one owner.
+  What this means in practice: each module validates its own arguments and logs
+  its own failures, and the code the modules replaced is gone rather than
+  duplicated. The public API is unchanged. Created modules:
 
   * ``edhoc_cbor_internal`` : CBOR head sizes and byte-string head encoding.
   * ``edhoc_key_slot_internal`` : key-store handle slots.
@@ -15,27 +18,41 @@ Unreleased
   * ``edhoc_key_schedule_internal`` : PRK chain, salts, KEM and static Diffie-Hellman.
   * ``edhoc_plaintext_internal`` : PLAINTEXT_2, PLAINTEXT_3 and PLAINTEXT_4.
   * ``edhoc_classic_internal`` : the message flow that authenticates with
-    signatures or static Diffie-Hellman, in ``library/core/classic``. The public
-    ``edhoc_message_N_*`` functions now dispatch to it, so another flow can be
-    added beside it.
+    signatures or static Diffie-Hellman, in ``library/core/classic``.
+  * ``edhoc_exporter_internal`` and ``edhoc_error_internal`` : the exporter and
+    the error message.
 
-  The public API is unchanged.
+  ``library/core/edhoc.c`` now holds every function of ``<edhoc/edhoc.h>`` and
+  nothing else, and ``library/core/edhoc_coap.c`` every function of
+  ``<edhoc/coap.h>``: one file per public header, so the API surface can be read
+  in one place and a second flow can be added beside the classic one without
+  touching it.
 
-* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : merged the five CDDL
-  schemas into ``scripts/cddls/libedhoc.cddl`` and the generated type headers
-  into ``backend_cbor_types.h``. Rules that were textually identical but held
-  different names produced one C structure each: ``ead_x``/``ead_y`` and
-  ``EAD_1`` to ``EAD_4`` collapse into ``ead_x`` and ``ead``, and ``map`` into
-  ``id_cred_x``. The wire format is unchanged.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the five CDDL
+  schemas became one, ``scripts/cddls/libedhoc.cddl``, generated into one types
+  header. Rules that were identical apart from their name produced a C structure
+  each; the four EAD variants and the two EAD item shapes now share ``ead`` and
+  ``ead_x``, and the ID_CRED map ``id_cred_x``, so seven structures became two.
+  Applications see no difference: the wire format, the public headers and the
+  behaviour are unchanged.
 
-* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : fixed the CBOR head
-  length helpers. They reported four bytes where CBOR uses five, and five where
-  it uses nine, so a buffer sized for an EAD label above 65535 was one byte too
-  small.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : fixed a one-byte
+  buffer overflow when composing an EAD item whose label exceeds 65535. The
+  helpers that size the buffer reported a four-byte CBOR head where five are
+  used, and five where nine are, so the encoder was handed a buffer one byte too
+  small. An application that uses only small EAD labels was never affected.
 
-* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : processing message 1
-  now returns the reason a connection identifier was rejected instead of
-  replacing it with ``EDHOC_ERROR_MSG_1_PROCESS_FAILURE``.
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : composing message 3
+  no longer tells the CBOR encoder that the caller's buffer is one byte larger
+  than it is. A message 3 that filled the buffer exactly could write one byte
+  past its end; it now fails with ``EDHOC_ERROR_CBOR_FAILURE`` instead.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : a rejected message
+  now reports why. ``edhoc_message_1_process()`` returned
+  ``EDHOC_ERROR_MSG_1_PROCESS_FAILURE`` for every bad connection identifier,
+  and ``edhoc_message_2_process()`` reported ``EDHOC_ERROR_BUFFER_TOO_SMALL``
+  for input that is not valid CBOR at all. Both now return the actual reason, so
+  a malformed message and an unusable one can be told apart in the field.
 
 Version 2.0.2
 -------------

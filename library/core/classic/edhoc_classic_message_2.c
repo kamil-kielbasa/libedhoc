@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_message_2.c
+ * \file    edhoc_classic_message_2.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 2 compose & process.
  *
@@ -56,16 +56,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /**
- * \brief Compute transcript hash 2 (TH_2).
- *
- * \param[in,out] ctx		EDHOC context.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_th_2(struct edhoc_context *ctx);
-
-/**
- * \brief Prepare MESSAGE_2.
+ * \brief Compose the G_Y_CIPHERTEXT_2 byte string (RFC 9528: 5.3.1).
  *
  * \param[in] ctx		EDHOC context.
  * \param[in] ciphertext	Buffer containing the CIPHERTEXT_2.
@@ -76,209 +67,94 @@ STATIC int comp_th_2(struct edhoc_context *ctx);
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int prepare_message_2(const struct edhoc_context *ctx,
-			     const uint8_t *ciphertext, size_t ciphertext_len,
-			     uint8_t *msg_2, size_t msg_2_size,
-			     size_t *msg_2_len);
+STATIC int compose_g_y_ciphertext_2(const struct edhoc_context *ctx,
+				    const uint8_t *ciphertext,
+				    size_t ciphertext_len, uint8_t *msg_2,
+				    size_t msg_2_size, size_t *msg_2_len);
 
 /**
- * \brief Compute from cborised message 2 length of ciphertext 2.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] msg_2     	Buffer containing the message 2.
- * \param msg_2_len     	Size of the \p msg_2 buffer in bytes.
- * \param[out] len		Length of ciphertext 2 in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
-				 const uint8_t *msg_2, size_t msg_2_len,
-				 size_t *len);
-
-/**
- * \brief Decode message 2 and save into context and buffer.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] msg_2     	Buffer containing the message 2.
- * \param msg_2_len     	Size of the \p msg_2 buffer in bytes.
- * \param[in] ctxt_2	        Buffer containing the CIPHERTEXT_2.
- * \param ctxt_2_len	        Size of the \p ctxt_2 buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
-		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len);
-
-/**
- * \brief Compute transcript hash 3.
+ * \brief Split the G_Y_CIPHERTEXT_2 byte string (RFC 9528: 5.3.1). G_Y is
+ *        stored in the context, CIPHERTEXT_2 is returned as a view into
+ *        \p msg_2.
  *
  * \param[in,out] ctx		EDHOC context.
- * \param[in] mac_ctx	        MAC context.
- * \param[in] ptxt		Buffer containing the PLAINTEXT_2.
- * \param ptxt_len              Size of the \p ptxt buffer in bytes.
+ * \param[in] msg_2     	Buffer containing the message 2.
+ * \param msg_2_len     	Size of the \p msg_2 buffer in bytes.
+ * \param[out] ctxt_2	        On success, a view of the CIPHERTEXT_2.
+ * \param[out] ctxt_2_len	On success, the CIPHERTEXT_2 length in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int comp_th_3(struct edhoc_context *ctx,
-		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
-		     size_t ptxt_len);
+STATIC int parse_g_y_ciphertext_2(struct edhoc_context *ctx,
+				  const uint8_t *msg_2, size_t msg_2_len,
+				  const uint8_t **ctxt_2, size_t *ctxt_2_len);
 
 /* Static function definitions --------------------------------------------- */
 
-STATIC int comp_th_2(struct edhoc_context *ctx)
-{
-	const struct edhoc_th_input input = {
-		.target = EDHOC_TH_STATE_2,
-	};
-
-	return edhoc_th_compute(ctx, &input);
-}
-
-STATIC int prepare_message_2(const struct edhoc_context *ctx,
-			     const uint8_t *ctxt, size_t ctxt_len,
-			     uint8_t *msg_2, size_t msg_2_size,
-			     size_t *msg_2_len)
+STATIC int compose_g_y_ciphertext_2(const struct edhoc_context *ctx,
+				    const uint8_t *ctxt, size_t ctxt_len,
+				    uint8_t *msg_2, size_t msg_2_size,
+				    size_t *msg_2_len)
 {
 	if (NULL == ctx || NULL == ctxt || 0 == ctxt_len || NULL == msg_2 ||
 	    0 == msg_2_size || NULL == msg_2_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	size_t offset = 0;
+	const size_t g_y_len = ctx->ephemeral.own.length;
 
-	size_t len = 0;
-	len += ctx->ephemeral.own.length;
-	len += ctxt_len;
-
-	EDHOC_MEM_ALLOC(uint8_t, buffer, len);
+	EDHOC_MEM_ALLOC(uint8_t, buffer, g_y_len + ctxt_len);
 	if (NULL == buffer) {
-		EDHOC_LOG_ERR("Memory allocation failed");
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	memcpy(&buffer[offset], ctx->ephemeral.own.value,
-	       ctx->ephemeral.own.length);
-	offset += ctx->ephemeral.own.length;
+	memcpy(buffer, ctx->ephemeral.own.value, g_y_len);
+	memcpy(&buffer[g_y_len], ctxt, ctxt_len);
 
-	memcpy(&buffer[offset], ctxt, ctxt_len);
-	offset += ctxt_len;
-
-	if (EDHOC_MEM_ALLOC_SIZE(buffer) < offset) {
-		EDHOC_LOG_ERR("Buffer overflow: %zu, %zu",
-			      EDHOC_MEM_ALLOC_SIZE(buffer), offset);
-		EDHOC_MEM_FREE(buffer);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	const struct zcbor_string cbor_msg_2 = {
+	const struct zcbor_string input = {
 		.value = buffer,
 		.len = EDHOC_MEM_ALLOC_SIZE(buffer),
 	};
 
-	ret = cbor_encode_message_2_G_Y_CIPHERTEXT_2(msg_2, msg_2_size,
-						     &cbor_msg_2, msg_2_len);
+	const int ret = cbor_encode_message_2_G_Y_CIPHERTEXT_2(
+		msg_2, msg_2_size, &input, msg_2_len);
 	EDHOC_MEM_FREE(buffer);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc msg_2: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	return EDHOC_SUCCESS;
 }
 
-STATIC int comp_ciphertext_2_len(const struct edhoc_context *ctx,
-				 const uint8_t *msg_2, size_t msg_2_len,
-				 size_t *ctxt_len)
+STATIC int parse_g_y_ciphertext_2(struct edhoc_context *ctx,
+				  const uint8_t *msg_2, size_t msg_2_len,
+				  const uint8_t **ctxt_2, size_t *ctxt_2_len)
 {
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	size_t len = 0;
+	struct zcbor_string output = { 0 };
 
-	struct zcbor_string dec_msg_2 = { 0 };
-	ret = cbor_decode_message_2_G_Y_CIPHERTEXT_2(msg_2, msg_2_len,
-						     &dec_msg_2, &len);
+	const int ret = cbor_decode_message_2_G_Y_CIPHERTEXT_2(msg_2, msg_2_len,
+							       &output, &len);
 
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR dec msg_2: %d", ret);
+	if (ZCBOR_SUCCESS != ret) {
 		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	if (len > msg_2_len) {
-		EDHOC_LOG_ERR("Decoded length exceeds buffer: %zu, %zu", len,
-			      msg_2_len);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	const size_t g_y_len =
 		edhoc_selected_cipher_suite(ctx)->kem_ciphertext_length;
 
-	if (dec_msg_2.len <= g_y_len) {
-		EDHOC_LOG_ERR("Decoded message_2 too short for G_Y: %zu, %zu",
-			      dec_msg_2.len, g_y_len);
+	if (output.len <= g_y_len) {
 		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
 	}
 
-	len = dec_msg_2.len - g_y_len;
+	ctx->ephemeral.peer.length = g_y_len;
+	memcpy(ctx->ephemeral.peer.value, output.value, g_y_len);
 
-	*ctxt_len = len;
-	return EDHOC_SUCCESS;
-}
-
-STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
-		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len)
-{
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	size_t len = 0;
-
-	struct zcbor_string dec_msg_2 = { 0 };
-	ret = cbor_decode_message_2_G_Y_CIPHERTEXT_2(msg_2, msg_2_len,
-						     &dec_msg_2, &len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR decode message_2: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	if (len > msg_2_len) {
-		EDHOC_LOG_ERR("Message 2 length mismatch: %zu, %zu", len,
-			      msg_2_len);
-		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
-	}
-
-	/* Get Diffie-Hellmann peer public key (G_Y). */
-	const struct edhoc_cipher_suite *csuite =
-		edhoc_selected_cipher_suite(ctx);
-	ctx->ephemeral.peer.length = csuite->kem_ciphertext_length;
-	memcpy(ctx->ephemeral.peer.value, dec_msg_2.value,
-	       ctx->ephemeral.peer.length);
-
-	/* Get CIPHERTEXT_2. */
-	const size_t offset = ctx->ephemeral.peer.length;
-	memcpy(ctxt_2, &dec_msg_2.value[offset], ctxt_2_len);
+	*ctxt_2 = output.value + g_y_len;
+	*ctxt_2_len = output.len - g_y_len;
 
 	return EDHOC_SUCCESS;
-}
-
-STATIC int comp_th_3(struct edhoc_context *ctx,
-		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
-		     size_t ptxt_len)
-{
-	if (NULL == mac_ctx) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	const struct edhoc_th_input input = {
-		.target = EDHOC_TH_STATE_3,
-		.plaintext = ptxt,
-		.plaintext_length = ptxt_len,
-		.credential = mac_ctx->cred,
-		.credential_length = mac_ctx->cred_len,
-	};
-
-	return edhoc_th_compute(ctx, &input);
 }
 
 /* Module interface function definitions ----------------------------------- */
@@ -347,7 +223,11 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			      ctx->ephemeral.own.length, "G_Y");
 
 	/* 2. Compute Transcript Hash 2 (TH_2). */
-	ret = comp_th_2(ctx);
+	const struct edhoc_th_input th_2 = {
+		.target = EDHOC_TH_STATE_2,
+	};
+
+	ret = edhoc_th_compute(ctx, &th_2);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute TH_2: %d", ret);
@@ -556,7 +436,15 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			      "KEYSTREAM_2");
 
 	/* 11. Compute Transcript Hash 3 (TH_3). */
-	ret = comp_th_3(ctx, mac_ctx, plaintext, plaintext_len);
+	const struct edhoc_th_input th_3 = {
+		.target = EDHOC_TH_STATE_3,
+		.plaintext = plaintext,
+		.plaintext_length = plaintext_len,
+		.credential = mac_ctx->cred,
+		.credential_length = mac_ctx->cred_len,
+	};
+
+	ret = edhoc_th_compute(ctx, &th_3);
 	EDHOC_MEM_FREE(mac_ctx_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -578,13 +466,13 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext, ciphertext_len, "CIPHERTEXT_2");
 
 	/* 13. Cborise items for message 2. */
-	ret = prepare_message_2(ctx, ciphertext, ciphertext_len, msg_2,
-				msg_2_size, msg_2_len);
+	ret = compose_g_y_ciphertext_2(ctx, ciphertext, ciphertext_len, msg_2,
+				       msg_2_size, msg_2_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Prepare message_2: %d", ret);
+		EDHOC_LOG_ERR("Compose G_Y_CIPHERTEXT_2: %d", ret);
 		EDHOC_MEM_FREE(plaintext);
-		return EDHOC_ERROR_CBOR_FAILURE;
+		return ret;
 	}
 
 	EDHOC_MEM_FREE(plaintext);
@@ -610,9 +498,9 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 /**
  * Steps for processing of message 2:
- * 	1.  Compute required length for ciphertext.
- *      2.  Decode cborised message 2.
- *      3.  Compute Diffie-Hellmann shared secret (G_XY).
+ *      1.  Decode cborised message 2.
+ *      2.  Copy out CIPHERTEXT_2.
+ *      3.  KEM decapsulate the peer's G_Y (produce G_XY).
  *      4.  Compute Transcript Hash 2 (TH_2).
  *      5.  Compute Pseudo Random Key 2 (PRK_2e).
  *      6.  Compute key stream (KEYSTREAM_2).
@@ -658,31 +546,27 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	ctx->state.role = EDHOC_ROLE_INITIATOR;
 
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	size_t len = 0;
 
-	/* 1. Compute required length for ciphertext. */
-	ret = comp_ciphertext_2_len(ctx, msg_2, msg_2_len, &len);
+	/* 1. Decode cborised message 2. */
+	const uint8_t *ctxt = NULL;
+	size_t ctxt_len = 0;
+
+	ret = parse_g_y_ciphertext_2(ctx, msg_2, msg_2_len, &ctxt, &ctxt_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Compute ciphertext length: %d", ret);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		EDHOC_LOG_ERR("Parse G_Y_CIPHERTEXT_2: %d", ret);
+		return ret;
 	}
 
-	EDHOC_MEM_ALLOC(uint8_t, ciphertext_2, len);
+	/* 2. Copy CIPHERTEXT_2 out; the keystream is applied in place. */
+	EDHOC_MEM_ALLOC(uint8_t, ciphertext_2, ctxt_len);
+
 	if (NULL == ciphertext_2) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	/* 2. Decode cborised message 2. */
-	ret = parse_msg_2(ctx, msg_2, msg_2_len, ciphertext_2,
-			  EDHOC_MEM_ALLOC_SIZE(ciphertext_2));
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Parse msg2: %d", ret);
-		EDHOC_MEM_FREE(ciphertext_2);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
+	memcpy(ciphertext_2, ctxt, ctxt_len);
 
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext_2, EDHOC_MEM_ALLOC_SIZE(ciphertext_2),
 			      "CIPHERTEXT_2");
@@ -697,7 +581,11 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	}
 
 	/* 4. Compute Transcript Hash 2 (TH_2). */
-	ret = comp_th_2(ctx);
+	const struct edhoc_th_input th_2 = {
+		.target = EDHOC_TH_STATE_2,
+	};
+
+	ret = edhoc_th_compute(ctx, &th_2);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute TH_2: %d", ret);
@@ -890,7 +778,16 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	}
 
 	/* 16. Compute Transcript Hash 3 (TH_3). */
-	ret = comp_th_3(ctx, mac_ctx, plaintext, plaintext_len);
+	const struct edhoc_th_input th_3 = {
+		.target = EDHOC_TH_STATE_3,
+		.plaintext = plaintext,
+		.plaintext_length = plaintext_len,
+		.credential = mac_ctx->cred,
+		.credential_length = mac_ctx->cred_len,
+	};
+
+	ret = edhoc_th_compute(ctx, &th_3);
+
 	EDHOC_MEM_FREE(mac_ctx_buf);
 	EDHOC_MEM_FREE(ciphertext_2);
 

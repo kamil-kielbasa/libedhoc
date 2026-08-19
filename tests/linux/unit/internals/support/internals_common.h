@@ -49,31 +49,27 @@ void internals_make_ecdh_peer_pub(uint8_t *out, size_t out_size,
 
 /* Library-internal functions under test (white-box) ----------------------- */
 
-extern int comp_th_2(struct edhoc_context *ctx);
-extern int comp_th_3(struct edhoc_context *ctx,
-		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
-		     size_t ptxt_len);
-extern int prepare_message_2(const struct edhoc_context *ctx,
-			     const uint8_t *ciphertext, size_t ciphertext_len,
-			     uint8_t *msg_2, size_t msg_2_size,
-			     size_t *msg_2_len);
-extern int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
-		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len);
-extern int comp_th_4(struct edhoc_context *ctx,
-		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
-		     size_t ptxt_len);
+extern int compose_g_y_ciphertext_2(const struct edhoc_context *ctx,
+				    const uint8_t *ciphertext,
+				    size_t ciphertext_len, uint8_t *msg_2,
+				    size_t msg_2_size, size_t *msg_2_len);
+extern int parse_g_y_ciphertext_2(struct edhoc_context *ctx,
+				  const uint8_t *msg_2, size_t msg_2_len,
+				  const uint8_t **ctxt_2, size_t *ctxt_2_len);
+extern int compose_ciphertext_3(const uint8_t *ciphertext,
+				size_t ciphertext_len, uint8_t *msg_3,
+				size_t msg_3_size, size_t *msg_3_len);
+extern int parse_ciphertext_3(const uint8_t *msg_3, size_t msg_3_len,
+			      const uint8_t **ctxt_3, size_t *ctxt_3_len);
+extern int compose_ciphertext_4(const uint8_t *ciphertext,
+				size_t ciphertext_len, uint8_t *msg_4,
+				size_t msg_4_size, size_t *msg_4_len);
+extern int parse_ciphertext_4(const uint8_t *msg_4, size_t msg_4_len,
+			      const uint8_t **ctxt_4, size_t *ctxt_4_len);
 extern int prepare_plaintext_3(const struct mac_context *mac_ctx,
 			       const uint8_t *sign, size_t sign_len,
 			       uint8_t *ptxt, size_t ptxt_size,
 			       size_t *ptxt_len);
-extern int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
-		     size_t msg_3_size, size_t *msg_3_len);
-extern int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
-		       const uint8_t **ctxt_3, size_t *ctxt_3_len);
-extern int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
-		     size_t msg_4_size, size_t *msg_4_len);
-extern int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
-		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
 extern size_t
 cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value);
 

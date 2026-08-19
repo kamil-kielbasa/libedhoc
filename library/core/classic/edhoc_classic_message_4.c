@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_message_4.c
+ * \file    edhoc_classic_message_4.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 4 compose & process.
  *
@@ -27,8 +27,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_kdf_internal.h"
 #include "edhoc_cipher_internal.h"
 #include "edhoc_ead_internal.h"
-#include "edhoc_plaintext_internal.h"
 #include "edhoc_macros_internal.h"
+#include "edhoc_plaintext_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -50,84 +50,79 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /**
- * \brief Generate edhoc message 4.
+ * \brief Encode CIPHERTEXT_4 as message 4 (RFC 9528: 5.5.1).
  *
- * \param[in] ctxt	        Buffer continas the ciphertext.
- * \param ctxt_len	        Size of the \p ctxt buffer in bytes.
- * \param[out] msg_4            Buffer where the generated message 4 is to be written.
- * \param msg_4_size            Size of the \p msg_4 buffer in bytes.
- * \param[out] msg_4_len        On success, the number of bytes that make up the message 4.
+ * \param[in] ciphertext	Buffer containing the CIPHERTEXT_4.
+ * \param ciphertext_len	Size of the \p ciphertext buffer in bytes.
+ * \param[out] msg_4		Buffer where the generated message 4 is to be written.
+ * \param msg_4_size		Size of the \p msg_4 buffer in bytes.
+ * \param[out] msg_4_len	On success, the number of bytes that make up the message 4.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
-		     size_t msg_4_size, size_t *msg_4_len);
+STATIC int compose_ciphertext_4(const uint8_t *ciphertext,
+				size_t ciphertext_len, uint8_t *msg_4,
+				size_t msg_4_size, size_t *msg_4_len);
 
 /**
- * \brief CBOR decode message 4 and save address and length for CIPHERTEXT_4.
+ * \brief Decode message 4 into a view of CIPHERTEXT_4 (RFC 9528: 5.5.1).
  *
- * \param[in] msg_4     	Buffer containing the message 4.
- * \param msg_4_len     	Size of the \p msg_4 buffer in bytes.
- * \param[out] ctxt_4	        Pointer to buffer containing the CIPHERTEXT_4.
- * \param[out] ctxt_4_len	Size of the \p ctxctxt_4t buffer in bytes.
+ * \param[in] msg_4		Buffer containing the message 4.
+ * \param msg_4_len		Size of the \p msg_4 buffer in bytes.
+ * \param[out] ctxt_4		On success, a view of the CIPHERTEXT_4.
+ * \param[out] ctxt_4_len	On success, the CIPHERTEXT_4 length in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
-		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
+STATIC int parse_ciphertext_4(const uint8_t *msg_4, size_t msg_4_len,
+			      const uint8_t **ctxt_4, size_t *ctxt_4_len);
 
 /* Static function definitions --------------------------------------------- */
 
-STATIC int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
-		     size_t msg_4_size, size_t *msg_4_len)
+STATIC int compose_ciphertext_4(const uint8_t *ciphertext,
+				size_t ciphertext_len, uint8_t *msg_4,
+				size_t msg_4_size, size_t *msg_4_len)
 {
-	if (NULL == ctxt || 0 == ctxt_len || NULL == msg_4 || 0 == msg_4_size ||
-	    NULL == msg_4_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
+	if (NULL == ciphertext || 0 == ciphertext_len || NULL == msg_4 ||
+	    0 == msg_4_size || NULL == msg_4_len) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	const struct zcbor_string input_bstr = {
-		.value = ctxt,
-		.len = ctxt_len,
+	const struct zcbor_string input = {
+		.value = ciphertext,
+		.len = ciphertext_len,
 	};
 
-	ret = cbor_encode_message_4_CIPHERTEXT_4(msg_4, msg_4_size, &input_bstr,
-						 msg_4_len);
+	const int ret = cbor_encode_message_4_CIPHERTEXT_4(msg_4, msg_4_size,
+							   &input, msg_4_len);
 
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc msg4: %d", ret);
+	if (ZCBOR_SUCCESS != ret) {
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	return EDHOC_SUCCESS;
 }
 
-STATIC int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
-		       const uint8_t **ctxt_4, size_t *ctxt_4_len)
+STATIC int parse_ciphertext_4(const uint8_t *msg_4, size_t msg_4_len,
+			      const uint8_t **ctxt_4, size_t *ctxt_4_len)
 {
 	if (NULL == msg_4 || 0 == msg_4_len || NULL == ctxt_4 ||
 	    NULL == ctxt_4_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
 	size_t len = 0;
-	struct zcbor_string dec_msg_4 = { 0 };
-	ret = cbor_decode_message_4_CIPHERTEXT_4(msg_4, msg_4_len, &dec_msg_4,
-						 &len);
+	struct zcbor_string output = { 0 };
+
+	const int ret = cbor_decode_message_4_CIPHERTEXT_4(msg_4, msg_4_len,
+							   &output, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR dec msg4: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	*ctxt_4 = dec_msg_4.value;
-	*ctxt_4_len = dec_msg_4.len;
+	*ctxt_4 = output.value;
+	*ctxt_4_len = output.len;
 
 	return EDHOC_SUCCESS;
 }
@@ -296,8 +291,8 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext, ciphertext_len, "CIPHERTEXT_4");
 
 	/* 6. Generate edhoc message 4. */
-	ret = gen_msg_4(ciphertext, ciphertext_len, msg_4, msg_4_size,
-			msg_4_len);
+	ret = compose_ciphertext_4(ciphertext, ciphertext_len, msg_4,
+				   msg_4_size, msg_4_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Generate message_4: %d", ret);
@@ -374,7 +369,7 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 	const uint8_t *ctxt = NULL;
 	size_t ctxt_len = 0;
 
-	ret = parse_msg_4(msg_4, msg_4_len, &ctxt, &ctxt_len);
+	ret = parse_ciphertext_4(msg_4, msg_4_len, &ctxt, &ctxt_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse message_4: %d", ret);

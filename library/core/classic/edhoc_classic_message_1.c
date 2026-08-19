@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_message_1.c
+ * \file    edhoc_classic_message_1.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 1 compose & process.
  *

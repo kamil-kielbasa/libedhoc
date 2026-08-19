@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_exporter.c
+ * \file    edhoc_exporter_internal.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC exporter for PRK exporter, key update or OSCORE Security Context.
  *
@@ -26,6 +26,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <edhoc/crypto.h>
 
 /* EDHOC internal headers: */
+#include "edhoc_exporter_internal.h"
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
@@ -141,15 +142,12 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 {
 	if (NULL == ctx || (NULL == context && 0 != context_len) ||
 	    NULL == output || 0 == output_length) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	/* 1. Validate the exporter state and derive PRK_out if not present. */
 	if (EDHOC_SM_PERSISTED < ctx->state.machine ||
 	    EDHOC_PRK_STATE_4E3M > ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.machine,
-			      ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -159,7 +157,6 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 		ret = edhoc_key_schedule_prk_out(ctx);
 
 		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Compute PRK_out: %d", ret);
 			return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 		}
 	}
@@ -168,7 +165,6 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 	ret = edhoc_key_schedule_prk_exporter(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Compute PRK_exporter: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
@@ -197,7 +193,6 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 		edhoc_key_slot_release(ctx, EDHOC_KEY_SLOT_PRK_EXPORTER);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Expand exporter output: %d", ret);
 		/* Never leave derived keying material in the caller's output. */
 		edhoc_zeroize(ctx, output,
 			      EXPORTER_OUTPUT_HANDLE == output_kind ?
@@ -208,7 +203,6 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 	}
 
 	if (EDHOC_SUCCESS != destroy_ret) {
-		EDHOC_LOG_ERR("Release PRK_exporter: %d", destroy_ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -218,20 +212,15 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 STATIC int check_oscore_export(const struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (false == ctx->is_oscore_export_allowed) {
-		EDHOC_LOG_ERR(
-			"OSCORE export not allowed in current context state");
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_SM_COMPLETED > ctx->state.machine ||
 	    EDHOC_PRK_STATE_4E3M > ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.machine,
-			      ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -243,7 +232,6 @@ STATIC int check_oscore_export(const struct edhoc_context *ctx)
 	 * empty identifiers collide as well. */
 	if (own->length == peer->length &&
 	    0 == memcmp(own->value, peer->value, own->length)) {
-		EDHOC_LOG_ERR("Connection identifiers are not distinct");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -259,53 +247,43 @@ STATIC int export_oscore_salt_and_ids(struct edhoc_context *ctx, uint8_t *salt,
 	if (NULL == ctx || NULL == salt || 0 == salt_len || NULL == sid ||
 	    0 == sid_size || NULL == sid_len || NULL == rid || 0 == rid_size ||
 	    NULL == rid_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	/* 1. Derive OSCORE master salt. */
-	int ret = edhoc_export_raw(ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT,
-				   NULL, 0, salt, salt_len);
+	int ret = edhoc_exporter_export_raw(
+		ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT, NULL, 0, salt,
+		salt_len);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive OSCORE master salt: %d", ret);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
 	/* 2. Copy OSCORE sender ID. RFC 9528: 3.3.3 - the OSCORE identifier is
 	 * the connection identifier byte string itself. */
 	if (sid_size < ctx->negotiation.peer_connection_id.length) {
-		EDHOC_LOG_ERR("Buffer too small for OSCORE SID: %zu, %zu",
-			      sid_size,
-			      ctx->negotiation.peer_connection_id.length);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	*sid_len = ctx->negotiation.peer_connection_id.length;
 	memcpy(sid, ctx->negotiation.peer_connection_id.value, *sid_len);
 
-	EDHOC_LOG_HEXDUMP_DBG(sid, *sid_len, "OSCORE sender ID");
-
 	/* 3. Copy OSCORE recipient ID. */
 	if (rid_size < ctx->negotiation.connection_id.length) {
-		EDHOC_LOG_ERR("Buffer too small for OSCORE RID: %zu, %zu",
-			      rid_size, ctx->negotiation.connection_id.length);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	*rid_len = ctx->negotiation.connection_id.length;
 	memcpy(rid, ctx->negotiation.connection_id.value, *rid_len);
 
-	EDHOC_LOG_HEXDUMP_DBG(rid, *rid_len, "OSCORE recipient ID");
-
 	return EDHOC_SUCCESS;
 }
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_export(struct edhoc_context *ctx, size_t label,
-		 const uint8_t *context, size_t context_len,
-		 enum edhoc_key_usage usage, void *key_id)
+int edhoc_exporter_export(struct edhoc_context *ctx, size_t label,
+			  const uint8_t *context, size_t context_len,
+			  enum edhoc_key_usage usage, void *key_id)
 {
 	if (NULL == ctx || (NULL == context && 0 != context_len) ||
 	    NULL == key_id) {
@@ -340,9 +318,9 @@ int edhoc_export(struct edhoc_context *ctx, size_t label,
 				      output_length);
 }
 
-int edhoc_export_raw(struct edhoc_context *ctx, size_t label,
-		     const uint8_t *context, size_t context_len,
-		     uint8_t *secret, size_t secret_len)
+int edhoc_exporter_export_raw(struct edhoc_context *ctx, size_t label,
+			      const uint8_t *context, size_t context_len,
+			      uint8_t *secret, size_t secret_len)
 {
 	if (NULL == ctx || (NULL == context && 0 != context_len) ||
 	    NULL == secret || 0 == secret_len) {
@@ -361,8 +339,8 @@ int edhoc_export_raw(struct edhoc_context *ctx, size_t label,
 				      secret_len);
 }
 
-int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
-			    size_t context_len)
+int edhoc_exporter_key_update(struct edhoc_context *ctx, const uint8_t *context,
+			      size_t context_len)
 {
 	if (NULL == ctx || NULL == context || 0 == context_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -409,11 +387,12 @@ int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
  *      2. Derive OSCORE master salt and copy the sender/recipient IDs.
  *      3. Derive OSCORE master secret (caller-owned key handle).
  */
-int edhoc_export_oscore_context(struct edhoc_context *ctx,
-				void *master_secret_key_id, uint8_t *salt,
-				size_t salt_len, uint8_t *sid, size_t sid_size,
-				size_t *sid_len, uint8_t *rid, size_t rid_size,
-				size_t *rid_len)
+int edhoc_exporter_oscore_context(struct edhoc_context *ctx,
+				  void *master_secret_key_id, uint8_t *salt,
+				  size_t salt_len, uint8_t *sid,
+				  size_t sid_size, size_t *sid_len,
+				  uint8_t *rid, size_t rid_size,
+				  size_t *rid_len)
 {
 	if (NULL == ctx || NULL == master_secret_key_id || NULL == salt ||
 	    0 == salt_len || NULL == sid || 0 == sid_size || NULL == sid_len ||
@@ -446,8 +425,10 @@ int edhoc_export_oscore_context(struct edhoc_context *ctx,
 	 * A.1 the OSCORE Master Secret length defaults to the application AEAD
 	 * key length, so it is derived as an AEAD key. The derive scrubs its own
 	 * output on failure, so nothing leaks here. */
-	ret = edhoc_export(ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET, NULL,
-			   0, EDHOC_KEY_USAGE_AEAD, master_secret_key_id);
+	ret = edhoc_exporter_export(ctx,
+				    EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
+				    NULL, 0, EDHOC_KEY_USAGE_AEAD,
+				    master_secret_key_id);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master secret: %d", ret);
@@ -464,12 +445,12 @@ int edhoc_export_oscore_context(struct edhoc_context *ctx,
  *      2. Derive OSCORE master salt and copy the sender/recipient IDs.
  *      3. Derive OSCORE master secret (raw bytes).
  */
-int edhoc_export_oscore_context_raw(struct edhoc_context *ctx, uint8_t *secret,
-				    size_t secret_len, uint8_t *salt,
-				    size_t salt_len, uint8_t *sid,
-				    size_t sid_size, size_t *sid_len,
-				    uint8_t *rid, size_t rid_size,
-				    size_t *rid_len)
+int edhoc_exporter_oscore_context_raw(struct edhoc_context *ctx,
+				      uint8_t *secret, size_t secret_len,
+				      uint8_t *salt, size_t salt_len,
+				      uint8_t *sid, size_t sid_size,
+				      size_t *sid_len, uint8_t *rid,
+				      size_t rid_size, size_t *rid_len)
 {
 	if (NULL == ctx || NULL == secret || 0 == secret_len || NULL == salt ||
 	    0 == salt_len || NULL == sid || 0 == sid_size || NULL == sid_len ||
@@ -500,8 +481,9 @@ int edhoc_export_oscore_context_raw(struct edhoc_context *ctx, uint8_t *secret,
 
 	/* 2. Derive OSCORE master secret (raw bytes). The derive scrubs its
 	 * own output on failure, so nothing leaks here. */
-	ret = edhoc_export_raw(ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET,
-			       NULL, 0, secret, secret_len);
+	ret = edhoc_exporter_export_raw(
+		ctx, EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET, NULL, 0, secret,
+		secret_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Derive OSCORE master secret: %d", ret);

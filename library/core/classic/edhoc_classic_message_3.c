@@ -1,5 +1,5 @@
 /**
- * \file    edhoc_message_3.c
+ * \file    edhoc_classic_message_3.c
  * \author  Kamil Kielbasa
  * \brief   EDHOC message 3 compose & process.
  *
@@ -55,118 +55,79 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /**
- * \brief Compute transcript hash 4.
+ * \brief Encode CIPHERTEXT_3 as message 3 (RFC 9528: 5.4.1).
  *
- * \param[in,out] ctx		EDHOC context.
- * \param[in] mac_ctx        	MAC context.
- * \param[in] ptxt		Buffer containing the PLAINTEXT_3.
- * \param ptxt_len              Size of the \p ptxt buffer in bytes.
+ * \param[in] ciphertext	Buffer containing the CIPHERTEXT_3.
+ * \param ciphertext_len	Size of the \p ciphertext buffer in bytes.
+ * \param[out] msg_3		Buffer where the generated message 3 is to be written.
+ * \param msg_3_size		Size of the \p msg_3 buffer in bytes.
+ * \param[out] msg_3_len	On success, the number of bytes that make up the message 3.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int comp_th_4(struct edhoc_context *ctx,
-		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
-		     size_t ptxt_len);
+STATIC int compose_ciphertext_3(const uint8_t *ciphertext,
+				size_t ciphertext_len, uint8_t *msg_3,
+				size_t msg_3_size, size_t *msg_3_len);
 
 /**
- * \brief Generate edhoc message 3.
+ * \brief Decode message 3 into a view of CIPHERTEXT_3 (RFC 9528: 5.4.1).
  *
- * \param[in] ctxt	        Buffer continas the ciphertext.
- * \param ctxt_len	        Size of the \p ctxt buffer in bytes.
- * \param[out] msg_3            Buffer where the generated message 3 is to be written.
- * \param msg_3_size            Size of the \p msg_3 buffer in bytes.
- * \param[out] msg_3_len        On success, the number of bytes that make up the message 3.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
-		     size_t msg_3_size, size_t *msg_3_len);
-
-/**
- * \brief CBOR decode message 3 and save address and length for CIPHERTEXT_3.
- *
- * \param[in] msg_3     	Buffer containing the message 3.
- * \param msg_3_len     	Size of the \p msg_3 buffer in bytes.
- * \param[out] ctxt_3	        Pointer to buffer containing the CIPHERTEXT_3.
- * \param[out] ctxt_3_len	Size of the \p ctxt_3 buffer in bytes.
+ * \param[in] msg_3		Buffer containing the message 3.
+ * \param msg_3_len		Size of the \p msg_3 buffer in bytes.
+ * \param[out] ctxt_3		On success, a view of the CIPHERTEXT_3.
+ * \param[out] ctxt_3_len	On success, the CIPHERTEXT_3 length in bytes.
  *
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
-STATIC int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
-		       const uint8_t **ctxt_3, size_t *ctxt_3_len);
+STATIC int parse_ciphertext_3(const uint8_t *msg_3, size_t msg_3_len,
+			      const uint8_t **ctxt_3, size_t *ctxt_3_len);
 
 /* Static function definitions --------------------------------------------- */
 
-STATIC int comp_th_4(struct edhoc_context *ctx,
-		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
-		     size_t ptxt_len)
+STATIC int compose_ciphertext_3(const uint8_t *ciphertext,
+				size_t ciphertext_len, uint8_t *msg_3,
+				size_t msg_3_size, size_t *msg_3_len)
 {
-	if (NULL == mac_ctx) {
-		EDHOC_LOG_ERR("Invalid arguments");
+	if (NULL == ciphertext || 0 == ciphertext_len || NULL == msg_3 ||
+	    0 == msg_3_size || NULL == msg_3_len) {
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	const struct edhoc_th_input input = {
-		.target = EDHOC_TH_STATE_4,
-		.plaintext = ptxt,
-		.plaintext_length = ptxt_len,
-		.credential = mac_ctx->cred,
-		.credential_length = mac_ctx->cred_len,
+	const struct zcbor_string input = {
+		.value = ciphertext,
+		.len = ciphertext_len,
 	};
 
-	return edhoc_th_compute(ctx, &input);
-}
+	const int ret = cbor_encode_message_3_CIPHERTEXT_3(msg_3, msg_3_size,
+							   &input, msg_3_len);
 
-STATIC int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
-		     size_t msg_3_size, size_t *msg_3_len)
-{
-	if (NULL == ctxt || 0 == ctxt_len || NULL == msg_3 || 0 == msg_3_size ||
-	    NULL == msg_3_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	const struct zcbor_string input_bstr = {
-		.value = ctxt,
-		.len = ctxt_len,
-	};
-
-	ret = cbor_encode_message_3_CIPHERTEXT_3(msg_3, msg_3_size + 1,
-						 &input_bstr, msg_3_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc msg3: %d", ret);
+	if (ZCBOR_SUCCESS != ret) {
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	return EDHOC_SUCCESS;
 }
 
-STATIC int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
-		       const uint8_t **ctxt_3, size_t *ctxt_3_len)
+STATIC int parse_ciphertext_3(const uint8_t *msg_3, size_t msg_3_len,
+			      const uint8_t **ctxt_3, size_t *ctxt_3_len)
 {
 	if (NULL == msg_3 || 0 == msg_3_len || NULL == ctxt_3 ||
 	    NULL == ctxt_3_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
 	size_t len = 0;
-	struct zcbor_string dec_msg_3 = { 0 };
-	ret = cbor_decode_message_3_CIPHERTEXT_3(msg_3, msg_3_len, &dec_msg_3,
-						 &len);
+	struct zcbor_string output = { 0 };
+
+	const int ret = cbor_decode_message_3_CIPHERTEXT_3(msg_3, msg_3_len,
+							   &output, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR dec msg3: %d", ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
-	*ctxt_3 = dec_msg_3.value;
-	*ctxt_3_len = dec_msg_3.len;
+	*ctxt_3 = output.value;
+	*ctxt_3_len = output.len;
 
 	return EDHOC_SUCCESS;
 }
@@ -299,6 +260,7 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
+	/* 6a. Compute required buffer length for context_3. */
 	struct edhoc_credential_material material = { 0 };
 	ret = edhoc_credential_material_from_selected(&selected, &material);
 
@@ -505,7 +467,16 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext, ciphertext_len, "CIPHERTEXT_3");
 
 	/* 10. Compute transcript hash 4. */
-	ret = comp_th_4(ctx, mac_context, plaintext, plaintext_len);
+	const struct edhoc_th_input th_4 = {
+		.target = EDHOC_TH_STATE_4,
+		.plaintext = plaintext,
+		.plaintext_length = plaintext_len,
+		.credential = mac_context->cred,
+		.credential_length = mac_context->cred_len,
+	};
+
+	ret = edhoc_th_compute(ctx, &th_4);
+
 	EDHOC_MEM_FREE(plaintext);
 	EDHOC_MEM_FREE(mac_3_context_buf);
 
@@ -519,8 +490,8 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 			      "TH_4");
 
 	/* 11. Generate edhoc message 3. */
-	ret = gen_msg_3(ciphertext, ciphertext_len, msg_3, msg_3_size,
-			msg_3_len);
+	ret = compose_ciphertext_3(ciphertext, ciphertext_len, msg_3,
+				   msg_3_size, msg_3_len);
 	EDHOC_MEM_FREE(ciphertext);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -604,7 +575,7 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 	const uint8_t *ctxt = NULL;
 	size_t ctxt_len = 0;
 
-	ret = parse_msg_3(msg_3, msg_3_len, &ctxt, &ctxt_len);
+	ret = parse_ciphertext_3(msg_3, msg_3_len, &ctxt, &ctxt_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse msg3: %d", ret);
@@ -825,7 +796,15 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 	}
 
 	/* 11. Compute transcript hash 4. */
-	ret = comp_th_4(ctx, mac_context, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
+	const struct edhoc_th_input th_4 = {
+		.target = EDHOC_TH_STATE_4,
+		.plaintext = ptxt,
+		.plaintext_length = EDHOC_MEM_ALLOC_SIZE(ptxt),
+		.credential = mac_context->cred,
+		.credential_length = mac_context->cred_len,
+	};
+
+	ret = edhoc_th_compute(ctx, &th_4);
 
 	EDHOC_MEM_FREE(mac_3_context_buf);
 	EDHOC_MEM_FREE(ptxt);

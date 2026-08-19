@@ -100,7 +100,7 @@ struct edhoc_key_slot {
  * \param[in] ctx                       EDHOC context.
  * \param slot                          Key slot to read.
  *
- * \return Pointer to the slot's #CONFIG_LIBEDHOC_KEY_ID_LEN-byte handle buffer.
+ * \return Pointer to the slot's \c CONFIG_LIBEDHOC_KEY_ID_LEN-byte handle buffer.
  */
 const void *edhoc_key_slot_id(const struct edhoc_context *ctx,
 			      enum edhoc_key_slot_id slot);
@@ -115,7 +115,7 @@ const void *edhoc_key_slot_id(const struct edhoc_context *ctx,
  * \param[in,out] ctx                   EDHOC context.
  * \param slot                          Key slot to write.
  *
- * \return Pointer to the slot's #CONFIG_LIBEDHOC_KEY_ID_LEN-byte handle buffer.
+ * \return Pointer to the slot's \c CONFIG_LIBEDHOC_KEY_ID_LEN-byte handle buffer.
  */
 void *edhoc_key_slot_id_mut(struct edhoc_context *ctx,
 			    enum edhoc_key_slot_id slot);
@@ -167,7 +167,7 @@ void edhoc_key_slot_move(struct edhoc_context *ctx,
  *
  * \param[in] ctx                       EDHOC context.
  * \param slot                          Source key slot.
- * \param[out] key_id                   Buffer of #CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
+ * \param[out] key_id                   Buffer of \c CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
  */
 void edhoc_key_slot_snapshot(const struct edhoc_context *ctx,
 			     enum edhoc_key_slot_id slot, uint8_t *key_id);
@@ -177,7 +177,7 @@ void edhoc_key_slot_snapshot(const struct edhoc_context *ctx,
  *
  * \param[in,out] ctx                   EDHOC context.
  * \param slot                          Destination key slot.
- * \param[in] key_id                    Buffer of #CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
+ * \param[in] key_id                    Buffer of \c CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
  */
 void edhoc_key_slot_restore(struct edhoc_context *ctx,
 			    enum edhoc_key_slot_id slot, const uint8_t *key_id);
@@ -226,7 +226,7 @@ int edhoc_key_slot_release_up_to(struct edhoc_context *ctx,
  *        slot. Destroying a zeroed / no-key handle is a successful no-op.
  *
  * \param[in,out] ctx                   EDHOC context.
- * \param[in,out] key_id                Buffer of #CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
+ * \param[in,out] key_id                Buffer of \c CONFIG_LIBEDHOC_KEY_ID_LEN bytes.
  *
  * \return #EDHOC_SUCCESS, or the destroy_key error.
  */

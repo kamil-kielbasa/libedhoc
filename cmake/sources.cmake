@@ -13,8 +13,8 @@ set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_2.c
     ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_3.c
     ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_4.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_error.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_exporter.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_error_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_exporter_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_cbor_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_kdf_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_transcript_hash_internal.c

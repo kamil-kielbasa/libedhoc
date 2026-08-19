@@ -4,8 +4,8 @@
  * \brief   Classic EDHOC message flow (RFC 9528: 5).
  *
  *          The four messages of the flow that authenticates with signatures or
- *          static Diffie-Hellman. A future flow provides its own entry points
- *          here and \c edhoc.c picks between them.
+ *          static Diffie-Hellman. A future flow declares the same four entry
+ *          points in its own header and \c edhoc.c picks between them.
  *
  * \copyright Copyright (c) 2026
  *
@@ -39,44 +39,36 @@ struct edhoc_context;
  */
 
 /** \brief Compose message 1 (RFC 9528: 5.2.2). */
-int edhoc_classic_message_1_compose(struct edhoc_context *ctx,
-				    uint8_t *message_1, size_t message_1_size,
-				    size_t *message_1_length);
+int edhoc_classic_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
+				    size_t msg_1_size, size_t *msg_1_len);
 
 /** \brief Process message 1 (RFC 9528: 5.2.3). */
 int edhoc_classic_message_1_process(struct edhoc_context *ctx,
-				    const uint8_t *message_1,
-				    size_t message_1_length);
+				    const uint8_t *msg_1, size_t msg_1_len);
 
 /** \brief Compose message 2 (RFC 9528: 5.3.2). */
-int edhoc_classic_message_2_compose(struct edhoc_context *ctx,
-				    uint8_t *message_2, size_t message_2_size,
-				    size_t *message_2_length);
+int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
+				    size_t msg_2_size, size_t *msg_2_len);
 
 /** \brief Process message 2 (RFC 9528: 5.3.3). */
 int edhoc_classic_message_2_process(struct edhoc_context *ctx,
-				    const uint8_t *message_2,
-				    size_t message_2_length);
+				    const uint8_t *msg_2, size_t msg_2_len);
 
 /** \brief Compose message 3 (RFC 9528: 5.4.2). */
-int edhoc_classic_message_3_compose(struct edhoc_context *ctx,
-				    uint8_t *message_3, size_t message_3_size,
-				    size_t *message_3_length);
+int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
+				    size_t msg_3_size, size_t *msg_3_len);
 
 /** \brief Process message 3 (RFC 9528: 5.4.3). */
 int edhoc_classic_message_3_process(struct edhoc_context *ctx,
-				    const uint8_t *message_3,
-				    size_t message_3_length);
+				    const uint8_t *msg_3, size_t msg_3_len);
 
 /** \brief Compose message 4 (RFC 9528: 5.5.2). */
-int edhoc_classic_message_4_compose(struct edhoc_context *ctx,
-				    uint8_t *message_4, size_t message_4_size,
-				    size_t *message_4_length);
+int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
+				    size_t msg_4_size, size_t *msg_4_len);
 
 /** \brief Process message 4 (RFC 9528: 5.5.3). */
 int edhoc_classic_message_4_process(struct edhoc_context *ctx,
-				    const uint8_t *message_4,
-				    size_t message_4_length);
+				    const uint8_t *msg_4, size_t msg_4_len);
 
 /**@}*/
 

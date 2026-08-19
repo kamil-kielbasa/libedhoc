@@ -1472,7 +1472,7 @@ TEST(coverage_msg2, msg2_process_garbage)
 	coverage_mock_reset(0);
 
 	ret = edhoc_message_2_process(&init_ctx, garbage, sizeof(garbage));
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

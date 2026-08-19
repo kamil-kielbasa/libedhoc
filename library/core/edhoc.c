@@ -33,6 +33,8 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_classic_internal.h"
+#include "edhoc_error_internal.h"
+#include "edhoc_exporter_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -424,4 +426,65 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 			    size_t msg_4_len)
 {
 	return edhoc_classic_message_4_process(ctx, msg_4, msg_4_len);
+}
+
+int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
+				size_t *msg_err_len, enum edhoc_error_code code,
+				const struct edhoc_error_info *info)
+{
+	return edhoc_error_encode(msg_err, msg_err_size, msg_err_len, code,
+				  info);
+}
+
+int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
+				enum edhoc_error_code *code,
+				struct edhoc_error_info *info)
+{
+	return edhoc_error_decode(msg_err, msg_err_len, code, info);
+}
+
+int edhoc_export(struct edhoc_context *ctx, size_t label,
+		 const uint8_t *context, size_t context_len,
+		 enum edhoc_key_usage usage, void *key_id)
+{
+	return edhoc_exporter_export(ctx, label, context, context_len, usage,
+				     key_id);
+}
+
+int edhoc_export_raw(struct edhoc_context *ctx, size_t label,
+		     const uint8_t *context, size_t context_len,
+		     uint8_t *secret, size_t secret_len)
+{
+	return edhoc_exporter_export_raw(ctx, label, context, context_len,
+					 secret, secret_len);
+}
+
+int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
+			    size_t context_len)
+{
+	return edhoc_exporter_key_update(ctx, context, context_len);
+}
+
+int edhoc_export_oscore_context(struct edhoc_context *ctx,
+				void *master_secret_key_id, uint8_t *salt,
+				size_t salt_len, uint8_t *sid, size_t sid_size,
+				size_t *sid_len, uint8_t *rid, size_t rid_size,
+				size_t *rid_len)
+{
+	return edhoc_exporter_oscore_context(ctx, master_secret_key_id, salt,
+					     salt_len, sid, sid_size, sid_len,
+					     rid, rid_size, rid_len);
+}
+
+int edhoc_export_oscore_context_raw(struct edhoc_context *ctx, uint8_t *secret,
+				    size_t secret_len, uint8_t *salt,
+				    size_t salt_len, uint8_t *sid,
+				    size_t sid_size, size_t *sid_len,
+				    uint8_t *rid, size_t rid_size,
+				    size_t *rid_len)
+{
+	return edhoc_exporter_oscore_context_raw(ctx, secret, secret_len, salt,
+						 salt_len, sid, sid_size,
+						 sid_len, rid, rid_size,
+						 rid_len);
 }

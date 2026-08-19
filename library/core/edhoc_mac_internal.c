@@ -146,7 +146,6 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 
 	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
 	if (NULL == cose_sign_1_buf) {
-		EDHOC_LOG_ERR("Memory allocation failed");
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
@@ -156,7 +155,6 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 					&cose_sign_1, &cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc Sign1: %d", ret);
 		EDHOC_MEM_FREE(cose_sign_1_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
@@ -167,7 +165,6 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Compute signature: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -205,7 +202,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 
 	EDHOC_MEM_ALLOC(uint8_t, cose_sign_1_buf, len);
 	if (NULL == cose_sign_1_buf) {
-		EDHOC_LOG_ERR("Memory allocation failed");
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
@@ -215,7 +211,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 					&cose_sign_1, &cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc Sign1: %d", ret);
 		EDHOC_MEM_FREE(cose_sign_1_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
@@ -228,7 +223,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Verify signature: %d", ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 

@@ -122,7 +122,6 @@ STATIC size_t
 cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value)
 {
 	if (NULL == value) {
-		EDHOC_LOG_ERR("Invalid argument");
 		return 0;
 	}
 
@@ -146,7 +145,6 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 			 struct edhoc_credential_received *received)
 {
 	if (NULL == cose_x509 || NULL == received) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -163,10 +161,6 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 	case COSE_X509_certs_l_c:
 		if (EDHOC_CREDENTIAL_X5CHAIN_CAPACITY <
 		    cose_x509->COSE_X509_certs_l_certs_count) {
-			EDHOC_LOG_ERR(
-				"X.509 certificate chain too large: %zu (max %d)",
-				cose_x509->COSE_X509_certs_l_certs_count,
-				EDHOC_CREDENTIAL_X5CHAIN_CAPACITY);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -184,8 +178,6 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid COSE_X509 choice: %d",
-			      cose_x509->COSE_X509_choice);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -196,16 +188,11 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		     struct edhoc_credential_received *received)
 {
 	if (NULL == cert_hash || NULL == received) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN <
 	    cert_hash->COSE_CertHash_hashValue.len) {
-		EDHOC_LOG_ERR(
-			"X.509 certificate fingerprint too large: %zu (max %d)",
-			cert_hash->COSE_CertHash_hashValue.len,
-			EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -220,10 +207,6 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 	case COSE_CertHash_hashAlg_tstr_c:
 		if (EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN <
 		    cert_hash->COSE_CertHash_hashAlg_tstr.len) {
-			EDHOC_LOG_ERR(
-				"X.509 hash algorithm string too large: %zu (max %d)",
-				cert_hash->COSE_CertHash_hashAlg_tstr.len,
-				EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -236,8 +219,6 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid COSE_CertHash_hashAlg choice: %d",
-			      cert_hash->COSE_CertHash_hashAlg_choice);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -255,13 +236,10 @@ STATIC int copy_encoded_item(const struct edhoc_buffer *item, uint8_t *buffer,
 {
 	if (NULL == item || NULL == buffer || 0 == buffer_length ||
 	    NULL == length) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (buffer_length < item->length) {
-		EDHOC_LOG_ERR("Buffer too small: %zu > %zu", item->length,
-			      buffer_length);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
