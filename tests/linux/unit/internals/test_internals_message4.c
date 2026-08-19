@@ -71,7 +71,7 @@ TEST(internals_message4, comp_th_4_bad_state)
 
 TEST(internals_message4, comp_giy_null)
 {
-	int ret = comp_giy(NULL, NULL, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(NULL, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -81,12 +81,13 @@ TEST(internals_message4, comp_giy_invalid_role)
 
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = 99;
+	ctx.state.message = EDHOC_MESSAGE_3;
 	ctx.negotiation.selected_method = EDHOC_METHOD_2;
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	int ret = comp_giy(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);

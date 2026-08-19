@@ -25,6 +25,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_key_schedule_internal.h"
 #include "edhoc_cipher_internal.h"
 #include "edhoc_transcript_hash_internal.h"
 #include "edhoc_ead_internal.h"
@@ -58,27 +59,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function declarations -------------------------------------------- */
 
 /**
- * \brief KEM encapsulate to the peer's G_X (Responder): produce the KEM
- *        ciphertext G_Y (into \p ctx->ephemeral.own.value) and the ephemeral
- *        shared-secret handle.
- *
- * \param[in,out] ctx		EDHOC context.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_encapsulate(struct edhoc_context *ctx);
-
-/**
- * \brief KEM decapsulate the peer's G_Y (Initiator): derive the ephemeral
- *        shared-secret handle from the message-1 ephemeral private key.
- *
- * \param[in,out] ctx		EDHOC context.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_decapsulate(struct edhoc_context *ctx);
-
-/**
  * \brief Compute transcript hash 2 (TH_2).
  *
  * \param[in,out] ctx		EDHOC context.
@@ -86,31 +66,6 @@ STATIC int comp_decapsulate(struct edhoc_context *ctx);
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_th_2(struct edhoc_context *ctx);
-
-/**
- * \brief Compute pseudorandom key (PRK_2e).
- *
- * \param[in,out] ctx		EDHOC context.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_prk_2e(struct edhoc_context *ctx);
-
-/**
- * \brief Compute pseudorandom key (PRK_3e2m).
- *
- * \param[in,out] ctx		EDHOC context.
- * \param[in] private_key_id    Handle of the local static-DH authentication key
- *                              (Responder only, otherwise NULL).
- * \param[in] peer_public_key   Peer static-DH authentication key (Initiator
- *                              only, otherwise NULL).
- * \param peer_public_key_length Size of the \p peer_public_key buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_prk_3e2m(struct edhoc_context *ctx, const void *private_key_id,
-			 const uint8_t *peer_public_key,
-			 size_t peer_public_key_length);
 
 /**
  * \brief Compute required PLAINTEXT_2 length.
@@ -217,98 +172,7 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
 
-/**
- * \brief Compute SALT_3e2m.
- *
- * \param[in] ctx               EDHOC context.
- * \param[out] salt             Buffer where the generated salt is to be written.
- * \param salt_len              Size of the \p salt buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
-			  size_t salt_len);
-
-/**
- * \brief Compute G_RX for PRK_3e2m into its context key slot.
- *
- * \param[in,out] ctx           EDHOC context.
- * \param[in] private_key_id    Handle of the local static-DH authentication key
- *                              (Responder only).
- * \param[in] peer_public_key   Peer static-DH authentication key (Initiator
- *                              only).
- * \param peer_public_key_length Size of the \p peer_public_key buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_grx(struct edhoc_context *ctx, const void *private_key_id,
-		    const uint8_t *peer_public_key,
-		    size_t peer_public_key_length);
-
 /* Static function definitions --------------------------------------------- */
-
-STATIC int comp_encapsulate(struct edhoc_context *ctx)
-{
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	const struct edhoc_cipher_suite *csuite =
-		edhoc_selected_cipher_suite(ctx);
-
-	/* KEM encapsulate to the peer's encapsulation key G_X: the backend
-	 * produces the KEM ciphertext G_Y (ctx->ephemeral.own.value), stores the shared
-	 * secret G_XY as a handle (the shared-secret slot) and retains its
-	 * ephemeral private key (the ephemeral slot) for the later static-DH
-	 * G_IY agreement in message 3. For classical NIKE-as-KEM suites this
-	 * wraps an ephemeral key generation plus a Diffie-Hellman agreement. */
-	ctx->ephemeral.own.length = 0;
-	const int ret = edhoc_crypto(ctx)->encapsulate(
-		ctx->user_context, ctx->ephemeral.peer.value,
-		ctx->ephemeral.peer.length,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
-		ctx->ephemeral.own.value, sizeof(ctx->ephemeral.own.value),
-		&ctx->ephemeral.own.length);
-
-	if (EDHOC_SUCCESS != ret ||
-	    csuite->kem_ciphertext_length != ctx->ephemeral.own.length) {
-		EDHOC_LOG_ERR("Encapsulate: %d, %zu, %zu", ret,
-			      csuite->kem_ciphertext_length,
-			      ctx->ephemeral.own.length);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_EPHEMERAL);
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_SHARED_SECRET);
-	return EDHOC_SUCCESS;
-}
-
-STATIC int comp_decapsulate(struct edhoc_context *ctx)
-{
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	/* KEM decapsulate the peer's ciphertext G_Y with the ephemeral private
-	 * key handle from message 1; the shared secret G_XY is stored as a
-	 * handle (the shared-secret slot). */
-	const int ret = edhoc_crypto(ctx)->decapsulate(
-		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
-		ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_SHARED_SECRET));
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Decapsulate: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_SHARED_SECRET);
-	return EDHOC_SUCCESS;
-}
 
 STATIC int comp_th_2(struct edhoc_context *ctx)
 {
@@ -317,132 +181,6 @@ STATIC int comp_th_2(struct edhoc_context *ctx)
 	};
 
 	return edhoc_th_compute(ctx, &input);
-}
-
-STATIC int comp_prk_2e(struct edhoc_context *ctx)
-{
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_TH_STATE_2 != ctx->state.th.stage ||
-	    EDHOC_PRK_STATE_INVALID != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Invalid state for PRK_2e: %d, %d",
-			      ctx->state.th.stage, ctx->state.prk_state);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	/* EDHOC_Extract(salt = TH_2, IKM = G_XY) -> PRK_2e. PRK_2e has its own
-	 * dedicated handle because it must outlive PRK_3e2m for KEYSTREAM_2; the
-	 * shared secret and pseudorandom key are handles, only TH_2 is raw. */
-	const int ret = edhoc_crypto(ctx)->extract(
-		ctx->user_context,
-		edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_SHARED_SECRET),
-		ctx->state.th.value, ctx->state.th.length,
-		edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_2E));
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Extract PRK_2e: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_2E);
-	ctx->state.prk_state = EDHOC_PRK_STATE_2E;
-	return EDHOC_SUCCESS;
-}
-
-STATIC int comp_prk_3e2m(struct edhoc_context *ctx, const void *private_key_id,
-			 const uint8_t *peer_public_key,
-			 size_t peer_public_key_length)
-{
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid argument");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_PRK_STATE_2E != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Invalid PRK state for PRK_3e2m: %d",
-			      ctx->state.prk_state);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	switch (ctx->negotiation.selected_method) {
-	case EDHOC_METHOD_0:
-	case EDHOC_METHOD_2:
-		/* PRK_3e2m == PRK_2e: move PRK_2e's slot into PRK_3e2m so the
-		 * shared key is owned by a single handle that lives into message
-		 * 3. KEYSTREAM_2 reads PRK_3e2m for these methods. */
-		edhoc_key_slot_move(ctx, EDHOC_KEY_SLOT_PRK_3E2M,
-				    EDHOC_KEY_SLOT_PRK_2E);
-		ctx->state.prk_state = EDHOC_PRK_STATE_3E2M;
-		return EDHOC_SUCCESS;
-
-	case EDHOC_METHOD_1:
-	case EDHOC_METHOD_3: {
-		const size_t hash_len =
-			edhoc_selected_cipher_suite(ctx)->hash_length;
-
-		EDHOC_MEM_ALLOC(uint8_t, salt_3e2m, hash_len);
-		if (NULL == salt_3e2m) {
-			EDHOC_LOG_ERR("Memory allocation failed");
-			return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
-		}
-
-		int ret = comp_salt_3e2m(ctx, salt_3e2m,
-					 EDHOC_MEM_ALLOC_SIZE(salt_3e2m));
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Compute SALT_3e2m: %d", ret);
-			EDHOC_MEM_FREE(salt_3e2m);
-			return EDHOC_ERROR_CRYPTO_FAILURE;
-		}
-
-		EDHOC_LOG_HEXDUMP_DBG(salt_3e2m,
-				      EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
-				      "SALT_3e2m");
-
-		/* G_RX is a static-DH shared secret produced into its context
-		 * slot; it is the IKM for EDHOC_Extract and is released with the
-		 * other message 2 secrets (or by deinit on an error path). */
-		ret = comp_grx(ctx, private_key_id, peer_public_key,
-			       peer_public_key_length);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Compute G_RX: %d", ret);
-			EDHOC_MEM_FREE(salt_3e2m);
-			return EDHOC_ERROR_CRYPTO_FAILURE;
-		}
-
-		/* EDHOC_Extract(salt = SALT_3e2m, IKM = G_RX) -> PRK_3e2m in its
-		 * own dedicated handle. SALT_3e2m is spent afterwards. */
-		ret = edhoc_crypto(ctx)->extract(
-			ctx->user_context,
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_G_RX), salt_3e2m,
-			EDHOC_MEM_ALLOC_SIZE(salt_3e2m),
-			edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_PRK_3E2M));
-
-		edhoc_zeroize(ctx, salt_3e2m, EDHOC_MEM_ALLOC_SIZE(salt_3e2m));
-		EDHOC_MEM_FREE(salt_3e2m);
-
-		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Extract PRK_3e2m: %d", ret);
-			return EDHOC_ERROR_CRYPTO_FAILURE;
-		}
-
-		edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
-		ctx->state.prk_state = EDHOC_PRK_STATE_3E2M;
-		return EDHOC_SUCCESS;
-	}
-
-	default:
-		EDHOC_LOG_ERR("Invalid method");
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	EDHOC_LOG_ERR("Unsupported method: %d",
-		      ctx->negotiation.selected_method);
-	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
 STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
@@ -784,89 +522,6 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
 	return edhoc_th_compute(ctx, &input);
 }
 
-STATIC int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
-			  size_t salt_len)
-{
-	if (NULL == ctx || NULL == salt || 0 == salt_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	if (EDHOC_TH_STATE_2 != ctx->state.th.stage ||
-	    EDHOC_PRK_STATE_2E != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.th.stage,
-			      ctx->state.prk_state);
-		return EDHOC_ERROR_BAD_STATE;
-	}
-
-	const int ret = edhoc_kdf_expand_raw(
-		ctx, edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E),
-		EDHOC_KDF_LABEL_SALT_3E2M, ctx->state.th.value,
-		ctx->state.th.length, salt, salt_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive SALT_3e2m: %d, %zu", ret, salt_len);
-		return ret;
-	}
-
-	return EDHOC_SUCCESS;
-}
-
-STATIC int comp_grx(struct edhoc_context *ctx, const void *private_key_id,
-		    const uint8_t *peer_public_key,
-		    size_t peer_public_key_length)
-{
-	if (NULL == ctx) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	void *grx_key_id = edhoc_key_slot_id_mut(ctx, EDHOC_KEY_SLOT_G_RX);
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	switch (ctx->state.role) {
-	case EDHOC_ROLE_INITIATOR:
-		if (NULL == peer_public_key || 0 == peer_public_key_length) {
-			EDHOC_LOG_ERR("Missing peer authentication key");
-			return EDHOC_ERROR_INVALID_ARGUMENT;
-		}
-
-		/* G_RX = key_agreement(ephemeral private key, R's static public
-		 * key). The shared secret is produced as a handle. */
-		ret = edhoc_crypto(ctx)->key_agreement(
-			ctx->user_context,
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_EPHEMERAL),
-			peer_public_key, peer_public_key_length, grx_key_id);
-		break;
-
-	case EDHOC_ROLE_RESPONDER:
-		if (NULL == private_key_id) {
-			EDHOC_LOG_ERR("Missing local authentication key");
-			return EDHOC_ERROR_INVALID_ARGUMENT;
-		}
-
-		/* G_RX = key_agreement(R's static private key, peer's ephemeral
-		 * public key G_X). */
-		ret = edhoc_crypto(ctx)->key_agreement(
-			ctx->user_context, private_key_id,
-			ctx->ephemeral.peer.value, ctx->ephemeral.peer.length,
-			grx_key_id);
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Key agreement for G_RX: %d", ret);
-		return EDHOC_ERROR_CRYPTO_FAILURE;
-	}
-
-	edhoc_key_slot_mark_present(ctx, EDHOC_KEY_SLOT_G_RX);
-	return EDHOC_SUCCESS;
-}
-
 /* Module interface function definitions ----------------------------------- */
 
 /**
@@ -922,7 +577,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	/* 1. KEM encapsulate to the peer's G_X: produce the KEM ciphertext G_Y
 	 * (sent in message 2) and the shared-secret handle. */
-	ret = comp_encapsulate(ctx);
+	ret = edhoc_key_schedule_encapsulate(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Encapsulate: %d", ret);
@@ -944,7 +599,7 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			      "TH_2");
 
 	/* 3. Compute Pseudo Random Key 2 (PRK_2e). */
-	ret = comp_prk_2e(ctx);
+	ret = edhoc_key_schedule_prk_initial(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_2e: %d", ret);
@@ -978,7 +633,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 6. Compute pseudorandom key (PRK_3e2m). */
-	ret = comp_prk_3e2m(ctx, selected.private_key_id, NULL, 0);
+	ret = edhoc_key_schedule_prk_advance(ctx, selected.private_key_id, NULL,
+					     0);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_3e2m: %d", ret);
@@ -1267,7 +923,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			      "CIPHERTEXT_2");
 
 	/* 3. KEM decapsulate the peer's G_Y into the shared-secret handle. */
-	ret = comp_decapsulate(ctx);
+	ret = edhoc_key_schedule_decapsulate(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decapsulate: %d", ret);
@@ -1288,7 +944,7 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			      "TH_2");
 
 	/* 5. Compute Pseudo Random Key 2 (PRK_2e). */
-	ret = comp_prk_2e(ctx);
+	ret = edhoc_key_schedule_prk_initial(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_2e: %d", ret);
@@ -1374,8 +1030,8 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	}
 
 	/* 11. Compute pseudorandom key (PRK_3e2m). */
-	ret = comp_prk_3e2m(ctx, NULL, trusted.public_key.value,
-			    trusted.public_key.length);
+	ret = edhoc_key_schedule_prk_advance(
+		ctx, NULL, trusted.public_key.value, trusted.public_key.length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_3e2m: %d", ret);

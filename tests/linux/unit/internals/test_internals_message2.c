@@ -66,13 +66,13 @@ TEST(internals_message2, comp_th_2_bad_state)
 
 TEST(internals_message2, comp_encapsulate_null)
 {
-	int ret = comp_encapsulate(NULL);
+	int ret = edhoc_key_schedule_encapsulate(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message2, comp_decapsulate_null)
 {
-	int ret = comp_decapsulate(NULL);
+	int ret = edhoc_key_schedule_decapsulate(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -101,7 +101,7 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 
 TEST(internals_message2, comp_grx_null)
 {
-	int ret = comp_grx(NULL, NULL, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(NULL, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -111,12 +111,13 @@ TEST(internals_message2, comp_grx_invalid_role)
 	internals_setup_crypto_context(&ctx);
 
 	ctx.state.role = 99;
+	ctx.state.message = EDHOC_MESSAGE_2;
 	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	int ret = comp_grx(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);

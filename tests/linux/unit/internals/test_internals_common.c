@@ -191,7 +191,7 @@ TEST(internals_common, comp_prk_2e_bad_state)
 	internals_setup_crypto_context(&ctx);
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 
-	int ret = comp_prk_2e(&ctx);
+	int ret = edhoc_key_schedule_prk_initial(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -200,7 +200,7 @@ TEST(internals_common, comp_prk_2e_bad_state)
 
 TEST(internals_common, comp_prk_2e_null_args)
 {
-	int ret = comp_prk_2e(NULL);
+	int ret = edhoc_key_schedule_prk_initial(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -214,10 +214,11 @@ TEST(internals_common, comp_prk_3e2m_method_0)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.th.length = 32;
+	ctx.state.message = EDHOC_MESSAGE_2;
 
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, ctx.state.prk_state);
 
@@ -241,6 +242,7 @@ TEST(internals_common, comp_prk_3e2m_method_1)
 
 	for (size_t i = 0; i < 32; i++) {
 		ctx.state.th.value[i] = (uint8_t)(i + 1);
+		ctx.state.message = EDHOC_MESSAGE_2;
 		prk_2e[i] = (uint8_t)(i + 0x20);
 		dh_priv[i] = (uint8_t)(i + 0x40);
 		pub_key[i] = (uint8_t)(i + 0x80);
@@ -257,7 +259,8 @@ TEST(internals_common, comp_prk_3e2m_method_1)
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	internals_inject_ecdh_key(key_id, dh_priv, sizeof(dh_priv));
 
-	int ret = comp_prk_3e2m(&ctx, key_id, pub_key, sizeof(pub_key));
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, pub_key,
+						 sizeof(pub_key));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_3E2M, ctx.state.prk_state);
 
@@ -275,10 +278,11 @@ TEST(internals_common, comp_prk_3e2m_method_max)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.th.length = 32;
+	ctx.state.message = EDHOC_MESSAGE_2;
 
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -294,10 +298,11 @@ TEST(internals_common, comp_prk_3e2m_bad_prk_state)
 	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
+	ctx.state.message = EDHOC_MESSAGE_2;
 
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -308,7 +313,7 @@ TEST(internals_common, comp_prk_3e2m_null_args)
 {
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_3e2m(NULL, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(NULL, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -322,10 +327,11 @@ TEST(internals_common, comp_prk_4e3m_method_0)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.th.length = 32;
+	ctx.state.message = EDHOC_MESSAGE_3;
 
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, ctx.state.prk_state);
 
@@ -349,6 +355,7 @@ TEST(internals_common, comp_prk_4e3m_method_2)
 
 	for (size_t i = 0; i < 32; i++) {
 		ctx.state.th.value[i] = (uint8_t)(i + 1);
+		ctx.state.message = EDHOC_MESSAGE_3;
 		prk_3e2m[i] = (uint8_t)(i + 0x20);
 		dh_priv[i] = (uint8_t)(i + 0x40);
 		pub_key[i] = (uint8_t)(i + 0x80);
@@ -365,7 +372,8 @@ TEST(internals_common, comp_prk_4e3m_method_2)
 	uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 	internals_inject_ecdh_key(key_id, dh_priv, sizeof(dh_priv));
 
-	int ret = comp_prk_4e3m(&ctx, key_id, pub_key, sizeof(pub_key));
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, pub_key,
+						 sizeof(pub_key));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_4E3M, ctx.state.prk_state);
 
@@ -383,10 +391,11 @@ TEST(internals_common, comp_prk_4e3m_method_max)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.th.length = 32;
+	ctx.state.message = EDHOC_MESSAGE_3;
 
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -402,10 +411,11 @@ TEST(internals_common, comp_prk_4e3m_bad_prk_state)
 	ctx.negotiation.selected_method = EDHOC_METHOD_0;
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
+	ctx.state.message = EDHOC_MESSAGE_3;
 
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -416,7 +426,7 @@ TEST(internals_common, comp_prk_4e3m_null_args)
 {
 	static const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
 
-	int ret = comp_prk_4e3m(NULL, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(NULL, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -592,8 +602,7 @@ TEST(internals_common, comp_salt_3e2m_bad_th_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.length = 32;
 
-	uint8_t salt[32] = { 0 };
-	int ret = comp_salt_3e2m(&ctx, salt, sizeof(salt));
+	int ret = edhoc_key_schedule_prk_advance(&ctx, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -609,8 +618,7 @@ TEST(internals_common, comp_salt_3e2m_bad_prk_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.length = 32;
 
-	uint8_t salt[32] = { 0 };
-	int ret = comp_salt_3e2m(&ctx, salt, sizeof(salt));
+	int ret = edhoc_key_schedule_prk_advance(&ctx, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -619,9 +627,7 @@ TEST(internals_common, comp_salt_3e2m_bad_prk_state)
 
 TEST(internals_common, comp_salt_3e2m_null_args)
 {
-	uint8_t salt[32] = { 0 };
-
-	int ret = comp_salt_3e2m(NULL, salt, sizeof(salt));
+	int ret = edhoc_key_schedule_prk_advance(NULL, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -636,8 +642,7 @@ TEST(internals_common, comp_salt_4e3m_bad_th_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.length = 32;
 
-	uint8_t salt[32] = { 0 };
-	int ret = comp_salt_4e3m(&ctx, salt, sizeof(salt));
+	int ret = edhoc_key_schedule_prk_advance(&ctx, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -653,8 +658,7 @@ TEST(internals_common, comp_salt_4e3m_bad_prk_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.length = 32;
 
-	uint8_t salt[32] = { 0 };
-	int ret = comp_salt_4e3m(&ctx, salt, sizeof(salt));
+	int ret = edhoc_key_schedule_prk_advance(&ctx, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -663,9 +667,7 @@ TEST(internals_common, comp_salt_4e3m_bad_prk_state)
 
 TEST(internals_common, comp_salt_4e3m_null_args)
 {
-	uint8_t salt[32] = { 0 };
-
-	int ret = comp_salt_4e3m(NULL, salt, sizeof(salt));
+	int ret = edhoc_key_schedule_prk_advance(NULL, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 

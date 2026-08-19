@@ -12,6 +12,7 @@ Unreleased
   * ``edhoc_ead_internal`` : external authorization data.
   * ``edhoc_mac_internal`` : MAC context, MAC and Signature_or_MAC.
   * ``edhoc_cipher_internal`` : message encryption (AEAD, keystream, XOR).
+  * ``edhoc_key_schedule_internal`` : PRK chain, salts, KEM and static Diffie-Hellman.
 
   The public API is unchanged.
 

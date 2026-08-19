@@ -23,6 +23,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
+#include "edhoc_key_schedule_internal.h"
 #include "edhoc_transcript_hash_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_cbor_internal.h"
@@ -99,18 +100,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 			      const uint8_t *pub_key, size_t pub_key_len,
 			      const uint8_t *mac, size_t mac_len,
 			      const uint8_t *sign, size_t sign_len);
-
-/**
- * \brief How the party that authenticates in the current message proves its
- *        identity (RFC 9528: 3.2).
- *
- * \param[in] ctx               EDHOC context.
- * \param[out] kind             On success, the authentication kind.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_auth_kind(const struct edhoc_context *ctx,
-			  enum auth_kind *kind);
 
 /**
  * \brief Connection identifier that goes into context_2 (RFC 9528: 5.3.2).
@@ -244,47 +233,6 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 	}
 
 	return EDHOC_SUCCESS;
-}
-
-STATIC int comp_auth_kind(const struct edhoc_context *ctx, enum auth_kind *kind)
-{
-	/* Method numbering pairs the Initiator's and the Responder's
-	 * authentication, so the same method means signature in one message and
-	 * static DH in the other. */
-	switch (ctx->state.message) {
-	case EDHOC_MESSAGE_2:
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_2:
-			*kind = AUTH_SIGNATURE;
-			return EDHOC_SUCCESS;
-		case EDHOC_METHOD_1:
-		case EDHOC_METHOD_3:
-			*kind = AUTH_STATIC_DH;
-			return EDHOC_SUCCESS;
-		default:
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
-
-	case EDHOC_MESSAGE_3:
-		switch (ctx->negotiation.selected_method) {
-		case EDHOC_METHOD_0:
-		case EDHOC_METHOD_1:
-			*kind = AUTH_SIGNATURE;
-			return EDHOC_SUCCESS;
-		case EDHOC_METHOD_2:
-		case EDHOC_METHOD_3:
-			*kind = AUTH_STATIC_DH;
-			return EDHOC_SUCCESS;
-		default:
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
-
-	case EDHOC_MESSAGE_1:
-	case EDHOC_MESSAGE_4:
-	default:
-		return EDHOC_ERROR_BAD_STATE;
-	}
 }
 
 STATIC int
@@ -596,8 +544,8 @@ int edhoc_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
 
-	enum auth_kind kind = AUTH_SIGNATURE;
-	const int ret = comp_auth_kind(ctx, &kind);
+	enum edhoc_auth_kind kind = EDHOC_AUTH_SIGNATURE;
+	const int ret = edhoc_key_schedule_auth_kind(ctx, &kind);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("MAC length: message %d, method %d",
@@ -607,10 +555,10 @@ int edhoc_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 	}
 
 	switch (kind) {
-	case AUTH_SIGNATURE:
+	case EDHOC_AUTH_SIGNATURE:
 		*mac_len = csuite->hash_length;
 		return EDHOC_SUCCESS;
-	case AUTH_STATIC_DH:
+	case EDHOC_AUTH_STATIC_DH:
 		*mac_len = csuite->mac_length;
 		return EDHOC_SUCCESS;
 	default:
@@ -697,8 +645,8 @@ int edhoc_sign_or_mac_length(const struct edhoc_context *ctx,
 	const struct edhoc_cipher_suite *csuite =
 		edhoc_selected_cipher_suite(ctx);
 
-	enum auth_kind kind = AUTH_SIGNATURE;
-	const int ret = comp_auth_kind(ctx, &kind);
+	enum edhoc_auth_kind kind = EDHOC_AUTH_SIGNATURE;
+	const int ret = edhoc_key_schedule_auth_kind(ctx, &kind);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Signature_or_MAC length: message %d, method %d",
@@ -708,10 +656,10 @@ int edhoc_sign_or_mac_length(const struct edhoc_context *ctx,
 	}
 
 	switch (kind) {
-	case AUTH_SIGNATURE:
+	case EDHOC_AUTH_SIGNATURE:
 		*sign_or_mac_len = csuite->sign_length;
 		return EDHOC_SUCCESS;
-	case AUTH_STATIC_DH:
+	case EDHOC_AUTH_STATIC_DH:
 		*sign_or_mac_len = csuite->mac_length;
 		return EDHOC_SUCCESS;
 	default:
@@ -733,8 +681,8 @@ int edhoc_sign_or_mac_compute(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	enum auth_kind kind = AUTH_SIGNATURE;
-	const int ret = comp_auth_kind(ctx, &kind);
+	enum edhoc_auth_kind kind = EDHOC_AUTH_SIGNATURE;
+	const int ret = edhoc_key_schedule_auth_kind(ctx, &kind);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Signature_or_MAC: message %d, method %d",
@@ -744,11 +692,11 @@ int edhoc_sign_or_mac_compute(const struct edhoc_context *ctx,
 	}
 
 	switch (kind) {
-	case AUTH_SIGNATURE:
+	case EDHOC_AUTH_SIGNATURE:
 		return sign_cose_sign_1(ctx, private_key_id, mac_ctx, mac,
 					mac_len, sign, sign_size, sign_len);
 
-	case AUTH_STATIC_DH:
+	case EDHOC_AUTH_STATIC_DH:
 		if (mac_len > sign_size) {
 			EDHOC_LOG_ERR("Buffer too small: %zu > %zu", mac_len,
 				      sign_size);
@@ -778,8 +726,8 @@ int edhoc_sign_or_mac_verify(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	enum auth_kind kind = AUTH_SIGNATURE;
-	const int ret = comp_auth_kind(ctx, &kind);
+	enum edhoc_auth_kind kind = EDHOC_AUTH_SIGNATURE;
+	const int ret = edhoc_key_schedule_auth_kind(ctx, &kind);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Signature_or_MAC: message %d, method %d",
@@ -789,12 +737,12 @@ int edhoc_sign_or_mac_verify(const struct edhoc_context *ctx,
 	}
 
 	switch (kind) {
-	case AUTH_SIGNATURE:
+	case EDHOC_AUTH_SIGNATURE:
 		return verify_cose_sign_1(ctx, mac_ctx, pub_key, pub_key_len,
 					  mac, mac_len, sign_or_mac,
 					  sign_or_mac_len);
 
-	case AUTH_STATIC_DH:
+	case EDHOC_AUTH_STATIC_DH:
 		if (mac_len != sign_or_mac_len ||
 		    0 != memcmp(sign_or_mac, mac, mac_len)) {
 			EDHOC_LOG_ERR(

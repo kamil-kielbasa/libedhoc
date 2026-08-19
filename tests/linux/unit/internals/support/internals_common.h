@@ -20,6 +20,7 @@
 #include "edhoc_transcript_hash_internal.h"
 #include "edhoc_mac_internal.h"
 #include "edhoc_plaintext_internal.h"
+#include "edhoc_key_schedule_internal.h"
 #include "edhoc_cipher_internal.h"
 
 /* Defines ----------------------------------------------------------------- */
@@ -53,20 +54,9 @@ extern int compute_new_prk_out(struct edhoc_context *ctx,
 			       const uint8_t *entropy, size_t entropy_len);
 extern int compute_prk_exporter(struct edhoc_context *ctx);
 extern int comp_th_2(struct edhoc_context *ctx);
-extern int comp_prk_2e(struct edhoc_context *ctx);
-extern int comp_prk_3e2m(struct edhoc_context *ctx, const void *private_key_id,
-			 const uint8_t *peer_public_key,
-			 size_t peer_public_key_length);
-extern int comp_salt_3e2m(const struct edhoc_context *ctx, uint8_t *salt,
-			  size_t salt_len);
-extern int comp_encapsulate(struct edhoc_context *ctx);
-extern int comp_decapsulate(struct edhoc_context *ctx);
 extern int comp_th_3(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
-extern int comp_grx(struct edhoc_context *ctx, const void *private_key_id,
-		    const uint8_t *peer_public_key,
-		    size_t peer_public_key_length);
 extern int comp_plaintext_2_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_2_len);
@@ -83,17 +73,9 @@ extern int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len);
 extern int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
 			     size_t ptxt_len, struct plaintext *parsed_ptxt);
-extern int comp_prk_4e3m(struct edhoc_context *ctx, const void *private_key_id,
-			 const uint8_t *peer_public_key,
-			 size_t peer_public_key_length);
-extern int comp_salt_4e3m(const struct edhoc_context *ctx, uint8_t *salt,
-			  size_t salt_len);
 extern int comp_th_4(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
 		     size_t ptxt_len);
-extern int comp_giy(struct edhoc_context *ctx, const void *private_key_id,
-		    const uint8_t *peer_public_key,
-		    size_t peer_public_key_length);
 extern int comp_plaintext_3_len(const struct edhoc_context *ctx,
 				const struct mac_context *mac_ctx,
 				size_t sign_len, size_t *plaintext_3_len);
