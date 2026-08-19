@@ -68,8 +68,15 @@ jobs:
 
             {
               echo "=== ${label}: libedhoc footprint (bytes) ==="
-              size -t "$lib" | tail -1
-            } | tee -a "$report"s
+              size "$lib" | awk '
+                NR == 1                  { next }
+                $6 ~ /^backend_cbor/     { cbor += $1; next }
+                NF >= 6                  { edhoc += $1 }
+                END {
+                  printf "edhoc code:   %8d (%.1f KiB)\n", edhoc, edhoc / 1024
+                  printf "cbor backend: %8d (%.1f KiB)\n", cbor, cbor / 1024
+                }'
+            } | tee -a "$report"
 
             timing="twister-out/benchmark_timing_${label}.json"
             "$exe" \
@@ -80,6 +87,8 @@ jobs:
             echo "=== ${label}: timing ==="
             cat "$timing"
           done
+
+          test -s "$report" || { echo "::error::no benchmark binary was built"; exit 1; }
 
       - name: Upload Twister + benchmark artifacts
         if: always()
