@@ -22,6 +22,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <edhoc/credentials.h>
 
 /* EDHOC internal headers: */
+#include "edhoc_classic_internal.h"
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
@@ -302,8 +303,8 @@ STATIC int comp_th_3(struct edhoc_context *ctx,
  *	14. Release the message-2 scoped secrets (PRK_3e2m lives on).
  *	15. Clean-up EAD tokens.
  */
-int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
-			    size_t msg_2_size, size_t *msg_2_len)
+int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
+				    size_t msg_2_size, size_t *msg_2_len)
 {
 	EDHOC_LOG_INF("Compose msg2 start");
 
@@ -628,8 +629,8 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
  *      17. Release the message-2 scoped secrets (PRK_3e2m lives on).
  *      18. Clean-up EAD tokens.
  */
-int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
-			    size_t msg_2_len)
+int edhoc_classic_message_2_process(struct edhoc_context *ctx,
+				    const uint8_t *msg_2, size_t msg_2_len)
 {
 	EDHOC_LOG_INF("Process msg2 start");
 

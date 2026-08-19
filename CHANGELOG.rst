@@ -14,6 +14,10 @@ Unreleased
   * ``edhoc_cipher_internal`` : message encryption (AEAD, keystream, XOR).
   * ``edhoc_key_schedule_internal`` : PRK chain, salts, KEM and static Diffie-Hellman.
   * ``edhoc_plaintext_internal`` : PLAINTEXT_2, PLAINTEXT_3 and PLAINTEXT_4.
+  * ``edhoc_classic_internal`` : the message flow that authenticates with
+    signatures or static Diffie-Hellman, in ``library/core/classic``. The public
+    ``edhoc_message_N_*`` functions now dispatch to it, so another flow can be
+    added beside it.
 
   The public API is unchanged.
 
@@ -28,6 +32,10 @@ Unreleased
   length helpers. They reported four bytes where CBOR uses five, and five where
   it uses nine, so a buffer sized for an EAD label above 65535 was one byte too
   small.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : processing message 1
+  now returns the reason a connection identifier was rejected instead of
+  replacing it with ``EDHOC_ERROR_MSG_1_PROCESS_FAILURE``.
 
 Version 2.0.2
 -------------

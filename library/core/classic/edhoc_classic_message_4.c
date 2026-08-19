@@ -21,6 +21,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <edhoc/cipher_suite.h>
 
 /* EDHOC internal headers: */
+#include "edhoc_classic_internal.h"
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_kdf_internal.h"
@@ -145,8 +146,8 @@ STATIC int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
  *      7.  Release the message-4 scoped secrets (PRK_4e3m lives on).
  *      8.  Clean-up EAD tokens.
  */
-int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
-			    size_t msg_4_size, size_t *msg_4_len)
+int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
+				    size_t msg_4_size, size_t *msg_4_len)
 {
 	EDHOC_LOG_INF("Compose msg4 start");
 
@@ -335,8 +336,8 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
  *      6. Process EAD_4 if present.
  *      7. Release the message-4 scoped secrets (PRK_4e3m lives on).
  */
-int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
-			    size_t msg_4_len)
+int edhoc_classic_message_4_process(struct edhoc_context *ctx,
+				    const uint8_t *msg_4, size_t msg_4_len)
 {
 	EDHOC_LOG_INF("Process msg4 start");
 

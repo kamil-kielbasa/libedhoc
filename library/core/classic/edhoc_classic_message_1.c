@@ -21,6 +21,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <edhoc/cipher_suite.h>
 
 /* EDHOC internal headers: */
+#include "edhoc_classic_internal.h"
 #include "edhoc_context_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_transcript_hash_internal.h"
@@ -62,8 +63,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
  *      4.  Encode cbor sequence of message 1.
  *      5.  Compute H(cbor(msg_1)) and cache it.
  */
-int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
-			    size_t msg_1_size, size_t *msg_1_len)
+int edhoc_classic_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
+				    size_t msg_1_size, size_t *msg_1_len)
 {
 	EDHOC_LOG_INF("Compose msg1 start");
 
@@ -246,8 +247,8 @@ int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
  *      4.  Process EAD if present.
  *      5.  Compute H(cbor(msg_1)) and cache it.
  */
-int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
-			    size_t msg_1_len)
+int edhoc_classic_message_1_process(struct edhoc_context *ctx,
+				    const uint8_t *msg_1, size_t msg_1_len)
 {
 	EDHOC_LOG_INF("Process msg1 start");
 
@@ -410,35 +411,28 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 
 	/* 3d. Verify connection identifier. */
 	switch (cbor_dec_msg_1.message_1_C_I_choice) {
-	case message_1_C_I_int_c: {
-		if (EDHOC_SUCCESS !=
-		    edhoc_connection_id_from_int(
-			    cbor_dec_msg_1.message_1_C_I_int,
-			    &ctx->negotiation.peer_connection_id)) {
-			EDHOC_LOG_ERR("C_I integer out of range: %d",
-				      cbor_dec_msg_1.message_1_C_I_int);
-			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
-		}
+	case message_1_C_I_int_c:
+		ret = edhoc_connection_id_from_int(
+			cbor_dec_msg_1.message_1_C_I_int,
+			&ctx->negotiation.peer_connection_id);
 		break;
-	}
 
-	case message_1_C_I_bstr_c: {
-		if (EDHOC_SUCCESS !=
-		    edhoc_connection_id_from_bstr(
-			    cbor_dec_msg_1.message_1_C_I_bstr.value,
-			    cbor_dec_msg_1.message_1_C_I_bstr.len,
-			    &ctx->negotiation.peer_connection_id)) {
-			EDHOC_LOG_ERR("C_I byte string too large: %zu",
-				      cbor_dec_msg_1.message_1_C_I_bstr.len);
-			return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
-		}
+	case message_1_C_I_bstr_c:
+		ret = edhoc_connection_id_from_bstr(
+			cbor_dec_msg_1.message_1_C_I_bstr.value,
+			cbor_dec_msg_1.message_1_C_I_bstr.len,
+			&ctx->negotiation.peer_connection_id);
 		break;
-	}
 
 	default:
 		EDHOC_LOG_ERR("Invalid C_I choice: %d",
 			      cbor_dec_msg_1.message_1_C_I_choice);
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
+	}
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("C_I not a valid connection identifier: %d", ret);
+		return ret;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(ctx->negotiation.peer_connection_id.value,

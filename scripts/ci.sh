@@ -194,7 +194,7 @@ cmd_cppcheck() {
     cppcheck --enable=warning,style --inline-suppr --error-exitcode=1 \
         -I include/ -I library/internal/ -I backends/cbor/include/ \
         -I build/cppcheck/include/generated/ \
-        library/core/*.c
+        library/core/*.c library/core/classic/*.c
     ok "cppcheck passed."
 }
 
@@ -207,7 +207,7 @@ cmd_clang_tidy() {
     cmake --preset legacy -B build/tidy -DCMAKE_C_COMPILER=clang >/dev/null
     cmake --build build/tidy --target xkcp_build >/dev/null
     clang-tidy -p build/tidy \
-        library/core/*.c \
+        library/core/*.c library/core/classic/*.c \
         library/cipher_suites/*.c \
         library/cipher_suites/*/*.c
     ok "clang-tidy passed."
