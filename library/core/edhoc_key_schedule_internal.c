@@ -210,7 +210,8 @@ STATIC int comp_static_dh_secret(struct edhoc_context *ctx,
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_key_schedule_auth_kind(const struct edhoc_context *ctx, enum edhoc_auth_kind *kind)
+int edhoc_key_schedule_auth_kind(const struct edhoc_context *ctx,
+				 enum edhoc_auth_kind *kind)
 {
 	if (NULL == ctx || NULL == kind) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -430,9 +431,10 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 			return ret;
 		}
 
-		ret = edhoc_kdf_extract(
-			ctx, edhoc_key_slot_id(ctx, params.dh_slot), salt,
-			EDHOC_MEM_ALLOC_SIZE(salt), params.prk_target);
+		ret = edhoc_kdf_extract(ctx,
+					edhoc_key_slot_id(ctx, params.dh_slot),
+					salt, EDHOC_MEM_ALLOC_SIZE(salt),
+					params.prk_target);
 
 		edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
 		EDHOC_MEM_FREE(salt);

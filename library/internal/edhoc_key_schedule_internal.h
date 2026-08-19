@@ -65,7 +65,7 @@ enum edhoc_auth_kind {
  * \return Negative error code on failure.
  */
 int edhoc_key_schedule_auth_kind(const struct edhoc_context *ctx,
-		    enum edhoc_auth_kind *kind);
+				 enum edhoc_auth_kind *kind);
 
 /**
  * \brief KEM-encapsulate to the peer's G_X (RFC 9528: 5.3.2).
