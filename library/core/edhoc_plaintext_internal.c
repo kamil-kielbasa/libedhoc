@@ -187,6 +187,10 @@ STATIC int compose_classic_2_3(const struct edhoc_context *ctx,
 					 mac_ctx->id_cred_comp :
 					 mac_ctx->id_cred;
 
+	if (id_cred_len > ptxt_size - offset) {
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
+
 	memcpy(&ptxt[offset], id_cred, id_cred_len);
 	offset += id_cred_len;
 
@@ -195,12 +199,17 @@ STATIC int compose_classic_2_3(const struct edhoc_context *ctx,
 		.len = input->signature_length,
 	};
 
+	const size_t sign_or_mac_size =
+		input->signature_length +
+		edhoc_cbor_bstr_head_length(input->signature_length);
+
+	if (sign_or_mac_size > ptxt_size - offset) {
+		return EDHOC_ERROR_BUFFER_TOO_SMALL;
+	}
+
 	size_t len = 0;
 	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset],
-		input->signature_length +
-			edhoc_cbor_bstr_head_length(input->signature_length),
-		&cbor_sign_or_mac, &len);
+		&ptxt[offset], sign_or_mac_size, &cbor_sign_or_mac, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
 		return EDHOC_ERROR_CBOR_FAILURE;
@@ -209,12 +218,12 @@ STATIC int compose_classic_2_3(const struct edhoc_context *ctx,
 	offset += len;
 
 	if (mac_ctx->is_ead) {
+		if (mac_ctx->ead_len > ptxt_size - offset) {
+			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		}
+
 		memcpy(&ptxt[offset], mac_ctx->ead, mac_ctx->ead_len);
 		offset += mac_ctx->ead_len;
-	}
-
-	if (offset > ptxt_size) {
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
 	*ptxt_len = offset;

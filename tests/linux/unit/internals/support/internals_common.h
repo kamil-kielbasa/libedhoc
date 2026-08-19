@@ -66,10 +66,6 @@ extern int compose_ciphertext_4(const uint8_t *ciphertext,
 				size_t msg_4_size, size_t *msg_4_len);
 extern int parse_ciphertext_4(const uint8_t *msg_4, size_t msg_4_len,
 			      const uint8_t **ctxt_4, size_t *ctxt_4_len);
-extern int prepare_plaintext_3(const struct mac_context *mac_ctx,
-			       const uint8_t *sign, size_t sign_len,
-			       uint8_t *ptxt, size_t ptxt_size,
-			       size_t *ptxt_len);
 extern size_t
 cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value);
 

@@ -48,22 +48,31 @@ jobs:
             --inline-logs --verbose
 
       # Re-run each benchmark binary (one per cipher suite x memory backend, e.g.
-      # cipher_suite_2.stack) to capture its libedhoc flash footprint and
-      # per-phase timing JSON.
+      # cipher_suite_2.stack) to capture its libedhoc footprint and per-phase
+      # timing JSON.
       - name: Benchmark flash / RAM + timing analysis
         if: always()
         run: |
           report=twister-out/flash_report.txt
           : > "$report"
           for exe in $(find twister-out -name zephyr.exe -path '*benchmark*' | sort); do
-            # .../<scenario>/zephyr/zephyr.exe -> scenario label
-            label=$(basename "$(dirname "$(dirname "$exe")")" | sed 's/^libedhoc\.benchmark\.//')
-            echo "=== ${label}: libedhoc flash footprint (bytes) ===" | tee -a "$report"
-            nm --print-size --size-sort --radix=d --defined-only "$exe" \
-              | awk '/edhoc/ { total += $2; printf "%8d  %s\n", $2, $4 }
-                     END     { printf "total: %d bytes (%.1f KiB)\n", total, total / 1024 }' \
-              | tee -a "$report"
-            "$exe" 2>/dev/null | sed -n '/^{/,/^}/p' > "twister-out/benchmark_timing_${label}.json"
+            # .../<scenario>/zephyr/zephyr.exe -> scenario label and build dir
+            build=$(dirname "$(dirname "$exe")")
+            label=$(basename "$build" | sed 's/^libedhoc\.benchmark\.//')
+
+            echo "=== ${label}: libedhoc footprint (bytes, after --gc-sections) ===" | tee -a "$report"
+            python3 scripts/zephyr_footprint.py "${build}/zephyr/zephyr.map" | tee -a "$report"
+
+            timing="twister-out/benchmark_timing_${label}.json"
+            "$exe" 2>&1 \
+              | sed -n '/===EDHOC_BENCHMARK_JSON_BEGIN===/,/===EDHOC_BENCHMARK_JSON_END===/p' \
+              | sed '1d;$d' > "$timing"
+            if [ ! -s "$timing" ]; then
+              echo "::error::${label} produced no timing JSON"
+              exit 1
+            fi
+            echo "=== ${label}: timing ==="
+            cat "$timing"
           done
 
       - name: Upload Twister + benchmark artifacts

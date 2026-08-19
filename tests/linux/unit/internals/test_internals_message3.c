@@ -108,7 +108,7 @@ TEST(internals_message3, comp_plaintext_3_len_null)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(internals_message3, prepare_plaintext_3_null)
+TEST(internals_message3, plaintext_compose_3_null)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t buf[256] = { 0 };
@@ -317,7 +317,7 @@ TEST_GROUP_RUNNER(internals_message3)
 	RUN_TEST_CASE(internals_message3, comp_key_iv_aad_3_null);
 	RUN_TEST_CASE(internals_message3, comp_key_iv_aad_3_bad_state);
 	RUN_TEST_CASE(internals_message3, comp_plaintext_3_len_null);
-	RUN_TEST_CASE(internals_message3, prepare_plaintext_3_null);
+	RUN_TEST_CASE(internals_message3, plaintext_compose_3_null);
 	RUN_TEST_CASE(internals_message3, comp_aad_3_len_null);
 	RUN_TEST_CASE(internals_message3, decrypt_ciphertext_3_null);
 	RUN_TEST_CASE(internals_message3, parse_plaintext_3_null);

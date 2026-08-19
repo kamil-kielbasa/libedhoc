@@ -1,12 +1,14 @@
-Unreleased
-----------
+Version 2.1.0
+-------------
+
+:Date: August 19, 2026
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the library core is
   split into modules, so that a future protocol flow reuses the primitives
   instead of copying them, and so that a fault can be traced to one owner.
   What this means in practice: each module validates its own arguments and logs
   its own failures, and the code the modules replaced is gone rather than
-  duplicated. The public API is unchanged. Created modules:
+  duplicated. Created modules:
 
   * ``edhoc_cbor_internal`` : CBOR head sizes and byte-string head encoding.
   * ``edhoc_key_slot_internal`` : key-store handle slots.
@@ -27,6 +29,14 @@ Unreleased
   ``<edhoc/coap.h>``: one file per public header, so the API surface can be read
   in one place and a second flow can be added beside the classic one without
   touching it.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the two OSCORE
+  exporter labels are now named. ``EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET``
+  and ``EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT`` in ``<edhoc/values.h>`` are
+  the values ``edhoc_export()`` and ``edhoc_export_raw()`` take to derive the
+  two OSCORE inputs by hand, instead of the bare ``0`` and ``1`` an application
+  had to hardcode from RFC 9528: A.1. This is the only public API change and it
+  is additive; existing code keeps compiling.
 
 * `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the five CDDL
   schemas became one, ``scripts/cddls/libedhoc.cddl``, generated into one types
