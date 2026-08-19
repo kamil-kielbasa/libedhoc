@@ -30,7 +30,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_transcript_hash_internal.h"
 #include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
-#include "edhoc_cbor_internal.h"
 #include "edhoc_mac_internal.h"
 #include "edhoc_plaintext_internal.h"
 #include "edhoc_credentials_internal.h"
@@ -45,48 +44,14 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_types.h>
 #include <backend_cbor_message_3_encode.h>
 #include <backend_cbor_message_3_decode.h>
-#include <backend_cbor_bstr_type_encode.h>
-#include <backend_cbor_plaintext_3_decode.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
-
-/**
- * \brief Compute memory required for PLAINTEXT_3.
- *
- * \param[in] ctx               EDHOC context.
- * \param[in] mac_ctx        	MAC context.
- * \param sign_len              Size of the signature buffer in bytes.
- * \param[out] plaintext_3_len  On success, length of PLAINTEXT_3.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
-				const struct mac_context *mac_ctx,
-				size_t sign_len, size_t *plaintext_3_len);
-
-/**
- * \brief Prepare PLAINTEXT_3.
- *
- * \param[in] mac_ctx		MAC context.
- * \param[in] sign		Buffer containing the signature.
- * \param sign_len		Size of the \p sign buffer in bytes.
- * \param[out] ptxt	        Buffer where the generated plaintext is to be written.
- * \param ptxt_size	        Size of the \p ptxt buffer in bytes.
- * \param[out] ptxt_len		On success, the number of bytes that make up the PLAINTEXT_2.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int prepare_plaintext_3(const struct mac_context *mac_ctx,
-			       const uint8_t *sign, size_t sign_len,
-			       uint8_t *ptxt, size_t ptxt_size,
-			       size_t *ptxt_len);
 
 /**
  * \brief Compute transcript hash 4.
@@ -129,104 +94,7 @@ STATIC int gen_msg_3(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_3,
 STATIC int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
 		       const uint8_t **ctxt_3, size_t *ctxt_3_len);
 
-/**
- * \brief Parsed cborised PLAINTEXT_3 for separate buffers.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] ptxt		Buffer containing the PLAINTEXT_3.
- * \param ptxt_len              Size of the \p ptxt buffer in bytes.
- * \param[out] parsed_ptxt     	Structure where parsed PLAINTEXT_3 is to be written.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
-			     size_t ptxt_len, struct plaintext *parsed_ptxt);
-
 /* Static function definitions --------------------------------------------- */
-
-STATIC int comp_plaintext_3_len(const struct edhoc_context *ctx,
-				const struct mac_context *mac_ctx,
-				size_t sign_len, size_t *plaintext_3_len)
-{
-	if (NULL == ctx || NULL == mac_ctx || 0 == sign_len ||
-	    NULL == plaintext_3_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	size_t len = 0;
-
-	if (0 != mac_ctx->id_cred_comp_len) {
-		len += mac_ctx->id_cred_comp_len;
-	} else {
-		len += mac_ctx->id_cred_len;
-	}
-
-	len += sign_len;
-	len += edhoc_cbor_bstr_head_length(sign_len);
-	len += mac_ctx->ead_len;
-
-	*plaintext_3_len = len;
-	return EDHOC_SUCCESS;
-}
-
-STATIC int prepare_plaintext_3(const struct mac_context *mac_ctx,
-			       const uint8_t *sign, size_t sign_len,
-			       uint8_t *ptxt, size_t ptxt_size,
-			       size_t *ptxt_len)
-{
-	if (NULL == mac_ctx || NULL == sign || 0 == sign_len || NULL == ptxt ||
-	    0 == ptxt_size || NULL == ptxt_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	size_t offset = 0;
-
-	/* ID_CRED_I. */
-	if (0 != mac_ctx->id_cred_comp_len) {
-		memcpy(&ptxt[offset], mac_ctx->id_cred_comp,
-		       mac_ctx->id_cred_comp_len);
-		offset += mac_ctx->id_cred_comp_len;
-	} else {
-		memcpy(&ptxt[offset], mac_ctx->id_cred, mac_ctx->id_cred_len);
-		offset += mac_ctx->id_cred_len;
-	}
-	const struct zcbor_string cbor_sign_or_mac_3 = {
-		.value = sign,
-		.len = sign_len,
-	};
-
-	size_t len = 0;
-	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset], sign_len + edhoc_cbor_bstr_head_length(sign_len),
-		&cbor_sign_or_mac_3, &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc Signature_or_MAC_3: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	offset += len;
-
-	/* EAD_3 if present. */
-	if (mac_ctx->is_ead) {
-		memcpy(&ptxt[offset], mac_ctx->ead, mac_ctx->ead_len);
-		offset += mac_ctx->ead_len;
-	}
-
-	if (offset > ptxt_size) {
-		EDHOC_LOG_ERR("Buffer too small for plaintext_3: %zu, %zu",
-			      offset, ptxt_size);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	*ptxt_len = offset;
-
-	return EDHOC_SUCCESS;
-}
 
 STATIC int comp_th_4(struct edhoc_context *ctx,
 		     const struct mac_context *mac_ctx, const uint8_t *ptxt,
@@ -298,78 +166,6 @@ STATIC int parse_msg_3(const uint8_t *msg_3, size_t msg_3_len,
 
 	*ctxt_3 = dec_msg_3.value;
 	*ctxt_3_len = dec_msg_3.len;
-
-	return EDHOC_SUCCESS;
-}
-
-STATIC int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
-			     size_t ptxt_len, struct plaintext *parsed_ptxt)
-{
-	if (NULL == ctx || NULL == ptxt || 0 == ptxt_len ||
-	    NULL == parsed_ptxt) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	size_t len = 0;
-
-	struct plaintext_3 cbor_ptxt_3 = { 0 };
-	ret = cbor_decode_plaintext_3(ptxt, ptxt_len, &cbor_ptxt_3, &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR dec plaintext_3: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* ID_CRED_I */
-	switch (cbor_ptxt_3.plaintext_3_ID_CRED_I_choice) {
-	case plaintext_3_ID_CRED_I_int_c:
-		ret = edhoc_credential_parse_kid_int(
-			cbor_ptxt_3.plaintext_3_ID_CRED_I_int,
-			&parsed_ptxt->kid_byte,
-			&parsed_ptxt->peer_credential_id);
-		break;
-
-	case plaintext_3_ID_CRED_I_bstr_c:
-		ret = edhoc_credential_parse_kid_bstr(
-			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.value,
-			cbor_ptxt_3.plaintext_3_ID_CRED_I_bstr.len,
-			&parsed_ptxt->peer_credential_id);
-		break;
-
-	case plaintext_3_ID_CRED_I_id_cred_x_m_c:
-		ret = edhoc_credential_parse_map(
-			&cbor_ptxt_3.plaintext_3_ID_CRED_I_id_cred_x_m,
-			&parsed_ptxt->peer_credential_id);
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Invalid ID_CRED_I choice: %d",
-			      cbor_ptxt_3.plaintext_3_ID_CRED_I_choice);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Parse ID_CRED_I: %d", ret);
-		return ret;
-	}
-
-	/* Sign_or_MAC_3 */
-	parsed_ptxt->sign_or_mac.value =
-		cbor_ptxt_3.plaintext_3_Signature_or_MAC_3.value;
-	parsed_ptxt->sign_or_mac.length =
-		cbor_ptxt_3.plaintext_3_Signature_or_MAC_3.len;
-
-	/* EAD_3 if present */
-	if (cbor_ptxt_3.plaintext_3_ead_m_present) {
-		ret = edhoc_ead_tokens_decode(ctx,
-					      &cbor_ptxt_3.plaintext_3_ead_m);
-
-		if (EDHOC_SUCCESS != ret) {
-			return ret;
-		}
-	}
 
 	return EDHOC_SUCCESS;
 }
@@ -628,9 +424,15 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 			      "Signature_or_MAC_3");
 
 	/* 8. Prepare plaintext (PLAINTEXT_3). */
+	const struct edhoc_plaintext_input plaintext_input = {
+		.id = EDHOC_PLAINTEXT_CLASSIC_3,
+		.mac_context = mac_context,
+		.signature = signature,
+		.signature_length = signature_length,
+	};
+
 	size_t plaintext_len = 0;
-	ret = comp_plaintext_3_len(ctx, mac_context, signature_length,
-				   &plaintext_len);
+	ret = edhoc_plaintext_length(ctx, &plaintext_input, &plaintext_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PLAINTEXT_3 length: %d", ret);
@@ -653,9 +455,9 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	plaintext_len = 0;
-	ret = prepare_plaintext_3(mac_context, signature, signature_length,
-				  plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext),
-				  &plaintext_len);
+	ret = edhoc_plaintext_compose(ctx, &plaintext_input, plaintext,
+				      EDHOC_MEM_ALLOC_SIZE(plaintext),
+				      &plaintext_len);
 	EDHOC_MEM_FREE(signature);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -875,8 +677,8 @@ int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	/* 5. Parse CBOR plaintext (PLAINTEXT_3). */
 	struct plaintext parsed_ptxt = { 0 };
-	ret = parse_plaintext_3(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt),
-				&parsed_ptxt);
+	ret = edhoc_plaintext_parse(ctx, EDHOC_PLAINTEXT_CLASSIC_3, ptxt,
+				    EDHOC_MEM_ALLOC_SIZE(ptxt), &parsed_ptxt);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_3: %d", ret);

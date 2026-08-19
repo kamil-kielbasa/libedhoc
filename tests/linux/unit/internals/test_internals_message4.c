@@ -94,80 +94,6 @@ TEST(internals_message4, comp_giy_invalid_role)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(internals_message4, compute_plaintext_4_len_null)
-{
-	size_t len = 0;
-
-	int ret = compute_plaintext_4_len(NULL, &len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(internals_message4, compute_plaintext_4_len_large_ead_label)
-{
-	struct edhoc_context ctx = { 0 };
-
-	internals_setup_crypto_context(&ctx);
-
-	const struct edhoc_ead_token tok = {
-		.label = 70000,
-		.value = { .value = NULL, .length = 0 },
-	};
-	ctx.ead.count = 1;
-	ctx.ead.token[0] = tok;
-
-	size_t len = 0;
-	int ret = compute_plaintext_4_len(&ctx, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_GREATER_THAN(0, len);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_message4, compute_plaintext_4_len_large_ead_value)
-{
-	struct edhoc_context ctx = { 0 };
-
-	internals_setup_crypto_context(&ctx);
-
-	const struct edhoc_ead_token tok = {
-		.label = 1,
-		.value = { .value = NULL, .length = 60000 },
-	};
-	ctx.ead.count = 1;
-	ctx.ead.token[0] = tok;
-
-	size_t len = 0;
-	int ret = compute_plaintext_4_len(&ctx, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_GREATER_THAN(60000, len);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
-TEST(internals_message4, compute_plaintext_4_len_very_large_ead_value)
-{
-	struct edhoc_context ctx = { 0 };
-
-	internals_setup_crypto_context(&ctx);
-
-	const struct edhoc_ead_token tok = {
-		.label = 1,
-		.value = { .value = NULL, .length = 70000 },
-	};
-	ctx.ead.count = 1;
-	ctx.ead.token[0] = tok;
-
-	size_t len = 0;
-	int ret = compute_plaintext_4_len(&ctx, &len);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_GREATER_THAN(70000, len);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(internals_message4, compute_key_iv_aad_4_null)
 {
 	uint8_t iv[13] = { 0 };
@@ -206,13 +132,20 @@ TEST(internals_message4, prepare_plaintext_4_null)
 	uint8_t ptxt[64] = { 0 };
 	size_t ptxt_len = 0;
 
-	int ret = prepare_plaintext_4(NULL, ptxt, ARRAY_SIZE(ptxt), &ptxt_len);
+	const struct edhoc_plaintext_input input = {
+		.id = EDHOC_PLAINTEXT_CLASSIC_4,
+	};
+
+	int ret = edhoc_plaintext_compose(NULL, &input, ptxt, ARRAY_SIZE(ptxt),
+					  &ptxt_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = prepare_plaintext_4(&ctx, NULL, ARRAY_SIZE(ptxt), &ptxt_len);
+	ret = edhoc_plaintext_compose(&ctx, &input, NULL, ARRAY_SIZE(ptxt),
+				      &ptxt_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = prepare_plaintext_4(&ctx, ptxt, ARRAY_SIZE(ptxt), NULL);
+	ret = edhoc_plaintext_compose(&ctx, &input, ptxt, ARRAY_SIZE(ptxt),
+				      NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -269,10 +202,12 @@ TEST(internals_message4, parse_plaintext_4_null)
 	internals_setup_crypto_context(&ctx);
 
 	const uint8_t ptxt[] = { 0x40 };
-	int ret = parse_plaintext_4(NULL, ptxt, ARRAY_SIZE(ptxt));
+	int ret = edhoc_plaintext_parse(NULL, EDHOC_PLAINTEXT_CLASSIC_4, ptxt,
+					ARRAY_SIZE(ptxt), NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = parse_plaintext_4(&ctx, NULL, ARRAY_SIZE(ptxt));
+	ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_4, NULL,
+				    ARRAY_SIZE(ptxt), NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -286,7 +221,8 @@ TEST(internals_message4, parse_plaintext_4_empty)
 	internals_setup_crypto_context(&ctx);
 
 	const uint8_t empty[] = { 0x00 };
-	int ret = parse_plaintext_4(&ctx, empty, 0);
+	int ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_4, empty,
+					0, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -302,15 +238,6 @@ TEST_GROUP_RUNNER(internals_message4)
 	/* comp_giy */
 	RUN_TEST_CASE(internals_message4, comp_giy_null);
 	RUN_TEST_CASE(internals_message4, comp_giy_invalid_role);
-
-	/* compute_plaintext_4_len */
-	RUN_TEST_CASE(internals_message4, compute_plaintext_4_len_null);
-	RUN_TEST_CASE(internals_message4,
-		      compute_plaintext_4_len_large_ead_label);
-	RUN_TEST_CASE(internals_message4,
-		      compute_plaintext_4_len_large_ead_value);
-	RUN_TEST_CASE(internals_message4,
-		      compute_plaintext_4_len_very_large_ead_value);
 
 	/* compute_key_iv_aad_4 */
 	RUN_TEST_CASE(internals_message4, compute_key_iv_aad_4_null);

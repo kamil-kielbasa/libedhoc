@@ -23,6 +23,7 @@ set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_mac_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_cipher_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_key_schedule_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_plaintext_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_connection_id_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_credentials_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_coap.c)

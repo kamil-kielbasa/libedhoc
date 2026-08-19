@@ -26,8 +26,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_kdf_internal.h"
 #include "edhoc_cipher_internal.h"
 #include "edhoc_ead_internal.h"
+#include "edhoc_plaintext_internal.h"
 #include "edhoc_macros_internal.h"
-#include "edhoc_cbor_internal.h"
 #include "edhoc_backend_log.h"
 #include "edhoc_backend_memory.h"
 
@@ -39,9 +39,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_types.h>
-#include <backend_cbor_plaintext_4_encode.h>
-#include <backend_cbor_plaintext_4_decode.h>
 #include <backend_cbor_message_4_encode.h>
 #include <backend_cbor_message_4_decode.h>
 
@@ -50,30 +47,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
-
-/**
- * \brief Compute PLAINTEXT_4 length.
- *
- * \param[in] ctx	        EDHOC context.
- * \param[out] ptxt_4_len       Length of PLAINTEXT_4.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int compute_plaintext_4_len(const struct edhoc_context *ctx,
-				   size_t *ptxt_4_len);
-
-/**
- * \brief Prepare PLAINTEXT_4.
- *
- * \param[in] ctx	        EDHOC context.
- * \param[out] ptxt	        Buffer where the generated plaintext is to be written.
- * \param ptxt_size             Size of the \p ptxt buffer in bytes.
- * \param ptxt_len	        On success, the number of bytes that make up the plaintext.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
-			       size_t ptxt_size, size_t *ptxt_len);
 
 /**
  * \brief Generate edhoc message 4.
@@ -102,74 +75,7 @@ STATIC int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
 STATIC int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 		       const uint8_t **ctxt_4, size_t *ctxt_4_len);
 
-/**
- * \brief Parsed cborised PLAINTEXT_4.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] ptxt		Buffer containing the PLAINTEXT_4.
- * \param ptxt_len              Size of the \p ptxt buffer in bytes.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
-			     size_t ptxt_len);
-
 /* Static function definitions --------------------------------------------- */
-
-STATIC int compute_plaintext_4_len(const struct edhoc_context *ctx,
-				   size_t *ptxt_4_len)
-{
-	if (NULL == ctx || NULL == ptxt_4_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	size_t len = 0;
-
-	for (size_t i = 0; i < ctx->ead.count; ++i) {
-		len += edhoc_cbor_int_head_length(ctx->ead.token[i].label);
-		len += ctx->ead.token[i].value.length;
-		len += edhoc_cbor_bstr_head_length(
-			ctx->ead.token[i].value.length);
-	}
-
-	*ptxt_4_len = len;
-	return EDHOC_SUCCESS;
-}
-
-STATIC int prepare_plaintext_4(const struct edhoc_context *ctx, uint8_t *ptxt,
-			       size_t ptxt_size, size_t *ptxt_len)
-{
-	if (NULL == ctx || NULL == ptxt || NULL == ptxt_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	struct plaintext_4 ead_4 = { .plaintext_4_present = false };
-
-	if (edhoc_ead_is_present(ctx)) {
-		ead_4.plaintext_4_present = true;
-
-		ret = edhoc_ead_tokens_encode(ctx, &ead_4.plaintext_4);
-
-		if (EDHOC_SUCCESS != ret) {
-			return ret;
-		}
-	} else {
-		ead_4.plaintext_4_present = false;
-	}
-
-	ret = cbor_encode_plaintext_4(ptxt, ptxt_size, &ead_4, ptxt_len);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc PLAINTEXT_4: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	return EDHOC_SUCCESS;
-}
 
 STATIC int gen_msg_4(const uint8_t *ctxt, size_t ctxt_len, uint8_t *msg_4,
 		     size_t msg_4_size, size_t *msg_4_len)
@@ -223,28 +129,6 @@ STATIC int parse_msg_4(const uint8_t *msg_4, size_t msg_4_len,
 	*ctxt_4_len = dec_msg_4.len;
 
 	return EDHOC_SUCCESS;
-}
-
-STATIC int parse_plaintext_4(struct edhoc_context *ctx, const uint8_t *ptxt,
-			     size_t ptxt_len)
-{
-	if (NULL == ctx || NULL == ptxt) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	size_t len = 0;
-	struct plaintext_4 ead_4 = { 0 };
-	ret = cbor_decode_plaintext_4(ptxt, ptxt_len, &ead_4, &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR dec PLAINTEXT_4: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	return edhoc_ead_tokens_decode(ctx, &ead_4.plaintext_4);
 }
 
 /* Module interface function definitions ----------------------------------- */
@@ -304,8 +188,12 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	}
 
 	/* 3a. Compute plaintext length (PLAINTEXT_4). */
+	const struct edhoc_plaintext_input plaintext_input = {
+		.id = EDHOC_PLAINTEXT_CLASSIC_4,
+	};
+
 	size_t plaintext_len = 0;
-	ret = compute_plaintext_4_len(ctx, &plaintext_len);
+	ret = edhoc_plaintext_length(ctx, &plaintext_input, &plaintext_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PLAINTEXT_4 length: %d", ret);
@@ -322,9 +210,9 @@ int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	}
 
 	/* 3b. Prepare plaintext (PLAINTEXT_4). */
-	ret = prepare_plaintext_4(ctx, plaintext,
-				  EDHOC_MEM_ALLOC_SIZE(plaintext),
-				  &plaintext_len);
+	ret = edhoc_plaintext_compose(ctx, &plaintext_input, plaintext,
+				      EDHOC_MEM_ALLOC_SIZE(plaintext),
+				      &plaintext_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Prepare PLAINTEXT_4: %d", ret);
@@ -565,7 +453,8 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	EDHOC_LOG_HEXDUMP_DBG(ptxt, plaintext_len, "PLAINTEXT_4");
 
 	/* 5. Parse CBOR plaintext (PLAINTEXT_4). */
-	ret = parse_plaintext_4(ctx, ptxt, plaintext_len);
+	ret = edhoc_plaintext_parse(ctx, EDHOC_PLAINTEXT_CLASSIC_4, ptxt,
+				    plaintext_len, NULL);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_4: %d", ret);

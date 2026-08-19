@@ -1,7 +1,11 @@
 /**
  * \file    edhoc_plaintext_internal.h
  * \author  Kamil Kielbasa
- * \brief   EDHOC plaintext of message 2 and 3 (RFC 9528: 5.3.2, 5.4.2).
+ * \brief   EDHOC plaintext of messages 2, 3 and 4 (RFC 9528: 5.3.2, 5.4.2,
+ *          5.5.2).
+ *
+ *          The three differ in content, not in purpose, so the caller names
+ *          which one it means and the module keeps the differences inside.
  *
  * \copyright Copyright (c) 2026
  *
@@ -22,6 +26,7 @@
 
 /* Standard library headers: */
 #include <stdint.h>
+#include <stddef.h>
 
 /* Defines ----------------------------------------------------------------- */
 /* Types and type definitions ---------------------------------------------- */
@@ -30,8 +35,33 @@
  * @{
  */
 
+/** EDHOC context, defined by \c edhoc_context_internal.h. */
+struct edhoc_context;
+
+/** MAC context, defined by \c edhoc_mac_internal.h. */
+struct mac_context;
+
 /**
- * \brief Items carried by PLAINTEXT_2 and PLAINTEXT_3, as decoded.
+ * \brief Which plaintext the caller means.
+ *
+ *        The prefix names the protocol flow, so a future flow adds its own
+ *        identifiers here rather than overloading these.
+ */
+enum edhoc_plaintext_id {
+	/** PLAINTEXT_2 of classic EDHOC: C_R, ID_CRED_R, Signature_or_MAC_2
+	 *  and optional EAD_2. */
+	EDHOC_PLAINTEXT_CLASSIC_2,
+	/** PLAINTEXT_3 of classic EDHOC: ID_CRED_I, Signature_or_MAC_3 and
+	 *  optional EAD_3. */
+	EDHOC_PLAINTEXT_CLASSIC_3,
+	/** PLAINTEXT_4 of classic EDHOC: optional EAD_4 and nothing else. */
+	EDHOC_PLAINTEXT_CLASSIC_4,
+};
+
+/**
+ * \brief Items carried by a plaintext, as decoded.
+ *
+ *        \ref EDHOC_PLAINTEXT_CLASSIC_4 carries none of these.
  */
 struct plaintext {
 	/** ID_CRED_x, as received from the peer. */
@@ -48,10 +78,90 @@ struct plaintext {
 	struct edhoc_buffer ead;
 };
 
+/**
+ * \brief What a plaintext is assembled from.
+ *
+ *        \ref EDHOC_PLAINTEXT_CLASSIC_4 needs neither the MAC context nor a
+ *        signature, and leaves both unset.
+ */
+struct edhoc_plaintext_input {
+	/** Which plaintext to build or measure. */
+	enum edhoc_plaintext_id id;
+
+	/** MAC context holding the already encoded ID_CRED and EAD. */
+	const struct mac_context *mac_context;
+
+	/** Signature_or_MAC. */
+	const uint8_t *signature;
+	/** Size of \p signature in bytes. */
+	size_t signature_length;
+};
+
 /**@}*/
 
 /* Module interface variables and constants -------------------------------- */
 /* Extern variables and constant declarations ------------------------------ */
 /* Module interface function declarations ---------------------------------- */
+
+/** \defgroup edhoc-plaintext EDHOC plaintext
+ * @{
+ */
+
+/**
+ * \brief Number of bytes the plaintext occupies once encoded.
+ *
+ * \param[in] ctx                       EDHOC context.
+ * \param[in] input                     Plaintext to measure.
+ * \param[out] length                   On success, the encoded size.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_plaintext_length(const struct edhoc_context *ctx,
+			   const struct edhoc_plaintext_input *input,
+			   size_t *length);
+
+/**
+ * \brief Assemble the plaintext.
+ *
+ * \param[in] ctx                       EDHOC context.
+ * \param[in] input                     Plaintext to assemble.
+ * \param[out] plaintext                Buffer for the plaintext.
+ * \param plaintext_size                Size of the \p plaintext buffer in bytes.
+ * \param[out] plaintext_length         On success, number of bytes written.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_plaintext_compose(const struct edhoc_context *ctx,
+			    const struct edhoc_plaintext_input *input,
+			    uint8_t *plaintext, size_t plaintext_size,
+			    size_t *plaintext_length);
+
+/**
+ * \brief Decode the plaintext.
+ *
+ *        The decoded items point into \p plaintext, so \p parsed stays valid
+ *        only as long as that buffer does. \ref EDHOC_PLAINTEXT_CLASSIC_4
+ *        carries no such items and ignores \p parsed, which may be \c NULL;
+ *        its EAD goes straight into the context.
+ *
+ * \param[in,out] ctx                   EDHOC context.
+ * \param id                            Which plaintext to decode.
+ * \param[in] plaintext                 Plaintext to decode.
+ * \param plaintext_length              Size of the \p plaintext buffer in bytes.
+ * \param[out] parsed                   On success, the decoded items.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure.
+ */
+int edhoc_plaintext_parse(struct edhoc_context *ctx, enum edhoc_plaintext_id id,
+			  const uint8_t *plaintext, size_t plaintext_length,
+			  struct plaintext *parsed);
+
+/**@}*/
 
 #endif /* EDHOC_PLAINTEXT_INTERNAL_H */

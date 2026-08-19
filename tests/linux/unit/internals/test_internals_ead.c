@@ -456,6 +456,80 @@ TEST(internals_ead, tokens_decode_buffer_too_small)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
+TEST(internals_ead, encoded_length_null)
+{
+	size_t len = 0;
+
+	int ret = edhoc_ead_encoded_length(NULL, &len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(internals_ead, encoded_length_large_ead_label)
+{
+	struct edhoc_context ctx = { 0 };
+
+	internals_setup_crypto_context(&ctx);
+
+	const struct edhoc_ead_token tok = {
+		.label = 70000,
+		.value = { .value = NULL, .length = 0 },
+	};
+	ctx.ead.count = 1;
+	ctx.ead.token[0] = tok;
+
+	size_t len = 0;
+	int ret = edhoc_ead_encoded_length(&ctx, &len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_GREATER_THAN(0, len);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(internals_ead, encoded_length_large_ead_value)
+{
+	struct edhoc_context ctx = { 0 };
+
+	internals_setup_crypto_context(&ctx);
+
+	const struct edhoc_ead_token tok = {
+		.label = 1,
+		.value = { .value = NULL, .length = 60000 },
+	};
+	ctx.ead.count = 1;
+	ctx.ead.token[0] = tok;
+
+	size_t len = 0;
+	int ret = edhoc_ead_encoded_length(&ctx, &len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_GREATER_THAN(60000, len);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
+TEST(internals_ead, encoded_length_very_large_ead_value)
+{
+	struct edhoc_context ctx = { 0 };
+
+	internals_setup_crypto_context(&ctx);
+
+	const struct edhoc_ead_token tok = {
+		.label = 1,
+		.value = { .value = NULL, .length = 70000 },
+	};
+	ctx.ead.count = 1;
+	ctx.ead.token[0] = tok;
+
+	size_t len = 0;
+	int ret = edhoc_ead_encoded_length(&ctx, &len);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_GREATER_THAN(70000, len);
+
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+}
+
 TEST_GROUP_RUNNER(internals_ead)
 {
 	RUN_TEST_CASE(internals_ead, compose_null_context);
@@ -473,6 +547,10 @@ TEST_GROUP_RUNNER(internals_ead)
 	RUN_TEST_CASE(internals_ead, encoded_length_null_args);
 	RUN_TEST_CASE(internals_ead, encoded_length_no_tokens);
 	RUN_TEST_CASE(internals_ead, encoded_length_with_tokens);
+	RUN_TEST_CASE(internals_ead, encoded_length_null);
+	RUN_TEST_CASE(internals_ead, encoded_length_large_ead_label);
+	RUN_TEST_CASE(internals_ead, encoded_length_large_ead_value);
+	RUN_TEST_CASE(internals_ead, encoded_length_very_large_ead_value);
 
 	RUN_TEST_CASE(internals_ead, tokens_encode_null_args);
 	RUN_TEST_CASE(internals_ead, tokens_encode_buffer_too_small);

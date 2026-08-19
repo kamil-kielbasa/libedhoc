@@ -30,7 +30,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_transcript_hash_internal.h"
 #include "edhoc_ead_internal.h"
 #include "edhoc_macros_internal.h"
-#include "edhoc_cbor_internal.h"
 #include "edhoc_mac_internal.h"
 #include "edhoc_plaintext_internal.h"
 #include "edhoc_credentials_internal.h"
@@ -46,11 +45,8 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_types.h>
 #include <backend_cbor_message_2_encode.h>
 #include <backend_cbor_message_2_decode.h>
-#include <backend_cbor_bstr_type_encode.h>
-#include <backend_cbor_plaintext_2_decode.h>
 
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
@@ -66,39 +62,6 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
  * \return EDHOC_SUCCESS on success, otherwise failure.
  */
 STATIC int comp_th_2(struct edhoc_context *ctx);
-
-/**
- * \brief Compute required PLAINTEXT_2 length.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] mac_ctx		MAC_2 context.
- * \param sign_len		Size of the signature buffer in bytes.
- * \param[out] plaintext_2_len  On success, length of PLAINTEXT_2.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
-				const struct mac_context *mac_ctx,
-				size_t sign_len, size_t *plaintext_2_len);
-
-/**
- * \brief Prepare PLAINTEXT_2.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] mac_ctx		Buffer containing the context_2.
- * \param[in] sign		Buffer containing the signature.
- * \param sign_len		Size of the \p sign buffer in bytes.
- * \param[out] ptxt	        Buffer where the generated plaintext is to be written.
- * \param ptxt_size		Size of the \p ptxt buffer in bytes.
- * \param[out] ptxt_len		On success, the number of bytes that make up the PLAINTEXT_2.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
-			       const struct mac_context *mac_ctx,
-			       const uint8_t *sign, size_t sign_len,
-			       uint8_t *ptxt, size_t ptxt_size,
-			       size_t *ptxt_len);
 
 /**
  * \brief Prepare MESSAGE_2.
@@ -146,19 +109,6 @@ STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 		       size_t msg_2_len, uint8_t *ctxt_2, size_t ctxt_2_len);
 
 /**
- * \brief Parsed cborised PLAINTEXT_2 for separate buffers.
- *
- * \param[in] ctx		EDHOC context.
- * \param[in] ptxt		Buffer containing the PLAINTEXT_2.
- * \param ptxt_len              Size of the \p plaintext buffer in bytes.
- * \param[out] parsed_ptxt     	Structure where parsed PLAINTEXT_2 is to be written.
- *
- * \return EDHOC_SUCCESS on success, otherwise failure.
- */
-STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
-			     size_t ptxt_len, struct plaintext *parsed_ptxt);
-
-/**
  * \brief Compute transcript hash 3.
  *
  * \param[in,out] ctx		EDHOC context.
@@ -181,95 +131,6 @@ STATIC int comp_th_2(struct edhoc_context *ctx)
 	};
 
 	return edhoc_th_compute(ctx, &input);
-}
-
-STATIC int comp_plaintext_2_len(const struct edhoc_context *ctx,
-				const struct mac_context *mac_ctx,
-				size_t sign_len, size_t *plaintext_2_len)
-{
-	if (NULL == ctx || NULL == mac_ctx || 0 == sign_len ||
-	    NULL == plaintext_2_len) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	size_t len = 0;
-
-	len += edhoc_connection_id_encoded_length(
-		&ctx->negotiation.connection_id);
-
-	if (0 != mac_ctx->id_cred_comp_len) {
-		len += mac_ctx->id_cred_comp_len;
-	} else {
-		len += mac_ctx->id_cred_len;
-	}
-
-	len += sign_len;
-	len += edhoc_cbor_bstr_head_length(sign_len);
-	len += mac_ctx->ead_len;
-
-	*plaintext_2_len = len;
-	return EDHOC_SUCCESS;
-}
-
-STATIC int prepare_plaintext_2(const struct edhoc_context *ctx,
-			       const struct mac_context *mac_ctx,
-			       const uint8_t *sign, size_t sign_len,
-			       uint8_t *ptxt, size_t ptxt_size,
-			       size_t *ptxt_len)
-{
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-
-	size_t offset = 0;
-
-	ret = edhoc_connection_id_encode(&ctx->negotiation.connection_id, ptxt,
-					 ptxt_size, &offset);
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc C_R");
-		return ret;
-	}
-
-	if (0 != mac_ctx->id_cred_comp_len) {
-		memcpy(&ptxt[offset], mac_ctx->id_cred_comp,
-		       mac_ctx->id_cred_comp_len);
-		offset += mac_ctx->id_cred_comp_len;
-	} else {
-		memcpy(&ptxt[offset], mac_ctx->id_cred, mac_ctx->id_cred_len);
-		offset += mac_ctx->id_cred_len;
-	}
-
-	const struct zcbor_string cbor_sign_or_mac_2 = {
-		.value = sign,
-		.len = sign_len,
-	};
-
-	size_t len = 0;
-	ret = cbor_encode_byte_string_type_bstr_type(
-		&ptxt[offset], sign_len + edhoc_cbor_bstr_head_length(sign_len),
-		&cbor_sign_or_mac_2, &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc Signature_or_MAC_2: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	offset += len;
-
-	if (mac_ctx->is_ead) {
-		memcpy(&ptxt[offset], mac_ctx->ead, mac_ctx->ead_len);
-		offset += mac_ctx->ead_len;
-	}
-
-	if (offset > ptxt_size) {
-		EDHOC_LOG_ERR("Buffer too small for plaintext_2: %zu, %zu",
-			      offset, ptxt_size);
-		return EDHOC_ERROR_BUFFER_TOO_SMALL;
-	}
-
-	*ptxt_len = offset;
-
-	return EDHOC_SUCCESS;
 }
 
 STATIC int prepare_message_2(const struct edhoc_context *ctx,
@@ -395,109 +256,6 @@ STATIC int parse_msg_2(struct edhoc_context *ctx, const uint8_t *msg_2,
 	/* Get CIPHERTEXT_2. */
 	const size_t offset = ctx->ephemeral.peer.length;
 	memcpy(ctxt_2, &dec_msg_2.value[offset], ctxt_2_len);
-
-	return EDHOC_SUCCESS;
-}
-
-STATIC int parse_plaintext_2(struct edhoc_context *ctx, const uint8_t *ptxt,
-			     size_t ptxt_len, struct plaintext *parsed_ptxt)
-{
-	if (NULL == ctx || NULL == ptxt || 0 == ptxt_len ||
-	    NULL == parsed_ptxt) {
-		EDHOC_LOG_ERR("Invalid arguments");
-		return EDHOC_ERROR_INVALID_ARGUMENT;
-	}
-
-	int ret = EDHOC_ERROR_GENERIC_ERROR;
-	size_t len = 0;
-
-	struct plaintext_2 cbor_ptxt_2 = { 0 };
-	ret = cbor_decode_plaintext_2(ptxt, ptxt_len, &cbor_ptxt_2, &len);
-
-	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR dec plaintext_2: %d", ret);
-		return EDHOC_ERROR_CBOR_FAILURE;
-	}
-
-	/* C_R */
-	switch (cbor_ptxt_2.plaintext_2_C_R_choice) {
-	case plaintext_2_C_R_int_c:
-		if (EDHOC_SUCCESS !=
-		    edhoc_connection_id_from_int(
-			    cbor_ptxt_2.plaintext_2_C_R_int,
-			    &ctx->negotiation.peer_connection_id)) {
-			EDHOC_LOG_ERR("C_R int out of range: %d",
-				      cbor_ptxt_2.plaintext_2_C_R_int);
-			return EDHOC_ERROR_NOT_PERMITTED;
-		}
-		break;
-
-	case plaintext_2_C_R_bstr_c:
-		if (EDHOC_SUCCESS !=
-		    edhoc_connection_id_from_bstr(
-			    cbor_ptxt_2.plaintext_2_C_R_bstr.value,
-			    cbor_ptxt_2.plaintext_2_C_R_bstr.len,
-			    &ctx->negotiation.peer_connection_id)) {
-			EDHOC_LOG_ERR("C_R bstr too large: %zu",
-				      cbor_ptxt_2.plaintext_2_C_R_bstr.len);
-			return EDHOC_ERROR_BUFFER_TOO_SMALL;
-		}
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Invalid C_R choice: %d",
-			      cbor_ptxt_2.plaintext_2_C_R_choice);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	/* ID_CRED_R */
-	switch (cbor_ptxt_2.plaintext_2_ID_CRED_R_choice) {
-	case plaintext_2_ID_CRED_R_int_c:
-		ret = edhoc_credential_parse_kid_int(
-			cbor_ptxt_2.plaintext_2_ID_CRED_R_int,
-			&parsed_ptxt->kid_byte,
-			&parsed_ptxt->peer_credential_id);
-		break;
-
-	case plaintext_2_ID_CRED_R_bstr_c:
-		ret = edhoc_credential_parse_kid_bstr(
-			cbor_ptxt_2.plaintext_2_ID_CRED_R_bstr.value,
-			cbor_ptxt_2.plaintext_2_ID_CRED_R_bstr.len,
-			&parsed_ptxt->peer_credential_id);
-		break;
-
-	case plaintext_2_ID_CRED_R_id_cred_x_m_c:
-		ret = edhoc_credential_parse_map(
-			&cbor_ptxt_2.plaintext_2_ID_CRED_R_id_cred_x_m,
-			&parsed_ptxt->peer_credential_id);
-		break;
-
-	default:
-		EDHOC_LOG_ERR("Invalid ID_CRED_R choice: %d",
-			      cbor_ptxt_2.plaintext_2_ID_CRED_R_choice);
-		return EDHOC_ERROR_NOT_PERMITTED;
-	}
-
-	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Parse ID_CRED_R: %d", ret);
-		return ret;
-	}
-
-	/* Sign_or_MAC_2 */
-	parsed_ptxt->sign_or_mac.value =
-		cbor_ptxt_2.plaintext_2_Signature_or_MAC_2.value;
-	parsed_ptxt->sign_or_mac.length =
-		cbor_ptxt_2.plaintext_2_Signature_or_MAC_2.len;
-
-	/* EAD_2 if present */
-	if (cbor_ptxt_2.plaintext_2_ead_m_present) {
-		ret = edhoc_ead_tokens_decode(ctx,
-					      &cbor_ptxt_2.plaintext_2_ead_m);
-
-		if (EDHOC_SUCCESS != ret) {
-			return ret;
-		}
-	}
 
 	return EDHOC_SUCCESS;
 }
@@ -733,9 +491,15 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			      "Signature_or_MAC_2");
 
 	/* 9. Prepare plaintext (PLAINTEXT_2). */
+	const struct edhoc_plaintext_input plaintext_input = {
+		.id = EDHOC_PLAINTEXT_CLASSIC_2,
+		.mac_context = mac_ctx,
+		.signature = signature,
+		.signature_length = signature_length,
+	};
+
 	size_t plaintext_len = 0;
-	ret = comp_plaintext_2_len(ctx, mac_ctx, signature_length,
-				   &plaintext_len);
+	ret = edhoc_plaintext_length(ctx, &plaintext_input, &plaintext_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute plaintext_2 length: %d", ret);
@@ -753,9 +517,9 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	plaintext_len = 0;
-	ret = prepare_plaintext_2(ctx, mac_ctx, signature, signature_length,
-				  plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext),
-				  &plaintext_len);
+	ret = edhoc_plaintext_compose(ctx, &plaintext_input, plaintext,
+				      EDHOC_MEM_ALLOC_SIZE(plaintext),
+				      &plaintext_len);
 	EDHOC_MEM_FREE(signature);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -984,7 +748,8 @@ int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	/* 8. Parse plaintext (PLAINTEXT_2). */
 	struct plaintext parsed_ptxt = { 0 };
-	ret = parse_plaintext_2(ctx, plaintext, plaintext_len, &parsed_ptxt);
+	ret = edhoc_plaintext_parse(ctx, EDHOC_PLAINTEXT_CLASSIC_2, plaintext,
+				    plaintext_len, &parsed_ptxt);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse plaintext: %d", ret);

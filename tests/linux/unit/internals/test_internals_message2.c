@@ -133,18 +133,29 @@ TEST(internals_message2, comp_plaintext_2_len_null)
 	struct mac_context *mc = (struct mac_context *)buf;
 	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
+	struct edhoc_plaintext_input input = {
+		.id = EDHOC_PLAINTEXT_CLASSIC_2,
+		.mac_context = mc,
+		.signature_length = 8,
+	};
 	size_t len = 0;
 
-	int ret = comp_plaintext_2_len(NULL, mc, 8, &len);
+	int ret = edhoc_plaintext_length(NULL, &input, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = comp_plaintext_2_len(&ctx, NULL, 8, &len);
+	ret = edhoc_plaintext_length(&ctx, NULL, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = comp_plaintext_2_len(&ctx, mc, 0, &len);
+	ret = edhoc_plaintext_length(&ctx, &input, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = comp_plaintext_2_len(&ctx, mc, 8, NULL);
+	input.mac_context = NULL;
+	ret = edhoc_plaintext_length(&ctx, &input, &len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	input.mac_context = mc;
+	input.signature_length = 0;
+	ret = edhoc_plaintext_length(&ctx, &input, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -189,20 +200,25 @@ TEST(internals_message2, parse_plaintext_2_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+	ctx.state.message = EDHOC_MESSAGE_2;
 
 	uint8_t ptxt[] = { 0x40 };
 	struct plaintext parsed = { 0 };
 
-	int ret = parse_plaintext_2(NULL, ptxt, ARRAY_SIZE(ptxt), &parsed);
+	int ret = edhoc_plaintext_parse(NULL, EDHOC_PLAINTEXT_CLASSIC_2, ptxt,
+					ARRAY_SIZE(ptxt), &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = parse_plaintext_2(&ctx, NULL, ARRAY_SIZE(ptxt), &parsed);
+	ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2, NULL,
+				    ARRAY_SIZE(ptxt), &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = parse_plaintext_2(&ctx, ptxt, 0, &parsed);
+	ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2, ptxt, 0,
+				    &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = parse_plaintext_2(&ctx, ptxt, ARRAY_SIZE(ptxt), NULL);
+	ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2, ptxt,
+				    ARRAY_SIZE(ptxt), NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -213,12 +229,13 @@ TEST(internals_message2, parse_plaintext_2_garbage)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+	ctx.state.message = EDHOC_MESSAGE_2;
 
 	const uint8_t garbage[] = { 0xFF, 0xFE, 0xFD };
 	struct plaintext parsed = { 0 };
 
-	int ret =
-		parse_plaintext_2(&ctx, garbage, ARRAY_SIZE(garbage), &parsed);
+	int ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2,
+					garbage, ARRAY_SIZE(garbage), &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&ctx);

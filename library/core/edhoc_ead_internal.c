@@ -207,12 +207,16 @@ int edhoc_ead_encoded_length(const struct edhoc_context *ctx, size_t *length)
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	size_t len = 0;
+
 	for (size_t i = 0; i < ctx->ead.count; ++i) {
-		*length += edhoc_cbor_int_head_length(ctx->ead.token[i].label);
-		*length += ctx->ead.token[i].value.length;
-		*length += edhoc_cbor_bstr_head_length(
+		len += edhoc_cbor_int_head_length(ctx->ead.token[i].label);
+		len += ctx->ead.token[i].value.length;
+		len += edhoc_cbor_bstr_head_length(
 			ctx->ead.token[i].value.length);
 	}
+
+	*length = len;
 
 	return EDHOC_SUCCESS;
 }
