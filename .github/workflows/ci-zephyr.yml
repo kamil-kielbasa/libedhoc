@@ -63,13 +63,13 @@ jobs:
             # The library archive, not the image: symbols named "edhoc" in the
             # image also belong to the benchmark application, its ztest nodes,
             # its allocator and its 32 KiB heap pool among them.
-            lib=$(find "$build" -name libedhoc.a | head -1)
-            test -n "$lib" || { echo "::error::${label}: no libedhoc.a"; exit 1; }
+            lib=$(find "$build" -name '*libedhoc.a' | head -1)
+            test -n "$lib" || { echo "::error::${label}: no libedhoc archive"; exit 1; }
 
             {
               echo "=== ${label}: libedhoc footprint (bytes) ==="
               size -t "$lib" | tail -1
-            } | tee -a "$report"
+            } | tee -a "$report"s
 
             timing="twister-out/benchmark_timing_${label}.json"
             "$exe" \
