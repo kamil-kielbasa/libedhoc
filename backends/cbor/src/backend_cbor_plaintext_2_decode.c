@@ -16,26 +16,26 @@
 #error "The type file was generated with a different default_max_qty than this file"
 #endif
 
-static bool decode_repeated_map_kid(zcbor_state_t *state, struct map_kid_r *result);
+static bool decode_repeated_id_cred_x_kid(zcbor_state_t *state, struct id_cred_x_kid_r *result);
 static bool decode_COSE_X509(zcbor_state_t *state, struct COSE_X509_r *result);
-static bool decode_repeated_map_x5chain(zcbor_state_t *state, struct map_x5chain *result);
+static bool decode_repeated_id_cred_x_x5chain(zcbor_state_t *state, struct id_cred_x_x5chain *result);
 static bool decode_COSE_CertHash(zcbor_state_t *state, struct COSE_CertHash *result);
-static bool decode_repeated_map_x5t(zcbor_state_t *state, struct map_x5t *result);
-static bool decode_map(zcbor_state_t *state, struct map *result);
-static bool decode_ead_y(zcbor_state_t *state, struct ead_y *result);
-static bool decode_EAD_2(zcbor_state_t *state, struct EAD_2 *result);
+static bool decode_repeated_id_cred_x_x5t(zcbor_state_t *state, struct id_cred_x_x5t *result);
+static bool decode_id_cred_x(zcbor_state_t *state, struct id_cred_x *result);
+static bool decode_ead_x(zcbor_state_t *state, struct ead_x *result);
+static bool decode_ead(zcbor_state_t *state, struct ead *result);
 static bool decode_plaintext_2(zcbor_state_t *state, struct plaintext_2 *result);
 
 
-static bool decode_repeated_map_kid(
-		zcbor_state_t *state, struct map_kid_r *result)
+static bool decode_repeated_id_cred_x_kid(
+		zcbor_state_t *state, struct id_cred_x_kid_r *result)
 {
 	zcbor_log("%s\r\n", __func__);
 	bool int_res;
 
 	bool tmp_result = ((((zcbor_uint32_expect(state, (4))))
-	&& (zcbor_union_start_code(state) && (int_res = ((((zcbor_int32_decode(state, (&(*result).map_kid_int)))) && (((*result).map_kid_choice = map_kid_int_c), true))
-	|| (((zcbor_bstr_decode(state, (&(*result).map_kid_bstr)))) && (((*result).map_kid_choice = map_kid_bstr_c), true))), zcbor_union_end_code(state), int_res))));
+	&& (zcbor_union_start_code(state) && (int_res = ((((zcbor_int32_decode(state, (&(*result).id_cred_x_kid_int)))) && (((*result).id_cred_x_kid_choice = id_cred_x_kid_int_c), true))
+	|| (((zcbor_bstr_decode(state, (&(*result).id_cred_x_kid_bstr)))) && (((*result).id_cred_x_kid_choice = id_cred_x_kid_bstr_c), true))), zcbor_union_end_code(state), int_res))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -66,13 +66,13 @@ static bool decode_COSE_X509(
 	return tmp_result;
 }
 
-static bool decode_repeated_map_x5chain(
-		zcbor_state_t *state, struct map_x5chain *result)
+static bool decode_repeated_id_cred_x_x5chain(
+		zcbor_state_t *state, struct id_cred_x_x5chain *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
 	bool tmp_result = ((((zcbor_uint32_expect(state, (33))))
-	&& (decode_COSE_X509(state, (&(*result).map_x5chain)))));
+	&& (decode_COSE_X509(state, (&(*result).id_cred_x_x5chain)))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -104,13 +104,13 @@ static bool decode_COSE_CertHash(
 	return tmp_result;
 }
 
-static bool decode_repeated_map_x5t(
-		zcbor_state_t *state, struct map_x5t *result)
+static bool decode_repeated_id_cred_x_x5t(
+		zcbor_state_t *state, struct id_cred_x_x5t *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
 	bool tmp_result = ((((zcbor_uint32_expect(state, (34))))
-	&& (decode_COSE_CertHash(state, (&(*result).map_x5t)))));
+	&& (decode_COSE_CertHash(state, (&(*result).id_cred_x_x5t)))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -122,14 +122,14 @@ static bool decode_repeated_map_x5t(
 	return tmp_result;
 }
 
-static bool decode_map(
-		zcbor_state_t *state, struct map *result)
+static bool decode_id_cred_x(
+		zcbor_state_t *state, struct id_cred_x *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((zcbor_map_start_decode(state) && ((zcbor_present_decode(&((*result).map_kid_present), (zcbor_decoder_t *)decode_repeated_map_kid, state, (&(*result).map_kid))
-	&& zcbor_present_decode(&((*result).map_x5chain_present), (zcbor_decoder_t *)decode_repeated_map_x5chain, state, (&(*result).map_x5chain))
-	&& zcbor_present_decode(&((*result).map_x5t_present), (zcbor_decoder_t *)decode_repeated_map_x5t, state, (&(*result).map_x5t))) || (zcbor_list_map_end_force_decode(state), false)) && zcbor_map_end_decode(state))));
+	bool tmp_result = (((zcbor_map_start_decode(state) && ((zcbor_present_decode(&((*result).id_cred_x_kid_present), (zcbor_decoder_t *)decode_repeated_id_cred_x_kid, state, (&(*result).id_cred_x_kid))
+	&& zcbor_present_decode(&((*result).id_cred_x_x5chain_present), (zcbor_decoder_t *)decode_repeated_id_cred_x_x5chain, state, (&(*result).id_cred_x_x5chain))
+	&& zcbor_present_decode(&((*result).id_cred_x_x5t_present), (zcbor_decoder_t *)decode_repeated_id_cred_x_x5t, state, (&(*result).id_cred_x_x5t))) || (zcbor_list_map_end_force_decode(state), false)) && zcbor_map_end_decode(state))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -141,13 +141,13 @@ static bool decode_map(
 	return tmp_result;
 }
 
-static bool decode_ead_y(
-		zcbor_state_t *state, struct ead_y *result)
+static bool decode_ead_x(
+		zcbor_state_t *state, struct ead_x *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((((zcbor_int32_decode(state, (&(*result).ead_y_ead_label))))
-	&& ((*result).ead_y_ead_value_present = ((zcbor_bstr_decode(state, (&(*result).ead_y_ead_value)))), 1))));
+	bool tmp_result = (((((zcbor_int32_decode(state, (&(*result).ead_x_ead_label))))
+	&& ((*result).ead_x_ead_value_present = ((zcbor_bstr_decode(state, (&(*result).ead_x_ead_value)))), 1))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -159,12 +159,12 @@ static bool decode_ead_y(
 	return tmp_result;
 }
 
-static bool decode_EAD_2(
-		zcbor_state_t *state, struct EAD_2 *result)
+static bool decode_ead(
+		zcbor_state_t *state, struct ead *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (zcbor_multi_decode(1, 3, &(*result).EAD_2_count, (zcbor_decoder_t *)decode_ead_y, state, (&(*result).EAD_2), sizeof(struct ead_y)));
+	bool tmp_result = (zcbor_multi_decode(1, 3, &(*result).ead_count, (zcbor_decoder_t *)decode_ead_x, state, (&(*result).ead), sizeof(struct ead_x)));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -188,9 +188,9 @@ static bool decode_plaintext_2(
 	&& ((*result).plaintext_2_C_R_int <= 23)) || (zcbor_error(state, ZCBOR_ERR_WRONG_RANGE), false))) && (((*result).plaintext_2_C_R_choice = plaintext_2_C_R_int_c), true))), zcbor_union_end_code(state), int_res)))
 	&& ((zcbor_union_start_code(state) && (int_res = ((((zcbor_int32_decode(state, (&(*result).plaintext_2_ID_CRED_R_int)))) && (((*result).plaintext_2_ID_CRED_R_choice = plaintext_2_ID_CRED_R_int_c), true))
 	|| (((zcbor_bstr_decode(state, (&(*result).plaintext_2_ID_CRED_R_bstr)))) && (((*result).plaintext_2_ID_CRED_R_choice = plaintext_2_ID_CRED_R_bstr_c), true))
-	|| (zcbor_union_elem_code(state) && (((decode_map(state, (&(*result).plaintext_2_ID_CRED_R_map_m)))) && (((*result).plaintext_2_ID_CRED_R_choice = plaintext_2_ID_CRED_R_map_m_c), true)))), zcbor_union_end_code(state), int_res)))
+	|| (zcbor_union_elem_code(state) && (((decode_id_cred_x(state, (&(*result).plaintext_2_ID_CRED_R_id_cred_x_m)))) && (((*result).plaintext_2_ID_CRED_R_choice = plaintext_2_ID_CRED_R_id_cred_x_m_c), true)))), zcbor_union_end_code(state), int_res)))
 	&& ((zcbor_bstr_decode(state, (&(*result).plaintext_2_Signature_or_MAC_2))))
-	&& ((*result).plaintext_2_EAD_2_m_present = ((decode_EAD_2(state, (&(*result).plaintext_2_EAD_2_m)))), 1))));
+	&& ((*result).plaintext_2_ead_m_present = ((decode_ead(state, (&(*result).plaintext_2_ead_m)))), 1))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);

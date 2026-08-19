@@ -48,23 +48,47 @@ jobs:
             --inline-logs --verbose
 
       # Re-run each benchmark binary (one per cipher suite x memory backend, e.g.
-      # cipher_suite_2.stack) to capture its libedhoc flash footprint and
-      # per-phase timing JSON.
-      - name: Benchmark flash / RAM + timing analysis
+      # cipher_suite_2.stack) for its libedhoc footprint and per-phase timing.
+      - name: Benchmark footprint and timing
         if: always()
         run: |
           report=twister-out/flash_report.txt
           : > "$report"
+
           for exe in $(find twister-out -name zephyr.exe -path '*benchmark*' | sort); do
-            # .../<scenario>/zephyr/zephyr.exe -> scenario label
-            label=$(basename "$(dirname "$(dirname "$exe")")" | sed 's/^libedhoc\.benchmark\.//')
-            echo "=== ${label}: libedhoc flash footprint (bytes) ===" | tee -a "$report"
-            nm --print-size --size-sort --radix=d --defined-only "$exe" \
-              | awk '/edhoc/ { total += $2; printf "%8d  %s\n", $2, $4 }
-                     END     { printf "total: %d bytes (%.1f KiB)\n", total, total / 1024 }' \
-              | tee -a "$report"
-            "$exe" 2>/dev/null | sed -n '/^{/,/^}/p' > "twister-out/benchmark_timing_${label}.json"
+            # .../<scenario>/zephyr/zephyr.exe -> build directory and label
+            build=$(dirname "$(dirname "$exe")")
+            label=$(basename "$build" | sed 's/^libedhoc\.benchmark\.//')
+
+            # The library archive, not the image: symbols named "edhoc" in the
+            # image also belong to the benchmark application, its ztest nodes,
+            # its allocator and its 32 KiB heap pool among them.
+            lib=$(find "$build" -name '*libedhoc.a' | head -1)
+            test -n "$lib" || { echo "::error::${label}: no libedhoc archive"; exit 1; }
+
+            {
+              echo "=== ${label}: libedhoc footprint (bytes) ==="
+              size "$lib" | awk '
+                NR == 1                  { next }
+                $6 ~ /^backend_cbor/     { cbor += $1; next }
+                NF >= 6                  { edhoc += $1 }
+                END {
+                  printf "edhoc code:   %8d (%.1f KiB)\n", edhoc, edhoc / 1024
+                  printf "cbor backend: %8d (%.1f KiB)\n", cbor, cbor / 1024
+                }'
+            } | tee -a "$report"
+
+            timing="twister-out/benchmark_timing_${label}.json"
+            "$exe" \
+              | sed -n '/EDHOC_BENCHMARK_JSON_BEGIN/,/EDHOC_BENCHMARK_JSON_END/p' \
+              | sed '1d;$d' > "$timing"
+            test -s "$timing" || { echo "::error::${label}: no timing JSON"; exit 1; }
+
+            echo "=== ${label}: timing ==="
+            cat "$timing"
           done
+
+          test -s "$report" || { echo "::error::no benchmark binary was built"; exit 1; }
 
       - name: Upload Twister + benchmark artifacts
         if: always()

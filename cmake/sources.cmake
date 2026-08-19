@@ -9,13 +9,21 @@ set(LIBEDHOC_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR}/..)
 
 set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_1.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_2.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_3.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_4.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_message_error.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_exporter.c
-    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_common_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_1.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_2.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_3.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_4.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_error_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_exporter_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_cbor_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_kdf_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_transcript_hash_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_ead_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_key_slot_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_mac_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_cipher_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_key_schedule_internal.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_plaintext_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_connection_id_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_credentials_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_coap.c)

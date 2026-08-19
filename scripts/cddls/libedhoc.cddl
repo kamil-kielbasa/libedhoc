@@ -1,0 +1,136 @@
+; Single CDDL model for the whole library: one model means one generated types
+; header and no duplicated structures for rules that are textually identical.
+
+; ---------------------------------------------------------------------------
+; EDHOC
+; https://datatracker.ietf.org/doc/html/draft-ietf-lake-edhoc-22#name-cddl-definitions
+; ---------------------------------------------------------------------------
+
+suites = [ 2** int ] / int
+
+ead_x = (
+  ead_label : int,
+  ? ead_value : bstr,
+)
+
+; One rule for EAD_1 to EAD_4 and for the MAC context: the messages differ only
+; in where the group sits, never in its content.
+ead = 1* ead_x
+
+message_1 =
+(
+  METHOD    : int,
+  SUITES_I  : suites,
+  G_X       : bstr,
+  C_I       : bstr / -24..23,
+  ? ead,
+)
+
+message_2 =
+(
+  G_Y_CIPHERTEXT_2 : bstr,
+)
+
+message_3 =
+(
+  CIPHERTEXT_3 : bstr,
+)
+
+message_4 =
+(
+  CIPHERTEXT_4 : bstr,
+)
+
+message_error =
+(
+  ERR_CODE : int,
+  ? ERR_INFO : tstr / suites / true ; any
+)
+
+info =
+(
+  info_label    : int,
+  context       : bstr,
+  length        : uint,
+)
+
+; ---------------------------------------------------------------------------
+; COSE
+; https://datatracker.ietf.org/doc/html/rfc8152
+; https://datatracker.ietf.org/doc/html/draft-ietf-lake-edhoc-22#name-message-formatting-and-proc
+; ---------------------------------------------------------------------------
+
+sig_structure =
+[
+	context         : "Signature1",
+	protected       : bstr,
+	external_aad    : bstr,
+	payload         : bstr,
+]
+
+enc_structure =
+[
+	context         : "Encrypt0",
+	protected       : bstr,
+	external_aad    : bstr,
+]
+
+; ---------------------------------------------------------------------------
+; X.509 COSE header parameters
+; https://datatracker.ietf.org/doc/html/rfc9360#name-x509-cose-header-parameters
+;
+; x5chain:
+; * If a single certificate is conveyed, it is placed in a CBOR byte string.
+; * If multiple certificates are conveyed, a CBOR array of byte strings is used,
+;   with each certificate being in its own byte string.
+; ---------------------------------------------------------------------------
+
+COSE_CertHash = [ hashAlg: (int / tstr), hashValue: bstr ]
+COSE_X509 = bstr / [ 2*certs: bstr ]
+
+id_cred_x =
+{
+    ? kid       : 4  => int / bstr,
+    ? x5chain   : 33 => COSE_X509,
+    ? x5t       : 34 => COSE_CertHash,
+}
+
+plaintext_2 =
+(
+  C_R                 : bstr / -24..23,
+  ID_CRED_R           : int / bstr / id_cred_x,
+  Signature_or_MAC_2  : bstr,
+  ? ead,
+)
+
+plaintext_3 =
+(
+  ID_CRED_I           : int / bstr / id_cred_x,
+  Signature_or_MAC_3  : bstr,
+  ? ead,
+)
+
+plaintext_4 =
+(
+  ? ead,
+)
+
+; ---------------------------------------------------------------------------
+; Connection identifier used in EDHOC over CoAP
+; ---------------------------------------------------------------------------
+
+connection_identifier = (bstr / -24..23)
+
+; ---------------------------------------------------------------------------
+; Primitive types
+; ---------------------------------------------------------------------------
+
+byte_string_type =
+(
+    bstr_type: bstr,
+)
+
+integer_type =
+(
+    int_type: int,
+)

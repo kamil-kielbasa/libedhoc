@@ -28,12 +28,11 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_connection_id_internal.h"
-#include "edhoc_values_internal.h"
 #include "edhoc_backend_log.h"
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_connection_identifier_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_connection_identifier_decode.h>
 
 /* Standard library headers: */
@@ -43,6 +42,10 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include <string.h>
 
 /* Module defines ---------------------------------------------------------- */
+
+/** CBOR simple value 'true', the EDHOC indicator of RFC 9528: A.2.1. */
+#define EDHOC_CBOR_TRUE ((uint8_t)0xf5)
+
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */

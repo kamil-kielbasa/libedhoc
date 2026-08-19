@@ -35,11 +35,14 @@ set(_unit_sources
     internals/support/internals_common.c
     internals/test_internals_common.c
     internals/test_internals_credentials.c
+    internals/test_internals_ead.c
     internals/test_internals_mac.c
     internals/test_internals_message1.c
     internals/test_internals_message2.c
     internals/test_internals_message3.c
-    internals/test_internals_message4.c)
+    internals/test_internals_message4.c
+    internals/test_internals_th.c
+    internals/test_internals_kdf.c)
 
 # Kept in execution order; the runner is generated from this list.
 set(_unit_groups
@@ -49,7 +52,7 @@ set(_unit_groups
     coverage_sweep_validate
     internals_common internals_mac internals_message1 internals_message2
     internals_message3 internals_message4
-    internals_credentials
+    internals_credentials internals_ead internals_th internals_kdf
     message_paths)
 
 edhoc_add_unity_test(

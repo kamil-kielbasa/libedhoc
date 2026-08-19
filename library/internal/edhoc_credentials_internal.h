@@ -44,7 +44,7 @@ _Static_assert(EDHOC_CREDENTIAL_KID_MAX_LEN <= UINT8_MAX,
 /* Types and type definitions ---------------------------------------------- */
 
 /** ID_CRED_x COSE header map, defined by the CBOR backend. */
-struct map;
+struct id_cred_x;
 
 /**
  * \brief Everything the ID_CRED_x and CRED_x encoders need, gathered in one
@@ -150,7 +150,7 @@ int edhoc_credential_parse_kid_bstr(const uint8_t *key_id, size_t key_id_length,
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_credential_parse_map(const struct map *id_cred_map,
+int edhoc_credential_parse_map(const struct id_cred_x *id_cred_map,
 			       struct edhoc_credential_received *received);
 
 /**@}*/

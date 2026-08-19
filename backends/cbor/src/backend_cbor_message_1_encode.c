@@ -18,7 +18,7 @@
 
 static bool encode_suites(zcbor_state_t *state, const struct suites_r *input);
 static bool encode_ead_x(zcbor_state_t *state, const struct ead_x *input);
-static bool encode_EAD_1(zcbor_state_t *state, const struct EAD_1 *input);
+static bool encode_ead(zcbor_state_t *state, const struct ead *input);
 static bool encode_message_1(zcbor_state_t *state, const struct message_1 *input);
 
 
@@ -59,12 +59,12 @@ static bool encode_ead_x(
 	return tmp_result;
 }
 
-static bool encode_EAD_1(
-		zcbor_state_t *state, const struct EAD_1 *input)
+static bool encode_ead(
+		zcbor_state_t *state, const struct ead *input)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (zcbor_multi_encode_minmax(1, 3, &(*input).EAD_1_count, (zcbor_encoder_t *)encode_ead_x, state, (&(*input).EAD_1), sizeof(struct ead_x)));
+	bool tmp_result = (zcbor_multi_encode_minmax(1, 3, &(*input).ead_count, (zcbor_encoder_t *)encode_ead_x, state, (&(*input).ead), sizeof(struct ead_x)));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -89,7 +89,7 @@ static bool encode_message_1(
 	&& ((*input).message_1_C_I_int <= 23)) || (zcbor_error(state, ZCBOR_ERR_WRONG_RANGE), false))
 	&& (zcbor_int32_encode(state, (&(*input).message_1_C_I_int))))
 	: false)))
-	&& (!(*input).message_1_EAD_1_m_present || encode_EAD_1(state, (&(*input).message_1_EAD_1_m))))));
+	&& (!(*input).message_1_ead_m_present || encode_ead(state, (&(*input).message_1_ead_m))))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);

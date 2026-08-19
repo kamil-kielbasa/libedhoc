@@ -1,7 +1,7 @@
 /**
  * \file    test_internals_message1.c
  * \author  Kamil Kielbasa
- * \brief   Unit tests for edhoc_message_1.c internal paths.
+ * \brief   Unit tests for edhoc_classic_message_1.c internal paths.
  *
  * \copyright Copyright (c) 2026
  *

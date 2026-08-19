@@ -1,7 +1,6 @@
 /*
- * Generated using zcbor version 0.9.1-9b07780
+ * Generated using zcbor version 0.8.1
  * https://github.com/NordicSemiconductor/zcbor
- * at: 2026-01-27 07:10:10
  * Generated with a --default-max-qty of 3
  */
 
@@ -12,7 +11,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
-#include "backend_cbor_connection_identifier_types.h"
+#include "backend_cbor_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,4 +33,3 @@ int cbor_encode_connection_identifier(
 #endif
 
 #endif /* BACKEND_CBOR_CONNECTION_IDENTIFIER_ENCODE_H__ */
-

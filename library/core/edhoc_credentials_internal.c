@@ -23,7 +23,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_macros_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_credentials_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -35,7 +35,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_x509_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_id_cred_x_encode.h>
 #include <backend_cbor_int_type_encode.h>
 #include <backend_cbor_bstr_type_encode.h>
@@ -122,16 +122,15 @@ STATIC size_t
 cbor_int_or_string_len(const struct edhoc_cbor_int_or_string *value)
 {
 	if (NULL == value) {
-		EDHOC_LOG_ERR("Invalid argument");
 		return 0;
 	}
 
 	switch (value->encode_type) {
 	case EDHOC_ENCODE_TYPE_INTEGER:
-		return edhoc_cbor_int_length(value->integer);
+		return edhoc_cbor_int_head_length(value->integer);
 	case EDHOC_ENCODE_TYPE_STRING:
 		return value->string.length +
-		       edhoc_cbor_bstr_header_length(value->string.length);
+		       edhoc_cbor_bstr_head_length(value->string.length);
 	default:
 		return 0;
 	}
@@ -146,7 +145,6 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 			 struct edhoc_credential_received *received)
 {
 	if (NULL == cose_x509 || NULL == received) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -163,10 +161,6 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 	case COSE_X509_certs_l_c:
 		if (EDHOC_CREDENTIAL_X5CHAIN_CAPACITY <
 		    cose_x509->COSE_X509_certs_l_certs_count) {
-			EDHOC_LOG_ERR(
-				"X.509 certificate chain too large: %zu (max %d)",
-				cose_x509->COSE_X509_certs_l_certs_count,
-				EDHOC_CREDENTIAL_X5CHAIN_CAPACITY);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -184,8 +178,6 @@ STATIC int parse_x5chain(const struct COSE_X509_r *cose_x509,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid COSE_X509 choice: %d",
-			      cose_x509->COSE_X509_choice);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -196,16 +188,11 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		     struct edhoc_credential_received *received)
 {
 	if (NULL == cert_hash || NULL == received) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN <
 	    cert_hash->COSE_CertHash_hashValue.len) {
-		EDHOC_LOG_ERR(
-			"X.509 certificate fingerprint too large: %zu (max %d)",
-			cert_hash->COSE_CertHash_hashValue.len,
-			EDHOC_CREDENTIAL_X5T_FINGERPRINT_MAX_LEN);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -220,10 +207,6 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 	case COSE_CertHash_hashAlg_tstr_c:
 		if (EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN <
 		    cert_hash->COSE_CertHash_hashAlg_tstr.len) {
-			EDHOC_LOG_ERR(
-				"X.509 hash algorithm string too large: %zu (max %d)",
-				cert_hash->COSE_CertHash_hashAlg_tstr.len,
-				EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN);
 			return EDHOC_ERROR_BUFFER_TOO_SMALL;
 		}
 
@@ -236,8 +219,6 @@ STATIC int parse_x5t(const struct COSE_CertHash *cert_hash,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid COSE_CertHash_hashAlg choice: %d",
-			      cert_hash->COSE_CertHash_hashAlg_choice);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -255,13 +236,10 @@ STATIC int copy_encoded_item(const struct edhoc_buffer *item, uint8_t *buffer,
 {
 	if (NULL == item || NULL == buffer || 0 == buffer_length ||
 	    NULL == length) {
-		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
 	if (buffer_length < item->length) {
-		EDHOC_LOG_ERR("Buffer too small: %zu > %zu", item->length,
-			      buffer_length);
 		return EDHOC_ERROR_BUFFER_TOO_SMALL;
 	}
 
@@ -323,7 +301,7 @@ int edhoc_credential_parse_kid_bstr(const uint8_t *key_id, size_t key_id_length,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_credential_parse_map(const struct map *id_cred_map,
+int edhoc_credential_parse_map(const struct id_cred_x *id_cred_map,
 			       struct edhoc_credential_received *received)
 {
 	if (NULL == id_cred_map || NULL == received) {
@@ -337,23 +315,26 @@ int edhoc_credential_parse_map(const struct map *id_cred_map,
 	 * means either that the peer ignored the mandatory compact encoding, or
 	 * that the map carries 'kid' alongside header parameters this library
 	 * does not support. In both cases the credential cannot be resolved. */
-	if (id_cred_map->map_kid_present) {
+	if (id_cred_map->id_cred_x_kid_present) {
 		EDHOC_LOG_ERR("ID_CRED 'kid' must use the compact encoding");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	if (id_cred_map->map_x5chain_present && id_cred_map->map_x5t_present) {
+	if (id_cred_map->id_cred_x_x5chain_present &&
+	    id_cred_map->id_cred_x_x5t_present) {
 		EDHOC_LOG_ERR("Ambiguous ID_CRED: 'x5chain' and 'x5t'");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
-	if (id_cred_map->map_x5chain_present) {
-		return parse_x5chain(&id_cred_map->map_x5chain.map_x5chain,
-				     received);
+	if (id_cred_map->id_cred_x_x5chain_present) {
+		return parse_x5chain(
+			&id_cred_map->id_cred_x_x5chain.id_cred_x_x5chain,
+			received);
 	}
 
-	if (id_cred_map->map_x5t_present) {
-		return parse_x5t(&id_cred_map->map_x5t.map_x5t, received);
+	if (id_cred_map->id_cred_x_x5t_present) {
+		return parse_x5t(&id_cred_map->id_cred_x_x5t.id_cred_x_x5t,
+				 received);
 	}
 
 	/* Header parameters outside the CDDL model are rejected earlier, by the
@@ -665,12 +646,14 @@ int edhoc_credential_id_cred_length(
 
 	const size_t nr_of_items = 1;
 
-	*length = edhoc_cbor_map_oh(nr_of_items);
+	/* The COSE header label is the map key. */
+	*length = edhoc_cbor_map_head_length(nr_of_items) +
+		  edhoc_cbor_int_head_length((int32_t)material->label);
 
 	switch (material->label) {
 	case EDHOC_COSE_HEADER_KID:
 		*length += material->kid.length +
-			   edhoc_cbor_bstr_header_length(material->kid.length);
+			   edhoc_cbor_bstr_head_length(material->kid.length);
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
@@ -678,22 +661,22 @@ int edhoc_credential_id_cred_length(
 			const size_t len =
 				material->x509_chain.certificate[i].length;
 
-			*length += len + edhoc_cbor_bstr_header_length(len);
+			*length += len + edhoc_cbor_bstr_head_length(len);
 		}
 
 		if (1 < material->x509_chain.count) {
-			*length +=
-				edhoc_cbor_array_oh(material->x509_chain.count);
+			*length += edhoc_cbor_array_head_length(
+				material->x509_chain.count);
 		}
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		*length += edhoc_cbor_array_oh(nr_of_items);
+		*length += edhoc_cbor_array_head_length(nr_of_items);
 		*length +=
 			cbor_int_or_string_len(&material->x509_hash.algorithm);
 		*length += material->x509_hash.fingerprint.length;
-		*length += edhoc_cbor_bstr_header_length(
+		*length += edhoc_cbor_bstr_head_length(
 			material->x509_hash.fingerprint.length);
 		break;
 
@@ -729,7 +712,7 @@ int edhoc_credential_cred_length(
 	}
 
 	*length = material->credential.length +
-		  edhoc_cbor_bstr_header_length(material->credential.length);
+		  edhoc_cbor_bstr_head_length(material->credential.length);
 
 	return EDHOC_SUCCESS;
 }

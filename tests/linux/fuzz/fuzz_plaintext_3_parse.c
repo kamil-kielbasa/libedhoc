@@ -1,7 +1,7 @@
 /**
  * \file    fuzz_plaintext_3_parse.c
  * \author  Kamil Kielbasa
- * \brief   libFuzzer harness feeding arbitrary input to parse_plaintext_3().
+ * \brief   libFuzzer harness feeding arbitrary input to edhoc_plaintext_parse().
  *
  *          fuzz_message_3_process has to decrypt CIPHERTEXT_3 before it can
  *          parse anything, and mutated bytes never survive the AEAD tag, so
@@ -17,7 +17,8 @@
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
 #include "edhoc_context_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_mac_internal.h"
+#include "edhoc_plaintext_internal.h"
 
 /* Standard library headers: */
 #include <stdint.h>
@@ -27,10 +28,6 @@
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
 /* Static function declarations -------------------------------------------- */
-
-/** Library-internal parser under test, exposed by LIBEDHOC_TESTS. */
-extern int parse_plaintext_3(struct edhoc_context *ctx, const uint8_t *ptxt,
-			     size_t ptxt_len, struct plaintext *parsed_ptxt);
 
 /* Static variables and constants ------------------------------------------ */
 /* Static function definitions --------------------------------------------- */
@@ -47,7 +44,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 	struct edhoc_context ctx = { 0 };
 	struct plaintext parsed_ptxt = { 0 };
 
-	(void)parse_plaintext_3(&ctx, data, size, &parsed_ptxt);
+	(void)edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_3, data, size,
+				    &parsed_ptxt);
 
 	return 0;
 }

@@ -1,7 +1,7 @@
 /**
- * \file    edhoc_message_error.c
+ * \file    edhoc_error_internal.c
  * \author  Kamil Kielbasa
- * \brief   EDHOC message error compose & process.
+ * \brief   EDHOC error message (RFC 9528: 6).
  *
  * \copyright Copyright (c) 2026
  *
@@ -15,11 +15,11 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #endif
 
 /* EDHOC public headers: */
-#include <edhoc/edhoc.h>
 #include <edhoc/types.h>
 #include <edhoc/values.h>
 
 /* EDHOC internal headers: */
+#include "edhoc_error_internal.h"
 #include "edhoc_macros_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -31,7 +31,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* CBOR headers: */
 #include <zcbor_common.h>
-#include <backend_cbor_edhoc_types.h>
+#include <backend_cbor_types.h>
 #include <backend_cbor_message_error_encode.h>
 #include <backend_cbor_message_error_decode.h>
 
@@ -43,9 +43,9 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 /* Static function definitions --------------------------------------------- */
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
-				size_t *msg_err_len, enum edhoc_error_code code,
-				const struct edhoc_error_info *info)
+int edhoc_error_encode(uint8_t *msg_err, size_t msg_err_size,
+		       size_t *msg_err_len, enum edhoc_error_code code,
+		       const struct edhoc_error_info *info)
 {
 	if (NULL == msg_err || 0 == msg_err_size || NULL == msg_err_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -156,9 +156,9 @@ int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
-				enum edhoc_error_code *code,
-				struct edhoc_error_info *info)
+int edhoc_error_decode(const uint8_t *msg_err, size_t msg_err_len,
+		       enum edhoc_error_code *code,
+		       struct edhoc_error_info *info)
 {
 	if (NULL == msg_err || 0 == msg_err_len || NULL == code) {
 		EDHOC_LOG_ERR("Invalid arguments");

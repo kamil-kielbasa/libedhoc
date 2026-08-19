@@ -24,7 +24,7 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_macros_internal.h"
-#include "edhoc_common_internal.h"
+#include "edhoc_cbor_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -79,11 +79,11 @@ edhoc_connection_id_encoded_length(const struct connection_id *connection_id)
 	int32_t value = 0;
 
 	if (edhoc_connection_id_compact(connection_id, &value)) {
-		return edhoc_cbor_int_length(value);
+		return edhoc_cbor_int_head_length(value);
 	}
 
 	return connection_id->length +
-	       edhoc_cbor_bstr_header_length(connection_id->length);
+	       edhoc_cbor_bstr_head_length(connection_id->length);
 }
 
 int edhoc_connection_id_encode(const struct connection_id *connection_id,

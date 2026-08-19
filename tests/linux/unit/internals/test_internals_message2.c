@@ -1,7 +1,7 @@
 /**
  * \file    test_internals_message2.c
  * \author  Kamil Kielbasa
- * \brief   Unit tests for edhoc_message_2.c internal functions.
+ * \brief   Unit tests for edhoc_classic_message_2.c internal functions.
  *
  * \copyright Copyright (c) 2026
  *
@@ -43,43 +43,22 @@ TEST_TEAR_DOWN(internals_message2)
 	mbedtls_psa_crypto_free();
 }
 
-TEST(internals_message2, comp_th_2_null)
-{
-	int ret = comp_th_2(NULL);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
-}
-
-TEST(internals_message2, comp_th_2_bad_state)
-{
-	struct edhoc_context ctx = { 0 };
-	internals_setup_crypto_context(&ctx);
-
-	ctx.state.role = EDHOC_ROLE_RESPONDER;
-	ctx.state.th.stage = EDHOC_TH_STATE_2;
-
-	int ret = comp_th_2(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
-
-	ret = edhoc_context_deinit(&ctx);
-	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-}
-
 TEST(internals_message2, comp_encapsulate_null)
 {
-	int ret = comp_encapsulate(NULL);
+	int ret = edhoc_key_schedule_encapsulate(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message2, comp_decapsulate_null)
 {
-	int ret = comp_decapsulate(NULL);
+	int ret = edhoc_key_schedule_decapsulate(NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
 TEST(internals_message2, comp_keystream_null)
 {
 	uint8_t ks[64] = { 0 };
-	int ret = comp_keystream(NULL, ks, ARRAY_SIZE(ks));
+	int ret = edhoc_cipher_keystream(NULL, ks, ARRAY_SIZE(ks));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -92,7 +71,7 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 
 	uint8_t ks[64] = { 0 };
-	int ret = comp_keystream(&ctx, ks, ARRAY_SIZE(ks));
+	int ret = edhoc_cipher_keystream(&ctx, ks, ARRAY_SIZE(ks));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -101,7 +80,7 @@ TEST(internals_message2, comp_keystream_bad_th_state)
 
 TEST(internals_message2, comp_grx_null)
 {
-	int ret = comp_grx(NULL, NULL, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(NULL, NULL, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -111,12 +90,13 @@ TEST(internals_message2, comp_grx_invalid_role)
 	internals_setup_crypto_context(&ctx);
 
 	ctx.state.role = 99;
+	ctx.state.message = EDHOC_MESSAGE_2;
 	ctx.negotiation.selected_method = EDHOC_METHOD_1;
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 
 	const uint8_t key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
-	int ret = comp_grx(&ctx, key_id, NULL, 0);
+	int ret = edhoc_key_schedule_prk_advance(&ctx, key_id, NULL, 0);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -132,25 +112,36 @@ TEST(internals_message2, comp_plaintext_2_len_null)
 	struct mac_context *mc = (struct mac_context *)buf;
 	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
 
+	struct edhoc_plaintext_input input = {
+		.id = EDHOC_PLAINTEXT_CLASSIC_2,
+		.mac_context = mc,
+		.signature_length = 8,
+	};
 	size_t len = 0;
 
-	int ret = comp_plaintext_2_len(NULL, mc, 8, &len);
+	int ret = edhoc_plaintext_length(NULL, &input, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = comp_plaintext_2_len(&ctx, NULL, 8, &len);
+	ret = edhoc_plaintext_length(&ctx, NULL, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = comp_plaintext_2_len(&ctx, mc, 0, &len);
+	ret = edhoc_plaintext_length(&ctx, &input, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = comp_plaintext_2_len(&ctx, mc, 8, NULL);
+	input.mac_context = NULL;
+	ret = edhoc_plaintext_length(&ctx, &input, &len);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+
+	input.mac_context = mc;
+	input.signature_length = 0;
+	ret = edhoc_plaintext_length(&ctx, &input, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(internals_message2, prepare_message_2_null)
+TEST(internals_message2, compose_g_y_ciphertext_2_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
@@ -158,26 +149,28 @@ TEST(internals_message2, prepare_message_2_null)
 	uint8_t msg[128] = { 0 };
 	size_t msg_len = 0;
 
-	int ret = prepare_message_2(NULL, ctxt, ARRAY_SIZE(ctxt), msg,
-				    ARRAY_SIZE(msg), &msg_len);
+	int ret = compose_g_y_ciphertext_2(NULL, ctxt, ARRAY_SIZE(ctxt), msg,
+					   ARRAY_SIZE(msg), &msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = prepare_message_2(&ctx, NULL, ARRAY_SIZE(ctxt), msg,
-				ARRAY_SIZE(msg), &msg_len);
+	ret = compose_g_y_ciphertext_2(&ctx, NULL, ARRAY_SIZE(ctxt), msg,
+				       ARRAY_SIZE(msg), &msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = prepare_message_2(&ctx, ctxt, 0, msg, ARRAY_SIZE(msg), &msg_len);
+	ret = compose_g_y_ciphertext_2(&ctx, ctxt, 0, msg, ARRAY_SIZE(msg),
+				       &msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = prepare_message_2(&ctx, ctxt, ARRAY_SIZE(ctxt), NULL,
-				ARRAY_SIZE(msg), &msg_len);
+	ret = compose_g_y_ciphertext_2(&ctx, ctxt, ARRAY_SIZE(ctxt), NULL,
+				       ARRAY_SIZE(msg), &msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = prepare_message_2(&ctx, ctxt, ARRAY_SIZE(ctxt), msg, 0, &msg_len);
+	ret = compose_g_y_ciphertext_2(&ctx, ctxt, ARRAY_SIZE(ctxt), msg, 0,
+				       &msg_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = prepare_message_2(&ctx, ctxt, ARRAY_SIZE(ctxt), msg,
-				ARRAY_SIZE(msg), NULL);
+	ret = compose_g_y_ciphertext_2(&ctx, ctxt, ARRAY_SIZE(ctxt), msg,
+				       ARRAY_SIZE(msg), NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -188,20 +181,25 @@ TEST(internals_message2, parse_plaintext_2_null)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+	ctx.state.message = EDHOC_MESSAGE_2;
 
 	uint8_t ptxt[] = { 0x40 };
 	struct plaintext parsed = { 0 };
 
-	int ret = parse_plaintext_2(NULL, ptxt, ARRAY_SIZE(ptxt), &parsed);
+	int ret = edhoc_plaintext_parse(NULL, EDHOC_PLAINTEXT_CLASSIC_2, ptxt,
+					ARRAY_SIZE(ptxt), &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = parse_plaintext_2(&ctx, NULL, ARRAY_SIZE(ptxt), &parsed);
+	ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2, NULL,
+				    ARRAY_SIZE(ptxt), &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = parse_plaintext_2(&ctx, ptxt, 0, &parsed);
+	ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2, ptxt, 0,
+				    &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = parse_plaintext_2(&ctx, ptxt, ARRAY_SIZE(ptxt), NULL);
+	ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2, ptxt,
+				    ARRAY_SIZE(ptxt), NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -212,28 +210,30 @@ TEST(internals_message2, parse_plaintext_2_garbage)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
+	ctx.state.message = EDHOC_MESSAGE_2;
 
 	const uint8_t garbage[] = { 0xFF, 0xFE, 0xFD };
 	struct plaintext parsed = { 0 };
 
-	int ret =
-		parse_plaintext_2(&ctx, garbage, ARRAY_SIZE(garbage), &parsed);
+	int ret = edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2,
+					garbage, ARRAY_SIZE(garbage), &parsed);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
-TEST(internals_message2, parse_msg_2_garbage)
+TEST(internals_message2, parse_g_y_ciphertext_2_garbage)
 {
 	struct edhoc_context ctx = { 0 };
 	internals_setup_crypto_context(&ctx);
 
 	const uint8_t garbage[] = { 0x18 };
-	uint8_t ctxt[64] = { 0 };
+	const uint8_t *ctxt = NULL;
+	size_t ctxt_len = 0;
 
-	int ret = parse_msg_2(&ctx, garbage, ARRAY_SIZE(garbage), ctxt,
-			      ARRAY_SIZE(ctxt));
+	int ret = parse_g_y_ciphertext_2(&ctx, garbage, ARRAY_SIZE(garbage),
+					 &ctxt, &ctxt_len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -241,8 +241,6 @@ TEST(internals_message2, parse_msg_2_garbage)
 }
 TEST_GROUP_RUNNER(internals_message2)
 {
-	RUN_TEST_CASE(internals_message2, comp_th_2_null);
-	RUN_TEST_CASE(internals_message2, comp_th_2_bad_state);
 	RUN_TEST_CASE(internals_message2, comp_encapsulate_null);
 	RUN_TEST_CASE(internals_message2, comp_decapsulate_null);
 	RUN_TEST_CASE(internals_message2, comp_keystream_null);
@@ -250,8 +248,8 @@ TEST_GROUP_RUNNER(internals_message2)
 	RUN_TEST_CASE(internals_message2, comp_grx_null);
 	RUN_TEST_CASE(internals_message2, comp_grx_invalid_role);
 	RUN_TEST_CASE(internals_message2, comp_plaintext_2_len_null);
-	RUN_TEST_CASE(internals_message2, prepare_message_2_null);
+	RUN_TEST_CASE(internals_message2, compose_g_y_ciphertext_2_null);
 	RUN_TEST_CASE(internals_message2, parse_plaintext_2_null);
 	RUN_TEST_CASE(internals_message2, parse_plaintext_2_garbage);
-	RUN_TEST_CASE(internals_message2, parse_msg_2_garbage);
+	RUN_TEST_CASE(internals_message2, parse_g_y_ciphertext_2_garbage);
 }

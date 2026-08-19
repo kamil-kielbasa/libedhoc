@@ -300,7 +300,8 @@ static int parse_ptxt_2(const uint8_t *ptxt, size_t ptxt_len,
 {
 	struct edhoc_context ctx = { 0 };
 
-	return parse_plaintext_2(&ctx, ptxt, ptxt_len, parsed);
+	return edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_2, ptxt,
+				     ptxt_len, parsed);
 }
 
 static int parse_ptxt_3(const uint8_t *ptxt, size_t ptxt_len,
@@ -308,7 +309,8 @@ static int parse_ptxt_3(const uint8_t *ptxt, size_t ptxt_len,
 {
 	struct edhoc_context ctx = { 0 };
 
-	return parse_plaintext_3(&ctx, ptxt, ptxt_len, parsed);
+	return edhoc_plaintext_parse(&ctx, EDHOC_PLAINTEXT_CLASSIC_3, ptxt,
+				     ptxt_len, parsed);
 }
 
 static void assert_sign_or_mac(const struct plaintext *parsed,

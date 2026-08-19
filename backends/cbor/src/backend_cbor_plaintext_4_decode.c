@@ -16,18 +16,18 @@
 #error "The type file was generated with a different default_max_qty than this file"
 #endif
 
-static bool decode_ead_y(zcbor_state_t *state, struct ead_y *result);
-static bool decode_EAD_4(zcbor_state_t *state, struct EAD_4 *result);
+static bool decode_ead_x(zcbor_state_t *state, struct ead_x *result);
+static bool decode_ead(zcbor_state_t *state, struct ead *result);
 static bool decode_plaintext_4(zcbor_state_t *state, struct plaintext_4 *result);
 
 
-static bool decode_ead_y(
-		zcbor_state_t *state, struct ead_y *result)
+static bool decode_ead_x(
+		zcbor_state_t *state, struct ead_x *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((((zcbor_int32_decode(state, (&(*result).ead_y_ead_label))))
-	&& ((*result).ead_y_ead_value_present = ((zcbor_bstr_decode(state, (&(*result).ead_y_ead_value)))), 1))));
+	bool tmp_result = (((((zcbor_int32_decode(state, (&(*result).ead_x_ead_label))))
+	&& ((*result).ead_x_ead_value_present = ((zcbor_bstr_decode(state, (&(*result).ead_x_ead_value)))), 1))));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -39,12 +39,12 @@ static bool decode_ead_y(
 	return tmp_result;
 }
 
-static bool decode_EAD_4(
-		zcbor_state_t *state, struct EAD_4 *result)
+static bool decode_ead(
+		zcbor_state_t *state, struct ead *result)
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (zcbor_multi_decode(1, 3, &(*result).EAD_4_count, (zcbor_decoder_t *)decode_ead_y, state, (&(*result).EAD_4), sizeof(struct ead_y)));
+	bool tmp_result = (zcbor_multi_decode(1, 3, &(*result).ead_count, (zcbor_decoder_t *)decode_ead_x, state, (&(*result).ead), sizeof(struct ead_x)));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);
@@ -61,7 +61,7 @@ static bool decode_plaintext_4(
 {
 	zcbor_log("%s\r\n", __func__);
 
-	bool tmp_result = (((*result).plaintext_4_present = ((decode_EAD_4(state, (&(*result).plaintext_4)))), 1));
+	bool tmp_result = (((*result).plaintext_4_present = ((decode_ead(state, (&(*result).plaintext_4)))), 1));
 
 	if (!tmp_result) {
 		zcbor_trace_file(state);

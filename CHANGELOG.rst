@@ -1,3 +1,69 @@
+Version 2.1.0
+-------------
+
+:Date: August 19, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the library core is
+  split into modules, so that a future protocol flow reuses the primitives
+  instead of copying them, and so that a fault can be traced to one owner.
+  What this means in practice: each module validates its own arguments and logs
+  its own failures, and the code the modules replaced is gone rather than
+  duplicated. Created modules:
+
+  * ``edhoc_cbor_internal`` : CBOR head sizes and byte-string head encoding.
+  * ``edhoc_key_slot_internal`` : key-store handle slots.
+  * ``edhoc_kdf_internal`` : EDHOC_Extract and EDHOC_KDF.
+  * ``edhoc_transcript_hash_internal`` : TH_1 to TH_4.
+  * ``edhoc_ead_internal`` : external authorization data.
+  * ``edhoc_mac_internal`` : MAC context, MAC and Signature_or_MAC.
+  * ``edhoc_cipher_internal`` : message encryption (AEAD, keystream, XOR).
+  * ``edhoc_key_schedule_internal`` : PRK chain, salts, KEM and static Diffie-Hellman.
+  * ``edhoc_plaintext_internal`` : PLAINTEXT_2, PLAINTEXT_3 and PLAINTEXT_4.
+  * ``edhoc_classic_internal`` : the message flow that authenticates with
+    signatures or static Diffie-Hellman, in ``library/core/classic``.
+  * ``edhoc_exporter_internal`` and ``edhoc_error_internal`` : the exporter and
+    the error message.
+
+  ``library/core/edhoc.c`` now holds every function of ``<edhoc/edhoc.h>`` and
+  nothing else, and ``library/core/edhoc_coap.c`` every function of
+  ``<edhoc/coap.h>``: one file per public header, so the API surface can be read
+  in one place and a second flow can be added beside the classic one without
+  touching it.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the two OSCORE
+  exporter labels are now named. ``EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET``
+  and ``EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT`` in ``<edhoc/values.h>`` are
+  the values ``edhoc_export()`` and ``edhoc_export_raw()`` take to derive the
+  two OSCORE inputs by hand, instead of the bare ``0`` and ``1`` an application
+  had to hardcode from RFC 9528: A.1. This is the only public API change and it
+  is additive; existing code keeps compiling.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the five CDDL
+  schemas became one, ``scripts/cddls/libedhoc.cddl``, generated into one types
+  header. Rules that were identical apart from their name produced a C structure
+  each; the four EAD variants and the two EAD item shapes now share ``ead`` and
+  ``ead_x``, and the ID_CRED map ``id_cred_x``, so seven structures became two.
+  Applications see no difference: the wire format, the public headers and the
+  behaviour are unchanged.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : fixed a one-byte
+  buffer overflow when composing an EAD item whose label exceeds 65535. The
+  helpers that size the buffer reported a four-byte CBOR head where five are
+  used, and five where nine are, so the encoder was handed a buffer one byte too
+  small. An application that uses only small EAD labels was never affected.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : composing message 3
+  no longer tells the CBOR encoder that the caller's buffer is one byte larger
+  than it is. A message 3 that filled the buffer exactly could write one byte
+  past its end; it now fails with ``EDHOC_ERROR_CBOR_FAILURE`` instead.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : a rejected message
+  now reports why. ``edhoc_message_1_process()`` returned
+  ``EDHOC_ERROR_MSG_1_PROCESS_FAILURE`` for every bad connection identifier,
+  and ``edhoc_message_2_process()`` reported ``EDHOC_ERROR_BUFFER_TOO_SMALL``
+  for input that is not valid CBOR at all. Both now return the actual reason, so
+  a malformed message and an unusable one can be told apart in the field.
+
 Version 2.0.2
 -------------
 

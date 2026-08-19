@@ -31,6 +31,10 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_key_slot_internal.h"
+#include "edhoc_classic_internal.h"
+#include "edhoc_error_internal.h"
+#include "edhoc_exporter_internal.h"
 #include "edhoc_connection_id_internal.h"
 #include "edhoc_backend_log.h"
 
@@ -370,4 +374,117 @@ int edhoc_error_get_cipher_suites(const struct edhoc_context *ctx,
 			ctx->negotiation.peer_cipher_suite.entry[i].value;
 
 	return EDHOC_SUCCESS;
+}
+
+int edhoc_message_1_compose(struct edhoc_context *ctx, uint8_t *msg_1,
+			    size_t msg_1_size, size_t *msg_1_len)
+{
+	return edhoc_classic_message_1_compose(ctx, msg_1, msg_1_size,
+					       msg_1_len);
+}
+
+int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
+			    size_t msg_1_len)
+{
+	return edhoc_classic_message_1_process(ctx, msg_1, msg_1_len);
+}
+
+int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
+			    size_t msg_2_size, size_t *msg_2_len)
+{
+	return edhoc_classic_message_2_compose(ctx, msg_2, msg_2_size,
+					       msg_2_len);
+}
+
+int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
+			    size_t msg_2_len)
+{
+	return edhoc_classic_message_2_process(ctx, msg_2, msg_2_len);
+}
+
+int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
+			    size_t msg_3_size, size_t *msg_3_len)
+{
+	return edhoc_classic_message_3_compose(ctx, msg_3, msg_3_size,
+					       msg_3_len);
+}
+
+int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
+			    size_t msg_3_len)
+{
+	return edhoc_classic_message_3_process(ctx, msg_3, msg_3_len);
+}
+
+int edhoc_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
+			    size_t msg_4_size, size_t *msg_4_len)
+{
+	return edhoc_classic_message_4_compose(ctx, msg_4, msg_4_size,
+					       msg_4_len);
+}
+
+int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
+			    size_t msg_4_len)
+{
+	return edhoc_classic_message_4_process(ctx, msg_4, msg_4_len);
+}
+
+int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
+				size_t *msg_err_len, enum edhoc_error_code code,
+				const struct edhoc_error_info *info)
+{
+	return edhoc_error_encode(msg_err, msg_err_size, msg_err_len, code,
+				  info);
+}
+
+int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
+				enum edhoc_error_code *code,
+				struct edhoc_error_info *info)
+{
+	return edhoc_error_decode(msg_err, msg_err_len, code, info);
+}
+
+int edhoc_export(struct edhoc_context *ctx, size_t label,
+		 const uint8_t *context, size_t context_len,
+		 enum edhoc_key_usage usage, void *key_id)
+{
+	return edhoc_exporter_export(ctx, label, context, context_len, usage,
+				     key_id);
+}
+
+int edhoc_export_raw(struct edhoc_context *ctx, size_t label,
+		     const uint8_t *context, size_t context_len,
+		     uint8_t *secret, size_t secret_len)
+{
+	return edhoc_exporter_export_raw(ctx, label, context, context_len,
+					 secret, secret_len);
+}
+
+int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
+			    size_t context_len)
+{
+	return edhoc_exporter_key_update(ctx, context, context_len);
+}
+
+int edhoc_export_oscore_context(struct edhoc_context *ctx,
+				void *master_secret_key_id, uint8_t *salt,
+				size_t salt_len, uint8_t *sid, size_t sid_size,
+				size_t *sid_len, uint8_t *rid, size_t rid_size,
+				size_t *rid_len)
+{
+	return edhoc_exporter_oscore_context(ctx, master_secret_key_id, salt,
+					     salt_len, sid, sid_size, sid_len,
+					     rid, rid_size, rid_len);
+}
+
+int edhoc_export_oscore_context_raw(struct edhoc_context *ctx, uint8_t *secret,
+				    size_t secret_len, uint8_t *salt,
+				    size_t salt_len, uint8_t *sid,
+				    size_t sid_size, size_t *sid_len,
+				    uint8_t *rid, size_t rid_size,
+				    size_t *rid_len)
+{
+	return edhoc_exporter_oscore_context_raw(ctx, secret, secret_len, salt,
+						 salt_len, sid, sid_size,
+						 sid_len, rid, rid_size,
+						 rid_len);
 }
