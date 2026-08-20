@@ -31,6 +31,7 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* EDHOC internal headers: */
 #include "edhoc_context_internal.h"
+#include "edhoc_macros_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_classic_internal.h"
 #include "edhoc_error_internal.h"
@@ -428,19 +429,86 @@ int edhoc_message_4_process(struct edhoc_context *ctx, const uint8_t *msg_4,
 	return edhoc_classic_message_4_process(ctx, msg_4, msg_4_len);
 }
 
-int edhoc_message_error_compose(uint8_t *msg_err, size_t msg_err_size,
-				size_t *msg_err_len, enum edhoc_error_code code,
+int edhoc_message_error_compose(struct edhoc_context *ctx, uint8_t *msg_err,
+				size_t msg_err_size, size_t *msg_err_len,
+				enum edhoc_error_code code,
 				const struct edhoc_error_info *info)
 {
-	return edhoc_error_encode(msg_err, msg_err_size, msg_err_len, code,
-				  info);
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!ctx->is_init || EDHOC_SM_COMPLETED <= ctx->state.machine) {
+		EDHOC_LOG_ERR("Bad state: %d", ctx->state.machine);
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	ctx->state.machine = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+
+	const int ret = edhoc_error_encode(msg_err, msg_err_size, msg_err_len,
+					   code, info);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Encode error message: %d", ret);
+		return ret;
+	}
+
+	ctx->error_code = code;
+
+	return EDHOC_SUCCESS;
 }
 
-int edhoc_message_error_process(const uint8_t *msg_err, size_t msg_err_len,
+int edhoc_message_error_process(struct edhoc_context *ctx,
+				const uint8_t *msg_err, size_t msg_err_len,
 				enum edhoc_error_code *code,
 				struct edhoc_error_info *info)
 {
-	return edhoc_error_decode(msg_err, msg_err_len, code, info);
+	if (NULL == ctx) {
+		EDHOC_LOG_ERR("Invalid arguments");
+		return EDHOC_ERROR_INVALID_ARGUMENT;
+	}
+
+	if (!ctx->is_init || EDHOC_SM_COMPLETED <= ctx->state.machine) {
+		EDHOC_LOG_ERR("Bad state: %d", ctx->state.machine);
+		return EDHOC_ERROR_BAD_STATE;
+	}
+
+	ctx->state.machine = EDHOC_SM_ABORTED;
+	ctx->error_code = EDHOC_ERROR_CODE_UNSPECIFIED_ERROR;
+
+	const int ret = edhoc_error_decode(msg_err, msg_err_len, code, info);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Decode error message: %d", ret);
+		return ret;
+	}
+
+	/* SUITES_R becomes the peer suites for edhoc_error_get_cipher_suites. */
+	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE == *code &&
+	    NULL != info && 0 != info->entries_length) {
+		if (ARRAY_SIZE(ctx->negotiation.peer_cipher_suite.entry) <
+		    info->entries_length) {
+			EDHOC_LOG_ERR(
+				"Buffer too small for peer cipher suites: %zu, %zu",
+				info->entries_length,
+				ARRAY_SIZE(ctx->negotiation.peer_cipher_suite
+						   .entry));
+			return EDHOC_ERROR_BUFFER_TOO_SMALL;
+		}
+
+		ctx->negotiation.peer_cipher_suite.count = info->entries_length;
+
+		for (size_t i = 0; i < info->entries_length; ++i) {
+			ctx->negotiation.peer_cipher_suite.entry[i].value =
+				info->cipher_suites[i];
+		}
+	}
+
+	ctx->error_code = *code;
+
+	return EDHOC_SUCCESS;
 }
 
 int edhoc_export(struct edhoc_context *ctx, size_t label,

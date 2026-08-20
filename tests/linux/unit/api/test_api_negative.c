@@ -802,22 +802,74 @@ TEST(api_negative, message_4_process_null_ctx)
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, message_error_compose_null_buf)
+TEST(api_negative, message_error_compose_null_ctx)
 {
+	uint8_t buf[64] = { 0 };
 	size_t len = 0;
 	struct edhoc_error_info info = { 0 };
 
-	int ret = edhoc_message_error_compose(NULL, 0, &len,
+	int ret = edhoc_message_error_compose(NULL, buf, sizeof(buf), &len,
 					      EDHOC_ERROR_CODE_SUCCESS, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
-TEST(api_negative, message_error_process_null_buf)
+TEST(api_negative, message_error_compose_uninitialized_ctx)
 {
+	struct edhoc_context ctx = { 0 };
+	uint8_t buf[64] = { 0 };
+	size_t len = 0;
+	struct edhoc_error_info info = { 0 };
+
+	int ret = edhoc_message_error_compose(&ctx, buf, sizeof(buf), &len,
+					      EDHOC_ERROR_CODE_SUCCESS, &info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+}
+
+TEST(api_negative, message_error_compose_null_buf)
+{
+	struct edhoc_context ctx = { 0 };
+	size_t len = 0;
+	struct edhoc_error_info info = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_init(&ctx));
+
+	int ret = edhoc_message_error_compose(&ctx, NULL, 0, &len,
+					      EDHOC_ERROR_CODE_SUCCESS, &info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(api_negative, message_error_process_null_ctx)
+{
+	const uint8_t buf[] = { 0x00 };
 	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
 	struct edhoc_error_info info = { 0 };
 
-	int ret = edhoc_message_error_process(NULL, 0, &code, &info);
+	int ret = edhoc_message_error_process(NULL, buf, sizeof(buf), &code,
+					      &info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
+}
+
+TEST(api_negative, message_error_process_uninitialized_ctx)
+{
+	struct edhoc_context ctx = { 0 };
+	const uint8_t buf[] = { 0x00 };
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+	struct edhoc_error_info info = { 0 };
+
+	int ret = edhoc_message_error_process(&ctx, buf, sizeof(buf), &code,
+					      &info);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
+}
+
+TEST(api_negative, message_error_process_null_buf)
+{
+	struct edhoc_context ctx = { 0 };
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+	struct edhoc_error_info info = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_init(&ctx));
+
+	int ret = edhoc_message_error_process(&ctx, NULL, 0, &code, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -1045,7 +1097,11 @@ TEST_GROUP_RUNNER(api_negative)
 	RUN_TEST_CASE(api_negative, message_3_process_null_ctx);
 	RUN_TEST_CASE(api_negative, message_4_compose_null_ctx);
 	RUN_TEST_CASE(api_negative, message_4_process_null_ctx);
+	RUN_TEST_CASE(api_negative, message_error_compose_null_ctx);
+	RUN_TEST_CASE(api_negative, message_error_compose_uninitialized_ctx);
 	RUN_TEST_CASE(api_negative, message_error_compose_null_buf);
+	RUN_TEST_CASE(api_negative, message_error_process_null_ctx);
+	RUN_TEST_CASE(api_negative, message_error_process_uninitialized_ctx);
 	RUN_TEST_CASE(api_negative, message_error_process_null_buf);
 
 	RUN_TEST_CASE(api_negative, export_raw_null_ctx);

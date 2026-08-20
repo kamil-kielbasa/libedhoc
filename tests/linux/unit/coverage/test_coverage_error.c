@@ -24,16 +24,22 @@
 /* Module defines ---------------------------------------------------------- */
 /* Module types and type definitiones -------------------------------------- */
 /* Module interface variables and constants -------------------------------- */
+/* Static variables and constants ------------------------------------------ */
+
+static struct edhoc_context ctx = { 0 };
+
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(coverage_error);
 
 TEST_SETUP(coverage_error)
 {
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_init(&ctx));
 }
 
 TEST_TEAR_DOWN(coverage_error)
 {
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_context_deinit(&ctx));
 }
 
 TEST(coverage_error, error_msg_compose_bad_info)
@@ -50,8 +56,8 @@ TEST(coverage_error, error_msg_compose_bad_info)
 	};
 
 	int ret = edhoc_message_error_compose(
-		buf, sizeof(buf), &len, EDHOC_ERROR_CODE_UNSPECIFIED_ERROR,
-		&info);
+		&ctx, buf, sizeof(buf), &len,
+		EDHOC_ERROR_CODE_UNSPECIFIED_ERROR, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -73,7 +79,7 @@ TEST(coverage_error, error_msg_compose_suites_overflow)
 	};
 
 	int ret = edhoc_message_error_compose(
-		buf, sizeof(buf), &len,
+		&ctx, buf, sizeof(buf), &len,
 		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
@@ -91,8 +97,8 @@ TEST(coverage_error, error_msg_process_text_too_small)
 	};
 
 	int ret = edhoc_message_error_compose(
-		buf, sizeof(buf), &len, EDHOC_ERROR_CODE_UNSPECIFIED_ERROR,
-		&info);
+		&ctx, buf, sizeof(buf), &len,
+		EDHOC_ERROR_CODE_UNSPECIFIED_ERROR, &info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	char recv_text[2] = { 0 };
@@ -102,7 +108,7 @@ TEST(coverage_error, error_msg_process_text_too_small)
 	};
 	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
 
-	ret = edhoc_message_error_process(buf, len, &code, &recv_info);
+	ret = edhoc_message_error_process(&ctx, buf, len, &code, &recv_info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
@@ -119,7 +125,7 @@ TEST(coverage_error, error_msg_process_suites_too_small)
 	};
 
 	int ret = edhoc_message_error_compose(
-		buf, sizeof(buf), &len,
+		&ctx, buf, sizeof(buf), &len,
 		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE, &info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -130,7 +136,7 @@ TEST(coverage_error, error_msg_process_suites_too_small)
 	};
 	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
 
-	ret = edhoc_message_error_process(buf, len, &code, &recv_info);
+	ret = edhoc_message_error_process(&ctx, buf, len, &code, &recv_info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL, ret);
 }
 
@@ -140,7 +146,7 @@ TEST(coverage_error, error_msg_compose_suites_null_info)
 	size_t len = 0;
 
 	int ret = edhoc_message_error_compose(
-		buf, sizeof(buf), &len,
+		&ctx, buf, sizeof(buf), &len,
 		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
@@ -151,8 +157,8 @@ TEST(coverage_error, error_msg_compose_unspecified_null_info)
 	size_t len = 0;
 
 	int ret = edhoc_message_error_compose(
-		buf, sizeof(buf), &len, EDHOC_ERROR_CODE_UNSPECIFIED_ERROR,
-		NULL);
+		&ctx, buf, sizeof(buf), &len,
+		EDHOC_ERROR_CODE_UNSPECIFIED_ERROR, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 

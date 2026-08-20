@@ -12,6 +12,7 @@
 
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_macros_internal.h"
 
 /* Standard library headers: */
@@ -28,6 +29,7 @@
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 {
+	struct edhoc_context ctx = { 0 };
 	enum edhoc_error_code error_code = EDHOC_ERROR_CODE_SUCCESS;
 	int32_t cipher_suites[8] = { 0 };
 	char text_buf[256] = { 0 };
@@ -38,13 +40,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 		.entries_length = 0,
 	};
 
-	(void)edhoc_message_error_process(data, size, &error_code, &error_info);
+	(void)edhoc_context_init(&ctx);
+
+	(void)edhoc_message_error_process(&ctx, data, size, &error_code,
+					  &error_info);
 
 	if (EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE == error_code) {
 		error_info.cipher_suites = cipher_suites;
 		error_info.entries_size = ARRAY_SIZE(cipher_suites);
 		error_info.entries_length = 0;
-		(void)edhoc_message_error_process(data, size, &error_code,
+		(void)edhoc_message_error_process(&ctx, data, size, &error_code,
 						  &error_info);
 	}
 
