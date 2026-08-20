@@ -165,6 +165,11 @@ int edhoc_error_decode(const uint8_t *msg_err, size_t msg_err_len,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
+	/* Absent or unread ERR_INFO must not leave the caller's length behind. */
+	if (NULL != info) {
+		info->entries_length = 0;
+	}
+
 	int ret = EDHOC_ERROR_GENERIC_ERROR;
 	struct message_error result = { 0 };
 
@@ -198,8 +203,9 @@ int edhoc_error_decode(const uint8_t *msg_err, size_t msg_err_len,
 		}
 
 		if (NULL == info || NULL == info->text_string ||
-		    0 == info->entries_size)
+		    0 == info->entries_size) {
 			break;
+		}
 
 		const struct zcbor_string *tstr =
 			&result.message_error_ERR_INFO
@@ -234,8 +240,9 @@ int edhoc_error_decode(const uint8_t *msg_err, size_t msg_err_len,
 		}
 
 		if (NULL == info || NULL == info->cipher_suites ||
-		    0 == info->entries_size)
+		    0 == info->entries_size) {
 			break;
+		}
 
 		const struct suites_r *suites =
 			&result.message_error_ERR_INFO

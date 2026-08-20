@@ -11,6 +11,7 @@
 
 /* EDHOC headers: */
 #include <edhoc/edhoc.h>
+#include "edhoc_context_internal.h"
 #include "edhoc_macros_internal.h"
 
 /* Standard library headers: */
@@ -29,6 +30,7 @@
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
 static enum edhoc_error_code recv_error_code = -1;
+static struct edhoc_context ctx = { 0 };
 
 /** ERR_CODE = 1 with SUITES = [-3, 1, 1]: the fingerprint of the out-of-bounds
  *  read that reinterpreted the array as a byte string. */
@@ -52,10 +54,14 @@ TEST_GROUP(error_message);
 
 TEST_SETUP(error_message)
 {
+	ret = edhoc_context_init(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST_TEAR_DOWN(error_message)
 {
+	ret = edhoc_context_deinit(&ctx);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 }
 
 TEST(error_message, success)
@@ -64,12 +70,12 @@ TEST(error_message, success)
 	uint8_t buffer[100] = { 0 };
 
 	const enum edhoc_error_code error_code = EDHOC_ERROR_CODE_SUCCESS;
-	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
+	ret = edhoc_message_error_compose(&ctx, buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
-					  NULL);
+	ret = edhoc_message_error_process(&ctx, buffer, buffer_len,
+					  &recv_error_code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 }
@@ -88,7 +94,7 @@ TEST(error_message, unspecified_error)
 		.entries_length = strlen(error_string),
 	};
 
-	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
+	ret = edhoc_message_error_compose(&ctx, buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, &error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -99,8 +105,8 @@ TEST(error_message, unspecified_error)
 		.entries_length = 0,
 	};
 
-	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
-					  &recv_error_info);
+	ret = edhoc_message_error_process(&ctx, buffer, buffer_len,
+					  &recv_error_code, &recv_error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 	TEST_ASSERT_EQUAL(error_info.entries_length,
@@ -124,7 +130,7 @@ TEST(error_message, wrong_selected_cipher_suite_one)
 		.entries_length = ARRAY_SIZE(cipher_suites),
 	};
 
-	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
+	ret = edhoc_message_error_compose(&ctx, buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, &error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -135,8 +141,8 @@ TEST(error_message, wrong_selected_cipher_suite_one)
 		.entries_length = 0,
 	};
 
-	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
-					  &recv_error_info);
+	ret = edhoc_message_error_process(&ctx, buffer, buffer_len,
+					  &recv_error_code, &recv_error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 	TEST_ASSERT_EQUAL(recv_error_info.entries_length,
@@ -160,7 +166,7 @@ TEST(error_message, wrong_selected_cipher_suite_many)
 		.entries_length = ARRAY_SIZE(cipher_suites),
 	};
 
-	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
+	ret = edhoc_message_error_compose(&ctx, buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, &error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
@@ -171,8 +177,8 @@ TEST(error_message, wrong_selected_cipher_suite_many)
 		.entries_length = 0,
 	};
 
-	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
-					  &recv_error_info);
+	ret = edhoc_message_error_process(&ctx, buffer, buffer_len,
+					  &recv_error_code, &recv_error_info);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 	TEST_ASSERT_EQUAL(recv_error_info.entries_length,
@@ -190,12 +196,12 @@ TEST(error_message, unknown_credential_referenced)
 	const enum edhoc_error_code error_code =
 		EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
 
-	ret = edhoc_message_error_compose(buffer, ARRAY_SIZE(buffer),
+	ret = edhoc_message_error_compose(&ctx, buffer, ARRAY_SIZE(buffer),
 					  &buffer_len, error_code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_message_error_process(buffer, buffer_len, &recv_error_code,
-					  NULL);
+	ret = edhoc_message_error_process(&ctx, buffer, buffer_len,
+					  &recv_error_code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_EQUAL(error_code, recv_error_code);
 }
@@ -204,7 +210,8 @@ TEST(error_message, compose_unknown_code)
 {
 	uint8_t buffer[100] = { 0 };
 	size_t buffer_len = 0;
-	ret = edhoc_message_error_compose(buffer, sizeof(buffer), &buffer_len,
+	ret = edhoc_message_error_compose(&ctx, buffer, sizeof(buffer),
+					  &buffer_len,
 					  (enum edhoc_error_code)99, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 }
@@ -221,7 +228,7 @@ TEST(error_message, compose_cipher_suite_written_gt_total)
 	};
 
 	ret = edhoc_message_error_compose(
-		buffer, sizeof(buffer), &buffer_len,
+		&ctx, buffer, sizeof(buffer), &buffer_len,
 		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
@@ -232,7 +239,7 @@ TEST(error_message, compose_tiny_buffer)
 	size_t buffer_len = 0;
 
 	ret = edhoc_message_error_compose(
-		buffer, sizeof(buffer), &buffer_len,
+		&ctx, buffer, sizeof(buffer), &buffer_len,
 		EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
@@ -241,7 +248,7 @@ TEST(error_message, compose_null_buffer)
 {
 	size_t buffer_len = 0;
 
-	ret = edhoc_message_error_compose(NULL, 100, &buffer_len,
+	ret = edhoc_message_error_compose(&ctx, NULL, 100, &buffer_len,
 					  EDHOC_ERROR_CODE_SUCCESS, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
@@ -250,7 +257,7 @@ TEST(error_message, process_null_buffer)
 {
 	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
 
-	ret = edhoc_message_error_process(NULL, 10, &code, NULL);
+	ret = edhoc_message_error_process(&ctx, NULL, 10, &code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -259,7 +266,7 @@ TEST(error_message, process_invalid_cbor)
 	uint8_t garbage[] = { 0xFF, 0xFF, 0xFF };
 	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
 
-	ret = edhoc_message_error_process(garbage, sizeof(garbage), &code,
+	ret = edhoc_message_error_process(&ctx, garbage, sizeof(garbage), &code,
 					  NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
 }
@@ -269,7 +276,7 @@ TEST(error_message, process_unknown_code)
 	uint8_t msg[32];
 	size_t msg_len = 0;
 
-	ret = edhoc_message_error_compose(msg, sizeof(msg), &msg_len,
+	ret = edhoc_message_error_compose(&ctx, msg, sizeof(msg), &msg_len,
 					  EDHOC_ERROR_CODE_SUCCESS, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 	TEST_ASSERT_TRUE(msg_len > 0);
@@ -281,7 +288,7 @@ TEST(error_message, process_unknown_code)
 	uint8_t patched[] = { 0x18, 0x63 };
 	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
 
-	ret = edhoc_message_error_process(patched, sizeof(patched), &code,
+	ret = edhoc_message_error_process(&ctx, patched, sizeof(patched), &code,
 					  NULL);
 	/* The decoder may accept code 99 (hitting default) or reject it */
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
@@ -297,7 +304,7 @@ TEST(error_message, process_suites_for_unspecified_rejected)
 	};
 
 	ret = edhoc_message_error_process(
-		err_unspecified_with_suites,
+		&ctx, err_unspecified_with_suites,
 		ARRAY_SIZE(err_unspecified_with_suites), &code, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 	TEST_ASSERT_EQUAL(0, info.entries_length);
@@ -308,7 +315,7 @@ TEST(error_message, process_mismatched_info_rejected_without_buffer)
 	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
 
 	ret = edhoc_message_error_process(
-		err_unspecified_with_suites,
+		&ctx, err_unspecified_with_suites,
 		ARRAY_SIZE(err_unspecified_with_suites), &code, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 }
@@ -322,7 +329,7 @@ TEST(error_message, process_bool_for_unspecified_rejected)
 		.entries_size = ARRAY_SIZE(text_string),
 	};
 
-	ret = edhoc_message_error_process(err_unspecified_with_bool,
+	ret = edhoc_message_error_process(&ctx, err_unspecified_with_bool,
 					  ARRAY_SIZE(err_unspecified_with_bool),
 					  &code, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
@@ -339,10 +346,64 @@ TEST(error_message, process_tstr_for_cipher_suite_rejected)
 	};
 
 	ret = edhoc_message_error_process(
-		err_cipher_suite_with_tstr,
+		&ctx, err_cipher_suite_with_tstr,
 		ARRAY_SIZE(err_cipher_suite_with_tstr), &code, &info);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED, ret);
 	TEST_ASSERT_EQUAL(0, info.entries_length);
+}
+
+TEST(error_message, process_malformed_aborts_context)
+{
+	const uint8_t garbage[] = { 0xFF, 0xFF, 0xFF };
+	enum edhoc_error_code code = EDHOC_ERROR_CODE_SUCCESS;
+
+	ret = edhoc_message_error_process(&ctx, garbage, sizeof(garbage), &code,
+					  NULL);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE, ret);
+
+	/* Aborted on entry, before the message was decoded. */
+	TEST_ASSERT_EQUAL(EDHOC_SM_ABORTED, ctx.state.machine);
+
+	ret = edhoc_error_get_code(&ctx, &code);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CODE_UNSPECIFIED_ERROR, code);
+}
+
+TEST(error_message, process_records_peer_cipher_suites)
+{
+	size_t buffer_len = 0;
+	uint8_t buffer[100] = { 0 };
+
+	const int32_t suites_r[] = { 6, 4, 2 };
+	const struct edhoc_error_info error_info = {
+		.cipher_suites = (int32_t *)suites_r,
+		.entries_size = ARRAY_SIZE(suites_r),
+		.entries_length = ARRAY_SIZE(suites_r),
+	};
+
+	ret = edhoc_message_error_compose(
+		&ctx, buffer, ARRAY_SIZE(buffer), &buffer_len,
+		EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE, &error_info);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	int32_t recv_cipher_suites[3] = { 0 };
+	struct edhoc_error_info recv_error_info = {
+		.cipher_suites = recv_cipher_suites,
+		.entries_size = ARRAY_SIZE(recv_cipher_suites),
+		.entries_length = 0,
+	};
+
+	ret = edhoc_message_error_process(&ctx, buffer, buffer_len,
+					  &recv_error_code, &recv_error_info);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	TEST_ASSERT_EQUAL(ARRAY_SIZE(suites_r),
+			  ctx.negotiation.peer_cipher_suite.count);
+
+	for (size_t i = 0; i < ARRAY_SIZE(suites_r); ++i)
+		TEST_ASSERT_EQUAL(
+			suites_r[i],
+			ctx.negotiation.peer_cipher_suite.entry[i].value);
 }
 
 TEST_GROUP_RUNNER(error_message)
@@ -366,4 +427,8 @@ TEST_GROUP_RUNNER(error_message)
 		      process_mismatched_info_rejected_without_buffer);
 	RUN_TEST_CASE(error_message, process_bool_for_unspecified_rejected);
 	RUN_TEST_CASE(error_message, process_tstr_for_cipher_suite_rejected);
+
+	/* The context follows the message (RFC 9528: 6). */
+	RUN_TEST_CASE(error_message, process_malformed_aborts_context);
+	RUN_TEST_CASE(error_message, process_records_peer_cipher_suites);
 }

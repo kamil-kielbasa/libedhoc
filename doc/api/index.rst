@@ -39,28 +39,28 @@ to retrieve the EDHOC-level error code (RFC 9528, Section 6):
 
    int ret = edhoc_message_1_process(ctx, msg1, msg1_len);
    if (ret != EDHOC_SUCCESS) {
-       enum edhoc_error_code err;
-       edhoc_error_get_code(ctx, &err);
+       enum edhoc_error_code err = EDHOC_ERROR_CODE_SUCCESS;
 
-       if (err == EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE) {
-           /* Retrieve own and peer cipher suites for renegotiation: */
-           edhoc_error_get_cipher_suites(ctx, own, own_size, &own_len,
-                                         peer, peer_size, &peer_len);
-       }
+       edhoc_error_get_code(ctx, &err);
    }
 
-To send an EDHOC error message to the peer:
+To send an EDHOC error message to the peer; the call aborts the session, so no
+further message can be composed or processed with that context:
 
 .. code-block:: c
 
-   const char text[] = "details";
+   char text[] = "details";
    const struct edhoc_error_info info = {
        .text_string    = text,
        .entries_size   = strlen(text),
        .entries_length = strlen(text),
    };
-   edhoc_message_error_compose(buf, buf_size, &buf_len,
+   edhoc_message_error_compose(ctx, buf, buf_size, &buf_len,
                                EDHOC_ERROR_CODE_UNSPECIFIED_ERROR, &info);
+
+Processing a received error message aborts the session the same way. Cipher
+suite negotiation and the one state that is not aborted are described on the
+:doc:`errors` page.
 
 API pages
 ---------

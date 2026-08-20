@@ -1,3 +1,31 @@
+Version 2.1.1
+-------------
+
+:Date: August 20, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ :
+  ``edhoc_message_error_compose()`` and ``edhoc_message_error_process()`` take a
+  ``struct edhoc_context *`` as their first argument. Add it to every call site.
+
+  The Initiator gains the recovery path it was missing: after
+  ``edhoc_message_error_process()``, ``edhoc_error_get_code()`` returns the
+  received ``ERR_CODE`` and ``edhoc_error_get_cipher_suites()`` returns the own
+  and the received ``SUITES_R`` lists. The Responder keeps its own path through
+  a rejected message 1; the getter is now documented for both roles.
+
+  Both calls abort the session (RFC 9528: 6), so a following ``compose`` or
+  ``process`` of any message fails with ``EDHOC_ERROR_BAD_STATE``. A completed
+  session is not aborted: both return ``EDHOC_ERROR_BAD_STATE`` instead and the
+  exporters keep working, since an error message is not authenticated and the
+  session output may be kept (RFC 9528: 5.1).
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ :
+  ``edhoc_message_error_process()`` sets ``entries_length`` of the caller's
+  ``struct edhoc_error_info`` to ``0`` when the error message carries no
+  ``ERR_INFO``. It used to leave the caller's own value there.
+
+* **API version.** ``EDHOC_API_VERSION_MINOR`` is ``1``.
+
 Version 2.1.0
 -------------
 
