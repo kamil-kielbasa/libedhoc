@@ -182,8 +182,7 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 		break;
 	case EXPORTER_OUTPUT_BYTES:
 		ret = edhoc_kdf_expand_raw(ctx, prk_exporter, (int32_t)label,
-					   context, context_len,
-					   (uint8_t *)output,
+					   context, context_len, (uint8_t *)output,
 					   output_length);
 		break;
 	default:

@@ -460,7 +460,7 @@ int edhoc_message_error_compose(struct edhoc_context *ctx, uint8_t *msg_err,
 	}
 
 	if (!ctx->is_init || EDHOC_SM_COMPLETED <= ctx->state.machine) {
-		EDHOC_LOG_ERR("Bad state: %d", ctx->state.machine);
+		EDHOC_LOG_ERR("Bad state: %d", (int)ctx->state.machine);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -491,7 +491,7 @@ int edhoc_message_error_process(struct edhoc_context *ctx,
 	}
 
 	if (!ctx->is_init || EDHOC_SM_COMPLETED <= ctx->state.machine) {
-		EDHOC_LOG_ERR("Bad state: %d", ctx->state.machine);
+		EDHOC_LOG_ERR("Bad state: %d", (int)ctx->state.machine);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
