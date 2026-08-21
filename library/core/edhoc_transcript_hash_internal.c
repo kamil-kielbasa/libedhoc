@@ -149,8 +149,8 @@ int edhoc_th_compute(struct edhoc_context *ctx,
 	/* The chain is strictly ordered: the preceding hash must be current. */
 	if (EDHOC_TH_STATE_INVALID == input->target ||
 	    input->target - 1 != ctx->state.th.stage) {
-		EDHOC_LOG_ERR("Invalid TH state: %d, %d", ctx->state.th.stage,
-			      input->target);
+		EDHOC_LOG_ERR("Invalid TH state: %d, %d",
+			      (int)ctx->state.th.stage, (int)input->target);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -187,7 +187,7 @@ int edhoc_th_compute(struct edhoc_context *ctx,
 		ret = comp_th_2_ephemeral(ctx, &ephemeral, &ephemeral_length);
 
 		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
+			EDHOC_LOG_ERR("Invalid role: %d", (int)ctx->state.role);
 			return ret;
 		}
 
@@ -344,7 +344,7 @@ int edhoc_th_compute(struct edhoc_context *ctx,
 
 	case EDHOC_TH_STATE_INVALID:
 	default:
-		EDHOC_LOG_ERR("Invalid TH target: %d", input->target);
+		EDHOC_LOG_ERR("Invalid TH target: %d", (int)input->target);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -358,8 +358,8 @@ int edhoc_th_compute(struct edhoc_context *ctx,
 			ctx->state.th.length, &written);
 
 	if (EDHOC_SUCCESS != ret || hash_length != written) {
-		EDHOC_LOG_ERR("TH_%d hash: %d, %zu, %zu", input->target, ret,
-			      hash_length, written);
+		EDHOC_LOG_ERR("TH_%d hash: %d, %zu, %zu", (int)input->target,
+			      ret, hash_length, written);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 

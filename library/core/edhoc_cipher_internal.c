@@ -226,19 +226,19 @@ int edhoc_cipher_derive(struct edhoc_context *ctx, const uint8_t *external_aad,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Invalid message for AEAD: %d",
-			      ctx->state.message);
+			      (int)ctx->state.message);
 		return ret;
 	}
 
 	if (params.th_stage != ctx->state.th.stage) {
-		EDHOC_LOG_ERR("Invalid TH state: %d, %d", ctx->state.th.stage,
-			      params.th_stage);
+		EDHOC_LOG_ERR("Invalid TH state: %d, %d",
+			      (int)ctx->state.th.stage, (int)params.th_stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (params.prk_state != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Invalid PRK state: %d, %d", ctx->state.prk_state,
-			      params.prk_state);
+		EDHOC_LOG_ERR("Invalid PRK state: %d, %d",
+			      (int)ctx->state.prk_state, (int)params.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -253,7 +253,8 @@ int edhoc_cipher_derive(struct edhoc_context *ctx, const uint8_t *external_aad,
 			       csuite->aead_key_length);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive K_%d: %d", ctx->state.message + 1, ret);
+		EDHOC_LOG_ERR("Derive K_%d: %d", (int)ctx->state.message + 1,
+			      ret);
 		return ret;
 	}
 
@@ -264,7 +265,8 @@ int edhoc_cipher_derive(struct edhoc_context *ctx, const uint8_t *external_aad,
 				   iv, iv_length);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive IV_%d: %d", ctx->state.message + 1, ret);
+		EDHOC_LOG_ERR("Derive IV_%d: %d", (int)ctx->state.message + 1,
+			      ret);
 		return ret;
 	}
 
@@ -279,8 +281,8 @@ int edhoc_cipher_derive(struct edhoc_context *ctx, const uint8_t *external_aad,
 	ret = cbor_encode_enc_structure(aad, aad_length, &cose_enc_0, &len);
 
 	if (ZCBOR_SUCCESS != ret) {
-		EDHOC_LOG_ERR("CBOR enc AAD_%d: %d", ctx->state.message + 1,
-			      ret);
+		EDHOC_LOG_ERR("CBOR enc AAD_%d: %d",
+			      (int)ctx->state.message + 1, ret);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
@@ -307,7 +309,7 @@ int edhoc_cipher_encrypt(const struct edhoc_context *ctx, const uint8_t *iv,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Invalid message for AEAD: %d",
-			      ctx->state.message);
+			      (int)ctx->state.message);
 		return ret;
 	}
 
@@ -318,7 +320,7 @@ int edhoc_cipher_encrypt(const struct edhoc_context *ctx, const uint8_t *iv,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Encrypt CIPHERTEXT_%d: %d",
-			      ctx->state.message + 1, ret);
+			      (int)ctx->state.message + 1, ret);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -345,7 +347,7 @@ int edhoc_cipher_decrypt(const struct edhoc_context *ctx, const uint8_t *iv,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Invalid message for AEAD: %d",
-			      ctx->state.message);
+			      (int)ctx->state.message);
 		return ret;
 	}
 
@@ -357,8 +359,8 @@ int edhoc_cipher_decrypt(const struct edhoc_context *ctx, const uint8_t *iv,
 
 	if (EDHOC_SUCCESS != ret || plaintext_length != len) {
 		EDHOC_LOG_ERR("Decrypt CIPHERTEXT_%d: %d, %zu, %zu",
-			      ctx->state.message + 1, ret, plaintext_length,
-			      len);
+			      (int)ctx->state.message + 1, ret,
+			      plaintext_length, len);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
@@ -378,13 +380,13 @@ int edhoc_cipher_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Invalid message for keystream: %d",
-			      ctx->state.message);
+			      (int)ctx->state.message);
 		return ret;
 	}
 
 	if (params.th_stage != ctx->state.th.stage) {
 		EDHOC_LOG_ERR("Invalid TH state for keystream: %d",
-			      ctx->state.th.stage);
+			      (int)ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
