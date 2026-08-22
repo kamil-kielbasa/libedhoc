@@ -555,6 +555,9 @@ int edhoc_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 	case EDHOC_AUTH_STATIC_DH:
 		*mac_len = csuite->mac_length;
 		return EDHOC_SUCCESS;
+	case EDHOC_AUTH_PSK:
+		EDHOC_LOG_ERR("No MAC in EDHOC-PSK");
+		return EDHOC_ERROR_NOT_PERMITTED;
 	default:
 		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
@@ -656,6 +659,9 @@ int edhoc_sign_or_mac_length(const struct edhoc_context *ctx,
 	case EDHOC_AUTH_STATIC_DH:
 		*sign_or_mac_len = csuite->mac_length;
 		return EDHOC_SUCCESS;
+	case EDHOC_AUTH_PSK:
+		EDHOC_LOG_ERR("No Signature_or_MAC in EDHOC-PSK");
+		return EDHOC_ERROR_NOT_PERMITTED;
 	default:
 		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
@@ -700,6 +706,10 @@ int edhoc_sign_or_mac_compute(const struct edhoc_context *ctx,
 		*sign_len = mac_len;
 		memcpy(sign, mac, mac_len);
 		return EDHOC_SUCCESS;
+
+	case EDHOC_AUTH_PSK:
+		EDHOC_LOG_ERR("No Signature_or_MAC in EDHOC-PSK");
+		return EDHOC_ERROR_NOT_PERMITTED;
 
 	default:
 		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
@@ -748,6 +758,10 @@ int edhoc_sign_or_mac_verify(const struct edhoc_context *ctx,
 		}
 
 		return EDHOC_SUCCESS;
+
+	case EDHOC_AUTH_PSK:
+		EDHOC_LOG_ERR("No Signature_or_MAC in EDHOC-PSK");
+		return EDHOC_ERROR_NOT_PERMITTED;
 
 	default:
 		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);

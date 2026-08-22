@@ -36,6 +36,8 @@ enum edhoc_auth_kind {
 	EDHOC_AUTH_SIGNATURE,
 	/** Static Diffie-Hellman. */
 	EDHOC_AUTH_STATIC_DH,
+	/** Pre-shared key (draft-ietf-lake-edhoc-psk: 3). */
+	EDHOC_AUTH_PSK,
 };
 
 /**@}*/

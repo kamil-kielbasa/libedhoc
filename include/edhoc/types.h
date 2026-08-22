@@ -74,6 +74,9 @@ enum edhoc_method {
 	EDHOC_METHOD_2 = 2,
 	/** Initiator static DH key, Responder static DH key. */
 	EDHOC_METHOD_3 = 3,
+	/** Both peers authenticate with a pre-shared key
+	 *  (draft-ietf-lake-edhoc-psk: 10.1). */
+	EDHOC_METHOD_4 = 4,
 };
 
 /**

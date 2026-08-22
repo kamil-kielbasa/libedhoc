@@ -124,6 +124,7 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_2:
 		case EDHOC_METHOD_3:
+		case EDHOC_METHOD_4:
 			break;
 		default:
 			EDHOC_LOG_ERR("Invalid method: %d", method[i]);

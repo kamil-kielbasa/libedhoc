@@ -64,6 +64,19 @@ struct aead_params {
 	enum edhoc_prk_state prk_state;
 };
 
+/**
+ * \brief Everything that separates the keystream of message 2 from that of
+ *        message 3 (draft-ietf-lake-edhoc-psk: 4).
+ */
+struct keystream_params {
+	/** Handle of the PRK the keystream is derived from. */
+	enum edhoc_key_slot_id prk_slot;
+	/** EDHOC_KDF label of the keystream. */
+	int32_t label;
+	/** Transcript hash the message must be at. */
+	enum edhoc_th_state th_stage;
+};
+
 /* Module interface variables and constants -------------------------------- */
 /* Static variables and constants ------------------------------------------ */
 /* Static function declarations -------------------------------------------- */
@@ -79,21 +92,40 @@ struct aead_params {
 STATIC int comp_aead_params(const struct edhoc_context *ctx,
 			    struct aead_params *params);
 
+/**
+ * \brief Select the keystream parameters of the message being handled.
+ *
+ * \param[in] ctx               EDHOC context.
+ * \param[out] params           On success, the selected parameters.
+ *
+ * \return EDHOC_SUCCESS on success, otherwise failure.
+ */
+STATIC int comp_keystream_params(const struct edhoc_context *ctx,
+				 struct keystream_params *params);
+
 /* Static function definitions --------------------------------------------- */
 
 STATIC int comp_aead_params(const struct edhoc_context *ctx,
 			    struct aead_params *params)
 {
+	const bool is_psk =
+		(EDHOC_METHOD_4 == ctx->negotiation.selected_method);
+
 	switch (ctx->state.message) {
 	case EDHOC_MESSAGE_3:
+		/* draft-ietf-lake-edhoc-psk: 4 - CIPHERTEXT_3B is keyed from
+		 * PRK_4e3m, which message 3 has already derived. */
 		*params = (struct aead_params){
-			.prk_slot = EDHOC_KEY_SLOT_PRK_3E2M,
+			.prk_slot = is_psk ? EDHOC_KEY_SLOT_PRK_4E3M :
+					     EDHOC_KEY_SLOT_PRK_3E2M,
 			.key_slot = EDHOC_KEY_SLOT_K_3,
 			.key_label = EDHOC_KDF_LABEL_K_3,
 			.iv_label = EDHOC_KDF_LABEL_IV_3,
 			.th_stage = EDHOC_TH_STATE_3,
-			.prk_state = EDHOC_PRK_STATE_3E2M,
+			.prk_state = is_psk ? EDHOC_PRK_STATE_4E3M :
+					      EDHOC_PRK_STATE_3E2M,
 		};
+
 		return EDHOC_SUCCESS;
 
 	case EDHOC_MESSAGE_4:
@@ -109,6 +141,48 @@ STATIC int comp_aead_params(const struct edhoc_context *ctx,
 
 	case EDHOC_MESSAGE_1:
 	case EDHOC_MESSAGE_2:
+	default:
+		return EDHOC_ERROR_BAD_STATE;
+	}
+}
+
+STATIC int comp_keystream_params(const struct edhoc_context *ctx,
+				 struct keystream_params *params)
+{
+	switch (ctx->state.message) {
+	case EDHOC_MESSAGE_2: {
+		/* For methods 0/2 PRK_2e was moved into PRK_3e2m, so read
+		 * whichever handle still holds it. */
+		const enum edhoc_key_slot_id prk_2e_slot =
+			edhoc_key_slot_present(ctx, EDHOC_KEY_SLOT_PRK_2E) ?
+				EDHOC_KEY_SLOT_PRK_2E :
+				EDHOC_KEY_SLOT_PRK_3E2M;
+
+		*params = (struct keystream_params){
+			.prk_slot = prk_2e_slot,
+			.label = EDHOC_KDF_LABEL_KEYSTREAM_2,
+			.th_stage = EDHOC_TH_STATE_2,
+		};
+
+		return EDHOC_SUCCESS;
+	}
+
+	case EDHOC_MESSAGE_3:
+		/* Only EDHOC-PSK protects message 3 with a keystream. */
+		if (EDHOC_METHOD_4 != ctx->negotiation.selected_method) {
+			return EDHOC_ERROR_BAD_STATE;
+		}
+
+		*params = (struct keystream_params){
+			.prk_slot = EDHOC_KEY_SLOT_PRK_3E2M,
+			.label = EDHOC_KDF_LABEL_KEYSTREAM_3A,
+			.th_stage = EDHOC_TH_STATE_3,
+		};
+
+		return EDHOC_SUCCESS;
+
+	case EDHOC_MESSAGE_1:
+	case EDHOC_MESSAGE_4:
 	default:
 		return EDHOC_ERROR_BAD_STATE;
 	}
@@ -297,27 +371,28 @@ int edhoc_cipher_keystream(const struct edhoc_context *ctx, uint8_t *keystream,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	if (EDHOC_TH_STATE_2 != ctx->state.th.stage) {
-		EDHOC_LOG_ERR("Invalid TH state for keystream_2: %d",
+	struct keystream_params params = { 0 };
+	int ret = comp_keystream_params(ctx, &params);
+
+	if (EDHOC_SUCCESS != ret) {
+		EDHOC_LOG_ERR("Invalid message for keystream: %d",
+			      ctx->state.message);
+		return ret;
+	}
+
+	if (params.th_stage != ctx->state.th.stage) {
+		EDHOC_LOG_ERR("Invalid TH state for keystream: %d",
 			      ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
-	/* For methods 0/2 PRK_2e was moved into PRK_3e2m, so read whichever
-	 * handle still holds it. */
-	const void *prk_2e_key_id =
-		edhoc_key_slot_present(ctx, EDHOC_KEY_SLOT_PRK_2E) ?
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_2E) :
-			edhoc_key_slot_id(ctx, EDHOC_KEY_SLOT_PRK_3E2M);
-
-	const int ret = edhoc_kdf_expand_raw(ctx, prk_2e_key_id,
-					     EDHOC_KDF_LABEL_KEYSTREAM_2,
-					     ctx->state.th.value,
-					     ctx->state.th.length, keystream,
-					     keystream_length);
+	ret = edhoc_kdf_expand_raw(ctx, edhoc_key_slot_id(ctx, params.prk_slot),
+				   params.label, ctx->state.th.value,
+				   ctx->state.th.length, keystream,
+				   keystream_length);
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Derive KEYSTREAM_2: %d, %zu", ret,
+		EDHOC_LOG_ERR("Derive keystream: %d, %zu", ret,
 			      keystream_length);
 		return ret;
 	}

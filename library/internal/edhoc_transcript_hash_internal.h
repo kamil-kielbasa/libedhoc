@@ -35,11 +35,24 @@
 /**
  * \brief Material a transcript hash needs on top of the context.
  *
- *        Each target reads only its own fields:
- *        - TH_1: \p message_1.
+ *        Each target reads only its own fields, and which fields those are
+ *        depends on the authentication family.
+ *
+ *        Classic EDHOC (RFC 9528: 5.3.2, 5.4.2), methods 0 to 3:
+ *        - TH_1 = H( message_1 ): \p message_1.
  *        - TH_2: nothing; both ephemeral values are already in the context.
- *        - TH_3: \p plaintext holds PLAINTEXT_2, \p credential holds CRED_R.
- *        - TH_4: \p plaintext holds PLAINTEXT_3, \p credential holds CRED_I.
+ *        - TH_3 = H( TH_2, PLAINTEXT_2, CRED_R ): \p plaintext and
+ *          \p credential.
+ *        - TH_4 = H( TH_3, PLAINTEXT_3, CRED_I ): \p plaintext and
+ *          \p credential.
+ *
+ *        EDHOC-PSK (draft-ietf-lake-edhoc-psk: 4), method 4:
+ *        - TH_1 and TH_2 as above.
+ *        - TH_3 = H( TH_2, PLAINTEXT_2A ): \p plaintext only, because
+ *          message 2 carries no credential.
+ *        - TH_4 = H( TH_3, ID_CRED_PSK, PLAINTEXT_3B, CRED_I, CRED_R ):
+ *          \p plaintext, \p credential, \p id_cred and \p peer_credential.
+ *          PLAINTEXT_3B is empty when message 3 carries no EAD_3.
  */
 struct edhoc_th_input {
 	/** Transcript hash to compute; the previous one must be current. */
@@ -50,15 +63,27 @@ struct edhoc_th_input {
 	/** Size of the \p message_1 buffer in bytes. */
 	size_t message_1_length;
 
-	/** TH_3: PLAINTEXT_2. TH_4: PLAINTEXT_3. */
+	/** TH_3: PLAINTEXT_2, or PLAINTEXT_2A under method 4.
+	 *  TH_4: PLAINTEXT_3, or PLAINTEXT_3B under method 4. */
 	const uint8_t *plaintext;
 	/** Size of the \p plaintext buffer in bytes. */
 	size_t plaintext_length;
 
-	/** TH_3: CRED_R. TH_4: CRED_I. Already CBOR-encoded. */
+	/** TH_3: CRED_R, unused under method 4. TH_4: CRED_I. Already
+	 *  CBOR-encoded. */
 	const uint8_t *credential;
 	/** Size of the \p credential buffer in bytes. */
 	size_t credential_length;
+
+	/** TH_4 under method 4: ID_CRED_PSK. Already CBOR-encoded. */
+	const uint8_t *id_cred;
+	/** Size of the \p id_cred buffer in bytes. */
+	size_t id_cred_length;
+
+	/** TH_4 under method 4: CRED_R. Already CBOR-encoded. */
+	const uint8_t *peer_credential;
+	/** Size of the \p peer_credential buffer in bytes. */
+	size_t peer_credential_length;
 };
 
 /**@}*/
