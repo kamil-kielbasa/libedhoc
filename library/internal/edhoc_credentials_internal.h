@@ -167,6 +167,8 @@ int edhoc_credential_parse_map(const struct id_cred_x *id_cred_map,
 /**
  * \brief Validate the credentials the application returned from \c fetch.
  *
+ * \param method                       Negotiated method; selects the member of
+ *                                      \p selected that must be filled in.
  * \param[in] selected                  Local authentication credential.
  *
  * \retval #EDHOC_SUCCESS
@@ -174,11 +176,14 @@ int edhoc_credential_parse_map(const struct id_cred_x *id_cred_map,
  * \return Negative error code on failure.
  */
 int edhoc_credential_validate_selected(
+	enum edhoc_method method,
 	const struct edhoc_credential_selected *selected);
 
 /**
  * \brief Validate what the application returned from \c authenticate_peer.
  *
+ * \param method                       Negotiated method; selects the member of
+ *                                      \p trusted that must be filled in.
  * \param[in] received                  Peer identification, as received.
  * \param[in] trusted                   Peer credential the application vouches for.
  *
@@ -187,6 +192,7 @@ int edhoc_credential_validate_selected(
  * \return Negative error code on failure.
  */
 int edhoc_credential_validate_trusted(
+	enum edhoc_method method,
 	const struct edhoc_credential_received *received,
 	const struct edhoc_credential_trusted *trusted);
 

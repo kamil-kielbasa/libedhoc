@@ -257,7 +257,8 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	ret = edhoc_credential_validate_selected(&selected);
+	ret = edhoc_credential_validate_selected(
+		ctx->negotiation.selected_method, &selected);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Validate selected credential: %d", ret);
@@ -272,8 +273,8 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 6. Compute pseudorandom key (PRK_3e2m). */
-	ret = edhoc_key_schedule_prk_advance(ctx, selected.private_key_id, NULL,
-					     0);
+	ret = edhoc_key_schedule_prk_advance(
+		ctx, selected.asymmetric.private_key_id, NULL, 0);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_3e2m: %d", ret);
@@ -357,8 +358,8 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 		EDHOC_MEM_FREE(mac_ctx_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
-	ret = edhoc_sign_or_mac_compute(ctx, selected.private_key_id, mac_ctx,
-					mac_buf, mac_length, signature,
+	ret = edhoc_sign_or_mac_compute(ctx, selected.asymmetric.private_key_id,
+					mac_ctx, mac_buf, mac_length, signature,
 					EDHOC_MEM_ALLOC_SIZE(signature),
 					&signature_length);
 	EDHOC_MEM_FREE(mac_buf);
@@ -674,8 +675,9 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	ret = edhoc_credential_validate_trusted(&parsed_ptxt.peer_credential_id,
-						&trusted);
+	ret = edhoc_credential_validate_trusted(
+		ctx->negotiation.selected_method,
+		&parsed_ptxt.peer_credential_id, &trusted);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Validate trusted credentials: %d", ret);
@@ -685,7 +687,8 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 
 	/* 11. Compute pseudorandom key (PRK_3e2m). */
 	ret = edhoc_key_schedule_prk_advance(
-		ctx, NULL, trusted.public_key.value, trusted.public_key.length);
+		ctx, NULL, trusted.asymmetric.public_key.value,
+		trusted.asymmetric.public_key.length);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_3e2m: %d", ret);
@@ -763,8 +766,9 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	}
 
 	/* 15. Verify Signature_or_MAC_2. */
-	ret = edhoc_sign_or_mac_verify(ctx, mac_ctx, trusted.public_key.value,
-				       trusted.public_key.length,
+	ret = edhoc_sign_or_mac_verify(ctx, mac_ctx,
+				       trusted.asymmetric.public_key.value,
+				       trusted.asymmetric.public_key.length,
 				       parsed_ptxt.sign_or_mac.value,
 				       parsed_ptxt.sign_or_mac.length, mac_buf,
 				       mac_length);

@@ -507,12 +507,14 @@ static int mock_cred_select_local(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	selected->x509_chain.count = 1;
-	selected->x509_chain.certificate[0].value = fake_cert;
-	selected->x509_chain.certificate[0].length = sizeof(fake_cert);
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->asymmetric.x509_chain.count = 1;
+	selected->asymmetric.x509_chain.certificate[0].value = fake_cert;
+	selected->asymmetric.x509_chain.certificate[0].length =
+		sizeof(fake_cert);
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -533,15 +535,17 @@ mock_cred_select_local_kid(void *user_ctx,
 	 * one-byte form (RFC 9528: 3.3.2). */
 	static const uint8_t kid[] = { 0x05 };
 
-	selected->label = EDHOC_COSE_HEADER_KID;
-	selected->kid.identifier.value = kid;
-	selected->kid.identifier.length = ARRAY_SIZE(kid);
-	selected->kid.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	selected->asymmetric.label = EDHOC_COSE_HEADER_KID;
+	selected->asymmetric.kid.identifier.value = kid;
+	selected->asymmetric.kid.identifier.length = ARRAY_SIZE(kid);
+	selected->asymmetric.kid.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
-	selected->kid.credential.value = mock_kid_credential;
-	selected->kid.credential.length = ARRAY_SIZE(mock_kid_credential);
+	selected->asymmetric.kid.credential.value = mock_kid_credential;
+	selected->asymmetric.kid.credential.length =
+		ARRAY_SIZE(mock_kid_credential);
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -562,15 +566,17 @@ mock_cred_select_local_kid_bstr(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_KID;
-	selected->kid.identifier.value = kid;
-	selected->kid.identifier.length = ARRAY_SIZE(kid);
-	selected->kid.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	selected->asymmetric.label = EDHOC_COSE_HEADER_KID;
+	selected->asymmetric.kid.identifier.value = kid;
+	selected->asymmetric.kid.identifier.length = ARRAY_SIZE(kid);
+	selected->asymmetric.kid.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
-	selected->kid.credential.value = mock_kid_credential;
-	selected->kid.credential.length = ARRAY_SIZE(mock_kid_credential);
+	selected->asymmetric.kid.credential.value = mock_kid_credential;
+	selected->asymmetric.kid.credential.length =
+		ARRAY_SIZE(mock_kid_credential);
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -591,20 +597,23 @@ mock_cred_select_local_x5t_bstr(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_HASH;
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_HASH;
 
-	selected->x509_hash.certificate.value = mock_x5t_certificate;
-	selected->x509_hash.certificate.length =
+	selected->asymmetric.x509_hash.certificate.value = mock_x5t_certificate;
+	selected->asymmetric.x509_hash.certificate.length =
 		ARRAY_SIZE(mock_x5t_certificate);
 
-	selected->x509_hash.fingerprint.value = fake_fp;
-	selected->x509_hash.fingerprint.length = ARRAY_SIZE(fake_fp);
+	selected->asymmetric.x509_hash.fingerprint.value = fake_fp;
+	selected->asymmetric.x509_hash.fingerprint.length = ARRAY_SIZE(fake_fp);
 
-	selected->x509_hash.algorithm.encode_type = EDHOC_ENCODE_TYPE_STRING;
-	selected->x509_hash.algorithm.string.value = alg;
-	selected->x509_hash.algorithm.string.length = ARRAY_SIZE(alg);
+	selected->asymmetric.x509_hash.algorithm.encode_type =
+		EDHOC_ENCODE_TYPE_STRING;
+	selected->asymmetric.x509_hash.algorithm.string.value = alg;
+	selected->asymmetric.x509_hash.algorithm.string.length =
+		ARRAY_SIZE(alg);
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -623,19 +632,21 @@ mock_cred_select_local_x5t_int(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_HASH;
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_HASH;
 
-	selected->x509_hash.certificate.value = mock_x5t_certificate;
-	selected->x509_hash.certificate.length =
+	selected->asymmetric.x509_hash.certificate.value = mock_x5t_certificate;
+	selected->asymmetric.x509_hash.certificate.length =
 		ARRAY_SIZE(mock_x5t_certificate);
 
-	selected->x509_hash.fingerprint.value = fake_fp;
-	selected->x509_hash.fingerprint.length = ARRAY_SIZE(fake_fp);
+	selected->asymmetric.x509_hash.fingerprint.value = fake_fp;
+	selected->asymmetric.x509_hash.fingerprint.length = ARRAY_SIZE(fake_fp);
 
-	selected->x509_hash.algorithm.encode_type = EDHOC_ENCODE_TYPE_INTEGER;
-	selected->x509_hash.algorithm.integer = -16; /* SHA-256 */
+	selected->asymmetric.x509_hash.algorithm.encode_type =
+		EDHOC_ENCODE_TYPE_INTEGER;
+	selected->asymmetric.x509_hash.algorithm.integer = -16; /* SHA-256 */
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -655,15 +666,18 @@ mock_cred_select_local_x5chain_multi(void *user_ctx,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	selected->x509_chain.count = 2;
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->asymmetric.x509_chain.count = 2;
 
-	selected->x509_chain.certificate[0].value = fake_cert_0;
-	selected->x509_chain.certificate[0].length = sizeof(fake_cert_0);
-	selected->x509_chain.certificate[1].value = fake_cert_1;
-	selected->x509_chain.certificate[1].length = sizeof(fake_cert_1);
+	selected->asymmetric.x509_chain.certificate[0].value = fake_cert_0;
+	selected->asymmetric.x509_chain.certificate[0].length =
+		sizeof(fake_cert_0);
+	selected->asymmetric.x509_chain.certificate[1].value = fake_cert_1;
+	selected->asymmetric.x509_chain.certificate[1].length =
+		sizeof(fake_cert_1);
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -993,28 +1007,31 @@ int coverage_mock_cred_authenticate_peer(
 	 * the end-entity certificate is handed straight back. */
 	switch (received->label) {
 	case EDHOC_COSE_HEADER_KID:
-		trusted->credential.value = mock_kid_credential;
-		trusted->credential.length = ARRAY_SIZE(mock_kid_credential);
-		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->asymmetric.credential.value = mock_kid_credential;
+		trusted->asymmetric.credential.length =
+			ARRAY_SIZE(mock_kid_credential);
+		trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
-		trusted->credential = received->x509_chain.certificate[0];
-		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->asymmetric.credential =
+			received->x509_chain.certificate[0];
+		trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		trusted->credential.value = mock_x5t_certificate;
-		trusted->credential.length = ARRAY_SIZE(mock_x5t_certificate);
-		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->asymmetric.credential.value = mock_x5t_certificate;
+		trusted->asymmetric.credential.length =
+			ARRAY_SIZE(mock_x5t_certificate);
+		trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 
 	default:
 		break;
 	}
 
-	trusted->public_key.value = fake_pk;
-	trusted->public_key.length = ARRAY_SIZE(fake_pk);
+	trusted->asymmetric.public_key.value = fake_pk;
+	trusted->asymmetric.public_key.length = ARRAY_SIZE(fake_pk);
 
 	return EDHOC_SUCCESS;
 }
@@ -1030,7 +1047,7 @@ int coverage_mock_cred_select_local_invalid_label(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	selected->label = (enum edhoc_cose_header)99;
+	selected->asymmetric.label = (enum edhoc_cose_header)99;
 
 	return EDHOC_SUCCESS;
 }
@@ -1046,10 +1063,11 @@ int coverage_mock_cred_select_local_x509_zero_certs(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	selected->x509_chain.count = 0;
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->asymmetric.x509_chain.count = 0;
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }

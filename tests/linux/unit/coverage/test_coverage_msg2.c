@@ -1047,7 +1047,7 @@ TEST(coverage_msg2, msg2_compose_corrupted_method)
 	size_t msg2_len = 0;
 
 	ret = edhoc_message_2_compose(&resp_ctx, msg2, sizeof(msg2), &msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -1114,7 +1114,7 @@ TEST(coverage_msg2, msg2_process_corrupted_method)
 	coverage_mock_reset(0);
 
 	ret = edhoc_message_2_process(&init_ctx, msg2, msg2_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

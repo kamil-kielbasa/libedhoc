@@ -172,32 +172,33 @@ int benchmark_credentials_select_local(
 
 	const struct benchmark_identity *identity = endpoint->own;
 
-	selected->label = identity->cose_header;
+	selected->asymmetric.label = identity->cose_header;
 
 	switch (identity->cose_header) {
 	case EDHOC_COSE_HEADER_X509_CHAIN:
-		selected->x509_chain.count = identity->cert_count;
+		selected->asymmetric.x509_chain.count = identity->cert_count;
 
 		for (size_t i = 0; i < identity->cert_count; ++i) {
-			selected->x509_chain.certificate[i].value =
+			selected->asymmetric.x509_chain.certificate[i].value =
 				identity->cert[i].pointer;
-			selected->x509_chain.certificate[i].length =
+			selected->asymmetric.x509_chain.certificate[i].length =
 				identity->cert[i].length;
 		}
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		selected->x509_hash.certificate.value =
+		selected->asymmetric.x509_hash.certificate.value =
 			identity->cert[0].pointer;
-		selected->x509_hash.certificate.length =
+		selected->asymmetric.x509_hash.certificate.length =
 			identity->cert[0].length;
-		selected->x509_hash.fingerprint.value = identity->thumbprint;
-		selected->x509_hash.fingerprint.length =
+		selected->asymmetric.x509_hash.fingerprint.value =
+			identity->thumbprint;
+		selected->asymmetric.x509_hash.fingerprint.length =
 			identity->thumbprint_length;
-		selected->x509_hash.algorithm.encode_type =
+		selected->asymmetric.x509_hash.algorithm.encode_type =
 			EDHOC_ENCODE_TYPE_INTEGER;
-		selected->x509_hash.algorithm.integer =
+		selected->asymmetric.x509_hash.algorithm.integer =
 			identity->thumbprint_algorithm;
 
 		break;
@@ -206,10 +207,10 @@ int benchmark_credentials_select_local(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	return benchmark_import_private_key(identity->key_import,
-					    identity->private_key,
-					    identity->private_key_length,
-					    selected->private_key_id);
+	return benchmark_import_private_key(
+		identity->key_import, identity->private_key,
+		identity->private_key_length,
+		selected->asymmetric.private_key_id);
 }
 
 int benchmark_credentials_authenticate_peer(
@@ -250,8 +251,9 @@ int benchmark_credentials_authenticate_peer(
 			}
 		}
 
-		trusted->credential = received->x509_chain.certificate[0];
-		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->asymmetric.credential =
+			received->x509_chain.certificate[0];
+		trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 		break;
 	}
@@ -293,9 +295,11 @@ int benchmark_credentials_authenticate_peer(
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
 		}
 
-		trusted->credential.value = identity->cert[0].pointer;
-		trusted->credential.length = identity->cert[0].length;
-		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->asymmetric.credential.value =
+			identity->cert[0].pointer;
+		trusted->asymmetric.credential.length =
+			identity->cert[0].length;
+		trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 		break;
 	}
@@ -304,8 +308,8 @@ int benchmark_credentials_authenticate_peer(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	trusted->public_key.value = identity->public_key;
-	trusted->public_key.length = identity->public_key_length;
+	trusted->asymmetric.public_key.value = identity->public_key;
+	trusted->asymmetric.public_key.length = identity->public_key_length;
 
 	return EDHOC_SUCCESS;
 }

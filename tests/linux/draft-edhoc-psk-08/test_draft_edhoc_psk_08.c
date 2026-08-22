@@ -61,6 +61,24 @@ static int auth_cred_authenticate_peer_resp(
 	const struct edhoc_credential_received *received,
 	struct edhoc_credential_trusted *trusted);
 
+/**
+ * \brief Authentication credentials fetch callback for responder; EDHOC-PSK
+ *        never calls it.
+ */
+static int
+auth_cred_select_local_resp_unused(void *user_ctx,
+				   const struct edhoc_call_context *call_ctx,
+				   struct edhoc_credential_selected *selected);
+
+/**
+ * \brief Authentication credentials authenticate peer callback for initiator;
+ *        EDHOC-PSK never calls it.
+ */
+static int auth_cred_authenticate_peer_init_unused(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
+
 /* Static variables and constants ------------------------------------------ */
 
 static int ret = EDHOC_ERROR_GENERIC_ERROR;
@@ -85,11 +103,11 @@ static const size_t EXPORTER_LABEL_RESUMPTION_KID = 3;
 /* EDHOC-PSK calls exactly one credentials callback per role. */
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.select_local = auth_cred_select_local_init,
-	.authenticate_peer = NULL,
+	.authenticate_peer = auth_cred_authenticate_peer_init_unused,
 };
 
 static const struct edhoc_credentials edhoc_auth_cred_mocked_resp = {
-	.select_local = NULL,
+	.select_local = auth_cred_select_local_resp_unused,
 	.authenticate_peer = auth_cred_authenticate_peer_resp,
 };
 
@@ -220,17 +238,20 @@ auth_cred_select_local_init(void *user_ctx,
 
 	/* Draft: 3.2 - the credential fields appear first in message 3. */
 	TEST_ASSERT_EQUAL(EDHOC_ROLE_INITIATOR, call_ctx->role);
+	TEST_ASSERT_EQUAL(EDHOC_METHOD_4, call_ctx->method);
 	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_3, call_ctx->message);
 
-	selected->label = EDHOC_COSE_HEADER_KID;
-	selected->kid.identifier.value = ID_CRED_PSK;
-	selected->kid.identifier.length = ARRAY_SIZE(ID_CRED_PSK);
-	selected->kid.credential.value = CRED_I;
-	selected->kid.credential.length = ARRAY_SIZE(CRED_I);
-	selected->kid.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	selected->psk.label = EDHOC_COSE_HEADER_KID;
+	selected->psk.kid.identifier.value = ID_CRED_PSK;
+	selected->psk.kid.identifier.length = ARRAY_SIZE(ID_CRED_PSK);
+	selected->psk.cred_i.value = CRED_I;
+	selected->psk.cred_i.length = ARRAY_SIZE(CRED_I);
+	selected->psk.cred_r.value = CRED_R;
+	selected->psk.cred_r.length = ARRAY_SIZE(CRED_R);
+	selected->psk.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
-	const int res = import_psk(selected->private_key_id,
-				   ARRAY_SIZE(selected->private_key_id));
+	const int res = import_psk(selected->psk.psk_key_id,
+				   ARRAY_SIZE(selected->psk.psk_key_id));
 
 	if (EDHOC_SUCCESS != res) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -251,6 +272,7 @@ static int auth_cred_authenticate_peer_resp(
 	}
 
 	TEST_ASSERT_EQUAL(EDHOC_ROLE_RESPONDER, call_ctx->role);
+	TEST_ASSERT_EQUAL(EDHOC_METHOD_4, call_ctx->method);
 	TEST_ASSERT_EQUAL(EDHOC_MESSAGE_3, call_ctx->message);
 
 	if (EDHOC_COSE_HEADER_KID != received->label) {
@@ -264,17 +286,50 @@ static int auth_cred_authenticate_peer_resp(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	trusted->credential.value = CRED_I;
-	trusted->credential.length = ARRAY_SIZE(CRED_I);
-	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->psk.cred_i.value = CRED_I;
+	trusted->psk.cred_i.length = ARRAY_SIZE(CRED_I);
+	trusted->psk.cred_r.value = CRED_R;
+	trusted->psk.cred_r.length = ARRAY_SIZE(CRED_R);
+	trusted->psk.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+
+	const int res = import_psk(trusted->psk.psk_key_id,
+				   ARRAY_SIZE(trusted->psk.psk_key_id));
+
+	if (EDHOC_SUCCESS != res) {
+		return EDHOC_ERROR_CREDENTIALS_FAILURE;
+	}
 
 	return EDHOC_SUCCESS;
+}
+
+static int
+auth_cred_select_local_resp_unused(void *user_ctx,
+				   const struct edhoc_call_context *call_ctx,
+				   struct edhoc_credential_selected *selected)
+{
+	(void)user_ctx;
+	(void)call_ctx;
+	(void)selected;
+
+	return EDHOC_ERROR_NOT_PERMITTED;
+}
+
+static int auth_cred_authenticate_peer_init_unused(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted)
+{
+	(void)user_ctx;
+	(void)call_ctx;
+	(void)received;
+	(void)trusted;
+
+	return EDHOC_ERROR_NOT_PERMITTED;
 }
 
 /* Module interface function definitions ----------------------------------- */
 
 TEST_GROUP(draft_edhoc_psk_08);
-
 TEST_SETUP(draft_edhoc_psk_08)
 {
 	ret = psa_crypto_init();

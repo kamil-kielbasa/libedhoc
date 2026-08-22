@@ -24,13 +24,15 @@ int test_auth_cred_select_local_stub(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	selected->x509_chain.count = 1;
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->asymmetric.x509_chain.count = 1;
 
 	static const uint8_t dummy_cert[] = { 0x30, 0x00 };
-	selected->x509_chain.certificate[0].value = dummy_cert;
-	selected->x509_chain.certificate[0].length = sizeof(dummy_cert);
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	selected->asymmetric.x509_chain.certificate[0].value = dummy_cert;
+	selected->asymmetric.x509_chain.certificate[0].length =
+		sizeof(dummy_cert);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -52,12 +54,12 @@ int test_auth_cred_authenticate_peer_stub(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	trusted->credential = received->x509_chain.certificate[0];
-	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->asymmetric.credential = received->x509_chain.certificate[0];
+	trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 	static const uint8_t dummy_key[32] = { 0 };
-	trusted->public_key.value = dummy_key;
-	trusted->public_key.length = ARRAY_SIZE(dummy_key);
+	trusted->asymmetric.public_key.value = dummy_key;
+	trusted->asymmetric.public_key.length = ARRAY_SIZE(dummy_key);
 
 	return EDHOC_SUCCESS;
 }

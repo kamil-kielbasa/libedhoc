@@ -280,7 +280,7 @@ TEST(internals_mac, mac_ctx_len_unsupported_cred)
 TEST(internals_mac, mac_ctx_len_invalid_kid_encode)
 {
 	const struct edhoc_credential_selected cred = {
-		.label = (enum edhoc_cose_header)99,
+		.asymmetric.label = (enum edhoc_cose_header)99,
 	};
 
 	struct edhoc_credential_material material = { 0 };
@@ -824,8 +824,8 @@ TEST(internals_mac, mac_ctx_buffer_too_small)
 TEST(internals_mac, mac_ctx_x509_chain_zero_certs)
 {
 	const struct edhoc_credential_selected cred = {
-		.label = EDHOC_COSE_HEADER_X509_CHAIN,
-		.x509_chain.count = 0,
+		.asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.asymmetric.x509_chain.count = 0,
 	};
 
 	struct edhoc_credential_material material = { 0 };
@@ -848,11 +848,13 @@ TEST(internals_mac, mac_ctx_kid_bstr_short_form)
 	const uint8_t fake_cred[] = { 0x30, 0x00 };
 	const uint8_t kid[] = { 0x2b };
 	const struct edhoc_credential_selected cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-		.kid.identifier = { .value = kid, .length = ARRAY_SIZE(kid) },
-		.kid.credential = { .value = fake_cred,
-				    .length = ARRAY_SIZE(fake_cred) },
-		.kid.format = EDHOC_CREDENTIAL_FORMAT_RAW,
+		.asymmetric.label = EDHOC_COSE_HEADER_KID,
+		.asymmetric.kid.identifier = { .value = kid,
+					       .length = ARRAY_SIZE(kid) },
+		.asymmetric.kid.credential = { .value = fake_cred,
+					       .length =
+						       ARRAY_SIZE(fake_cred) },
+		.asymmetric.kid.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 	};
 
 	struct edhoc_credential_material material = { 0 };
@@ -1477,11 +1479,11 @@ TEST(internals_mac, comp_sign_or_mac_method1_msg2)
 
 	const uint8_t dummy_cert[100] = { 0 };
 	const struct edhoc_credential_selected cred = {
-		.label = EDHOC_COSE_HEADER_X509_CHAIN,
-		.x509_chain.count = 1,
-		.x509_chain.certificate[0] = { .value = dummy_cert,
-					       .length =
-						       ARRAY_SIZE(dummy_cert) },
+		.asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN,
+		.asymmetric.x509_chain.count = 1,
+		.asymmetric.x509_chain.certificate[0] = { .value = dummy_cert,
+							  .length = ARRAY_SIZE(
+								  dummy_cert) },
 	};
 
 	struct edhoc_credential_material material = { 0 };
@@ -1527,11 +1529,13 @@ TEST(internals_mac, comp_sign_or_mac_method2_msg3)
 	const uint8_t dummy_cred[50] = { 0 };
 	const uint8_t kid[] = { 0x04 };
 	const struct edhoc_credential_selected cred = {
-		.label = EDHOC_COSE_HEADER_KID,
-		.kid.identifier = { .value = kid, .length = ARRAY_SIZE(kid) },
-		.kid.credential = { .value = dummy_cred,
-				    .length = ARRAY_SIZE(dummy_cred) },
-		.kid.format = EDHOC_CREDENTIAL_FORMAT_RAW,
+		.asymmetric.label = EDHOC_COSE_HEADER_KID,
+		.asymmetric.kid.identifier = { .value = kid,
+					       .length = ARRAY_SIZE(kid) },
+		.asymmetric.kid.credential = { .value = dummy_cred,
+					       .length =
+						       ARRAY_SIZE(dummy_cred) },
+		.asymmetric.kid.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 	};
 
 	struct edhoc_credential_material material = { 0 };
