@@ -76,6 +76,12 @@ make_received(enum edhoc_cose_header label);
 /** \brief Build a credential by reference that passes validation. */
 static struct edhoc_credential_trusted make_valid_trusted(void);
 
+/** \brief Build a method 4 credential every field of which passes validation. */
+static struct edhoc_credential_selected psk_selected_ok(void);
+
+/** \brief Build the peer counterpart of \ref psk_selected_ok. */
+static struct edhoc_credential_trusted psk_trusted_ok(void);
+
 /* Static variables and constants ------------------------------------------ */
 
 /*
@@ -404,6 +410,42 @@ static struct edhoc_credential_trusted make_valid_trusted(void)
 					.length = ARRAY_SIZE(fingerprint) },
 		},
 	};
+}
+
+static struct edhoc_credential_selected psk_selected_ok(void)
+{
+	static const uint8_t kid[] = { 0x00, 0x10 };
+	static const uint8_t cred_i[] = { 0xa1, 0x02, 0x41, 0x49 };
+	static const uint8_t cred_r[] = { 0xa1, 0x02, 0x41, 0x52 };
+
+	struct edhoc_credential_selected selected = { 0 };
+
+	selected.psk.label = EDHOC_COSE_HEADER_KID;
+	selected.psk.kid.identifier.value = kid;
+	selected.psk.kid.identifier.length = ARRAY_SIZE(kid);
+	selected.psk.cred_i.value = cred_i;
+	selected.psk.cred_i.length = ARRAY_SIZE(cred_i);
+	selected.psk.cred_r.value = cred_r;
+	selected.psk.cred_r.length = ARRAY_SIZE(cred_r);
+	selected.psk.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+
+	return selected;
+}
+
+static struct edhoc_credential_trusted psk_trusted_ok(void)
+{
+	static const uint8_t cred_i[] = { 0xa1, 0x02, 0x41, 0x49 };
+	static const uint8_t cred_r[] = { 0xa1, 0x02, 0x41, 0x52 };
+
+	struct edhoc_credential_trusted trusted = { 0 };
+
+	trusted.psk.cred_i.value = cred_i;
+	trusted.psk.cred_i.length = ARRAY_SIZE(cred_i);
+	trusted.psk.cred_r.value = cred_r;
+	trusted.psk.cred_r.length = ARRAY_SIZE(cred_r);
+	trusted.psk.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+
+	return trusted;
 }
 
 /* Module interface function definitions ----------------------------------- */
@@ -1657,6 +1699,420 @@ TEST(internals_credentials, compact_absent_for_x509)
 	TEST_ASSERT_EQUAL_size_t(0, len);
 }
 
+TEST(internals_credentials, psk_validate_selected_accepts)
+{
+	const struct edhoc_credential_selected selected = psk_selected_ok();
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, edhoc_credential_validate_selected(
+						 EDHOC_METHOD_4, &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_label_unset)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	selected.psk.label = EDHOC_COSE_HEADER_NONE;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_label_not_kid)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	selected.psk.label = EDHOC_COSE_HEADER_X509_CHAIN;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_empty_kid)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	selected.psk.kid.identifier.length = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_kid_over_capacity)
+{
+	static const uint8_t kid[EDHOC_CREDENTIAL_KID_MAX_LEN + 1] = { 0 };
+
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	selected.psk.kid.identifier.value = kid;
+	selected.psk.kid.identifier.length = ARRAY_SIZE(kid);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_empty_credential)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	selected.psk.cred_i.length = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+
+	selected = psk_selected_ok();
+	selected.psk.cred_r.length = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_equal_credentials)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	/* draft-ietf-lake-edhoc-psk: 3.1.2 - the two credentials identify the
+	 * two peers, so a Selfie run is rejected. */
+	selected.psk.cred_r = selected.psk.cred_i;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_format_unset)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	selected.psk.format = EDHOC_CREDENTIAL_FORMAT_NONE;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_selected_bad_format)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+
+	selected.psk.format = (enum edhoc_credential_format)99;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED,
+			  edhoc_credential_validate_selected(EDHOC_METHOD_4,
+							     &selected));
+}
+
+TEST(internals_credentials, psk_validate_trusted_accepts)
+{
+	const struct edhoc_credential_received received = {
+		.label = EDHOC_COSE_HEADER_KID,
+	};
+	const struct edhoc_credential_trusted trusted = psk_trusted_ok();
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_validate_trusted(
+				  EDHOC_METHOD_4, &received, &trusted));
+}
+
+TEST(internals_credentials, psk_validate_trusted_rejects)
+{
+	const struct edhoc_credential_received received = {
+		.label = EDHOC_COSE_HEADER_KID,
+	};
+	struct edhoc_credential_trusted trusted = psk_trusted_ok();
+
+	trusted.psk.cred_i.length = 0;
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_trusted(
+				  EDHOC_METHOD_4, &received, &trusted));
+
+	trusted = psk_trusted_ok();
+	trusted.psk.cred_r.length = 0;
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_trusted(
+				  EDHOC_METHOD_4, &received, &trusted));
+
+	trusted = psk_trusted_ok();
+	trusted.psk.cred_r = trusted.psk.cred_i;
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_trusted(
+				  EDHOC_METHOD_4, &received, &trusted));
+
+	trusted = psk_trusted_ok();
+	trusted.psk.format = EDHOC_CREDENTIAL_FORMAT_NONE;
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CREDENTIALS_FAILURE,
+			  edhoc_credential_validate_trusted(
+				  EDHOC_METHOD_4, &received, &trusted));
+
+	trusted = psk_trusted_ok();
+	trusted.psk.format = (enum edhoc_credential_format)99;
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED,
+			  edhoc_credential_validate_trusted(
+				  EDHOC_METHOD_4, &received, &trusted));
+}
+
+TEST(internals_credentials, psk_material_from_selected)
+{
+	const struct edhoc_credential_selected selected = psk_selected_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_material_from_selected(
+				  &selected, &material));
+
+	TEST_ASSERT_EQUAL_PTR(selected.psk.kid.identifier.value,
+			      material.kid.value);
+	TEST_ASSERT_EQUAL_PTR(selected.psk.cred_i.value, material.cred_i.value);
+	TEST_ASSERT_EQUAL_PTR(selected.psk.cred_r.value, material.cred_r.value);
+	TEST_ASSERT_EQUAL(selected.psk.format, material.format);
+}
+
+TEST(internals_credentials, psk_material_from_selected_rejects)
+{
+	struct edhoc_credential_selected selected = psk_selected_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(
+		EDHOC_ERROR_INVALID_ARGUMENT,
+		edhoc_credential_psk_material_from_selected(NULL, &material));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_material_from_selected(&selected,
+								      NULL));
+
+	selected.psk.label = EDHOC_COSE_HEADER_X509_HASH;
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED,
+			  edhoc_credential_psk_material_from_selected(
+				  &selected, &material));
+}
+
+TEST(internals_credentials, psk_material_from_trusted)
+{
+	const struct edhoc_credential_received received = {
+		.label = EDHOC_COSE_HEADER_KID,
+	};
+	const struct edhoc_credential_trusted trusted = psk_trusted_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_material_from_trusted(
+				  &received, &trusted, &material));
+
+	TEST_ASSERT_EQUAL_PTR(trusted.psk.cred_i.value, material.cred_i.value);
+	TEST_ASSERT_EQUAL_PTR(trusted.psk.cred_r.value, material.cred_r.value);
+}
+
+TEST(internals_credentials, psk_material_from_trusted_rejects)
+{
+	struct edhoc_credential_received received = {
+		.label = EDHOC_COSE_HEADER_KID,
+	};
+	const struct edhoc_credential_trusted trusted = psk_trusted_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_material_from_trusted(
+				  NULL, &trusted, &material));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_material_from_trusted(
+				  &received, NULL, &material));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_material_from_trusted(
+				  &received, &trusted, NULL));
+
+	received.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED,
+			  edhoc_credential_psk_material_from_trusted(
+				  &received, &trusted, &material));
+}
+
+TEST(internals_credentials, psk_lengths)
+{
+	const struct edhoc_credential_selected selected = psk_selected_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+	size_t len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_material_from_selected(
+				  &selected, &material));
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_id_cred_length(&material, &len));
+	TEST_ASSERT_GREATER_THAN(material.kid.length, len);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_creds_length(&material, &len));
+	TEST_ASSERT_GREATER_THAN(
+		material.cred_i.length + material.cred_r.length, len);
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_id_cred_length(NULL, &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_id_cred_length(&material, NULL));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_creds_length(NULL, &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_creds_length(&material, NULL));
+}
+
+TEST(internals_credentials, psk_encode_id_cred_bstr)
+{
+	const struct edhoc_credential_selected selected = psk_selected_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_material_from_selected(
+				  &selected, &material));
+
+	/* draft-ietf-lake-edhoc-psk: B.3 - h'0010' compacts to 0x42 0x00 0x10. */
+	static const uint8_t expected[] = { 0x42, 0x00, 0x10 };
+
+	uint8_t buffer[8] = { 0 };
+	size_t len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_encode_id_cred(
+				  &material, buffer, ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(expected), len);
+	TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, buffer, len);
+}
+
+TEST(internals_credentials, psk_encode_id_cred_one_byte_int)
+{
+	/* RFC 9528: 3.3.2 - a one byte 'kid' that is a complete CBOR integer
+	 * travels as that integer. */
+	static const uint8_t kid[] = { 0x2b };
+
+	struct edhoc_credential_material_psk material = {
+		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
+		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
+	};
+
+	uint8_t buffer[8] = { 0 };
+	size_t len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_encode_id_cred(
+				  &material, buffer, ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL_size_t(1, len);
+	TEST_ASSERT_EQUAL_HEX8(kid[0], buffer[0]);
+}
+
+TEST(internals_credentials, psk_encode_id_cred_rejects)
+{
+	const struct edhoc_credential_selected selected = psk_selected_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_material_from_selected(
+				  &selected, &material));
+
+	uint8_t buffer[8] = { 0 };
+	size_t len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_id_cred(
+				  NULL, buffer, ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_id_cred(
+				  &material, NULL, ARRAY_SIZE(buffer), &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_id_cred(&material, buffer,
+							      0, &len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_id_cred(
+				  &material, buffer, ARRAY_SIZE(buffer), NULL));
+
+	uint8_t tiny[1] = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE,
+			  edhoc_credential_psk_encode_id_cred(
+				  &material, tiny, ARRAY_SIZE(tiny), &len));
+}
+
+TEST(internals_credentials, psk_encode_creds)
+{
+	const struct edhoc_credential_selected selected = psk_selected_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_material_from_selected(
+				  &selected, &material));
+
+	uint8_t buffer[32] = { 0 };
+	size_t cred_i_len = 0;
+	size_t cred_r_len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_encode_creds(
+				  &material, buffer, ARRAY_SIZE(buffer),
+				  &cred_i_len, &cred_r_len));
+
+	/* CBOR-encoded credentials are embedded as they are, in this order. */
+	TEST_ASSERT_EQUAL_size_t(material.cred_i.length, cred_i_len);
+	TEST_ASSERT_EQUAL_size_t(material.cred_r.length, cred_r_len);
+	TEST_ASSERT_EQUAL_HEX8_ARRAY(material.cred_i.value, buffer, cred_i_len);
+	TEST_ASSERT_EQUAL_HEX8_ARRAY(material.cred_r.value, &buffer[cred_i_len],
+				     cred_r_len);
+}
+
+TEST(internals_credentials, psk_encode_creds_rejects)
+{
+	const struct edhoc_credential_selected selected = psk_selected_ok();
+	struct edhoc_credential_material_psk material = { 0 };
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  edhoc_credential_psk_material_from_selected(
+				  &selected, &material));
+
+	uint8_t buffer[32] = { 0 };
+	size_t cred_i_len = 0;
+	size_t cred_r_len = 0;
+
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_creds(
+				  NULL, buffer, ARRAY_SIZE(buffer), &cred_i_len,
+				  &cred_r_len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_creds(
+				  &material, NULL, ARRAY_SIZE(buffer),
+				  &cred_i_len, &cred_r_len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_creds(&material, buffer,
+							    0, &cred_i_len,
+							    &cred_r_len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_creds(&material, buffer,
+							    ARRAY_SIZE(buffer),
+							    NULL, &cred_r_len));
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
+			  edhoc_credential_psk_encode_creds(&material, buffer,
+							    ARRAY_SIZE(buffer),
+							    &cred_i_len, NULL));
+
+	/* CRED_I fits exactly, so CRED_R has nowhere to go. */
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL,
+			  edhoc_credential_psk_encode_creds(
+				  &material, buffer, material.cred_i.length,
+				  &cred_i_len, &cred_r_len));
+
+	/* CRED_I does not fit at all. */
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL,
+			  edhoc_credential_psk_encode_creds(&material, buffer,
+							    1, &cred_i_len,
+							    &cred_r_len));
+
+	/* CRED_R starts but does not fit. */
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_BUFFER_TOO_SMALL,
+			  edhoc_credential_psk_encode_creds(
+				  &material, buffer, material.cred_i.length + 1,
+				  &cred_i_len, &cred_r_len));
+}
+
 TEST_GROUP_RUNNER(internals_credentials)
 {
 	RUN_TEST_CASE(internals_credentials, kid_int);
@@ -1717,6 +2173,35 @@ TEST_GROUP_RUNNER(internals_credentials)
 		      validate_selected_x5t_fingerprint_over_limit);
 	RUN_TEST_CASE(internals_credentials,
 		      validate_selected_x5t_bad_encode_type);
+
+	/* Method 4 credentials. */
+	RUN_TEST_CASE(internals_credentials, psk_validate_selected_accepts);
+	RUN_TEST_CASE(internals_credentials, psk_validate_selected_label_unset);
+	RUN_TEST_CASE(internals_credentials,
+		      psk_validate_selected_label_not_kid);
+	RUN_TEST_CASE(internals_credentials, psk_validate_selected_empty_kid);
+	RUN_TEST_CASE(internals_credentials,
+		      psk_validate_selected_kid_over_capacity);
+	RUN_TEST_CASE(internals_credentials,
+		      psk_validate_selected_empty_credential);
+	RUN_TEST_CASE(internals_credentials,
+		      psk_validate_selected_equal_credentials);
+	RUN_TEST_CASE(internals_credentials,
+		      psk_validate_selected_format_unset);
+	RUN_TEST_CASE(internals_credentials, psk_validate_selected_bad_format);
+	RUN_TEST_CASE(internals_credentials, psk_validate_trusted_accepts);
+	RUN_TEST_CASE(internals_credentials, psk_validate_trusted_rejects);
+	RUN_TEST_CASE(internals_credentials, psk_material_from_selected);
+	RUN_TEST_CASE(internals_credentials,
+		      psk_material_from_selected_rejects);
+	RUN_TEST_CASE(internals_credentials, psk_material_from_trusted);
+	RUN_TEST_CASE(internals_credentials, psk_material_from_trusted_rejects);
+	RUN_TEST_CASE(internals_credentials, psk_lengths);
+	RUN_TEST_CASE(internals_credentials, psk_encode_id_cred_bstr);
+	RUN_TEST_CASE(internals_credentials, psk_encode_id_cred_one_byte_int);
+	RUN_TEST_CASE(internals_credentials, psk_encode_id_cred_rejects);
+	RUN_TEST_CASE(internals_credentials, psk_encode_creds);
+	RUN_TEST_CASE(internals_credentials, psk_encode_creds_rejects);
 
 	/* Validation of the credentials returned from authenticate_peer. */
 	RUN_TEST_CASE(internals_credentials, validate_trusted_null);

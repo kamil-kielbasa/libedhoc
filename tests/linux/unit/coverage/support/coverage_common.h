@@ -35,6 +35,9 @@ extern const struct edhoc_credentials coverage_mock_creds_x5t_int;
 /** \brief Credentials using an x509 chain with multiple certificates. */
 extern const struct edhoc_credentials coverage_mock_creds_x5chain_multi;
 
+/** \brief Credentials for method 4: ID_CRED_PSK, CRED_I and CRED_R. */
+extern const struct edhoc_credentials coverage_mock_creds_psk;
+
 /** \brief EAD interface whose compose emits a single token carrying a value. */
 extern const struct edhoc_ead coverage_mock_ead_with_value;
 
@@ -73,6 +76,29 @@ int coverage_setup_mock_context_bstr_cid_initiator(struct edhoc_context *ctx,
 
 int coverage_setup_mock_context_bstr_cid_responder(struct edhoc_context *ctx,
 						   enum edhoc_method method);
+
+/** \brief As the functions above, but bind the method 4 credentials. */
+int coverage_setup_mock_context_psk_initiator(struct edhoc_context *ctx);
+
+int coverage_setup_mock_context_psk_responder(struct edhoc_context *ctx);
+
+/** \brief As the functions above, but use a byte-string connection ID. */
+int coverage_setup_mock_context_psk_bstr_cid_initiator(
+	struct edhoc_context *ctx);
+
+int coverage_setup_mock_context_psk_bstr_cid_responder(
+	struct edhoc_context *ctx);
+
+/** \brief Method 4 fetch callback returning a label method 4 does not accept. */
+int coverage_mock_cred_select_local_psk_invalid_label(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	struct edhoc_credential_selected *selected);
+
+/** \brief Method 4 authenticate callback returning equal CRED_I and CRED_R. */
+int coverage_mock_cred_authenticate_peer_psk_untrusted(
+	void *user_ctx, const struct edhoc_call_context *call_ctx,
+	const struct edhoc_credential_received *received,
+	struct edhoc_credential_trusted *trusted);
 
 /** \brief Compose message 1 on the initiator and process it on the responder. */
 int coverage_do_msg1_flow(struct edhoc_context *init_ctx,

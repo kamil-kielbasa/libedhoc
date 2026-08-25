@@ -151,6 +151,7 @@ STATIC int comp_expand(const struct edhoc_context *ctx, const void *prk_key_id,
 			      context_length, output_length, &info_length);
 
 	if (EDHOC_SUCCESS != ret) {
+		edhoc_zeroize(ctx, info, EDHOC_MEM_ALLOC_SIZE(info));
 		EDHOC_MEM_FREE(info);
 		return ret;
 	}
@@ -172,6 +173,7 @@ STATIC int comp_expand(const struct edhoc_context *ctx, const void *prk_key_id,
 		break;
 	}
 
+	edhoc_zeroize(ctx, info, EDHOC_MEM_ALLOC_SIZE(info));
 	EDHOC_MEM_FREE(info);
 
 	if (EDHOC_SUCCESS != ret) {

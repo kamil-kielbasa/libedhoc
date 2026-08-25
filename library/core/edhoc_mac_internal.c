@@ -155,6 +155,8 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 					&cose_sign_1, &cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret) {
+		edhoc_zeroize(ctx, cose_sign_1_buf,
+			      EDHOC_MEM_ALLOC_SIZE(cose_sign_1_buf));
 		EDHOC_MEM_FREE(cose_sign_1_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
@@ -162,6 +164,8 @@ STATIC int sign_cose_sign_1(const struct edhoc_context *ctx,
 	ret = edhoc_crypto(ctx)->sign(ctx->user_context, private_key_id,
 				      cose_sign_1_buf, cose_sign_1_buf_len,
 				      sign, sign_size, sign_len);
+	edhoc_zeroize(ctx, cose_sign_1_buf,
+		      EDHOC_MEM_ALLOC_SIZE(cose_sign_1_buf));
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -211,6 +215,8 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 					&cose_sign_1, &cose_sign_1_buf_len);
 
 	if (ZCBOR_SUCCESS != ret) {
+		edhoc_zeroize(ctx, cose_sign_1_buf,
+			      EDHOC_MEM_ALLOC_SIZE(cose_sign_1_buf));
 		EDHOC_MEM_FREE(cose_sign_1_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
@@ -220,6 +226,8 @@ STATIC int verify_cose_sign_1(const struct edhoc_context *ctx,
 	ret = edhoc_crypto(ctx)->verify(ctx->user_context, pub_key, pub_key_len,
 					cose_sign_1_buf, cose_sign_1_buf_len,
 					sign, sign_len);
+	edhoc_zeroize(ctx, cose_sign_1_buf,
+		      EDHOC_MEM_ALLOC_SIZE(cose_sign_1_buf));
 	EDHOC_MEM_FREE(cose_sign_1_buf);
 
 	if (EDHOC_SUCCESS != ret) {

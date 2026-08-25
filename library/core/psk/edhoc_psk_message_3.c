@@ -226,20 +226,19 @@ psk_context_compose(const struct edhoc_context *ctx,
  *	1.  Choose most preferred cipher suite.
  *	2.  Compose EAD_3 if present.
  *	3.  Select authentication credential.
- *	4.  Adopt the pre-shared key.
- *	5.  Compute PRK_4e3m.
- *	6a. Compute required buffer length for the PSK context.
- *	6b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R.
- *	7.  Compute K_3, IV_3 and AAD_3.
- *	8.  Prepare plaintext (PLAINTEXT_3B).
- *	9.  Compute ciphertext (CIPHERTEXT_3B).
- *	10. Prepare plaintext (PLAINTEXT_3A).
- *	11. Compute key stream (KEYSTREAM_3A).
- *	12. Compute ciphertext (CIPHERTEXT_3A).
- *	13. Compute transcript hash 4.
- *	14. Generate edhoc message 3.
- *	15. Release the message-3 scoped secrets (PRK_4e3m lives on).
- *	16. Clean-up EAD tokens.
+ *	4.  Compute PRK_4e3m.
+ *	5a. Compute required buffer length for the PSK context.
+ *	5b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R.
+ *	6.  Compute K_3, IV_3 and AAD_3.
+ *	7.  Prepare plaintext (PLAINTEXT_3B).
+ *	8.  Compute ciphertext (CIPHERTEXT_3B).
+ *	9.  Prepare plaintext (PLAINTEXT_3A).
+ *	10. Compute key stream (KEYSTREAM_3A).
+ *	11. Compute ciphertext (CIPHERTEXT_3A).
+ *	12. Compute transcript hash 4.
+ *	13. Generate edhoc message 3.
+ *	14. Release the message-3 scoped secrets (PRK_4e3m lives on).
+ *	15. Clean-up EAD tokens.
  */
 int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 				size_t msg_3_size, size_t *msg_3_len)
@@ -321,7 +320,7 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	/* 6a. Compute required buffer length for the PSK context. */
+	/* 5a. Compute required buffer length for the PSK context. */
 	size_t psk_context_len = 0;
 	ret = psk_context_length(ctx, &material, &psk_context_len);
 
@@ -330,7 +329,7 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return ret;
 	}
 
-	/* 6b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R. */
+	/* 5b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R. */
 	EDHOC_MEM_ALLOC(uint8_t, psk_context_buf,
 			sizeof(struct psk_context) + psk_context_len);
 
@@ -346,6 +345,8 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compose PSK context: %d", ret);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return ret;
 	}
@@ -356,11 +357,13 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(psk_ctx->cred_r, psk_ctx->cred_r_len, "CRED_R");
 	EDHOC_LOG_HEXDUMP_DBG(psk_ctx->buf, psk_ctx->buf_len, "external_aad_3");
 
-	/* 7. Compute K_3, IV_3 and AAD_3. */
+	/* 6. Compute K_3, IV_3 and AAD_3. */
 	EDHOC_MEM_ALLOC(uint8_t, iv, csuite->aead_iv_length);
 
 	if (NULL == iv) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -370,7 +373,10 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute AAD_3 length: %d", ret);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return ret;
 	}
@@ -379,7 +385,10 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (NULL == aad) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -390,8 +399,12 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_3: %d", ret);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -399,7 +412,7 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(iv, EDHOC_MEM_ALLOC_SIZE(iv), "IV_3");
 	EDHOC_LOG_HEXDUMP_DBG(aad, EDHOC_MEM_ALLOC_SIZE(aad), "AAD_3");
 
-	/* 8. Prepare plaintext (PLAINTEXT_3B). */
+	/* 7. Prepare plaintext (PLAINTEXT_3B). */
 	const struct edhoc_plaintext_input plaintext_3b_input = {
 		.id = EDHOC_PLAINTEXT_PSK_3B,
 	};
@@ -410,8 +423,12 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PLAINTEXT_3B length: %d", ret);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return ret;
 	}
@@ -423,8 +440,12 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (NULL == plaintext_3b) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -436,25 +457,37 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Prepare PLAINTEXT_3B: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext_3b, plaintext_3b_len, "PLAINTEXT_3B");
 
-	/* 9. Compute ciphertext (CIPHERTEXT_3B). */
+	/* 8. Compute ciphertext (CIPHERTEXT_3B). */
 	size_t ciphertext_3b_len = 0;
 	EDHOC_MEM_ALLOC(uint8_t, ciphertext_3b,
 			plaintext_3b_len + csuite->aead_tag_length);
 
 	if (NULL == ciphertext_3b) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -464,13 +497,22 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 				   plaintext_3b_len, ciphertext_3b,
 				   EDHOC_MEM_ALLOC_SIZE(ciphertext_3b),
 				   &ciphertext_3b_len);
+
+	edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 	EDHOC_MEM_FREE(aad);
+	edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 	EDHOC_MEM_FREE(iv);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute CIPHERTEXT_3B: %d", ret);
+		edhoc_zeroize(ctx, ciphertext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(ciphertext_3b));
 		EDHOC_MEM_FREE(ciphertext_3b);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -478,7 +520,7 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext_3b, ciphertext_3b_len,
 			      "CIPHERTEXT_3B");
 
-	/* 10. Prepare plaintext (PLAINTEXT_3A). */
+	/* 9. Prepare plaintext (PLAINTEXT_3A). */
 	const struct edhoc_plaintext_input plaintext_3a_input = {
 		.id = EDHOC_PLAINTEXT_PSK_3A,
 		.id_cred_psk = psk_ctx->id_cred,
@@ -493,8 +535,14 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PLAINTEXT_3A length: %d", ret);
+		edhoc_zeroize(ctx, ciphertext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(ciphertext_3b));
 		EDHOC_MEM_FREE(ciphertext_3b);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return ret;
 	}
@@ -503,8 +551,14 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (NULL == plaintext_3a) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, ciphertext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(ciphertext_3b));
 		EDHOC_MEM_FREE(ciphertext_3b);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -513,25 +567,38 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	ret = edhoc_plaintext_compose(ctx, &plaintext_3a_input, plaintext_3a,
 				      EDHOC_MEM_ALLOC_SIZE(plaintext_3a),
 				      &plaintext_3a_len);
+	edhoc_zeroize(ctx, ciphertext_3b, EDHOC_MEM_ALLOC_SIZE(ciphertext_3b));
 	EDHOC_MEM_FREE(ciphertext_3b);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Prepare PLAINTEXT_3A: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext_3a, plaintext_3a_len, "PLAINTEXT_3A");
 
-	/* 11. Compute key stream (KEYSTREAM_3A). */
+	/* 10. Compute key stream (KEYSTREAM_3A). */
 	EDHOC_MEM_ALLOC(uint8_t, keystream, plaintext_3a_len);
 
 	if (NULL == keystream) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -541,9 +608,16 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute KEYSTREAM_3A: %d", ret);
+		edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 		EDHOC_MEM_FREE(keystream);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -551,13 +625,15 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(keystream, EDHOC_MEM_ALLOC_SIZE(keystream),
 			      "KEYSTREAM_3A");
 
-	/* 12. Compute ciphertext (CIPHERTEXT_3A). */
+	/* 11. Compute ciphertext (CIPHERTEXT_3A). */
 	edhoc_cipher_xor(plaintext_3a, keystream, plaintext_3a_len);
+
+	edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 	EDHOC_MEM_FREE(keystream);
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext_3a, plaintext_3a_len, "CIPHERTEXT_3A");
 
-	/* 13. Compute transcript hash 4. */
+	/* 12. Compute transcript hash 4. */
 	const struct edhoc_th_input th_4 = {
 		.target = EDHOC_TH_STATE_4,
 		.id_cred = psk_ctx->id_cred,
@@ -571,11 +647,17 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	};
 
 	ret = edhoc_th_compute(ctx, &th_4);
+
+	edhoc_zeroize(ctx, plaintext_3b, EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 	EDHOC_MEM_FREE(plaintext_3b);
+	edhoc_zeroize(ctx, psk_context_buf,
+		      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 	EDHOC_MEM_FREE(psk_context_buf);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute TH_4: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
@@ -583,7 +665,7 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(ctx->state.th.value, ctx->state.th.length,
 			      "TH_4");
 
-	/* 14. Generate edhoc message 3. */
+	/* 13. Generate edhoc message 3. */
 	const struct zcbor_string ciphertext_3a = {
 		.value = plaintext_3a,
 		.len = plaintext_3a_len,
@@ -591,6 +673,8 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 
 	ret = cbor_encode_message_3_CIPHERTEXT_3(msg_3, msg_3_size,
 						 &ciphertext_3a, msg_3_len);
+
+	edhoc_zeroize(ctx, plaintext_3a, EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 	EDHOC_MEM_FREE(plaintext_3a);
 
 	if (ZCBOR_SUCCESS != ret) {
@@ -601,7 +685,7 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(msg_3, *msg_3_len, "message_3");
 	EDHOC_LOG_INF("Compose PSK msg3 end");
 
-	/* 15. Release the message-3 scoped secrets (PRK_4e3m lives on). */
+	/* 14. Release the message-3 scoped secrets (PRK_4e3m lives on). */
 	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -609,7 +693,7 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	/* 16. Clean-up EAD tokens. */
+	/* 15. Clean-up EAD tokens. */
 	edhoc_ead_reset(ctx);
 
 	ctx->is_oscore_export_allowed = true;
@@ -626,17 +710,16 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
  *	4.  Compute plaintext (PLAINTEXT_3A).
  *	5.  Parse plaintext (PLAINTEXT_3A).
  *	6.  Verify if credentials from peer are trusted.
- *	7.  Adopt the pre-shared key.
- *	8.  Compute PRK_4e3m.
- *	9a. Compute required buffer length for the PSK context.
- *	9b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R.
- *	10. Compute K_3, IV_3 and AAD_3.
- *	11. Decrypt ciphertext (CIPHERTEXT_3B).
- *	12. Parse plaintext (PLAINTEXT_3B).
- *	13. Process EAD_3 if present.
- *	14. Compute transcript hash 4.
- *	15. Release the message-3 scoped secrets (PRK_4e3m lives on).
- *	16. Clean-up EAD tokens.
+ *	7.  Compute PRK_4e3m.
+ *	8a. Compute required buffer length for the PSK context.
+ *	8b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R.
+ *	9.  Compute K_3, IV_3 and AAD_3.
+ *	10. Decrypt ciphertext (CIPHERTEXT_3B).
+ *	11. Parse plaintext (PLAINTEXT_3B).
+ *	12. Process EAD_3 if present.
+ *	13. Compute transcript hash 4.
+ *	14. Release the message-3 scoped secrets (PRK_4e3m lives on).
+ *	15. Clean-up EAD tokens.
  */
 int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 				size_t msg_3_len)
@@ -700,6 +783,7 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute KEYSTREAM_3A: %d", ret);
+		edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 		EDHOC_MEM_FREE(keystream);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -712,12 +796,14 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (NULL == plaintext_3a) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 		EDHOC_MEM_FREE(keystream);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
 	memcpy(plaintext_3a, ciphertext_3a.value, ciphertext_3a.len);
 	edhoc_cipher_xor(plaintext_3a, keystream, ciphertext_3a.len);
+	edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 	EDHOC_MEM_FREE(keystream);
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext_3a, ciphertext_3a.len, "PLAINTEXT_3A");
@@ -730,6 +816,8 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_3A: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 	}
@@ -746,6 +834,8 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Authenticate peer credential: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		ctx->error_code =
 			EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED;
@@ -758,6 +848,8 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Validate trusted credential: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return ret;
 	}
@@ -768,6 +860,8 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		&parsed.peer_credential_id, &trusted, &material);
 
 	if (EDHOC_SUCCESS != ret) {
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return ret;
 	}
@@ -778,26 +872,32 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_4e3m: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
 
-	/* 9a. Compute required buffer length for the PSK context. */
+	/* 8a. Compute required buffer length for the PSK context. */
 	size_t psk_context_len = 0;
 	ret = psk_context_length(ctx, &material, &psk_context_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PSK context length: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return ret;
 	}
 
-	/* 9b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R. */
+	/* 8b. Cborise ID_CRED_PSK, TH_3, CRED_I and CRED_R. */
 	EDHOC_MEM_ALLOC(uint8_t, psk_context_buf,
 			sizeof(struct psk_context) + psk_context_len);
 
 	if (NULL == psk_context_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -809,19 +909,27 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compose PSK context: %d", ret);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return ret;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(psk_ctx->buf, psk_ctx->buf_len, "external_aad_3");
 
-	/* 10. Compute K_3, IV_3 and AAD_3. */
+	/* 9. Compute K_3, IV_3 and AAD_3. */
 	EDHOC_MEM_ALLOC(uint8_t, iv, csuite->aead_iv_length);
 
 	if (NULL == iv) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -831,8 +939,13 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute AAD_3 length: %d", ret);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return ret;
 	}
@@ -841,8 +954,13 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (NULL == aad) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -853,9 +971,15 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_3: %d", ret);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -863,13 +987,19 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	EDHOC_LOG_HEXDUMP_DBG(iv, EDHOC_MEM_ALLOC_SIZE(iv), "IV_3");
 	EDHOC_LOG_HEXDUMP_DBG(aad, EDHOC_MEM_ALLOC_SIZE(aad), "AAD_3");
 
-	/* 11. Decrypt ciphertext (CIPHERTEXT_3B). */
+	/* 10. Decrypt ciphertext (CIPHERTEXT_3B). */
 	if (csuite->aead_tag_length > parsed.ciphertext_3b.length) {
 		EDHOC_LOG_ERR("CIPHERTEXT_3B too short: %zu",
 			      parsed.ciphertext_3b.length);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 	}
@@ -884,9 +1014,15 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 
 	if (NULL == plaintext_3b) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
+		edhoc_zeroize(ctx, plaintext_3a,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 		EDHOC_MEM_FREE(plaintext_3a);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -896,40 +1032,55 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 				   parsed.ciphertext_3b.value,
 				   parsed.ciphertext_3b.length, plaintext_3b,
 				   plaintext_3b_len);
+	edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 	EDHOC_MEM_FREE(aad);
+	edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 	EDHOC_MEM_FREE(iv);
+	edhoc_zeroize(ctx, plaintext_3a, EDHOC_MEM_ALLOC_SIZE(plaintext_3a));
 	EDHOC_MEM_FREE(plaintext_3a);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decrypt CIPHERTEXT_3B: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 	}
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext_3b, plaintext_3b_len, "PLAINTEXT_3B");
 
-	/* 12. Parse plaintext (PLAINTEXT_3B). */
+	/* 11. Parse plaintext (PLAINTEXT_3B). */
 	ret = edhoc_plaintext_parse(ctx, EDHOC_PLAINTEXT_PSK_3B, plaintext_3b,
 				    plaintext_3b_len, NULL);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_3B: %d", ret);
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return EDHOC_ERROR_MSG_3_PROCESS_FAILURE;
 	}
 
-	/* 13. Process EAD_3 if present. */
+	/* 12. Process EAD_3 if present. */
 	ret = edhoc_ead_process(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
+		edhoc_zeroize(ctx, plaintext_3b,
+			      EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 		EDHOC_MEM_FREE(plaintext_3b);
+		edhoc_zeroize(ctx, psk_context_buf,
+			      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 		EDHOC_MEM_FREE(psk_context_buf);
 		return ret;
 	}
 
-	/* 14. Compute transcript hash 4. */
+	/* 13. Compute transcript hash 4. */
 	const struct edhoc_th_input th_4 = {
 		.target = EDHOC_TH_STATE_4,
 		.id_cred = psk_ctx->id_cred,
@@ -943,7 +1094,11 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	};
 
 	ret = edhoc_th_compute(ctx, &th_4);
+
+	edhoc_zeroize(ctx, plaintext_3b, EDHOC_MEM_ALLOC_SIZE(plaintext_3b));
 	EDHOC_MEM_FREE(plaintext_3b);
+	edhoc_zeroize(ctx, psk_context_buf,
+		      EDHOC_MEM_ALLOC_SIZE(psk_context_buf));
 	EDHOC_MEM_FREE(psk_context_buf);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -955,7 +1110,7 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 			      "TH_4");
 	EDHOC_LOG_INF("Process PSK msg3 end");
 
-	/* 15. Release the message-3 scoped secrets (PRK_4e3m lives on). */
+	/* 14. Release the message-3 scoped secrets (PRK_4e3m lives on). */
 	ret = edhoc_key_slot_release_up_to(ctx, EDHOC_KEY_SLOT_PRK_4E3M);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -963,7 +1118,7 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
-	/* 16. Clean-up EAD tokens. */
+	/* 15. Clean-up EAD tokens. */
 	edhoc_ead_reset(ctx);
 
 	ctx->is_oscore_export_allowed = true;

@@ -113,6 +113,7 @@ STATIC int compose_g_y_ciphertext_2a(const struct edhoc_context *ctx,
 
 	const int ret = cbor_encode_message_2_G_Y_CIPHERTEXT_2(
 		msg_2, msg_2_size, &input, msg_2_len);
+	edhoc_zeroize(ctx, buffer, EDHOC_MEM_ALLOC_SIZE(buffer));
 	EDHOC_MEM_FREE(buffer);
 
 	if (ZCBOR_SUCCESS != ret) {
@@ -162,18 +163,18 @@ bool edhoc_psk_is_selected(const struct edhoc_context *ctx)
 
 /**
  * Steps for composition of message 2:
- *	1. KEM encapsulate to the peer's G_X (produce G_Y and G_XY).
- *	2. Compute Transcript Hash 2 (TH_2).
- *	3. Compute Pseudo Random Key 2 (PRK_2e).
- *	4. Compose EAD_2 if present.
- *	5. Compute pseudorandom key (PRK_3e2m), which equals PRK_2e.
- *	6. Prepare plaintext (PLAINTEXT_2A).
- *	7. Compute key stream (KEYSTREAM_2A).
- *	8. Compute Transcript Hash 3 (TH_3).
- *	9. Compute ciphertext (CIPHERTEXT_2A).
- *     10. Cborise items for message 2.
- *     11. Release the message-2 scoped secrets (PRK_3e2m lives on).
- *     12. Clean-up EAD tokens.
+ *	1.  KEM encapsulate to the peer's G_X (produce G_Y and G_XY).
+ *	2.  Compute Transcript Hash 2 (TH_2).
+ *	3.  Compute Pseudo Random Key 2 (PRK_2e).
+ *	4.  Compose EAD_2 if present.
+ *	5.  Compute pseudorandom key (PRK_3e2m), which equals PRK_2e.
+ *	6.  Prepare plaintext (PLAINTEXT_2A).
+ *	7.  Compute key stream (KEYSTREAM_2A).
+ *	8.  Compute Transcript Hash 3 (TH_3).
+ *	9.  Compute ciphertext (CIPHERTEXT_2A).
+ *      10. Cborise items for message 2.
+ *      11. Release the message-2 scoped secrets (PRK_3e2m lives on).
+ *      12. Clean-up EAD tokens.
  */
 int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 				size_t msg_2_size, size_t *msg_2_len)
@@ -282,6 +283,7 @@ int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Prepare PLAINTEXT_2A: %d", ret);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
@@ -293,6 +295,7 @@ int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	if (NULL == keystream) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -302,7 +305,9 @@ int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute KEYSTREAM_2A: %d", ret);
+		edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 		EDHOC_MEM_FREE(keystream);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -321,7 +326,9 @@ int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute TH_3: %d", ret);
+		edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 		EDHOC_MEM_FREE(keystream);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
@@ -331,6 +338,7 @@ int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 	/* 9. Compute ciphertext (CIPHERTEXT_2A). */
 	edhoc_cipher_xor(plaintext, keystream, plaintext_len);
+	edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 	EDHOC_MEM_FREE(keystream);
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext, plaintext_len, "CIPHERTEXT_2A");
@@ -338,6 +346,7 @@ int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	/* 10. Cborise items for message 2. */
 	ret = compose_g_y_ciphertext_2a(ctx, plaintext, plaintext_len, msg_2,
 					msg_2_size, msg_2_len);
+	edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 	EDHOC_MEM_FREE(plaintext);
 
 	if (EDHOC_SUCCESS != ret) {
@@ -366,19 +375,19 @@ int edhoc_psk_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 
 /**
  * Steps for processing of message 2:
- *	1. Decode cborised message 2.
- *	2. Copy out CIPHERTEXT_2A.
- *	3. KEM decapsulate the peer's G_Y (produce G_XY).
- *	4. Compute Transcript Hash 2 (TH_2).
- *	5. Compute Pseudo Random Key 2 (PRK_2e).
- *	6. Compute key stream (KEYSTREAM_2A).
- *	7. Compute plaintext (PLAINTEXT_2A).
- *	8. Parse plaintext (PLAINTEXT_2A).
- *	9. Process EAD if present.
- *     10. Compute pseudorandom key (PRK_3e2m), which equals PRK_2e.
- *     11. Compute Transcript Hash 3 (TH_3).
- *     12. Release the message-2 scoped secrets (PRK_3e2m lives on).
- *     13. Clean-up EAD tokens.
+ *	1.  Decode cborised message 2.
+ *	2.  Copy out CIPHERTEXT_2A.
+ *	3.  KEM decapsulate the peer's G_Y (produce G_XY).
+ *	4.  Compute Transcript Hash 2 (TH_2).
+ *	5.  Compute Pseudo Random Key 2 (PRK_2e).
+ *	6.  Compute key stream (KEYSTREAM_2A).
+ *	7.  Compute plaintext (PLAINTEXT_2A).
+ *	8.  Parse plaintext (PLAINTEXT_2A).
+ *	9.  Process EAD if present.
+ *      10. Compute pseudorandom key (PRK_3e2m), which equals PRK_2e.
+ *      11. Compute Transcript Hash 3 (TH_3).
+ *      12. Release the message-2 scoped secrets (PRK_3e2m lives on).
+ *      13. Clean-up EAD tokens.
  */
 int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 				size_t msg_2_len)
@@ -439,6 +448,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decapsulate: %d", ret);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE;
 	}
@@ -452,6 +462,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute TH_2: %d", ret);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE;
 	}
@@ -464,6 +475,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_2e: %d", ret);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
@@ -473,6 +485,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	if (NULL == keystream) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -482,7 +495,9 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute KEYSTREAM_2A: %d", ret);
+		edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 		EDHOC_MEM_FREE(keystream);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -492,6 +507,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	/* 7. Compute plaintext (PLAINTEXT_2A). */
 	edhoc_cipher_xor(plaintext, keystream, ctxt_len);
+	edhoc_zeroize(ctx, keystream, EDHOC_MEM_ALLOC_SIZE(keystream));
 	EDHOC_MEM_FREE(keystream);
 
 	EDHOC_LOG_HEXDUMP_DBG(plaintext, ctxt_len, "PLAINTEXT_2A");
@@ -502,6 +518,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_2A: %d", ret);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_MSG_2_PROCESS_FAILURE;
 	}
@@ -510,6 +527,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	ret = edhoc_ead_process(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return ret;
 	}
@@ -519,6 +537,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute PRK_3e2m: %d", ret);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE;
 	}
@@ -531,6 +550,7 @@ int edhoc_psk_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 	};
 
 	ret = edhoc_th_compute(ctx, &th_3);
+	edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 	EDHOC_MEM_FREE(plaintext);
 
 	if (EDHOC_SUCCESS != ret) {

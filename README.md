@@ -12,6 +12,7 @@
 [![RFC](https://img.shields.io/badge/RFC-9528-informational)](https://datatracker.ietf.org/doc/html/rfc9528)
 [![RFC](https://img.shields.io/badge/RFC-9529-informational)](https://datatracker.ietf.org/doc/rfc9529/)
 [![draft](https://img.shields.io/badge/draft-lake--pqsuites-orange)](https://datatracker.ietf.org/doc/draft-ietf-lake-pqsuites/)
+[![draft](https://img.shields.io/badge/draft-lake--edhoc--psk-orange)](https://datatracker.ietf.org/doc/draft-ietf-lake-edhoc-psk/)
 
 A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol — a lightweight authenticated key exchange designed for constrained devices. EDHOC provides mutual authentication, forward secrecy, and identity protection, and is intended for usage in constrained scenarios; a main use case is to establish an Object Security for Constrained RESTful Environments (OSCORE) Security Context. Standardised by the IETF as [RFC 9528](https://datatracker.ietf.org/doc/html/rfc9528), verified against [RFC 9529](https://datatracker.ietf.org/doc/html/rfc9529) test vectors.
 
@@ -38,8 +39,25 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol �
 
 Suite `-24` is an experimental post-quantum suite on a private-use code point,
 tracking [draft-ietf-lake-pqsuites](https://datatracker.ietf.org/doc/draft-ietf-lake-pqsuites/).
-All four authentication methods (0–3) are supported, in any combination of
-signature and static-DH keys for the Initiator and Responder.
+
+### Authentication Methods
+
+| Method | Initiator | Responder | Specification |
+|--------|-----------|-----------|---------------|
+| 0      | Signature | Signature | RFC 9528 |
+| 1      | Signature | Static DH | RFC 9528 |
+| 2      | Static DH | Signature | RFC 9528 |
+| 3      | Static DH | Static DH | RFC 9528 |
+| 4      | PSK       | PSK       | draft-ietf-lake-edhoc-psk |
+
+Method `4` is **EDHOC-PSK**: both peers authenticate with a pre-shared key
+instead of a credential of their own, which removes the signature and the
+static-DH exchange from the handshake. It also provides the resumption
+parameters `rPSK` and `rKID` through the exporter, so a following session can
+be resumed cheaply. The method number and the exporter labels are on suggested
+code points until IANA assigns them, tracking
+[draft-ietf-lake-edhoc-psk](https://datatracker.ietf.org/doc/draft-ietf-lake-edhoc-psk/)
+and verified against its Appendix B test vectors.
 
 ## Documentation
 

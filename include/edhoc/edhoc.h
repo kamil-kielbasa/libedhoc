@@ -40,7 +40,7 @@
 #define EDHOC_API_VERSION_MAJOR 2
 
 /** Minor version of the EDHOC API. */
-#define EDHOC_API_VERSION_MINOR 1
+#define EDHOC_API_VERSION_MINOR 2
 
 /** Patch version of the EDHOC API. */
 #define EDHOC_API_VERSION_PATCH 0

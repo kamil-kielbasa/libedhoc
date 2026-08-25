@@ -426,6 +426,7 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute salt: %d", ret);
+			edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
 			EDHOC_MEM_FREE(salt);
 			return ret;
 		}
@@ -439,6 +440,7 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Static DH shared secret: %d", ret);
+			edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
 			EDHOC_MEM_FREE(salt);
 			return ret;
 		}
@@ -492,6 +494,7 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute salt: %d", ret);
+			edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
 			EDHOC_MEM_FREE(salt);
 			return ret;
 		}

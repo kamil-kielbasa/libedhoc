@@ -215,4 +215,24 @@ static inline bool coverage_oscore_export_extended_must_fail(int fail_pt)
 	return fail_pt >= 1 && fail_pt <= 5;
 }
 
+static inline bool coverage_psk_msg2_compose_must_fail(int fail_pt)
+{
+	return fail_pt >= 1 && fail_pt <= 6;
+}
+
+static inline bool coverage_psk_msg2_process_must_fail(int fail_pt)
+{
+	return fail_pt >= 1 && fail_pt <= 5;
+}
+
+static inline bool coverage_psk_msg3_compose_must_fail(int fail_pt)
+{
+	return fail_pt >= 1 && fail_pt <= 9;
+}
+
+static inline bool coverage_psk_msg3_process_must_fail(int fail_pt)
+{
+	return fail_pt >= 1 && fail_pt <= 8;
+}
+
 #endif /* COVERAGE_SWEEP_H */
