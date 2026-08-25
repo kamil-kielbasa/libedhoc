@@ -66,6 +66,8 @@ enum edhoc_kdf_label {
 	EDHOC_KDF_LABEL_PRK_EXPORTER = 10,
 	/** New PRK_out for KeyUpdate (RFC 9528: 4.1.3). */
 	EDHOC_KDF_LABEL_NEW_PRK_OUT = 11,
+	/** KEYSTREAM_3A (draft-ietf-lake-edhoc-psk: 4). */
+	EDHOC_KDF_LABEL_KEYSTREAM_3A = 12,
 };
 
 /**@}*/

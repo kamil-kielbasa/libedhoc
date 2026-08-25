@@ -111,7 +111,7 @@ _Static_assert(0 == EDHOC_CREDENTIAL_FORMAT_NONE,
  * \brief Local credential referenced by a key identifier
  *        (#EDHOC_COSE_HEADER_KID).
  */
-struct edhoc_credential_selected_kid {
+struct edhoc_credential_selected_asymmetric_kid {
 	/** Key identifier, at most #EDHOC_CREDENTIAL_KID_MAX_LEN bytes. */
 	struct edhoc_buffer identifier;
 	/** CRED_I / CRED_R, held out of band by both parties. */
@@ -121,12 +121,21 @@ struct edhoc_credential_selected_kid {
 };
 
 /**
+ * \brief Pre-shared key referenced by a key identifier
+ *        (#EDHOC_COSE_HEADER_KID).
+ */
+struct edhoc_credential_selected_psk_kid {
+	/** Key identifier, at most #EDHOC_CREDENTIAL_KID_MAX_LEN bytes. */
+	struct edhoc_buffer identifier;
+};
+
+/**
  * \brief Local credential sent as a certificate chain
  *        (#EDHOC_COSE_HEADER_X509_CHAIN).
  *
  *        CRED_I / CRED_R is \p certificate[0], so the library takes it itself.
  */
-struct edhoc_credential_selected_x509_chain {
+struct edhoc_credential_selected_asymmetric_x509_chain {
 	/** Number of certificates, 1 to #EDHOC_CREDENTIAL_X5CHAIN_CAPACITY. */
 	size_t count;
 	/** Certificates, in DER, end-entity first. */
@@ -137,7 +146,7 @@ struct edhoc_credential_selected_x509_chain {
  * \brief Local credential referenced by a certificate fingerprint
  *        (#EDHOC_COSE_HEADER_X509_HASH).
  */
-struct edhoc_credential_selected_x509_hash {
+struct edhoc_credential_selected_asymmetric_x509_hash {
 	/** Fingerprint algorithm; a name is at most
 	 *  #EDHOC_CREDENTIAL_X5T_ALGORITHM_MAX_LEN bytes. */
 	struct edhoc_cbor_int_or_string algorithm;
@@ -148,15 +157,13 @@ struct edhoc_credential_selected_x509_hash {
 };
 
 /**
- * \brief The local party's authentication credential, filled in by
- *        \c select_local.
+ * \brief The local party's asymmetric authentication credential
+ *        (RFC 9528: 3.5).
  *
  *        Fill in \p private_key_id, \p label and every field of the union
  *        member \p label names.
- *
- * \warning The buffers must stay readable until the composing call returns.
  */
-struct edhoc_credential_selected {
+struct edhoc_credential_selected_asymmetric {
 	/** Key-store handle of the private signature or static-DH key. */
 	uint8_t private_key_id[CONFIG_LIBEDHOC_KEY_ID_LEN];
 
@@ -165,11 +172,54 @@ struct edhoc_credential_selected {
 
 	union {
 		/** Valid for #EDHOC_COSE_HEADER_KID. */
-		struct edhoc_credential_selected_kid kid;
+		struct edhoc_credential_selected_asymmetric_kid kid;
 		/** Valid for #EDHOC_COSE_HEADER_X509_CHAIN. */
-		struct edhoc_credential_selected_x509_chain x509_chain;
+		struct edhoc_credential_selected_asymmetric_x509_chain
+			x509_chain;
 		/** Valid for #EDHOC_COSE_HEADER_X509_HASH. */
-		struct edhoc_credential_selected_x509_hash x509_hash;
+		struct edhoc_credential_selected_asymmetric_x509_hash x509_hash;
+	};
+};
+
+/**
+ * \brief The Initiator's pre-shared key credential
+ *        (draft-ietf-lake-edhoc-psk: 3.1).
+ */
+struct edhoc_credential_selected_psk {
+	/** Key-store handle of the pre-shared key. */
+	uint8_t psk_key_id[CONFIG_LIBEDHOC_KEY_ID_LEN];
+
+	/** Identification method; selects the active union member. */
+	enum edhoc_cose_header label;
+
+	union {
+		/** Valid for #EDHOC_COSE_HEADER_KID. */
+		struct edhoc_credential_selected_psk_kid kid;
+	};
+
+	/** CRED_I. */
+	struct edhoc_buffer cred_i;
+	/** CRED_R. */
+	struct edhoc_buffer cred_r;
+	/** Serialization of \p cred_i and \p cred_r. */
+	enum edhoc_credential_format format;
+};
+
+/**
+ * \brief The local party's authentication credential, filled in by
+ *        \c select_local.
+ *
+ *        Fill in the member #edhoc_call_context.method selects, and only that
+ *        member.
+ *
+ * \warning The buffers must stay readable until the composing call returns.
+ */
+struct edhoc_credential_selected {
+	union {
+		/** Valid for #EDHOC_METHOD_0 to #EDHOC_METHOD_3. */
+		struct edhoc_credential_selected_asymmetric asymmetric;
+		/** Valid for #EDHOC_METHOD_4. */
+		struct edhoc_credential_selected_psk psk;
 	};
 };
 
@@ -205,8 +255,8 @@ struct edhoc_credential_received_x509_hash {
 };
 
 /**
- * \brief ID_CRED_I / ID_CRED_R as received from the peer, passed to
- *        \c authenticate_peer.
+ * \brief ID_CRED_I / ID_CRED_R / ID_CRED_PSK as received from the peer,
+ *        passed to \c authenticate_peer.
  *
  * \warning Every buffer points into the message being processed. It may be
  *          handed straight back in #edhoc_credential_trusted, but stops being
@@ -228,20 +278,12 @@ struct edhoc_credential_received {
 };
 
 /**
- * \brief The peer credential the application vouches for, returned from
- *        \c authenticate_peer.
+ * \brief The peer's asymmetric authentication credential (RFC 9528: 3.5).
  *
- *        Filling this in asserts that the application resolved the identifier
- *        and validated the credential against its own trust policy
- *        (RFC 9528: Appendix D). Fill in all three fields; for
- *        #EDHOC_COSE_HEADER_X509_CHAIN, CRED is the received end-entity
- *        certificate handed back.
- *
- * \warning The buffers must stay readable until the processing call returns,
- *          so never the callback's stack. A view from
- *          #edhoc_credential_received satisfies this.
+ *        Fill in all three fields; for #EDHOC_COSE_HEADER_X509_CHAIN, CRED is
+ *        the received end-entity certificate handed back.
  */
-struct edhoc_credential_trusted {
+struct edhoc_credential_trusted_asymmetric {
 	/** CRED_I / CRED_R. */
 	struct edhoc_buffer credential;
 	/** Serialization of \p credential. */
@@ -251,11 +293,49 @@ struct edhoc_credential_trusted {
 };
 
 /**
+ * \brief The pre-shared key and credentials the Responder resolved from
+ *        ID_CRED_PSK (draft-ietf-lake-edhoc-psk: 3.1).
+ */
+struct edhoc_credential_trusted_psk {
+	/** Key-store handle of the pre-shared key. */
+	uint8_t psk_key_id[CONFIG_LIBEDHOC_KEY_ID_LEN];
+	/** CRED_I. */
+	struct edhoc_buffer cred_i;
+	/** CRED_R. */
+	struct edhoc_buffer cred_r;
+	/** Serialization of \p cred_i and \p cred_r. */
+	enum edhoc_credential_format format;
+};
+
+/**
+ * \brief The peer credential the application vouches for, returned from
+ *        \c authenticate_peer.
+ *
+ *        Filling this in asserts that the application resolved the identifier
+ *        and validated the credential against its own trust policy
+ *        (RFC 9528: Appendix D). Fill in the member
+ *        #edhoc_call_context.method selects, and only that member.
+ *
+ * \warning The buffers must stay readable until the processing call returns,
+ *          so never the callback's stack. A view from
+ *          #edhoc_credential_received satisfies this.
+ */
+struct edhoc_credential_trusted {
+	union {
+		/** Valid for #EDHOC_METHOD_0 to #EDHOC_METHOD_3. */
+		struct edhoc_credential_trusted_asymmetric asymmetric;
+		/** Valid for #EDHOC_METHOD_4. */
+		struct edhoc_credential_trusted_psk psk;
+	};
+};
+
+/**
  * \brief Authentication credentials interface, bound with
  *        \ref edhoc_bind_credentials.
  *
  *        EDHOC delegates credential handling to the application
- *        (RFC 9528: 3.5). Both entries are mandatory. The library never takes
+ *        (RFC 9528: 3.5). Both entries are mandatory; a method that never
+ *        calls one may return an error from it. The library never takes
  *        ownership of a buffer and never frees one.
  */
 struct edhoc_credentials {
@@ -268,6 +348,8 @@ struct edhoc_credentials {
 	 *
 	 * The library then builds ID_CRED and CRED from \p selected and computes
 	 * Signature_or_MAC with the referenced key.
+	 *
+	 * For #EDHOC_METHOD_4 only the Initiator is called, on message 3.
 	 *
 	 * \param[in] user_context              User context.
 	 * \param[in] call_context              Parameters of the ongoing session.
@@ -292,6 +374,9 @@ struct edhoc_credentials {
 	 * policy — path building, trust anchors, revocation — and fill in
 	 * \p trusted. EDHOC itself only proves possession of the private key
 	 * (RFC 9528: 3.5, Appendix D).
+	 *
+	 * For #EDHOC_METHOD_4 only the Responder is called, on message 3, and
+	 * resolves ID_CRED_PSK into the PSK and both credentials.
 	 *
 	 * \param[in] user_context              User context.
 	 * \param[in] call_context              Parameters of the ongoing session.

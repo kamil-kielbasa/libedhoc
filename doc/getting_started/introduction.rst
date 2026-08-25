@@ -64,6 +64,23 @@ EDHOC methods
    * - 3
      - Static DH key
      - Static DH key
+   * - 4
+     - Pre-shared key
+     - Pre-shared key
+
+Method ``4`` is **EDHOC-PSK**. Both peers authenticate with a pre-shared key
+instead of a credential of their own, so message 2 carries no ``ID_CRED_R`` and
+message 3 carries neither ``MAC_3`` nor a signature. The exporter additionally
+yields the resumption parameters ``rPSK`` and ``rKID``
+(:c:func:`edhoc_export_resumption_psk`,
+:c:func:`edhoc_export_resumption_psk_raw`,
+:c:func:`edhoc_export_resumption_kid_raw`), so a following session can be
+resumed with a fresh pre-shared key.
+
+The method number and the two exporter labels sit on suggested code points
+until IANA assigns them. The implementation tracks
+`draft-ietf-lake-edhoc-psk <https://datatracker.ietf.org/doc/draft-ietf-lake-edhoc-psk/>`_
+and is verified against its Appendix B test vectors.
 
 EDHOC cipher suites
 -------------------

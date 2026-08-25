@@ -233,6 +233,11 @@ int edhoc_key_schedule_auth_kind(const struct edhoc_context *ctx,
 		case EDHOC_METHOD_3:
 			*kind = EDHOC_AUTH_STATIC_DH;
 			return EDHOC_SUCCESS;
+		case EDHOC_METHOD_4:
+			/* Nobody authenticates in message 2 of EDHOC-PSK; the
+			 * kind still selects the key schedule step. */
+			*kind = EDHOC_AUTH_PSK;
+			return EDHOC_SUCCESS;
 		default:
 			EDHOC_LOG_ERR("Invalid method: %d",
 				      ctx->negotiation.selected_method);
@@ -248,6 +253,9 @@ int edhoc_key_schedule_auth_kind(const struct edhoc_context *ctx,
 		case EDHOC_METHOD_2:
 		case EDHOC_METHOD_3:
 			*kind = EDHOC_AUTH_STATIC_DH;
+			return EDHOC_SUCCESS;
+		case EDHOC_METHOD_4:
+			*kind = EDHOC_AUTH_PSK;
 			return EDHOC_SUCCESS;
 		default:
 			EDHOC_LOG_ERR("Invalid method: %d",
@@ -418,6 +426,7 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Compute salt: %d", ret);
+			edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
 			EDHOC_MEM_FREE(salt);
 			return ret;
 		}
@@ -431,6 +440,7 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 
 		if (EDHOC_SUCCESS != ret) {
 			EDHOC_LOG_ERR("Static DH shared secret: %d", ret);
+			edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
 			EDHOC_MEM_FREE(salt);
 			return ret;
 		}
@@ -453,11 +463,68 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 		return EDHOC_SUCCESS;
 	}
 
+	case EDHOC_AUTH_PSK: {
+		/* draft-ietf-lake-edhoc-psk: 4 - PRK_3e2m = PRK_2e. */
+		if (EDHOC_MESSAGE_2 == ctx->state.message) {
+			edhoc_key_slot_move(ctx, params.prk_target,
+					    params.prk_source);
+			ctx->state.prk_state = params.prk_target_state;
+			return EDHOC_SUCCESS;
+		}
+
+		/* PRK_4e3m = EDHOC_Extract(SALT_4e3m, PSK). The pre-shared key
+		 * comes from the credentials callback, so nothing is agreed
+		 * here. */
+		if (NULL == private_key_id) {
+			EDHOC_LOG_ERR("Missing pre-shared key");
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
+
+		const size_t hash_len =
+			edhoc_selected_cipher_suite(ctx)->hash_length;
+
+		EDHOC_MEM_ALLOC(uint8_t, salt, hash_len);
+
+		if (NULL == salt) {
+			EDHOC_LOG_ERR("Memory allocation failed");
+			return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
+		}
+
+		ret = comp_salt(ctx, &params, salt, EDHOC_MEM_ALLOC_SIZE(salt));
+
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Compute salt: %d", ret);
+			edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
+			EDHOC_MEM_FREE(salt);
+			return ret;
+		}
+
+		EDHOC_LOG_HEXDUMP_DBG(salt, EDHOC_MEM_ALLOC_SIZE(salt),
+				      "PRK salt");
+
+		ret = edhoc_kdf_extract(ctx, private_key_id, salt,
+					EDHOC_MEM_ALLOC_SIZE(salt),
+					params.prk_target);
+
+		edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));
+		EDHOC_MEM_FREE(salt);
+
+		if (EDHOC_SUCCESS != ret) {
+			EDHOC_LOG_ERR("Extract PRK: %d", ret);
+			return EDHOC_ERROR_CRYPTO_FAILURE;
+		}
+
+		ctx->state.prk_state = params.prk_target_state;
+
+		return EDHOC_SUCCESS;
+	}
+
 	default:
 		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 }
+
 int edhoc_key_schedule_prk_out(struct edhoc_context *ctx)
 {
 	if (NULL == ctx) {

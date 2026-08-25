@@ -119,13 +119,14 @@ auth_cred_select_local_init(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	selected->x509_chain.count = 1;
-	selected->x509_chain.certificate[0].value = CRED_I;
-	selected->x509_chain.certificate[0].length = ARRAY_SIZE(CRED_I);
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->asymmetric.x509_chain.count = 1;
+	selected->asymmetric.x509_chain.certificate[0].value = CRED_I;
+	selected->asymmetric.x509_chain.certificate[0].length =
+		ARRAY_SIZE(CRED_I);
 
-	const int res = import_sign_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					     selected->private_key_id);
+	const int res = import_sign_priv_key(
+		SK_I, ARRAY_SIZE(SK_I), selected->asymmetric.private_key_id);
 
 	if (EDHOC_SUCCESS != res) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -146,13 +147,14 @@ auth_cred_select_local_resp(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	selected->x509_chain.count = 1;
-	selected->x509_chain.certificate[0].value = CRED_R;
-	selected->x509_chain.certificate[0].length = ARRAY_SIZE(CRED_R);
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->asymmetric.x509_chain.count = 1;
+	selected->asymmetric.x509_chain.certificate[0].value = CRED_R;
+	selected->asymmetric.x509_chain.certificate[0].length =
+		ARRAY_SIZE(CRED_R);
 
-	const int res = import_sign_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					     selected->private_key_id);
+	const int res = import_sign_priv_key(
+		SK_R, ARRAY_SIZE(SK_R), selected->asymmetric.private_key_id);
 
 	if (EDHOC_SUCCESS != res) {
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -190,10 +192,10 @@ static int auth_cred_authenticate_peer_init(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	trusted->credential = received->x509_chain.certificate[0];
-	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	trusted->public_key.value = PK_R;
-	trusted->public_key.length = ARRAY_SIZE(PK_R);
+	trusted->asymmetric.credential = received->x509_chain.certificate[0];
+	trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->asymmetric.public_key.value = PK_R;
+	trusted->asymmetric.public_key.length = ARRAY_SIZE(PK_R);
 
 	return EDHOC_SUCCESS;
 }
@@ -227,10 +229,10 @@ static int auth_cred_authenticate_peer_resp(
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	trusted->credential = received->x509_chain.certificate[0];
-	trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
-	trusted->public_key.value = PK_I;
-	trusted->public_key.length = ARRAY_SIZE(PK_I);
+	trusted->asymmetric.credential = received->x509_chain.certificate[0];
+	trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->asymmetric.public_key.value = PK_I;
+	trusted->asymmetric.public_key.length = ARRAY_SIZE(PK_I);
 
 	return EDHOC_SUCCESS;
 }

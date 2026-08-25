@@ -212,6 +212,7 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Prepare PLAINTEXT_4: %d", ret);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
@@ -222,15 +223,18 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	EDHOC_MEM_ALLOC(uint8_t, iv, csuite->aead_iv_length);
 	if (NULL == iv) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
 	size_t aad_len = 0;
-	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+	ret = edhoc_cipher_aad_length(ctx, ctx->state.th.length, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return ret;
 	}
@@ -238,18 +242,25 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	EDHOC_MEM_ALLOC(uint8_t, aad, aad_len);
 	if (NULL == aad) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+	ret = edhoc_cipher_derive(ctx, ctx->state.th.value,
+				  ctx->state.th.length, iv,
+				  EDHOC_MEM_ALLOC_SIZE(iv), aad,
 				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_4/IV_4/AAD_4: %d", ret);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -263,8 +274,11 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 			plaintext_len + csuite->aead_tag_length);
 	if (NULL == ciphertext) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -277,15 +291,23 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute CIPHERTEXT_4: %d", ret);
+		edhoc_zeroize(ctx, ciphertext,
+			      EDHOC_MEM_ALLOC_SIZE(ciphertext));
 		EDHOC_MEM_FREE(ciphertext);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
+		edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 		EDHOC_MEM_FREE(plaintext);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
+	edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 	EDHOC_MEM_FREE(aad);
+	edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 	EDHOC_MEM_FREE(iv);
+	edhoc_zeroize(ctx, plaintext, EDHOC_MEM_ALLOC_SIZE(plaintext));
 	EDHOC_MEM_FREE(plaintext);
 
 	EDHOC_LOG_HEXDUMP_DBG(ciphertext, ciphertext_len, "CIPHERTEXT_4");
@@ -296,10 +318,13 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Generate message_4: %d", ret);
+		edhoc_zeroize(ctx, ciphertext,
+			      EDHOC_MEM_ALLOC_SIZE(ciphertext));
 		EDHOC_MEM_FREE(ciphertext);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 
+	edhoc_zeroize(ctx, ciphertext, EDHOC_MEM_ALLOC_SIZE(ciphertext));
 	EDHOC_MEM_FREE(ciphertext);
 
 	EDHOC_LOG_HEXDUMP_DBG(msg_4, *msg_4_len, "message_4");
@@ -392,9 +417,10 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 	}
 
 	size_t aad_len = 0;
-	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+	ret = edhoc_cipher_aad_length(ctx, ctx->state.th.length, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
 		return ret;
 	}
@@ -402,16 +428,21 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 	EDHOC_MEM_ALLOC(uint8_t, aad, aad_len);
 	if (NULL == aad) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+	ret = edhoc_cipher_derive(ctx, ctx->state.th.value,
+				  ctx->state.th.length, iv,
+				  EDHOC_MEM_ALLOC_SIZE(iv), aad,
 				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute K_4/IV_4/AAD_4: %d", ret);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
@@ -426,7 +457,9 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 	EDHOC_MEM_ALLOC(uint8_t, ptxt, 0 != plaintext_len ? plaintext_len : 1);
 	if (NULL == ptxt) {
 		EDHOC_LOG_ERR("Memory allocation failed");
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
@@ -437,13 +470,18 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Decrypt CIPHERTEXT_4: %d", ret);
+		edhoc_zeroize(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
 		EDHOC_MEM_FREE(ptxt);
+		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 		EDHOC_MEM_FREE(aad);
+		edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 		EDHOC_MEM_FREE(iv);
 		return EDHOC_ERROR_CRYPTO_FAILURE;
 	}
 
+	edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
 	EDHOC_MEM_FREE(aad);
+	edhoc_zeroize(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv));
 	EDHOC_MEM_FREE(iv);
 
 	EDHOC_LOG_HEXDUMP_DBG(ptxt, plaintext_len, "PLAINTEXT_4");
@@ -454,6 +492,7 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Parse PLAINTEXT_4: %d", ret);
+		edhoc_zeroize(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
 		EDHOC_MEM_FREE(ptxt);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
@@ -467,10 +506,12 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 	ret = edhoc_ead_process(ctx);
 
 	if (EDHOC_SUCCESS != ret) {
+		edhoc_zeroize(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
 		EDHOC_MEM_FREE(ptxt);
 		return ret;
 	}
 
+	edhoc_zeroize(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
 	EDHOC_MEM_FREE(ptxt);
 
 	EDHOC_LOG_INF("Process msg4 end");

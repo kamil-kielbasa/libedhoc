@@ -130,6 +130,8 @@ STATIC bool is_exporter_label_permitted(size_t label)
 {
 	return EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET == label ||
 	       EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT == label ||
+	       EDHOC_EXPORTER_LABEL_RESUMPTION_PSK == label ||
+	       EDHOC_EXPORTER_LABEL_RESUMPTION_KID == label ||
 	       (EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM <= label &&
 		label <= EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM);
 }

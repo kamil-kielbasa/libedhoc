@@ -682,7 +682,7 @@ TEST(coverage_msg3, msg3_compose_corrupted_method)
 	size_t msg3_len = 0;
 
 	ret = edhoc_message_3_compose(&init_ctx, msg3, sizeof(msg3), &msg3_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
@@ -754,7 +754,7 @@ TEST(coverage_msg3, msg3_process_corrupted_method)
 	coverage_mock_reset(0);
 
 	ret = edhoc_message_3_process(&resp_ctx, msg3, msg3_len);
-	TEST_ASSERT_EQUAL(EDHOC_ERROR_CRYPTO_FAILURE, ret);
+	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED, ret);
 
 	ret = edhoc_context_deinit(&init_ctx);
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);

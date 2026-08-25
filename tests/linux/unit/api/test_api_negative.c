@@ -219,7 +219,7 @@ TEST(api_negative, set_methods_out_of_range)
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	const enum edhoc_method method[] = { EDHOC_METHOD_0,
-					     (enum edhoc_method)4 };
+					     (enum edhoc_method)5 };
 
 	ret = edhoc_set_methods(&ctx, method, ARRAY_SIZE(method));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);

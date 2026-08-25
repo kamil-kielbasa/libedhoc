@@ -1,3 +1,39 @@
+Version 2.2.0
+-------------
+
+:Date: August 25, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : **EDHOC-PSK**
+  (``EDHOC_METHOD_4``) is supported, tracking
+  `draft-ietf-lake-edhoc-psk <https://datatracker.ietf.org/doc/draft-ietf-lake-edhoc-psk/>`__
+  and verified against its Appendix B test vectors. Both peers authenticate
+  with a pre-shared key, so message 2 carries no ``ID_CRED_R`` and message 3
+  carries neither ``MAC_3`` nor a signature. Messages 1 and 4 are unchanged.
+  The method number and the exporter labels sit on the draft's suggested code
+  points until IANA assigns them.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the exporter
+  publishes the resumption parameters of the draft:
+  ``edhoc_export_resumption_psk()``, ``edhoc_export_resumption_psk_raw()`` and
+  ``edhoc_export_resumption_kid_raw()``. ``rKID`` identifies the resumption key
+  rather than keying anything, so it has no key-handle form.
+
+* **Breaking.** `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ :
+  ``struct edhoc_credential_selected`` and ``struct edhoc_credential_trusted``
+  became unions discriminated by the negotiated method. What a callback used to
+  reach as ``selected->kid`` is now ``selected->asymmetric.kid``, and method 4
+  fills ``selected->psk`` instead. Every credentials callback needs the new
+  member on its access paths; the compiler flags each one.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : every handshake
+  buffer the library allocates is wiped through the bound platform ``zeroize``
+  hook before it is released, so a keystream or a plaintext no longer outlives
+  the step that produced it. This holds for all memory backends: the stack
+  backend's release is a no-op and the heap backend hands the block back to the
+  allocator, so the wipe is what clears the bytes in both cases.
+
+* **API version.** ``EDHOC_API_VERSION_MINOR`` is ``2``.
+
 Version 2.1.1
 -------------
 

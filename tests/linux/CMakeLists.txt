@@ -14,6 +14,7 @@ add_subdirectory(unit)
 add_subdirectory(cipher_suites)
 add_subdirectory(integration)
 add_subdirectory(rfc9529)
+add_subdirectory(draft-edhoc-psk-08)
 add_subdirectory(robustness)
 
 edhoc_assert_registry_nonempty()

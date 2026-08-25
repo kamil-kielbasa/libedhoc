@@ -32,9 +32,10 @@ LOG_MODULE_DECLARE(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 
 /* Module defines ---------------------------------------------------------- */
 
-/** Longest segment list any transcript hash needs: TH_2 streams the ephemeral
- *  value and the previous hash, each preceded by its byte-string head. */
-#define EDHOC_TH_MAX_NR_OF_SEGMENTS (4)
+/** Longest segment list any transcript hash needs: TH_4 of EDHOC-PSK streams
+ *  the previous hash with its byte-string head, ID_CRED_PSK, PLAINTEXT_3B,
+ *  CRED_I and CRED_R. */
+#define EDHOC_TH_MAX_NR_OF_SEGMENTS (6)
 
 /* Module types and type definitiones -------------------------------------- */
 
@@ -163,6 +164,8 @@ int edhoc_th_compute(struct edhoc_context *ctx,
 	size_t nr_of_segments = 0;
 
 	const size_t previous_length = ctx->state.th.length;
+	const bool is_psk =
+		(EDHOC_METHOD_4 == ctx->negotiation.selected_method);
 
 	switch (input->target) {
 	case EDHOC_TH_STATE_1:
@@ -213,10 +216,106 @@ int edhoc_th_compute(struct edhoc_context *ctx,
 	}
 
 	case EDHOC_TH_STATE_3:
-	case EDHOC_TH_STATE_4:
-		if (NULL == input->plaintext || 0 == input->plaintext_length ||
-		    NULL == input->credential ||
+		if (NULL == input->plaintext || 0 == input->plaintext_length) {
+			EDHOC_LOG_ERR("Invalid arguments");
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
+
+		segments[nr_of_segments] = (struct th_segment){
+			previous_head, edhoc_cbor_bstr_head_write(
+					       previous_head, previous_length)
+		};
+		nr_of_segments += 1;
+
+		segments[nr_of_segments] =
+			(struct th_segment){ ctx->state.th.value,
+					     previous_length };
+		nr_of_segments += 1;
+
+		segments[nr_of_segments] =
+			(struct th_segment){ input->plaintext,
+					     input->plaintext_length };
+		nr_of_segments += 1;
+
+		/* EDHOC-PSK computes TH_3 = H( TH_2, PLAINTEXT_2A ) and is
+		 * complete here, because its message 2 carries no credential;
+		 * classic EDHOC computes TH_3 = H( TH_2, PLAINTEXT_2, CRED_R )
+		 * and goes on to append CRED_R. */
+		if (is_psk) {
+			break;
+		}
+
+		if (NULL == input->credential ||
 		    0 == input->credential_length) {
+			EDHOC_LOG_ERR("Invalid arguments");
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
+
+		segments[nr_of_segments] =
+			(struct th_segment){ input->credential,
+					     input->credential_length };
+		nr_of_segments += 1;
+		break;
+
+	case EDHOC_TH_STATE_4:
+		if (NULL == input->credential ||
+		    0 == input->credential_length) {
+			EDHOC_LOG_ERR("Invalid arguments");
+			return EDHOC_ERROR_INVALID_ARGUMENT;
+		}
+
+		if (is_psk) {
+			/* TH_4 = H( TH_3, ID_CRED_PSK, PLAINTEXT_3B, CRED_I,
+			 * CRED_R ). PLAINTEXT_3B is empty without EAD_3. */
+			if (NULL == input->id_cred ||
+			    0 == input->id_cred_length ||
+			    NULL == input->peer_credential ||
+			    0 == input->peer_credential_length) {
+				EDHOC_LOG_ERR("Invalid arguments");
+				return EDHOC_ERROR_INVALID_ARGUMENT;
+			}
+
+			segments[nr_of_segments] = (struct th_segment){
+				previous_head,
+				edhoc_cbor_bstr_head_write(previous_head,
+							   previous_length)
+			};
+			nr_of_segments += 1;
+
+			segments[nr_of_segments] =
+				(struct th_segment){ ctx->state.th.value,
+						     previous_length };
+			nr_of_segments += 1;
+
+			segments[nr_of_segments] =
+				(struct th_segment){ input->id_cred,
+						     input->id_cred_length };
+			nr_of_segments += 1;
+
+			if (0 != input->plaintext_length) {
+				segments[nr_of_segments] = (struct th_segment){
+					input->plaintext,
+					input->plaintext_length
+				};
+				nr_of_segments += 1;
+			}
+
+			segments[nr_of_segments] =
+				(struct th_segment){ input->credential,
+						     input->credential_length };
+			nr_of_segments += 1;
+
+			segments[nr_of_segments] = (struct th_segment){
+				input->peer_credential,
+				input->peer_credential_length
+			};
+			nr_of_segments += 1;
+
+			break;
+		}
+
+		/* TH_4 = H( TH_3, PLAINTEXT_3, CRED_I ). */
+		if (NULL == input->plaintext || 0 == input->plaintext_length) {
 			EDHOC_LOG_ERR("Invalid arguments");
 			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}

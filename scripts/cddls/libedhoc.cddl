@@ -116,6 +116,35 @@ plaintext_4 =
 )
 
 ; ---------------------------------------------------------------------------
+; EDHOC-PSK
+; https://datatracker.ietf.org/doc/html/draft-ietf-lake-edhoc-psk-08#name-cddl-definitions
+;
+; Method 4 replaces the plaintexts of messages 2 and 3: message 2 carries no
+; credential at all, and message 3 nests an AEAD ciphertext inside the
+; stream-cipher plaintext.
+;
+; plaintext_3b repeats plaintext_4 because the draft defines both, and the
+; model follows the draft rule for rule.
+; ---------------------------------------------------------------------------
+
+plaintext_2a =
+(
+  C_R : bstr / -24..23,
+  ? ead,
+)
+
+plaintext_3a =
+(
+  ID_CRED_PSK   : int / bstr / id_cred_x,
+  CIPHERTEXT_3B : bstr,
+)
+
+plaintext_3b =
+(
+  ? ead,
+)
+
+; ---------------------------------------------------------------------------
 ; Connection identifier used in EDHOC over CoAP
 ; ---------------------------------------------------------------------------
 

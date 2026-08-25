@@ -56,6 +56,13 @@ extern int compose_g_y_ciphertext_2(const struct edhoc_context *ctx,
 extern int parse_g_y_ciphertext_2(struct edhoc_context *ctx,
 				  const uint8_t *msg_2, size_t msg_2_len,
 				  const uint8_t **ctxt_2, size_t *ctxt_2_len);
+extern int compose_g_y_ciphertext_2a(const struct edhoc_context *ctx,
+				     const uint8_t *ctxt, size_t ctxt_len,
+				     uint8_t *msg_2, size_t msg_2_size,
+				     size_t *msg_2_len);
+extern int parse_g_y_ciphertext_2a(struct edhoc_context *ctx,
+				   const uint8_t *msg_2, size_t msg_2_len,
+				   const uint8_t **ctxt, size_t *ctxt_len);
 extern int compose_ciphertext_3(const uint8_t *ciphertext,
 				size_t ciphertext_len, uint8_t *msg_3,
 				size_t msg_3_size, size_t *msg_3_len);

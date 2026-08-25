@@ -34,6 +34,7 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_macros_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_classic_internal.h"
+#include "edhoc_psk_internal.h"
 #include "edhoc_error_internal.h"
 #include "edhoc_exporter_internal.h"
 #include "edhoc_connection_id_internal.h"
@@ -124,6 +125,7 @@ int edhoc_set_methods(struct edhoc_context *ctx,
 		case EDHOC_METHOD_1:
 		case EDHOC_METHOD_2:
 		case EDHOC_METHOD_3:
+		case EDHOC_METHOD_4:
 			break;
 		default:
 			EDHOC_LOG_ERR("Invalid method: %d", method[i]);
@@ -393,6 +395,11 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			    size_t msg_2_size, size_t *msg_2_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_2_compose(ctx, msg_2, msg_2_size,
+						   msg_2_len);
+	}
+
 	return edhoc_classic_message_2_compose(ctx, msg_2, msg_2_size,
 					       msg_2_len);
 }
@@ -400,12 +407,21 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			    size_t msg_2_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_2_process(ctx, msg_2, msg_2_len);
+	}
+
 	return edhoc_classic_message_2_process(ctx, msg_2, msg_2_len);
 }
 
 int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 			    size_t msg_3_size, size_t *msg_3_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_3_compose(ctx, msg_3, msg_3_size,
+						   msg_3_len);
+	}
+
 	return edhoc_classic_message_3_compose(ctx, msg_3, msg_3_size,
 					       msg_3_len);
 }
@@ -413,6 +429,10 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 			    size_t msg_3_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_3_process(ctx, msg_3, msg_3_len);
+	}
+
 	return edhoc_classic_message_3_process(ctx, msg_3, msg_3_len);
 }
 
@@ -525,6 +545,29 @@ int edhoc_export_raw(struct edhoc_context *ctx, size_t label,
 {
 	return edhoc_exporter_export_raw(ctx, label, context, context_len,
 					 secret, secret_len);
+}
+
+int edhoc_export_resumption_psk(struct edhoc_context *ctx,
+				enum edhoc_key_usage usage, void *key_id)
+{
+	return edhoc_exporter_export(ctx, EDHOC_EXPORTER_LABEL_RESUMPTION_PSK,
+				     NULL, 0, usage, key_id);
+}
+
+int edhoc_export_resumption_psk_raw(struct edhoc_context *ctx, uint8_t *psk,
+				    size_t psk_len)
+{
+	return edhoc_exporter_export_raw(ctx,
+					 EDHOC_EXPORTER_LABEL_RESUMPTION_PSK,
+					 NULL, 0, psk, psk_len);
+}
+
+int edhoc_export_resumption_kid_raw(struct edhoc_context *ctx, uint8_t *kid,
+				    size_t kid_len)
+{
+	return edhoc_exporter_export_raw(ctx,
+					 EDHOC_EXPORTER_LABEL_RESUMPTION_KID,
+					 NULL, 0, kid, kid_len);
 }
 
 int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,

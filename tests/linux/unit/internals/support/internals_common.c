@@ -77,12 +77,14 @@ internals_cred_select_local_stub(void *user_ctx,
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	selected->label = EDHOC_COSE_HEADER_X509_CHAIN;
-	selected->x509_chain.count = 1;
-	selected->x509_chain.certificate[0].value = dummy_cert;
-	selected->x509_chain.certificate[0].length = ARRAY_SIZE(dummy_cert);
+	selected->asymmetric.label = EDHOC_COSE_HEADER_X509_CHAIN;
+	selected->asymmetric.x509_chain.count = 1;
+	selected->asymmetric.x509_chain.certificate[0].value = dummy_cert;
+	selected->asymmetric.x509_chain.certificate[0].length =
+		ARRAY_SIZE(dummy_cert);
 
-	memset(selected->private_key_id, 0, CONFIG_LIBEDHOC_KEY_ID_LEN);
+	memset(selected->asymmetric.private_key_id, 0,
+	       CONFIG_LIBEDHOC_KEY_ID_LEN);
 
 	return EDHOC_SUCCESS;
 }
@@ -102,8 +104,8 @@ static int internals_cred_authenticate_peer_stub(
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
-	trusted->public_key.value = dummy_key;
-	trusted->public_key.length = ARRAY_SIZE(dummy_key);
+	trusted->asymmetric.public_key.value = dummy_key;
+	trusted->asymmetric.public_key.length = ARRAY_SIZE(dummy_key);
 
 	return EDHOC_SUCCESS;
 }

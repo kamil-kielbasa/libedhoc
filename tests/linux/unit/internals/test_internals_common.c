@@ -274,7 +274,7 @@ TEST(internals_common, comp_prk_3e2m_method_max)
 
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_RESPONDER;
-	ctx.negotiation.selected_method = (enum edhoc_method)4;
+	ctx.negotiation.selected_method = (enum edhoc_method)5;
 	ctx.state.prk_state = EDHOC_PRK_STATE_2E;
 	ctx.state.th.stage = EDHOC_TH_STATE_2;
 	ctx.state.th.length = 32;
@@ -387,7 +387,7 @@ TEST(internals_common, comp_prk_4e3m_method_max)
 
 	internals_setup_crypto_context(&ctx);
 	ctx.state.role = EDHOC_ROLE_INITIATOR;
-	ctx.negotiation.selected_method = (enum edhoc_method)4;
+	ctx.negotiation.selected_method = (enum edhoc_method)5;
 	ctx.state.prk_state = EDHOC_PRK_STATE_3E2M;
 	ctx.state.th.stage = EDHOC_TH_STATE_3;
 	ctx.state.th.length = 32;

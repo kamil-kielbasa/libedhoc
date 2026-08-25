@@ -27,6 +27,7 @@ set(_unit_sources
     coverage/test_coverage_msg2.c
     coverage/test_coverage_msg3.c
     coverage/test_coverage_msg4.c
+    coverage/test_coverage_psk.c
     coverage/test_coverage_exporters.c
     coverage/test_coverage_error.c
     coverage/test_coverage_cbor.c
@@ -47,7 +48,7 @@ set(_unit_sources
 # Kept in execution order; the runner is generated from this list.
 set(_unit_groups
     api api_negative error_message exporters coap
-    coverage_msg1 coverage_msg2 coverage_msg3 coverage_msg4
+    coverage_msg1 coverage_msg2 coverage_msg3 coverage_msg4 coverage_psk
     coverage_exporters coverage_error coverage_cbor coverage_handshake
     coverage_sweep_validate
     internals_common internals_mac internals_message1 internals_message2

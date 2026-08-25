@@ -211,6 +211,38 @@ struct plaintext_4 {
 	bool plaintext_4_present;
 };
 
+struct plaintext_2a {
+	union {
+		struct zcbor_string plaintext_2a_C_R_bstr;
+		int32_t plaintext_2a_C_R_int;
+	};
+	enum {
+		plaintext_2a_C_R_bstr_c,
+		plaintext_2a_C_R_int_c,
+	} plaintext_2a_C_R_choice;
+	struct ead plaintext_2a_ead_m;
+	bool plaintext_2a_ead_m_present;
+};
+
+struct plaintext_3a {
+	union {
+		int32_t plaintext_3a_ID_CRED_PSK_int;
+		struct zcbor_string plaintext_3a_ID_CRED_PSK_bstr;
+		struct id_cred_x plaintext_3a_ID_CRED_PSK_id_cred_x_m;
+	};
+	enum {
+		plaintext_3a_ID_CRED_PSK_int_c,
+		plaintext_3a_ID_CRED_PSK_bstr_c,
+		plaintext_3a_ID_CRED_PSK_id_cred_x_m_c,
+	} plaintext_3a_ID_CRED_PSK_choice;
+	struct zcbor_string plaintext_3a_CIPHERTEXT_3B;
+};
+
+struct plaintext_3b {
+	struct ead plaintext_3b;
+	bool plaintext_3b_present;
+};
+
 #ifdef __cplusplus
 }
 #endif

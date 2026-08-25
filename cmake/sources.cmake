@@ -13,6 +13,8 @@ set(LIBEDHOC_CORE_SOURCES
     ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_2.c
     ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_3.c
     ${LIBEDHOC_ROOT_DIR}/library/core/classic/edhoc_classic_message_4.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/psk/edhoc_psk_message_2.c
+    ${LIBEDHOC_ROOT_DIR}/library/core/psk/edhoc_psk_message_3.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_error_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_exporter_internal.c
     ${LIBEDHOC_ROOT_DIR}/library/core/edhoc_cbor_internal.c
@@ -61,6 +63,12 @@ set(LIBEDHOC_BACKEND_CBOR_SOURCES
     ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_3_encode.c
     ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_4_decode.c
     ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_4_encode.c
+    ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_2a_decode.c
+    ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_2a_encode.c
+    ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_3a_decode.c
+    ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_3a_encode.c
+    ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_3b_decode.c
+    ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_plaintext_3b_encode.c
     ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_sig_structure_decode.c
     ${LIBEDHOC_ROOT_DIR}/backends/cbor/src/backend_cbor_sig_structure_encode.c)
 

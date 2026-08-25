@@ -39,22 +39,28 @@ struct edhoc_context;
  * \brief Number of bytes the associated data occupies once CBOR-encoded.
  *
  * \param[in] ctx                       EDHOC context.
+ * \param external_aad_length           Size of the COSE \c external_aad in bytes.
  * \param[out] length                   On success, the encoded size.
  *
  * \retval #EDHOC_SUCCESS
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_cipher_aad_length(const struct edhoc_context *ctx, size_t *length);
+int edhoc_cipher_aad_length(const struct edhoc_context *ctx,
+			    size_t external_aad_length, size_t *length);
 
 /**
  * \brief Derive the content-encryption key, the nonce and the associated data
  *        for the current message.
  *
  *        The key lands in its context slot; the nonce and the associated data
- *        are written to the caller's buffers.
+ *        are written to the caller's buffers. Classic EDHOC passes the current
+ *        transcript hash as \p external_aad; EDHOC-PSK passes the CBOR sequence
+ *        of draft-ietf-lake-edhoc-psk: 5.3.2.
  *
  * \param[in,out] ctx                   EDHOC context.
+ * \param[in] external_aad              COSE \c external_aad content.
+ * \param external_aad_length           Size of the \p external_aad buffer in bytes.
  * \param[out] iv                       Buffer for the nonce.
  * \param iv_length                     Size of the \p iv buffer in bytes.
  * \param[out] aad                      Buffer for the associated data.
@@ -64,7 +70,8 @@ int edhoc_cipher_aad_length(const struct edhoc_context *ctx, size_t *length);
  *         Success.
  * \return Negative error code on failure.
  */
-int edhoc_cipher_derive(struct edhoc_context *ctx, uint8_t *iv,
+int edhoc_cipher_derive(struct edhoc_context *ctx, const uint8_t *external_aad,
+			size_t external_aad_length, uint8_t *iv,
 			size_t iv_length, uint8_t *aad, size_t aad_length);
 
 /**

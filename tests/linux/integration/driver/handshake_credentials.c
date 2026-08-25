@@ -175,41 +175,45 @@ int hs_cred_select_local(void *user_context,
 
 	const struct hs_identity *identity = endpoint->own;
 
-	selected->label = identity->cose_header;
+	selected->asymmetric.label = identity->cose_header;
 
 	switch (identity->cose_header) {
 	case EDHOC_COSE_HEADER_KID:
-		selected->kid.identifier.value = identity->kid;
-		selected->kid.identifier.length = identity->kid_length;
-		selected->kid.credential.value = identity->credential;
-		selected->kid.credential.length = identity->credential_length;
-		selected->kid.format = identity->credential_format;
+		selected->asymmetric.kid.identifier.value = identity->kid;
+		selected->asymmetric.kid.identifier.length =
+			identity->kid_length;
+		selected->asymmetric.kid.credential.value =
+			identity->credential;
+		selected->asymmetric.kid.credential.length =
+			identity->credential_length;
+		selected->asymmetric.kid.format = identity->credential_format;
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_CHAIN:
-		selected->x509_chain.count = identity->cert_count;
+		selected->asymmetric.x509_chain.count = identity->cert_count;
 
 		for (size_t i = 0; i < identity->cert_count; ++i) {
-			selected->x509_chain.certificate[i].value =
+			selected->asymmetric.x509_chain.certificate[i].value =
 				identity->cert[i].pointer;
-			selected->x509_chain.certificate[i].length =
+			selected->asymmetric.x509_chain.certificate[i].length =
 				identity->cert[i].length;
 		}
 
 		break;
 
 	case EDHOC_COSE_HEADER_X509_HASH:
-		selected->x509_hash.certificate.value =
+		selected->asymmetric.x509_hash.certificate.value =
 			identity->cert[0].pointer;
-		selected->x509_hash.certificate.length =
+		selected->asymmetric.x509_hash.certificate.length =
 			identity->cert[0].length;
-		selected->x509_hash.fingerprint.value = identity->thumbprint;
-		selected->x509_hash.fingerprint.length =
+		selected->asymmetric.x509_hash.fingerprint.value =
+			identity->thumbprint;
+		selected->asymmetric.x509_hash.fingerprint.length =
 			identity->thumbprint_length;
-		selected->x509_hash.algorithm.encode_type =
+		selected->asymmetric.x509_hash.algorithm.encode_type =
 			EDHOC_ENCODE_TYPE_INTEGER;
-		selected->x509_hash.algorithm.integer =
+		selected->asymmetric.x509_hash.algorithm.integer =
 			identity->thumbprint_algorithm;
 
 		break;
@@ -221,7 +225,7 @@ int hs_cred_select_local(void *user_context,
 	return hs_import_private_key(identity->key_import,
 				     identity->private_key,
 				     identity->private_key_length,
-				     selected->private_key_id);
+				     selected->asymmetric.private_key_id);
 }
 
 int hs_cred_authenticate_peer(void *user_context,
@@ -263,9 +267,10 @@ int hs_cred_authenticate_peer(void *user_context,
 		}
 
 		/* The identifier alone selects CRED; nothing else is sent. */
-		trusted->credential.value = identity->credential;
-		trusted->credential.length = identity->credential_length;
-		trusted->format = identity->credential_format;
+		trusted->asymmetric.credential.value = identity->credential;
+		trusted->asymmetric.credential.length =
+			identity->credential_length;
+		trusted->asymmetric.format = identity->credential_format;
 		break;
 	}
 
@@ -289,8 +294,9 @@ int hs_cred_authenticate_peer(void *user_context,
 		}
 
 		/* CRED is the received end-entity certificate. */
-		trusted->credential = received->x509_chain.certificate[0];
-		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->asymmetric.credential =
+			received->x509_chain.certificate[0];
+		trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 		break;
 	}
 
@@ -331,9 +337,11 @@ int hs_cred_authenticate_peer(void *user_context,
 			return EDHOC_ERROR_CREDENTIALS_FAILURE;
 		}
 
-		trusted->credential.value = identity->cert[0].pointer;
-		trusted->credential.length = identity->cert[0].length;
-		trusted->format = EDHOC_CREDENTIAL_FORMAT_RAW;
+		trusted->asymmetric.credential.value =
+			identity->cert[0].pointer;
+		trusted->asymmetric.credential.length =
+			identity->cert[0].length;
+		trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_RAW;
 
 		break;
 	}
@@ -342,8 +350,8 @@ int hs_cred_authenticate_peer(void *user_context,
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
-	trusted->public_key.value = identity->public_key;
-	trusted->public_key.length = identity->public_key_length;
+	trusted->asymmetric.public_key.value = identity->public_key;
+	trusted->asymmetric.public_key.length = identity->public_key_length;
 
 	return EDHOC_SUCCESS;
 }

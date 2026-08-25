@@ -273,15 +273,17 @@ auth_cred_select_local_init(void *user_ctx,
 	(void)user_ctx;
 	(void)call_ctx;
 
-	selected->label = EDHOC_COSE_HEADER_KID;
-	selected->kid.credential.value = CRED_I_cborised;
-	selected->kid.credential.length = ARRAY_SIZE(CRED_I_cborised);
-	selected->kid.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
-	selected->kid.identifier.value = ID_CRED_I_raw_cborised;
-	selected->kid.identifier.length = ARRAY_SIZE(ID_CRED_I_raw_cborised);
+	selected->asymmetric.label = EDHOC_COSE_HEADER_KID;
+	selected->asymmetric.kid.credential.value = CRED_I_cborised;
+	selected->asymmetric.kid.credential.length =
+		ARRAY_SIZE(CRED_I_cborised);
+	selected->asymmetric.kid.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	selected->asymmetric.kid.identifier.value = ID_CRED_I_raw_cborised;
+	selected->asymmetric.kid.identifier.length =
+		ARRAY_SIZE(ID_CRED_I_raw_cborised);
 
 	const int res = import_dh_priv_key(SK_I, ARRAY_SIZE(SK_I),
-					   selected->private_key_id);
+					   selected->asymmetric.private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -297,15 +299,17 @@ auth_cred_select_local_resp(void *user_ctx,
 	(void)user_ctx;
 	(void)call_ctx;
 
-	selected->label = EDHOC_COSE_HEADER_KID;
-	selected->kid.credential.value = CRED_R_cborised;
-	selected->kid.credential.length = ARRAY_SIZE(CRED_R_cborised);
-	selected->kid.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
-	selected->kid.identifier.value = ID_CRED_R_raw_cborised;
-	selected->kid.identifier.length = ARRAY_SIZE(ID_CRED_R_raw_cborised);
+	selected->asymmetric.label = EDHOC_COSE_HEADER_KID;
+	selected->asymmetric.kid.credential.value = CRED_R_cborised;
+	selected->asymmetric.kid.credential.length =
+		ARRAY_SIZE(CRED_R_cborised);
+	selected->asymmetric.kid.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	selected->asymmetric.kid.identifier.value = ID_CRED_R_raw_cborised;
+	selected->asymmetric.kid.identifier.length =
+		ARRAY_SIZE(ID_CRED_R_raw_cborised);
 
 	const int res = import_dh_priv_key(SK_R, ARRAY_SIZE(SK_R),
-					   selected->private_key_id);
+					   selected->asymmetric.private_key_id);
 
 	if (EDHOC_SUCCESS != res)
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
@@ -333,11 +337,11 @@ static int auth_cred_authenticate_peer_init(
 			received->kid.identifier.length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	trusted->credential.value = CRED_R_cborised;
-	trusted->credential.length = ARRAY_SIZE(CRED_R_cborised);
-	trusted->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
-	trusted->public_key.value = PK_R;
-	trusted->public_key.length = ARRAY_SIZE(PK_R);
+	trusted->asymmetric.credential.value = CRED_R_cborised;
+	trusted->asymmetric.credential.length = ARRAY_SIZE(CRED_R_cborised);
+	trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	trusted->asymmetric.public_key.value = PK_R;
+	trusted->asymmetric.public_key.length = ARRAY_SIZE(PK_R);
 
 	return EDHOC_SUCCESS;
 }
@@ -362,11 +366,11 @@ static int auth_cred_authenticate_peer_resp(
 			received->kid.identifier.length))
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 
-	trusted->credential.value = CRED_I_cborised;
-	trusted->credential.length = ARRAY_SIZE(CRED_I_cborised);
-	trusted->format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
-	trusted->public_key.value = PK_I;
-	trusted->public_key.length = ARRAY_SIZE(PK_I);
+	trusted->asymmetric.credential.value = CRED_I_cborised;
+	trusted->asymmetric.credential.length = ARRAY_SIZE(CRED_I_cborised);
+	trusted->asymmetric.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
+	trusted->asymmetric.public_key.value = PK_I;
+	trusted->asymmetric.public_key.length = ARRAY_SIZE(PK_I);
 
 	return EDHOC_SUCCESS;
 }
