@@ -247,9 +247,10 @@ comp_context_2_connection_id(const struct edhoc_context *ctx,
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_mac_context_length(const struct edhoc_context *ctx,
-			     const struct edhoc_credential_material *material,
-			     size_t *mac_ctx_len)
+int edhoc_mac_context_length(
+	const struct edhoc_context *ctx,
+	const struct edhoc_credential_material_asymmetric *material,
+	size_t *mac_ctx_len)
 {
 	if (NULL == ctx || NULL == material || NULL == mac_ctx_len) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -288,7 +289,7 @@ int edhoc_mac_context_length(const struct edhoc_context *ctx,
 
 	/* ID_CRED length. */
 	len = 0;
-	ret = edhoc_credential_id_cred_length(material, &len);
+	ret = edhoc_credential_asymmetric_id_cred_length(material, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -306,7 +307,7 @@ int edhoc_mac_context_length(const struct edhoc_context *ctx,
 
 	/* CRED length. */
 	len = 0;
-	ret = edhoc_credential_cred_length(material, &len);
+	ret = edhoc_credential_asymmetric_cred_length(material, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -325,9 +326,10 @@ int edhoc_mac_context_length(const struct edhoc_context *ctx,
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_mac_context_compose(const struct edhoc_context *ctx,
-			      const struct edhoc_credential_material *material,
-			      struct mac_context *mac_ctx)
+int edhoc_mac_context_compose(
+	const struct edhoc_context *ctx,
+	const struct edhoc_credential_material_asymmetric *material,
+	struct mac_context *mac_ctx)
 {
 	if (NULL == ctx || NULL == material || NULL == mac_ctx) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -392,7 +394,7 @@ int edhoc_mac_context_compose(const struct edhoc_context *ctx,
 	mac_ctx->id_cred = &mac_ctx->buf[mac_ctx->conn_id_len];
 
 	len = 0;
-	ret = edhoc_credential_id_cred_length(material, &len);
+	ret = edhoc_credential_asymmetric_id_cred_length(material, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -401,8 +403,8 @@ int edhoc_mac_context_compose(const struct edhoc_context *ctx,
 
 	/* ID_CRED cborising. */
 	len = 0;
-	ret = edhoc_credential_encode_id_cred(material, mac_ctx->id_cred,
-					      mac_ctx->id_cred_len, &len);
+	ret = edhoc_credential_asymmetric_encode_id_cred(
+		material, mac_ctx->id_cred, mac_ctx->id_cred_len, &len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("CBOR enc ID_CRED: %d", ret);
@@ -412,7 +414,7 @@ int edhoc_mac_context_compose(const struct edhoc_context *ctx,
 	mac_ctx->id_cred_len = len;
 
 	/* Compact encoding of ID_CRED, when the label allows it. */
-	ret = edhoc_credential_encode_id_cred_compact(
+	ret = edhoc_credential_asymmetric_encode_id_cred_compact(
 		material, mac_ctx->id_cred_comp,
 		ARRAY_SIZE(mac_ctx->id_cred_comp), &mac_ctx->id_cred_comp_len);
 
@@ -453,7 +455,7 @@ int edhoc_mac_context_compose(const struct edhoc_context *ctx,
 	mac_ctx->cred = &mac_ctx->th[mac_ctx->th_len];
 
 	len = 0;
-	ret = edhoc_credential_cred_length(material, &len);
+	ret = edhoc_credential_asymmetric_cred_length(material, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;
@@ -462,8 +464,8 @@ int edhoc_mac_context_compose(const struct edhoc_context *ctx,
 
 	/* CRED cborising. */
 	len = 0;
-	ret = edhoc_credential_encode_cred(material, mac_ctx->cred,
-					   mac_ctx->cred_len, &len);
+	ret = edhoc_credential_asymmetric_encode_cred(material, mac_ctx->cred,
+						      mac_ctx->cred_len, &len);
 
 	if (EDHOC_SUCCESS != ret)
 		return ret;

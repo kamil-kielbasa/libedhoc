@@ -248,7 +248,7 @@ auth_cred_select_local_init(void *user_ctx,
 	selected->psk.cred_i.length = ARRAY_SIZE(CRED_I);
 	selected->psk.cred_r.value = CRED_R;
 	selected->psk.cred_r.length = ARRAY_SIZE(CRED_R);
-	selected->psk.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	selected->psk.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
 	const int res = import_psk(selected->psk.psk_key_id,
 				   ARRAY_SIZE(selected->psk.psk_key_id));
@@ -290,7 +290,7 @@ static int auth_cred_authenticate_peer_resp(
 	trusted->psk.cred_i.length = ARRAY_SIZE(CRED_I);
 	trusted->psk.cred_r.value = CRED_R;
 	trusted->psk.cred_r.length = ARRAY_SIZE(CRED_R);
-	trusted->psk.format = EDHOC_CREDENTIAL_FORMAT_RAW;
+	trusted->psk.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED;
 
 	const int res = import_psk(trusted->psk.psk_key_id,
 				   ARRAY_SIZE(trusted->psk.psk_key_id));

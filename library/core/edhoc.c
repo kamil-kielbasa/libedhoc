@@ -34,6 +34,7 @@ LOG_MODULE_REGISTER(libedhoc, CONFIG_LIBEDHOC_LOG_LEVEL);
 #include "edhoc_macros_internal.h"
 #include "edhoc_key_slot_internal.h"
 #include "edhoc_classic_internal.h"
+#include "edhoc_psk_internal.h"
 #include "edhoc_error_internal.h"
 #include "edhoc_exporter_internal.h"
 #include "edhoc_connection_id_internal.h"
@@ -394,6 +395,11 @@ int edhoc_message_1_process(struct edhoc_context *ctx, const uint8_t *msg_1,
 int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 			    size_t msg_2_size, size_t *msg_2_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_2_compose(ctx, msg_2, msg_2_size,
+						   msg_2_len);
+	}
+
 	return edhoc_classic_message_2_compose(ctx, msg_2, msg_2_size,
 					       msg_2_len);
 }
@@ -401,12 +407,21 @@ int edhoc_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 int edhoc_message_2_process(struct edhoc_context *ctx, const uint8_t *msg_2,
 			    size_t msg_2_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_2_process(ctx, msg_2, msg_2_len);
+	}
+
 	return edhoc_classic_message_2_process(ctx, msg_2, msg_2_len);
 }
 
 int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 			    size_t msg_3_size, size_t *msg_3_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_3_compose(ctx, msg_3, msg_3_size,
+						   msg_3_len);
+	}
+
 	return edhoc_classic_message_3_compose(ctx, msg_3, msg_3_size,
 					       msg_3_len);
 }
@@ -414,6 +429,10 @@ int edhoc_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 int edhoc_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 			    size_t msg_3_len)
 {
+	if (edhoc_psk_is_selected(ctx)) {
+		return edhoc_psk_message_3_process(ctx, msg_3, msg_3_len);
+	}
+
 	return edhoc_classic_message_3_process(ctx, msg_3, msg_3_len);
 }
 

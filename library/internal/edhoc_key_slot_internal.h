@@ -57,9 +57,6 @@ enum edhoc_key_slot_id {
 	EDHOC_KEY_SLOT_EPHEMERAL,
 	/** Static-DH shared secret \c G_IY (IKM for PRK_4e3m, message 3). */
 	EDHOC_KEY_SLOT_G_IY,
-	/** Pre-shared key (IKM for PRK_4e3m, message 3, method 4). Sits before
-	 *  PRK_4e3m so the step that spends it also releases it. */
-	EDHOC_KEY_SLOT_PSK,
 	/** Message 3 content-encryption key \c K_3 (AEAD, derived from PRK_3e2m). */
 	EDHOC_KEY_SLOT_K_3,
 	/** Message 4 content-encryption key \c K_4 (AEAD, derived from PRK_4e3m). */

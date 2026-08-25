@@ -118,12 +118,14 @@ int edhoc_key_schedule_prk_initial(struct edhoc_context *ctx);
  *
  *        With signature authentication the key is unchanged and only its
  *        handle moves; with static Diffie-Hellman it is re-extracted from the
- *        static-DH shared secret.
+ *        static-DH shared secret; with a pre-shared key it is re-extracted
+ *        from that key.
  *
  * \param[in,out] ctx                   EDHOC context.
  * \param[in] private_key_id            Handle of the local authentication key,
  *                                      needed when the local party is the one
- *                                      authenticating.
+ *                                      authenticating, and of the pre-shared
+ *                                      key in message 3 under method 4.
  * \param[in] peer_public_key           Peer authentication public key, needed
  *                                      otherwise.
  * \param peer_public_key_length        Size of \p peer_public_key in bytes.

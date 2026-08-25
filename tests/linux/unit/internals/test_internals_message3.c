@@ -47,8 +47,9 @@ TEST(internals_message3, comp_key_iv_aad_3_null)
 {
 	uint8_t iv[13] = { 0 };
 	uint8_t aad[256] = { 0 };
-	int ret = edhoc_cipher_derive(NULL, iv, ARRAY_SIZE(iv), aad,
-				      ARRAY_SIZE(aad));
+	const uint8_t th[32] = { 0 };
+	int ret = edhoc_cipher_derive(NULL, th, ARRAY_SIZE(th), iv,
+				      ARRAY_SIZE(iv), aad, ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 }
 
@@ -62,8 +63,9 @@ TEST(internals_message3, comp_key_iv_aad_3_bad_state)
 
 	uint8_t iv[13] = { 0 };
 	uint8_t aad[256] = { 0 };
-	int ret = edhoc_cipher_derive(&ctx, iv, ARRAY_SIZE(iv), aad,
-				      ARRAY_SIZE(aad));
+	const uint8_t th[32] = { 0 };
+	int ret = edhoc_cipher_derive(&ctx, th, ARRAY_SIZE(th), iv,
+				      ARRAY_SIZE(iv), aad, ARRAY_SIZE(aad));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_BAD_STATE, ret);
 
 	ret = edhoc_context_deinit(&ctx);
@@ -164,10 +166,10 @@ TEST(internals_message3, comp_aad_3_len_null)
 
 	size_t len = 0;
 
-	int ret = edhoc_cipher_aad_length(NULL, &len);
+	int ret = edhoc_cipher_aad_length(NULL, ctx.state.th.length, &len);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
-	ret = edhoc_cipher_aad_length(&ctx, NULL);
+	ret = edhoc_cipher_aad_length(&ctx, ctx.state.th.length, NULL);
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT, ret);
 
 	ret = edhoc_context_deinit(&ctx);

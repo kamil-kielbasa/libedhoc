@@ -282,8 +282,9 @@ int edhoc_classic_message_2_compose(struct edhoc_context *ctx, uint8_t *msg_2,
 	}
 
 	/* 7a. Compute required buffer length for context_2. */
-	struct edhoc_credential_material material = { 0 };
-	ret = edhoc_credential_material_from_selected(&selected, &material);
+	struct edhoc_credential_material_asymmetric material = { 0 };
+	ret = edhoc_credential_asymmetric_material_from_selected(&selected,
+								 &material);
 
 	if (EDHOC_SUCCESS != ret) {
 		return ret;
@@ -697,8 +698,8 @@ int edhoc_classic_message_2_process(struct edhoc_context *ctx,
 	}
 
 	/* 12. Compute required buffer length for context_2. */
-	struct edhoc_credential_material material = { 0 };
-	ret = edhoc_credential_material_from_trusted(
+	struct edhoc_credential_material_asymmetric material = { 0 };
+	ret = edhoc_credential_asymmetric_material_from_trusted(
 		&parsed_ptxt.peer_credential_id, &trusted, &material);
 
 	if (EDHOC_SUCCESS != ret) {

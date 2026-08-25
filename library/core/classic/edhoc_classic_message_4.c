@@ -227,7 +227,7 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	}
 
 	size_t aad_len = 0;
-	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+	ret = edhoc_cipher_aad_length(ctx, ctx->state.th.length, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(iv);
@@ -243,7 +243,9 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+	ret = edhoc_cipher_derive(ctx, ctx->state.th.value,
+				  ctx->state.th.length, iv,
+				  EDHOC_MEM_ALLOC_SIZE(iv), aad,
 				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
@@ -392,7 +394,7 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 	}
 
 	size_t aad_len = 0;
-	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+	ret = edhoc_cipher_aad_length(ctx, ctx->state.th.length, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(iv);
@@ -406,7 +408,9 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+	ret = edhoc_cipher_derive(ctx, ctx->state.th.value,
+				  ctx->state.th.length, iv,
+				  EDHOC_MEM_ALLOC_SIZE(iv), aad,
 				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {

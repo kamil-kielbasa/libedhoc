@@ -52,8 +52,6 @@ struct schedule_params {
 	enum edhoc_key_slot_id prk_target;
 	/** Handle of the static Diffie-Hellman shared secret. */
 	enum edhoc_key_slot_id dh_slot;
-	/** Handle of the pre-shared key (draft-ietf-lake-edhoc-psk: 4). */
-	enum edhoc_key_slot_id psk_slot;
 	/** EDHOC_KDF label of the salt. */
 	int32_t salt_label;
 	/** Transcript hash the step must be at. */
@@ -128,7 +126,6 @@ STATIC int comp_schedule_params(const struct edhoc_context *ctx,
 			.prk_source = EDHOC_KEY_SLOT_PRK_2E,
 			.prk_target = EDHOC_KEY_SLOT_PRK_3E2M,
 			.dh_slot = EDHOC_KEY_SLOT_G_RX,
-			.psk_slot = EDHOC_KEY_SLOT_PSK,
 			.salt_label = EDHOC_KDF_LABEL_SALT_3E2M,
 			.th_stage = EDHOC_TH_STATE_2,
 			.authenticating_role = EDHOC_ROLE_RESPONDER,
@@ -142,7 +139,6 @@ STATIC int comp_schedule_params(const struct edhoc_context *ctx,
 			.prk_source = EDHOC_KEY_SLOT_PRK_3E2M,
 			.prk_target = EDHOC_KEY_SLOT_PRK_4E3M,
 			.dh_slot = EDHOC_KEY_SLOT_G_IY,
-			.psk_slot = EDHOC_KEY_SLOT_PSK,
 			.salt_label = EDHOC_KDF_LABEL_SALT_4E3M,
 			.th_stage = EDHOC_TH_STATE_3,
 			.authenticating_role = EDHOC_ROLE_INITIATOR,
@@ -477,15 +473,16 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 		/* PRK_4e3m = EDHOC_Extract(SALT_4e3m, PSK). The pre-shared key
 		 * comes from the credentials callback, so nothing is agreed
 		 * here. */
-		if (!edhoc_key_slot_present(ctx, params.psk_slot)) {
+		if (NULL == private_key_id) {
 			EDHOC_LOG_ERR("Missing pre-shared key");
-			return EDHOC_ERROR_BAD_STATE;
+			return EDHOC_ERROR_INVALID_ARGUMENT;
 		}
 
 		const size_t hash_len =
 			edhoc_selected_cipher_suite(ctx)->hash_length;
 
 		EDHOC_MEM_ALLOC(uint8_t, salt, hash_len);
+
 		if (NULL == salt) {
 			EDHOC_LOG_ERR("Memory allocation failed");
 			return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
@@ -502,9 +499,8 @@ int edhoc_key_schedule_prk_advance(struct edhoc_context *ctx,
 		EDHOC_LOG_HEXDUMP_DBG(salt, EDHOC_MEM_ALLOC_SIZE(salt),
 				      "PRK salt");
 
-		ret = edhoc_kdf_extract(ctx,
-					edhoc_key_slot_id(ctx, params.psk_slot),
-					salt, EDHOC_MEM_ALLOC_SIZE(salt),
+		ret = edhoc_kdf_extract(ctx, private_key_id, salt,
+					EDHOC_MEM_ALLOC_SIZE(salt),
 					params.prk_target);
 
 		edhoc_zeroize(ctx, salt, EDHOC_MEM_ALLOC_SIZE(salt));

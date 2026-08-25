@@ -56,12 +56,19 @@ enum edhoc_plaintext_id {
 	EDHOC_PLAINTEXT_CLASSIC_3,
 	/** PLAINTEXT_4 of classic EDHOC: optional EAD_4 and nothing else. */
 	EDHOC_PLAINTEXT_CLASSIC_4,
+	/** PLAINTEXT_2A of EDHOC-PSK: C_R and optional EAD_2. */
+	EDHOC_PLAINTEXT_PSK_2A,
+	/** PLAINTEXT_3A of EDHOC-PSK: ID_CRED_PSK and CIPHERTEXT_3B. */
+	EDHOC_PLAINTEXT_PSK_3A,
+	/** PLAINTEXT_3B of EDHOC-PSK: optional EAD_3 and nothing else. */
+	EDHOC_PLAINTEXT_PSK_3B,
 };
 
 /**
  * \brief Items carried by a plaintext, as decoded.
  *
- *        \ref EDHOC_PLAINTEXT_CLASSIC_4 carries none of these.
+ *        \ref EDHOC_PLAINTEXT_CLASSIC_4 and \ref EDHOC_PLAINTEXT_PSK_3B carry
+ *        none of these, and \ref EDHOC_PLAINTEXT_PSK_2A carries only \p ead.
  */
 struct plaintext {
 	/** ID_CRED_x, as received from the peer. */
@@ -76,13 +83,17 @@ struct plaintext {
 
 	/** Cborised EAD (2/3). */
 	struct edhoc_buffer ead;
+
+	/** CIPHERTEXT_3B, for \ref EDHOC_PLAINTEXT_PSK_3A. */
+	struct edhoc_buffer ciphertext_3b;
 };
 
 /**
  * \brief What a plaintext is assembled from.
  *
- *        \ref EDHOC_PLAINTEXT_CLASSIC_4 needs neither the MAC context nor a
- *        signature, and leaves both unset.
+ *        \ref EDHOC_PLAINTEXT_CLASSIC_4, \ref EDHOC_PLAINTEXT_PSK_2A and
+ *        \ref EDHOC_PLAINTEXT_PSK_3B need neither the MAC context nor a
+ *        signature, and leave both unset.
  */
 struct edhoc_plaintext_input {
 	/** Which plaintext to build or measure. */
@@ -95,6 +106,17 @@ struct edhoc_plaintext_input {
 	const uint8_t *signature;
 	/** Size of \p signature in bytes. */
 	size_t signature_length;
+
+	/** ID_CRED_PSK in the compact encoding, for
+	 *  \ref EDHOC_PLAINTEXT_PSK_3A. */
+	const uint8_t *id_cred_psk;
+	/** Size of \p id_cred_psk in bytes. */
+	size_t id_cred_psk_length;
+
+	/** CIPHERTEXT_3B, for \ref EDHOC_PLAINTEXT_PSK_3A. */
+	const uint8_t *ciphertext_3b;
+	/** Size of \p ciphertext_3b in bytes. */
+	size_t ciphertext_3b_length;
 };
 
 /**@}*/

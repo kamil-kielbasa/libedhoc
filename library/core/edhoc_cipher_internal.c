@@ -190,7 +190,8 @@ STATIC int comp_keystream_params(const struct edhoc_context *ctx,
 
 /* Module interface function definitions ----------------------------------- */
 
-int edhoc_cipher_aad_length(const struct edhoc_context *ctx, size_t *length)
+int edhoc_cipher_aad_length(const struct edhoc_context *ctx,
+			    size_t external_aad_length, size_t *length)
 {
 	if (NULL == ctx || NULL == length) {
 		EDHOC_LOG_ERR("Invalid arguments");
@@ -202,19 +203,20 @@ int edhoc_cipher_aad_length(const struct edhoc_context *ctx, size_t *length)
 	len += sizeof(EDHOC_CIPHER_AAD_CONTEXT) +
 	       edhoc_cbor_tstr_head_length(sizeof(EDHOC_CIPHER_AAD_CONTEXT));
 	len += edhoc_cbor_bstr_head_length(0);
-	len += ctx->state.th.length +
-	       edhoc_cbor_bstr_head_length(ctx->state.th.length);
+	len += external_aad_length +
+	       edhoc_cbor_bstr_head_length(external_aad_length);
 
 	*length = len;
 
 	return EDHOC_SUCCESS;
 }
 
-int edhoc_cipher_derive(struct edhoc_context *ctx, uint8_t *iv,
+int edhoc_cipher_derive(struct edhoc_context *ctx, const uint8_t *external_aad,
+			size_t external_aad_length, uint8_t *iv,
 			size_t iv_length, uint8_t *aad, size_t aad_length)
 {
-	if (NULL == ctx || NULL == iv || 0 == iv_length || NULL == aad ||
-	    0 == aad_length) {
+	if (NULL == ctx || NULL == external_aad || 0 == external_aad_length ||
+	    NULL == iv || 0 == iv_length || NULL == aad || 0 == aad_length) {
 		EDHOC_LOG_ERR("Invalid arguments");
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
@@ -269,8 +271,8 @@ int edhoc_cipher_derive(struct edhoc_context *ctx, uint8_t *iv,
 	const struct enc_structure cose_enc_0 = {
 		.enc_structure_protected.value = NULL,
 		.enc_structure_protected.len = 0,
-		.enc_structure_external_aad.value = ctx->state.th.value,
-		.enc_structure_external_aad.len = ctx->state.th.length,
+		.enc_structure_external_aad.value = external_aad,
+		.enc_structure_external_aad.len = external_aad_length,
 	};
 
 	size_t len = 0;

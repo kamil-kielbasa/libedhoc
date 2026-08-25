@@ -114,7 +114,7 @@ struct mac_context {
  */
 int edhoc_mac_context_length(
 	const struct edhoc_context *edhoc_context,
-	const struct edhoc_credential_material *credential_material,
+	const struct edhoc_credential_material_asymmetric *credential_material,
 	size_t *mac_context_length);
 
 /**
@@ -130,7 +130,7 @@ int edhoc_mac_context_length(
  */
 int edhoc_mac_context_compose(
 	const struct edhoc_context *edhoc_context,
-	const struct edhoc_credential_material *credential_material,
+	const struct edhoc_credential_material_asymmetric *credential_material,
 	struct mac_context *mac_context);
 
 /**@}*/

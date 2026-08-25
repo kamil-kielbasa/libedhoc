@@ -222,7 +222,7 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	size_t aad_len = 0;
-	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+	ret = edhoc_cipher_aad_length(ctx, ctx->state.th.length, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute AAD_3 length: %d", ret);
@@ -237,7 +237,9 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+	ret = edhoc_cipher_derive(ctx, ctx->state.th.value,
+				  ctx->state.th.length, iv,
+				  EDHOC_MEM_ALLOC_SIZE(iv), aad,
 				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
@@ -262,8 +264,9 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	/* 6a. Compute required buffer length for context_3. */
-	struct edhoc_credential_material material = { 0 };
-	ret = edhoc_credential_material_from_selected(&selected, &material);
+	struct edhoc_credential_material_asymmetric material = { 0 };
+	ret = edhoc_credential_asymmetric_material_from_selected(&selected,
+								 &material);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_MEM_FREE(aad);
@@ -599,7 +602,7 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 	}
 
 	size_t aad_len = 0;
-	ret = edhoc_cipher_aad_length(ctx, &aad_len);
+	ret = edhoc_cipher_aad_length(ctx, ctx->state.th.length, &aad_len);
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Compute AAD_3 length: %d", ret);
@@ -614,7 +617,9 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	ret = edhoc_cipher_derive(ctx, iv, EDHOC_MEM_ALLOC_SIZE(iv), aad,
+	ret = edhoc_cipher_derive(ctx, ctx->state.th.value,
+				  ctx->state.th.length, iv,
+				  EDHOC_MEM_ALLOC_SIZE(iv), aad,
 				  EDHOC_MEM_ALLOC_SIZE(aad));
 
 	if (EDHOC_SUCCESS != ret) {
@@ -707,8 +712,8 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 	}
 
 	/* 9a. Compute required buffer length for context_3. */
-	struct edhoc_credential_material material = { 0 };
-	ret = edhoc_credential_material_from_trusted(
+	struct edhoc_credential_material_asymmetric material = { 0 };
+	ret = edhoc_credential_asymmetric_material_from_trusted(
 		&parsed_ptxt.peer_credential_id, &trusted, &material);
 
 	if (EDHOC_SUCCESS != ret) {

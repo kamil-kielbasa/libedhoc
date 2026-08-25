@@ -1090,10 +1090,10 @@ TEST(internals_credentials, material_kid)
 		.asymmetric.kid.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 	};
 
-	struct edhoc_credential_material material = { 0 };
+	struct edhoc_credential_material_asymmetric material = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_material_from_selected(&cred,
-								  &material));
+			  edhoc_credential_asymmetric_material_from_selected(
+				  &cred, &material));
 
 	TEST_ASSERT_EQUAL(EDHOC_COSE_HEADER_KID, material.label);
 	TEST_ASSERT_EQUAL(EDHOC_CREDENTIAL_FORMAT_RAW, material.format);
@@ -1119,10 +1119,10 @@ TEST(internals_credentials, material_x5chain_cred_is_end_entity)
 								  issuer) },
 	};
 
-	struct edhoc_credential_material material = { 0 };
+	struct edhoc_credential_material_asymmetric material = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_material_from_selected(&cred,
-								  &material));
+			  edhoc_credential_asymmetric_material_from_selected(
+				  &cred, &material));
 
 	TEST_ASSERT_EQUAL_size_t(2, material.x509_chain.count);
 	TEST_ASSERT_EQUAL_PTR(issuer, material.x509_chain.certificate[1].value);
@@ -1147,10 +1147,10 @@ TEST(internals_credentials, material_x5t)
 							      certificate) },
 	};
 
-	struct edhoc_credential_material material = { 0 };
+	struct edhoc_credential_material_asymmetric material = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_material_from_selected(&cred,
-								  &material));
+			  edhoc_credential_asymmetric_material_from_selected(
+				  &cred, &material));
 
 	TEST_ASSERT_EQUAL_INT32(-16, material.x509_hash.algorithm.integer);
 	TEST_ASSERT_EQUAL_PTR(x5t_fingerprint,
@@ -1161,13 +1161,14 @@ TEST(internals_credentials, material_x5t)
 TEST(internals_credentials, material_null_args)
 {
 	const struct edhoc_credential_selected cred = { 0 };
-	struct edhoc_credential_material material = { 0 };
+	struct edhoc_credential_material_asymmetric material = { 0 };
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_material_from_selected(NULL,
-								  &material));
+			  edhoc_credential_asymmetric_material_from_selected(
+				  NULL, &material));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_material_from_selected(&cred, NULL));
+			  edhoc_credential_asymmetric_material_from_selected(
+				  &cred, NULL));
 }
 
 TEST(internals_credentials, material_unsupported_label)
@@ -1176,10 +1177,10 @@ TEST(internals_credentials, material_unsupported_label)
 		.asymmetric.label = (enum edhoc_cose_header)99,
 	};
 
-	struct edhoc_credential_material material = { 0 };
+	struct edhoc_credential_material_asymmetric material = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED,
-			  edhoc_credential_material_from_selected(&cred,
-								  &material));
+			  edhoc_credential_asymmetric_material_from_selected(
+				  &cred, &material));
 }
 
 TEST(internals_credentials, material_x5chain_over_capacity)
@@ -1190,23 +1191,24 @@ TEST(internals_credentials, material_x5chain_over_capacity)
 			EDHOC_CREDENTIAL_X5CHAIN_CAPACITY + 1,
 	};
 
-	struct edhoc_credential_material material = { 0 };
+	struct edhoc_credential_material_asymmetric material = { 0 };
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED,
-			  edhoc_credential_material_from_selected(&cred,
-								  &material));
+			  edhoc_credential_asymmetric_material_from_selected(
+				  &cred, &material));
 }
 
 TEST(internals_credentials, id_cred_len_kid_one_byte)
 {
 	const uint8_t kid[1] = { 0x05 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
 	};
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_id_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     &len));
 	/* An upper bound: the map header is sized for the worst case. */
 	TEST_ASSERT_GREATER_OR_EQUAL_size_t(4, len);
 }
@@ -1214,21 +1216,22 @@ TEST(internals_credentials, id_cred_len_kid_one_byte)
 TEST(internals_credentials, id_cred_len_kid_long)
 {
 	const uint8_t kid[EDHOC_CREDENTIAL_KID_MAX_LEN] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
 	};
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_id_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     &len));
 	TEST_ASSERT_GREATER_THAN(ARRAY_SIZE(kid), len);
 }
 
 TEST(internals_credentials, id_cred_len_x5chain_single)
 {
 	const uint8_t cert[100] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.x509_chain.count = 1,
 		.x509_chain.certificate[0] = { .value = cert,
@@ -1237,7 +1240,8 @@ TEST(internals_credentials, id_cred_len_x5chain_single)
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_id_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     &len));
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
 
@@ -1245,7 +1249,7 @@ TEST(internals_credentials, id_cred_len_x5chain_multi)
 {
 	const uint8_t cert0[50] = { 0 };
 	const uint8_t cert1[60] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.x509_chain.count = 2,
 		.x509_chain.certificate[0] = { .value = cert0,
@@ -1256,7 +1260,8 @@ TEST(internals_credentials, id_cred_len_x5chain_multi)
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_id_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     &len));
 	TEST_ASSERT_GREATER_THAN(sizeof(cert0) + sizeof(cert1), len);
 }
 
@@ -1272,7 +1277,7 @@ TEST(internals_credentials, cbor_int_or_string_len_unknown_encoding)
 TEST(internals_credentials, id_cred_len_x5t_int)
 {
 	const uint8_t x5t_fingerprint[32] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
 		.x509_hash.algorithm = { .encode_type =
 						 EDHOC_ENCODE_TYPE_INTEGER,
@@ -1283,7 +1288,8 @@ TEST(internals_credentials, id_cred_len_x5t_int)
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_id_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     &len));
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
 
@@ -1291,7 +1297,7 @@ TEST(internals_credentials, id_cred_len_x5t_tstr)
 {
 	const uint8_t algorithm[2] = { 'S', 'H' };
 	const uint8_t x5t_fingerprint[32] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_X509_HASH,
 		.x509_hash.algorithm = { .encode_type =
 						 EDHOC_ENCODE_TYPE_STRING,
@@ -1304,38 +1310,42 @@ TEST(internals_credentials, id_cred_len_x5t_tstr)
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_id_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     &len));
 	TEST_ASSERT_GREATER_THAN(0, len);
 }
 
 TEST(internals_credentials, id_cred_len_unsupported)
 {
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = 99,
 	};
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED,
-			  edhoc_credential_id_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     &len));
 }
 
 TEST(internals_credentials, id_cred_len_null_args)
 {
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_id_cred_length(NULL, &len));
+			  edhoc_credential_asymmetric_id_cred_length(NULL,
+								     &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_id_cred_length(&material, NULL));
+			  edhoc_credential_asymmetric_id_cred_length(&material,
+								     NULL));
 }
 
 TEST(internals_credentials, cred_len_follows_credential)
 {
 	const uint8_t credential[100] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.credential = { .value = credential,
 				.length = sizeof(credential) },
@@ -1343,38 +1353,41 @@ TEST(internals_credentials, cred_len_follows_credential)
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_cred_length(&material,
+								  &len));
 	TEST_ASSERT_GREATER_THAN(sizeof(credential), len);
 }
 
 TEST(internals_credentials, cred_len_unsupported)
 {
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = 99,
 	};
 
 	size_t len = 0;
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_SUPPORTED,
-			  edhoc_credential_cred_length(&material, &len));
+			  edhoc_credential_asymmetric_cred_length(&material,
+								  &len));
 }
 
 TEST(internals_credentials, cred_len_null_args)
 {
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_cred_length(NULL, &len));
+			  edhoc_credential_asymmetric_cred_length(NULL, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_cred_length(&material, NULL));
+			  edhoc_credential_asymmetric_cred_length(&material,
+								  NULL));
 }
 
 TEST(internals_credentials, compact_kid_follows_rfc_examples)
 {
 	for (size_t i = 0; i < ARRAY_SIZE(compact_kid_cases); ++i) {
-		const struct edhoc_credential_material material = {
+		const struct edhoc_credential_material_asymmetric material = {
 			.label = EDHOC_COSE_HEADER_KID,
 			.kid = compact_kid_cases[i].kid,
 		};
@@ -1382,10 +1395,10 @@ TEST(internals_credentials, compact_kid_follows_rfc_examples)
 		uint8_t buffer[8] = { 0 };
 		size_t len = 0;
 
-		TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-				  edhoc_credential_encode_id_cred_compact(
-					  &material, buffer, ARRAY_SIZE(buffer),
-					  &len));
+		TEST_ASSERT_EQUAL(
+			EDHOC_SUCCESS,
+			edhoc_credential_asymmetric_encode_id_cred_compact(
+				&material, buffer, ARRAY_SIZE(buffer), &len));
 		TEST_ASSERT_EQUAL_size_t(compact_kid_cases[i].expected_length,
 					 len);
 		TEST_ASSERT_EQUAL_HEX8_ARRAY(compact_kid_cases[i].expected,
@@ -1413,7 +1426,7 @@ TEST(internals_credentials, id_cred_kid_is_always_a_map)
 	/* The full form goes into context_x, where RFC 9528: 3.5.3.2 forbids the
 	 * compact encoding, so even a 'kid' in the short range stays a map. */
 	const uint8_t kid[] = { 0x2b };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
 	};
@@ -1423,7 +1436,7 @@ TEST(internals_credentials, id_cred_kid_is_always_a_map)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_id_cred(
+			  edhoc_credential_asymmetric_encode_id_cred(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(expected), len);
 	TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, buffer, len);
@@ -1431,30 +1444,30 @@ TEST(internals_credentials, id_cred_kid_is_always_a_map)
 
 TEST(internals_credentials, id_cred_null_args)
 {
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 	};
 	uint8_t buffer[8] = { 0 };
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_id_cred(
+			  edhoc_credential_asymmetric_encode_id_cred(
 				  NULL, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_id_cred(
+			  edhoc_credential_asymmetric_encode_id_cred(
 				  &material, NULL, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_id_cred(&material, buffer, 0,
-							  &len));
+			  edhoc_credential_asymmetric_encode_id_cred(
+				  &material, buffer, 0, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_id_cred(
+			  edhoc_credential_asymmetric_encode_id_cred(
 				  &material, buffer, ARRAY_SIZE(buffer), NULL));
 }
 
 TEST(internals_credentials, cred_raw_is_wrapped_in_a_byte_string)
 {
 	const uint8_t der[] = { 0x30, 0x00, 0x01 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.credential = { .value = der, .length = ARRAY_SIZE(der) },
@@ -1465,7 +1478,7 @@ TEST(internals_credentials, cred_raw_is_wrapped_in_a_byte_string)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_cred(
+			  edhoc_credential_asymmetric_encode_cred(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(expected), len);
 	TEST_ASSERT_EQUAL_HEX8_ARRAY(expected, buffer, len);
@@ -1474,7 +1487,7 @@ TEST(internals_credentials, cred_raw_is_wrapped_in_a_byte_string)
 TEST(internals_credentials, cred_cbor_encoded_is_embedded_as_it_is)
 {
 	const uint8_t ccs[] = { 0xa1, 0x02, 0x41, 0x2b };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.format = EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED,
 		.credential = { .value = ccs, .length = ARRAY_SIZE(ccs) },
@@ -1484,7 +1497,7 @@ TEST(internals_credentials, cred_cbor_encoded_is_embedded_as_it_is)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_cred(
+			  edhoc_credential_asymmetric_encode_cred(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL_size_t(ARRAY_SIZE(ccs), len);
 	TEST_ASSERT_EQUAL_HEX8_ARRAY(ccs, buffer, len);
@@ -1493,7 +1506,7 @@ TEST(internals_credentials, cred_cbor_encoded_is_embedded_as_it_is)
 TEST(internals_credentials, cred_format_unset_is_rejected)
 {
 	const uint8_t der[] = { 0x30, 0x00, 0x01 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_NONE,
 		.credential = { .value = der, .length = ARRAY_SIZE(der) },
@@ -1503,13 +1516,13 @@ TEST(internals_credentials, cred_format_unset_is_rejected)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_NOT_PERMITTED,
-			  edhoc_credential_encode_cred(
+			  edhoc_credential_asymmetric_encode_cred(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 }
 
 TEST(internals_credentials, cred_null_args)
 {
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 	};
@@ -1517,16 +1530,16 @@ TEST(internals_credentials, cred_null_args)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_cred(
+			  edhoc_credential_asymmetric_encode_cred(
 				  NULL, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_cred(
+			  edhoc_credential_asymmetric_encode_cred(
 				  &material, NULL, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_cred(&material, buffer, 0,
-						       &len));
+			  edhoc_credential_asymmetric_encode_cred(
+				  &material, buffer, 0, &len));
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_INVALID_ARGUMENT,
-			  edhoc_credential_encode_cred(
+			  edhoc_credential_asymmetric_encode_cred(
 				  &material, buffer, ARRAY_SIZE(buffer), NULL));
 }
 
@@ -1535,7 +1548,7 @@ TEST(internals_credentials, compact_kid_bstr_takes_the_short_form)
 	/* RFC 9529: 3 uses ID_CRED_I = { 4 : h'2b' }, whose compact form is the
 	 * CBOR integer -12, i.e. the same byte. */
 	const uint8_t kid[1] = { 0x2b };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
 	};
@@ -1544,7 +1557,7 @@ TEST(internals_credentials, compact_kid_bstr_takes_the_short_form)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_id_cred_compact(
+			  edhoc_credential_asymmetric_encode_id_cred_compact(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL_size_t(1, len);
 	TEST_ASSERT_EQUAL_HEX8(0x2b, buffer[0]);
@@ -1555,7 +1568,7 @@ TEST(internals_credentials, compact_kid_bstr_outside_the_short_form)
 	/* One byte, but 0x40 is not a CBOR integer on its own, so the short
 	 * form does not apply and the identifier stays a byte string. */
 	const uint8_t kid[1] = { 0x40 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
 	};
@@ -1564,7 +1577,7 @@ TEST(internals_credentials, compact_kid_bstr_outside_the_short_form)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_id_cred_compact(
+			  edhoc_credential_asymmetric_encode_id_cred_compact(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL_size_t(2, len);
 	TEST_ASSERT_EQUAL_HEX8(0x41, buffer[0]);
@@ -1574,7 +1587,7 @@ TEST(internals_credentials, compact_kid_bstr_outside_the_short_form)
 TEST(internals_credentials, compact_kid_bstr_multi_byte)
 {
 	const uint8_t kid[2] = { 0xaa, 0xbb };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
 	};
@@ -1583,7 +1596,7 @@ TEST(internals_credentials, compact_kid_bstr_multi_byte)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_id_cred_compact(
+			  edhoc_credential_asymmetric_encode_id_cred_compact(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL_size_t(3, len);
 	TEST_ASSERT_EQUAL_HEX8(0x42, buffer[0]);
@@ -1592,7 +1605,7 @@ TEST(internals_credentials, compact_kid_bstr_multi_byte)
 
 TEST(internals_credentials, compact_kid_bstr_empty)
 {
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { 0 },
 	};
@@ -1601,7 +1614,7 @@ TEST(internals_credentials, compact_kid_bstr_empty)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_id_cred_compact(
+			  edhoc_credential_asymmetric_encode_id_cred_compact(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	/* An empty byte string is one CBOR byte: 0x40. */
 	TEST_ASSERT_EQUAL_size_t(1, len);
@@ -1611,7 +1624,7 @@ TEST(internals_credentials, compact_kid_bstr_empty)
 TEST(internals_credentials, compact_kid_bstr_buffer_too_small)
 {
 	const uint8_t kid[4] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_KID,
 		.kid = { .value = kid, .length = ARRAY_SIZE(kid) },
 	};
@@ -1620,14 +1633,14 @@ TEST(internals_credentials, compact_kid_bstr_buffer_too_small)
 	size_t len = 0;
 
 	TEST_ASSERT_EQUAL(EDHOC_ERROR_CBOR_FAILURE,
-			  edhoc_credential_encode_id_cred_compact(
+			  edhoc_credential_asymmetric_encode_id_cred_compact(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 }
 
 TEST(internals_credentials, compact_absent_for_x509)
 {
 	const uint8_t cert[10] = { 0 };
-	const struct edhoc_credential_material material = {
+	const struct edhoc_credential_material_asymmetric material = {
 		.label = EDHOC_COSE_HEADER_X509_CHAIN,
 		.format = EDHOC_CREDENTIAL_FORMAT_RAW,
 		.x509_chain.count = 1,
@@ -1639,7 +1652,7 @@ TEST(internals_credentials, compact_absent_for_x509)
 	size_t len = SIZE_MAX;
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
-			  edhoc_credential_encode_id_cred_compact(
+			  edhoc_credential_asymmetric_encode_id_cred_compact(
 				  &material, buffer, ARRAY_SIZE(buffer), &len));
 	TEST_ASSERT_EQUAL_size_t(0, len);
 }
