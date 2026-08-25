@@ -547,6 +547,29 @@ int edhoc_export_raw(struct edhoc_context *ctx, size_t label,
 					 secret, secret_len);
 }
 
+int edhoc_export_resumption_psk(struct edhoc_context *ctx,
+				enum edhoc_key_usage usage, void *key_id)
+{
+	return edhoc_exporter_export(ctx, EDHOC_EXPORTER_LABEL_RESUMPTION_PSK,
+				     NULL, 0, usage, key_id);
+}
+
+int edhoc_export_resumption_psk_raw(struct edhoc_context *ctx, uint8_t *psk,
+				    size_t psk_len)
+{
+	return edhoc_exporter_export_raw(ctx,
+					 EDHOC_EXPORTER_LABEL_RESUMPTION_PSK,
+					 NULL, 0, psk, psk_len);
+}
+
+int edhoc_export_resumption_kid_raw(struct edhoc_context *ctx, uint8_t *kid,
+				    size_t kid_len)
+{
+	return edhoc_exporter_export_raw(ctx,
+					 EDHOC_EXPORTER_LABEL_RESUMPTION_KID,
+					 NULL, 0, kid, kid_len);
+}
+
 int edhoc_export_key_update(struct edhoc_context *ctx, const uint8_t *context,
 			    size_t context_len)
 {

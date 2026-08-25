@@ -94,12 +94,6 @@ static struct edhoc_context *resp_ctx = &edhoc_responder_context;
 static struct edhoc_crypto edhoc_crypto_mocked_init;
 static struct edhoc_crypto edhoc_crypto_mocked_resp;
 
-/* Draft: 10.2 - suggested exporter labels, pending IANA assignment. Once the
- * library exposes them these calls become edhoc_export_resumption_psk_raw()
- * and edhoc_export_resumption_kid_raw(). */
-static const size_t EXPORTER_LABEL_RESUMPTION_PSK = 2;
-static const size_t EXPORTER_LABEL_RESUMPTION_KID = 3;
-
 /* EDHOC-PSK calls exactly one credentials callback per role. */
 static const struct edhoc_credentials edhoc_auth_cred_mocked_init = {
 	.select_local = auth_cred_select_local_init,
@@ -748,28 +742,89 @@ TEST(draft_edhoc_psk_08, exporters)
 	tv_inject_slot(init_ctx, EDHOC_KEY_SLOT_PRK_4E3M,
 		       tv_import_derive(PRK_4e3m, ARRAY_SIZE(PRK_4e3m)));
 
-	uint8_t resumption_psk[ARRAY_SIZE(rPSK)] = { 0 };
+	resp_ctx->state.machine = EDHOC_SM_PERSISTED;
+	resp_ctx->is_oscore_export_allowed = true;
 
-	ret = edhoc_export_raw(init_ctx, EXPORTER_LABEL_RESUMPTION_PSK, NULL, 0,
-			       resumption_psk, ARRAY_SIZE(resumption_psk));
+	resp_ctx->state.th.stage = EDHOC_TH_STATE_4;
+	resp_ctx->state.th.length = ARRAY_SIZE(TH_4);
+	memcpy(resp_ctx->state.th.value, TH_4, ARRAY_SIZE(TH_4));
+
+	resp_ctx->state.prk_state = EDHOC_PRK_STATE_4E3M;
+	tv_inject_slot(resp_ctx, EDHOC_KEY_SLOT_PRK_4E3M,
+		       tv_import_derive(PRK_4e3m, ARRAY_SIZE(PRK_4e3m)));
+
+	/* Draft: 6 - rPSK, raw form. */
+	uint8_t init_rpsk[ARRAY_SIZE(rPSK)] = { 0 };
+	uint8_t resp_rpsk[ARRAY_SIZE(rPSK)] = { 0 };
+
+	ret = edhoc_export_resumption_psk_raw(init_ctx, init_rpsk,
+					      ARRAY_SIZE(init_rpsk));
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(rPSK, resumption_psk,
-				      ARRAY_SIZE(resumption_psk));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(rPSK, init_rpsk, ARRAY_SIZE(init_rpsk));
+
+	ret = edhoc_export_resumption_psk_raw(resp_ctx, resp_rpsk,
+					      ARRAY_SIZE(resp_rpsk));
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(rPSK, resp_rpsk, ARRAY_SIZE(resp_rpsk));
 
 	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, init_ctx->state.prk_state);
+	TEST_ASSERT_EQUAL(EDHOC_PRK_STATE_OUT, resp_ctx->state.prk_state);
 	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, init_ctx,
 				     EDHOC_KEY_SLOT_PRK_OUT, PRK_out,
 				     ARRAY_SIZE(PRK_out));
+	tv_assert_slot_equals_vector(EDHOC_CIPHER_SUITE_2, resp_ctx,
+				     EDHOC_KEY_SLOT_PRK_OUT, PRK_out,
+				     ARRAY_SIZE(PRK_out));
 
-	uint8_t resumption_kid[ARRAY_SIZE(rKID)] = { 0 };
+	/* Draft: 6 - rKID, raw form; it has no key-handle form. */
+	uint8_t init_rkid[ARRAY_SIZE(rKID)] = { 0 };
+	uint8_t resp_rkid[ARRAY_SIZE(rKID)] = { 0 };
 
-	ret = edhoc_export_raw(init_ctx, EXPORTER_LABEL_RESUMPTION_KID, NULL, 0,
-			       resumption_kid, ARRAY_SIZE(resumption_kid));
+	ret = edhoc_export_resumption_kid_raw(init_ctx, init_rkid,
+					      ARRAY_SIZE(init_rkid));
 
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
-	TEST_ASSERT_EQUAL_UINT8_ARRAY(rKID, resumption_kid,
-				      ARRAY_SIZE(resumption_kid));
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(rKID, init_rkid, ARRAY_SIZE(init_rkid));
+
+	ret = edhoc_export_resumption_kid_raw(resp_ctx, resp_rkid,
+					      ARRAY_SIZE(resp_rkid));
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+	TEST_ASSERT_EQUAL_UINT8_ARRAY(rKID, resp_rkid, ARRAY_SIZE(resp_rkid));
+
+	/* rPSK, key-handle form. AEAD usage derives the cipher suite AEAD key
+	 * length, which is what the draft vector is. */
+	uint8_t init_psk_key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+	uint8_t resp_psk_key_id[CONFIG_LIBEDHOC_KEY_ID_LEN] = { 0 };
+
+	ret = edhoc_export_resumption_psk(init_ctx, EDHOC_KEY_USAGE_AEAD,
+					  init_psk_key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	ret = edhoc_export_resumption_psk(resp_ctx, EDHOC_KEY_USAGE_AEAD,
+					  resp_psk_key_id);
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
+
+	tv_assert_handles_equal(EDHOC_CIPHER_SUITE_2, init_psk_key_id,
+				resp_psk_key_id);
+
+	const psa_key_id_t rpsk_ref = tv_import_aead(rPSK, ARRAY_SIZE(rPSK));
+
+	tv_assert_handles_equal(EDHOC_CIPHER_SUITE_2, init_psk_key_id,
+				(const uint8_t *)&rpsk_ref);
+
+	TEST_ASSERT_EQUAL(PSA_SUCCESS, psa_destroy_key(rpsk_ref));
+
+	/* The exporter hands ownership of the key handle to the caller. */
+	const struct edhoc_crypto *crypto =
+		edhoc_cipher_suite_get_crypto(EDHOC_CIPHER_SUITE_2);
+
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  crypto->destroy_key(NULL, init_psk_key_id));
+	TEST_ASSERT_EQUAL(EDHOC_SUCCESS,
+			  crypto->destroy_key(NULL, resp_psk_key_id));
 }
 
 TEST(draft_edhoc_psk_08, handshake)
@@ -887,20 +942,20 @@ TEST(draft_edhoc_psk_08, handshake)
 	uint8_t init_rkid[ARRAY_SIZE(rKID)] = { 0 };
 	uint8_t resp_rkid[ARRAY_SIZE(rKID)] = { 0 };
 
-	ret = edhoc_export_raw(init_ctx, EXPORTER_LABEL_RESUMPTION_PSK, NULL, 0,
-			       init_rpsk, ARRAY_SIZE(init_rpsk));
+	ret = edhoc_export_resumption_psk_raw(init_ctx, init_rpsk,
+					      ARRAY_SIZE(init_rpsk));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export_raw(resp_ctx, EXPORTER_LABEL_RESUMPTION_PSK, NULL, 0,
-			       resp_rpsk, ARRAY_SIZE(resp_rpsk));
+	ret = edhoc_export_resumption_psk_raw(resp_ctx, resp_rpsk,
+					      ARRAY_SIZE(resp_rpsk));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export_raw(init_ctx, EXPORTER_LABEL_RESUMPTION_KID, NULL, 0,
-			       init_rkid, ARRAY_SIZE(init_rkid));
+	ret = edhoc_export_resumption_kid_raw(init_ctx, init_rkid,
+					      ARRAY_SIZE(init_rkid));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
-	ret = edhoc_export_raw(resp_ctx, EXPORTER_LABEL_RESUMPTION_KID, NULL, 0,
-			       resp_rkid, ARRAY_SIZE(resp_rkid));
+	ret = edhoc_export_resumption_kid_raw(resp_ctx, resp_rkid,
+					      ARRAY_SIZE(resp_rkid));
 	TEST_ASSERT_EQUAL(EDHOC_SUCCESS, ret);
 
 	TEST_ASSERT_EQUAL_UINT8_ARRAY(rPSK, init_rpsk, ARRAY_SIZE(init_rpsk));

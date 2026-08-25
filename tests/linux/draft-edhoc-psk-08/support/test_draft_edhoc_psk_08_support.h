@@ -164,6 +164,41 @@ static inline psa_key_id_t tv_import_derive(const uint8_t *bytes,
 }
 
 /**
+ * \brief Import raw bytes as a volatile AEAD key-store handle, using the
+ *        suite-2 AEAD key attributes so \c aead_encrypt can consume it.
+ *
+ *        \ref tv_assert_handles_equal proves equality through \c aead_encrypt,
+ *        so a draft vector has to be imported this way before it can be
+ *        compared with a handle returned by the key-handle exporter.
+ *
+ * \param[in] bytes                     Raw key material.
+ * \param bytes_len                     Length of \p bytes in bytes.
+ *
+ * \return Volatile key-store handle owning the imported AEAD key.
+ */
+static inline psa_key_id_t tv_import_aead(const uint8_t *bytes,
+					  size_t bytes_len)
+{
+	TEST_ASSERT_NOT_NULL(bytes);
+	TEST_ASSERT_NOT_EQUAL(0, bytes_len);
+
+	psa_key_attributes_t attr = PSA_KEY_ATTRIBUTES_INIT;
+	psa_set_key_lifetime(&attr, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
+	psa_set_key_usage_flags(&attr,
+				PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
+	psa_set_key_algorithm(&attr,
+			      PSA_ALG_AEAD_WITH_SHORTENED_TAG(PSA_ALG_CCM, 8));
+
+	psa_key_id_t kid = PSA_KEY_ID_NULL;
+	const psa_status_t status =
+		psa_import_key(&attr, bytes, bytes_len, &kid);
+	TEST_ASSERT_EQUAL(PSA_SUCCESS, status);
+
+	return kid;
+}
+
+/**
  * \brief White-box injection: store a live key-store handle into an EDHOC key
  *        slot (a pre-condition for an isolated message-step test).
  *

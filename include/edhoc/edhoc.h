@@ -510,10 +510,14 @@ int edhoc_message_error_process(struct edhoc_context *edhoc_context,
  * Permitted exporter labels (RFC 9528: 10.1) are:
  *   - 0, the OSCORE Master Secret;
  *   - 1, the OSCORE Master Salt;
+ *   - 2, the resumption PSK (draft-ietf-lake-edhoc-psk: 10.2);
+ *   - 3, the resumption 'kid' (draft-ietf-lake-edhoc-psk: 10.2);
  *   - the private-use range #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM to
  *     #EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM.
  *
- * Any other label is rejected with #EDHOC_ERROR_NOT_PERMITTED.
+ * Any other label is rejected with #EDHOC_ERROR_NOT_PERMITTED. Labels 2 and 3
+ * are open to every method: a session may yield a resumption key whatever it
+ * authenticated with (draft-ietf-lake-edhoc-psk: 6).
  * @{
  */
 
@@ -563,6 +567,66 @@ int edhoc_export(struct edhoc_context *edhoc_context, size_t label,
 int edhoc_export_raw(struct edhoc_context *edhoc_context, size_t label,
 		     const uint8_t *context, size_t context_length,
 		     uint8_t *secret, size_t secret_length);
+
+/**
+ * \brief Export the resumption PSK as a key handle.
+ *
+ *        Derives rPSK (draft-ietf-lake-edhoc-psk: 6) with an empty exporter
+ *        context. The derived length is set by \p usage, as in
+ *        \ref edhoc_export().
+ *
+ * \note  The returned handle is owned by the caller: the library neither tracks
+ *        it nor releases it in \ref edhoc_context_deinit(). Destroy it through
+ *        the \c destroy_key entry of the bound \ref edhoc_crypto vtable.
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param usage                         Intended usage of the derived key; governs its type and length.
+ * \param[out] key_id                   Buffer holding a key handle (\c CONFIG_LIBEDHOC_KEY_ID_LEN bytes) that receives the resumption PSK.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
+ */
+int edhoc_export_resumption_psk(struct edhoc_context *edhoc_context,
+				enum edhoc_key_usage usage, void *key_id);
+
+/**
+ * \brief Export the resumption PSK as raw bytes.
+ *
+ *        Derives rPSK (draft-ietf-lake-edhoc-psk: 6) with an empty exporter
+ *        context. That section names the cipher suite hash length, while its
+ *        Appendix B.6 vector is 16 bytes long, so the length is left to the
+ *        caller.
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param[out] psk                      Buffer where the resumption PSK is to be written.
+ * \param psk_length                    Size of the \p psk buffer in bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
+ */
+int edhoc_export_resumption_psk_raw(struct edhoc_context *edhoc_context,
+				    uint8_t *psk, size_t psk_length);
+
+/**
+ * \brief Export the resumption 'kid' as raw bytes.
+ *
+ *        Derives rKID (draft-ietf-lake-edhoc-psk: 6) with an empty exporter
+ *        context. rKID identifies the resumption PSK rather than keying it, so
+ *        it has no key-handle form. Its default length is
+ *        #EDHOC_EXPORTER_RESUMPTION_KID_DEFAULT_LEN.
+ *
+ * \param[in,out] edhoc_context         EDHOC context.
+ * \param[out] kid                      Buffer where the resumption 'kid' is to be written.
+ * \param kid_length                    Size of the \p kid buffer in bytes.
+ *
+ * \retval #EDHOC_SUCCESS
+ *         Success.
+ * \return Negative error code on failure (\ref edhoc-error-codes).
+ */
+int edhoc_export_resumption_kid_raw(struct edhoc_context *edhoc_context,
+				    uint8_t *kid, size_t kid_length);
 
 /**
  * \brief Perform key update for subsequent OSCORE Security Context exports.
