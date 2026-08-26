@@ -268,8 +268,13 @@ int edhoc_cipher_derive(struct edhoc_context *ctx, const uint8_t *external_aad,
 		return ret;
 	}
 
+	/* zcbor's str_encode() calls memmove() on the value pointer even for
+	 * a zero length string, so an empty protected header needs a
+	 * non-null placeholder rather than NULL. */
+	static const uint8_t empty_protected_header[1] = { 0 };
+
 	const struct enc_structure cose_enc_0 = {
-		.enc_structure_protected.value = NULL,
+		.enc_structure_protected.value = empty_protected_header,
 		.enc_structure_protected.len = 0,
 		.enc_structure_external_aad.value = external_aad,
 		.enc_structure_external_aad.len = external_aad_length,
