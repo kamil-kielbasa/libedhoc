@@ -259,8 +259,9 @@ int edhoc_psk_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	if (EDHOC_SM_VERIFIED_M2 != ctx->state.machine ||
 	    EDHOC_TH_STATE_3 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -739,8 +740,9 @@ int edhoc_psk_message_3_process(struct edhoc_context *ctx, const uint8_t *msg_3,
 	if (EDHOC_SM_WAIT_M3 != ctx->state.machine ||
 	    EDHOC_TH_STATE_3 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
