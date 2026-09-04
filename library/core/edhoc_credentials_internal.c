@@ -292,7 +292,7 @@ STATIC int encode_cred(enum edhoc_credential_format format,
 
 	case EDHOC_CREDENTIAL_FORMAT_NONE:
 	default:
-		EDHOC_LOG_ERR("Invalid credential format: %d", format);
+		EDHOC_LOG_ERR("Invalid credential format: %d", (int)format);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 }
@@ -440,7 +440,7 @@ int edhoc_credential_validate_selected(
 			    EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED !=
 				    kid->format) {
 				EDHOC_LOG_ERR("Invalid format for 'kid': %d",
-					      kid->format);
+					      (int)kid->format);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 			break;
@@ -518,7 +518,7 @@ int edhoc_credential_validate_selected(
 			default:
 				EDHOC_LOG_ERR(
 					"Invalid hash algorithm encode type: %d",
-					x509_hash->algorithm.encode_type);
+					(int)x509_hash->algorithm.encode_type);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 			break;
@@ -527,7 +527,7 @@ int edhoc_credential_validate_selected(
 		case EDHOC_COSE_HEADER_NONE:
 		default:
 			EDHOC_LOG_ERR("Unsupported credential label: %d",
-				      selected->asymmetric.label);
+				      (int)selected->asymmetric.label);
 			return EDHOC_ERROR_NOT_SUPPORTED;
 		}
 		break;
@@ -544,7 +544,7 @@ int edhoc_credential_validate_selected(
 
 		if (EDHOC_COSE_HEADER_KID != psk->label) {
 			EDHOC_LOG_ERR("Unsupported ID_CRED_PSK label: %d",
-				      psk->label);
+				      (int)psk->label);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 
@@ -583,14 +583,14 @@ int edhoc_credential_validate_selected(
 		    EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED != psk->format) {
 			EDHOC_LOG_ERR(
 				"Invalid format for CRED_I and CRED_R: %d",
-				psk->format);
+				(int)psk->format);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
 	}
 
 	default:
-		EDHOC_LOG_ERR("Unsupported method: %d", method);
+		EDHOC_LOG_ERR("Unsupported method: %d", (int)method);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -633,7 +633,7 @@ int edhoc_credential_validate_trusted(
 			    EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED !=
 				    trusted->asymmetric.format) {
 				EDHOC_LOG_ERR("Invalid format for 'kid': %d",
-					      trusted->asymmetric.format);
+					      (int)trusted->asymmetric.format);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 			break;
@@ -644,7 +644,7 @@ int edhoc_credential_validate_trusted(
 			if (EDHOC_CREDENTIAL_FORMAT_RAW !=
 			    trusted->asymmetric.format) {
 				EDHOC_LOG_ERR("Invalid format for X.509: %d",
-					      trusted->asymmetric.format);
+					      (int)trusted->asymmetric.format);
 				return EDHOC_ERROR_NOT_PERMITTED;
 			}
 			break;
@@ -652,7 +652,7 @@ int edhoc_credential_validate_trusted(
 		case EDHOC_COSE_HEADER_NONE:
 		default:
 			EDHOC_LOG_ERR("Unsupported credential label: %d",
-				      received->label);
+				      (int)received->label);
 			return EDHOC_ERROR_NOT_SUPPORTED;
 		}
 		break;
@@ -683,14 +683,14 @@ int edhoc_credential_validate_trusted(
 		    EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED != psk->format) {
 			EDHOC_LOG_ERR(
 				"Invalid format for CRED_I and CRED_R: %d",
-				psk->format);
+				(int)psk->format);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
 	}
 
 	default:
-		EDHOC_LOG_ERR("Unsupported method: %d", method);
+		EDHOC_LOG_ERR("Unsupported method: %d", (int)method);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -753,7 +753,7 @@ int edhoc_credential_asymmetric_material_from_selected(
 	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
-			      selected->asymmetric.label);
+			      (int)selected->asymmetric.label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -807,7 +807,7 @@ int edhoc_credential_asymmetric_material_from_trusted(
 	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
-			      received->label);
+			      (int)received->label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -862,7 +862,7 @@ int edhoc_credential_asymmetric_id_cred_length(
 	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
-			      material->label);
+			      (int)material->label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -887,7 +887,7 @@ int edhoc_credential_asymmetric_cred_length(
 	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
-			      material->label);
+			      (int)material->label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -984,7 +984,7 @@ int edhoc_credential_asymmetric_encode_id_cred(
 		default:
 			EDHOC_LOG_ERR(
 				"Invalid hash algorithm encode type: %d",
-				material->x509_hash.algorithm.encode_type);
+				(int)material->x509_hash.algorithm.encode_type);
 			return EDHOC_ERROR_NOT_PERMITTED;
 		}
 		break;
@@ -993,7 +993,7 @@ int edhoc_credential_asymmetric_encode_id_cred(
 	case EDHOC_COSE_HEADER_NONE:
 	default:
 		EDHOC_LOG_ERR("Unsupported credential label: %d",
-			      material->label);
+			      (int)material->label);
 		return EDHOC_ERROR_CREDENTIALS_FAILURE;
 	}
 
@@ -1076,7 +1076,7 @@ int edhoc_credential_psk_material_from_selected(
 
 	if (EDHOC_COSE_HEADER_KID != selected->psk.label) {
 		EDHOC_LOG_ERR("Unsupported ID_CRED_PSK label: %d",
-			      selected->psk.label);
+			      (int)selected->psk.label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 
@@ -1102,7 +1102,7 @@ int edhoc_credential_psk_material_from_trusted(
 
 	if (EDHOC_COSE_HEADER_KID != received->label) {
 		EDHOC_LOG_ERR("Unsupported ID_CRED_PSK label: %d",
-			      received->label);
+			      (int)received->label);
 		return EDHOC_ERROR_NOT_SUPPORTED;
 	}
 

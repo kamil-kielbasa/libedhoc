@@ -266,13 +266,13 @@ int edhoc_mac_context_length(
 	}
 
 	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
+		EDHOC_LOG_ERR("Invalid role: %d", (int)ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_MESSAGE_1 > ctx->state.message ||
 	    EDHOC_MESSAGE_3 < ctx->state.message) {
-		EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
+		EDHOC_LOG_ERR("Invalid message: %d", (int)ctx->state.message);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -288,7 +288,7 @@ int edhoc_mac_context_length(
 		ret = comp_context_2_connection_id(ctx, &cid);
 
 		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
+			EDHOC_LOG_ERR("Invalid role: %d", (int)ctx->state.role);
 			return ret;
 		}
 
@@ -345,27 +345,27 @@ int edhoc_mac_context_compose(
 	}
 
 	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
+		EDHOC_LOG_ERR("Invalid role: %d", (int)ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_MESSAGE_1 > ctx->state.message ||
 	    EDHOC_MESSAGE_3 < ctx->state.message) {
-		EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
+		EDHOC_LOG_ERR("Invalid message: %d", (int)ctx->state.message);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_MESSAGE_2 == ctx->state.message &&
 	    EDHOC_TH_STATE_2 != ctx->state.th.stage) {
 		EDHOC_LOG_ERR("Invalid TH state for msg2: %d",
-			      ctx->state.th.stage);
+			      (int)ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_MESSAGE_3 == ctx->state.message &&
 	    EDHOC_TH_STATE_3 != ctx->state.th.stage) {
 		EDHOC_LOG_ERR("Invalid TH state for msg3: %d",
-			      ctx->state.th.stage);
+			      (int)ctx->state.th.stage);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -379,7 +379,7 @@ int edhoc_mac_context_compose(
 		ret = comp_context_2_connection_id(ctx, &cid);
 
 		if (EDHOC_SUCCESS != ret) {
-			EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
+			EDHOC_LOG_ERR("Invalid role: %d", (int)ctx->state.role);
 			return ret;
 		}
 
@@ -541,7 +541,7 @@ int edhoc_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 	}
 
 	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
+		EDHOC_LOG_ERR("Invalid role: %d", (int)ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -553,8 +553,8 @@ int edhoc_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("MAC length: message %d, method %d",
-			      ctx->state.message,
-			      ctx->negotiation.selected_method);
+			      (int)ctx->state.message,
+			      (int)ctx->negotiation.selected_method);
 		return ret;
 	}
 
@@ -569,7 +569,7 @@ int edhoc_mac_length(const struct edhoc_context *ctx, size_t *mac_len)
 		EDHOC_LOG_ERR("No MAC in EDHOC-PSK");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	default:
-		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", (int)kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 }
@@ -585,21 +585,21 @@ int edhoc_mac_compute(const struct edhoc_context *ctx,
 
 	if (EDHOC_MESSAGE_1 > ctx->state.message ||
 	    EDHOC_MESSAGE_3 < ctx->state.message) {
-		EDHOC_LOG_ERR("Invalid message: %d", ctx->state.message);
+		EDHOC_LOG_ERR("Invalid message: %d", (int)ctx->state.message);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_MESSAGE_2 == ctx->state.message &&
 	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
 		EDHOC_LOG_ERR("Invalid PRK state for msg2: %d",
-			      ctx->state.prk_state);
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
 	if (EDHOC_MESSAGE_3 == ctx->state.message &&
 	    EDHOC_PRK_STATE_4E3M != ctx->state.prk_state) {
 		EDHOC_LOG_ERR("Invalid PRK state for msg3: %d",
-			      ctx->state.prk_state);
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -620,7 +620,7 @@ int edhoc_mac_compute(const struct edhoc_context *ctx,
 	case EDHOC_MESSAGE_4:
 	default:
 		EDHOC_LOG_ERR("Invalid message for MAC: %d",
-			      ctx->state.message);
+			      (int)ctx->state.message);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
@@ -645,7 +645,7 @@ int edhoc_sign_or_mac_length(const struct edhoc_context *ctx,
 	}
 
 	if (!edhoc_is_initiator(ctx) && !edhoc_is_responder(ctx)) {
-		EDHOC_LOG_ERR("Invalid role: %d", ctx->state.role);
+		EDHOC_LOG_ERR("Invalid role: %d", (int)ctx->state.role);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -657,8 +657,8 @@ int edhoc_sign_or_mac_length(const struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Signature_or_MAC length: message %d, method %d",
-			      ctx->state.message,
-			      ctx->negotiation.selected_method);
+			      (int)ctx->state.message,
+			      (int)ctx->negotiation.selected_method);
 		return ret;
 	}
 
@@ -673,7 +673,7 @@ int edhoc_sign_or_mac_length(const struct edhoc_context *ctx,
 		EDHOC_LOG_ERR("No Signature_or_MAC in EDHOC-PSK");
 		return EDHOC_ERROR_NOT_PERMITTED;
 	default:
-		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", (int)kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 }
@@ -696,8 +696,8 @@ int edhoc_sign_or_mac_compute(const struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Signature_or_MAC: message %d, method %d",
-			      ctx->state.message,
-			      ctx->negotiation.selected_method);
+			      (int)ctx->state.message,
+			      (int)ctx->negotiation.selected_method);
 		return ret;
 	}
 
@@ -722,7 +722,7 @@ int edhoc_sign_or_mac_compute(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_PERMITTED;
 
 	default:
-		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", (int)kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 }
@@ -745,8 +745,8 @@ int edhoc_sign_or_mac_verify(const struct edhoc_context *ctx,
 
 	if (EDHOC_SUCCESS != ret) {
 		EDHOC_LOG_ERR("Signature_or_MAC: message %d, method %d",
-			      ctx->state.message,
-			      ctx->negotiation.selected_method);
+			      (int)ctx->state.message,
+			      (int)ctx->negotiation.selected_method);
 		return ret;
 	}
 
@@ -761,7 +761,7 @@ int edhoc_sign_or_mac_verify(const struct edhoc_context *ctx,
 		    0 != memcmp(sign_or_mac, mac, mac_len)) {
 			EDHOC_LOG_ERR(
 				"Invalid Signature_or_MAC_%d: MAC mismatch",
-				ctx->state.message + 1);
+				(int)ctx->state.message + 1);
 			return (EDHOC_MESSAGE_2 == ctx->state.message) ?
 				       EDHOC_ERROR_INVALID_SIGN_OR_MAC_2 :
 				       EDHOC_ERROR_INVALID_SIGN_OR_MAC_3;
@@ -774,7 +774,7 @@ int edhoc_sign_or_mac_verify(const struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_PERMITTED;
 
 	default:
-		EDHOC_LOG_ERR("Invalid authentication kind: %d", kind);
+		EDHOC_LOG_ERR("Invalid authentication kind: %d", (int)kind);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 }

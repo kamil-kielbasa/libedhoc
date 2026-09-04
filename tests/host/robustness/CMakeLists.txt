@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux/robustness — fault-injection and resource-accounting tests.
+# tests/host/robustness — fault-injection and resource-accounting tests.
 #
 # Each concern lives in its own subdirectory.
 # =============================================================================

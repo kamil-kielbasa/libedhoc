@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux/unit — the library's suite-independent logic in one binary.
+# tests/host/unit — the library's suite-independent logic in one binary.
 #
 # Covers the public API, message paths, internals, exporters and CoAP helpers.
 # None of it depends on the cipher suite, so the binary is pinned to suite 2.

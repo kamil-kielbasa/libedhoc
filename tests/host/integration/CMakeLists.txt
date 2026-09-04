@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux/integration — one Unity binary per cipher suite and credential
+# tests/host/integration — one Unity binary per cipher suite and credential
 # type; each EDHOC method is a test case inside its binary.
 #
 # Every scenario is a thin descriptor driving the shared handshake driver, with

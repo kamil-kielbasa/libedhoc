@@ -107,9 +107,9 @@ void edhoc_mem_free(void *ptr)
 		return;
 	}
 
-	struct block_header *const hdr =
-		(struct block_header *)((uint8_t *)ptr -
-					offsetof(struct block_header, payload));
+	void *const header =
+		(uint8_t *)ptr - offsetof(struct block_header, payload);
+	struct block_header *const hdr = header;
 
 	if (TEST_MEM_CUSTOM_MAGIC != hdr->magic) {
 		abort();

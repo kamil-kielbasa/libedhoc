@@ -1,0 +1,197 @@
+name: CI / macOS
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+
+      - name: Select Xcode 16.4
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install native dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake cppcheck libxslt ninja"
+
+      - name: Add Homebrew libxslt to PATH
+        run: echo "$(brew --prefix libxslt)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Python tooling
+        run: |
+          python -m pip install clang-format==16.0.6
+          python -m pip install -r externals/mbedtls/tf-psa-crypto/scripts/driver.requirements.txt
+
+      - name: Check formatting
+        run: bash scripts/ci.sh format --check
+
+      - name: Check public headers
+        run: bash scripts/ci.sh check-headers
+
+      - name: Check test matrix
+        run: bash scripts/ci.sh check-matrix
+
+      - name: Run cppcheck
+        run: bash scripts/ci.sh cppcheck
+
+  build:
+    name: Apple Clang (${{ matrix.architecture }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x86_64
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+
+      - name: Select Xcode 16.4
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install native dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake libxslt ninja"
+
+      - name: Add Homebrew libxslt to PATH
+        run: echo "$(brew --prefix libxslt)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Mbed TLS generator dependencies
+        run: python -m pip install -r externals/mbedtls/tf-psa-crypto/scripts/driver.requirements.txt
+
+      - name: Verify architecture
+        run: test "$(uname -m)" = "${{ matrix.architecture }}"
+
+      - name: Build and test
+        run: bash scripts/ci.sh ci legacy
+
+  matrix:
+    name: ${{ matrix.preset }}
+    needs: build
+    runs-on: macos-15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        preset:
+          - x25519_stack
+          - x25519_heap
+          - x25519_custom
+          - p256_stack
+          - p256_heap
+          - p256_custom
+          - p384_stack
+          - p384_heap
+          - p384_custom
+          - mlkem512_stack
+          - mlkem512_heap
+          - mlkem512_custom
+          - p256_limits
+          - clang
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+
+      - name: Select Xcode 16.4
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install native dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake libxslt ninja"
+
+      - name: Install stable Clang (with retry)
+        if: matrix.preset == 'clang'
+        uses: ./.github/actions/retry
+        with:
+          command: "HOMEBREW_NO_AUTO_UPDATE=1 brew install llvm@20"
+
+      - name: Expose stable Clang executable
+        if: matrix.preset == 'clang'
+        run: |
+          mkdir -p "$RUNNER_TEMP/llvm-bin"
+          ln -s "$(brew --prefix llvm@20)/bin/clang" "$RUNNER_TEMP/llvm-bin/clang-20"
+          echo "$RUNNER_TEMP/llvm-bin" >> "$GITHUB_PATH"
+
+      - name: Add Homebrew libxslt to PATH
+        run: echo "$(brew --prefix libxslt)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Mbed TLS generator dependencies
+        run: python -m pip install -r externals/mbedtls/tf-psa-crypto/scripts/driver.requirements.txt
+
+      - name: Build and test
+        run: bash scripts/ci.sh ci ${{ matrix.preset }}
+
+  sanitizers:
+    name: Sanitizers
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch submodules (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "git submodule sync --recursive && git submodule update --init --recursive --depth=1"
+
+      - name: Select Xcode 16.4
+        run: sudo xcode-select --switch /Applications/Xcode_16.4.app/Contents/Developer
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install native dependencies (with retry)
+        uses: ./.github/actions/retry
+        with:
+          command: "HOMEBREW_NO_AUTO_UPDATE=1 brew install cmake libxslt ninja"
+
+      - name: Add Homebrew libxslt to PATH
+        run: echo "$(brew --prefix libxslt)/bin" >> "$GITHUB_PATH"
+
+      - name: Install Mbed TLS generator dependencies
+        run: python -m pip install -r externals/mbedtls/tf-psa-crypto/scripts/driver.requirements.txt
+
+      - name: Run ASan and UBSan
+        run: bash scripts/ci.sh sanitizers

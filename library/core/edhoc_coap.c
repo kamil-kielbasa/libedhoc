@@ -218,7 +218,7 @@ int edhoc_coap_extract_connection_id(
 
 	default:
 		EDHOC_LOG_ERR("Invalid connection identifier choice: %d",
-			      cid_r.connection_identifier_choice);
+			      (int)cid_r.connection_identifier_choice);
 		return EDHOC_ERROR_CBOR_FAILURE;
 	}
 

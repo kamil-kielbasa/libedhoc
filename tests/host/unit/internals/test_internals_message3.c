@@ -78,8 +78,11 @@ TEST(internals_message3, comp_plaintext_3_len_null)
 	internals_setup_crypto_context(&ctx);
 
 	uint8_t buf[256] = { 0 };
-	struct mac_context *mc = (struct mac_context *)buf;
-	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
+	struct mac_context mc_storage = {
+		.buf = buf,
+		.buf_len = sizeof(buf),
+	};
+	struct mac_context *mc = &mc_storage;
 
 	struct edhoc_plaintext_input input = {
 		.id = EDHOC_PLAINTEXT_CLASSIC_3,
@@ -114,8 +117,11 @@ TEST(internals_message3, plaintext_compose_3_null)
 {
 	struct edhoc_context ctx = { 0 };
 	uint8_t buf[256] = { 0 };
-	struct mac_context *mc = (struct mac_context *)buf;
-	mc->buf_len = sizeof(buf) - sizeof(struct mac_context);
+	struct mac_context mc_storage = {
+		.buf = buf,
+		.buf_len = sizeof(buf),
+	};
+	struct mac_context *mc = &mc_storage;
 
 	uint8_t sign[8] = { 0 };
 	uint8_t ptxt[256] = { 0 };

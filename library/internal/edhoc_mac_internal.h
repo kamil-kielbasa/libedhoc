@@ -85,10 +85,10 @@ struct mac_context {
 	/** Size of the \p ead buffer in bytes. */
 	size_t ead_len;
 
+	/** Backing buffer for the CBOR-encoded context. */
+	uint8_t *buf;
 	/** Size of the \p buf buffer in bytes. */
 	size_t buf_len;
-	/** Flexible array member buffer. */
-	uint8_t buf[];
 };
 
 /**@}*/

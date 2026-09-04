@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# libedhoc Linux CI helper: a thin wrapper around the CMake presets. Every step
+# libedhoc host CI helper: a thin wrapper around the CMake presets. Every step
 # is one `scripts/ci.sh <cmd>`, reproducible locally. (Zephyr uses west/twister.)
 #
 set -euo pipefail
@@ -28,6 +28,16 @@ ok()      { echo -e "${GREEN}$*${NC}"; }
 err()     { echo -e "${RED}$*${NC}" >&2; }
 require() { command -v "$1" >/dev/null 2>&1 || { err "Error: '$1' is not installed"; exit 1; }; }
 
+parallel_jobs() {
+    if command -v nproc >/dev/null 2>&1; then
+        nproc
+    elif command -v sysctl >/dev/null 2>&1; then
+        sysctl -n hw.logicalcpu 2>/dev/null || echo 2
+    else
+        echo 2
+    fi
+}
+
 # ctest wrapper: fail if a preset unexpectedly has zero tests, and disable ASLR
 # for the sanitizer preset (ASan cannot initialise under high mmap_rnd_bits).
 run_ctest() {
@@ -36,14 +46,15 @@ run_ctest() {
     if [[ "$preset" == "asan" ]] && command -v setarch >/dev/null 2>&1; then
         wrap=(setarch -R)
     fi
-    CTEST_NO_TESTS_ACTION=error "${wrap[@]}" ctest --preset "$preset" --output-on-failure "$@"
+    CTEST_NO_TESTS_ACTION=error ${wrap[@]+"${wrap[@]}"} \
+        ctest --preset "$preset" --output-on-failure "$@"
 }
 
 # --- build / test / ci (per preset) ------------------------------------------
 cmd_build() {
     section "build ${1}${2:+ (target ${2})}"
     cmake --preset "$1" >/dev/null
-    cmake --build --preset "$1" -j"$(nproc)" ${2:+--target "$2"}
+    cmake --build --preset "$1" -j"$(parallel_jobs)" ${2:+--target "$2"}
     ok "built ${1}"
 }
 
@@ -68,7 +79,7 @@ cmd_matrix() {
 }
 
 # --- check-matrix ------------------------------------------------------------
-# Fail if any test_*.c under tests/linux is built by no preset (it would
+# Fail if any test_*.c under tests/host is built by no preset (it would
 # silently never run). Bundled tiers (unit/, robustness/) compile many files
 # into one binary, so they are excluded here.
 cmd_check_matrix() {
@@ -87,7 +98,7 @@ cmd_check_matrix() {
         t="$(basename "$f" .c)"
         grep -qxF "$t" <<<"$union" \
             || { err "  '$t' is built by NO preset — it would silently never run"; missing=1; }
-    done < <(find tests/linux -name 'test_*.c' -not -path '*/support/*' -not -path '*/unit/*' -not -path '*/robustness/*' | sort -u)
+    done < <(find tests/host -name 'test_*.c' -not -path '*/support/*' -not -path '*/unit/*' -not -path '*/robustness/*' | sort -u)
 
     if [[ $missing -ne 0 ]]; then
         err "check-matrix FAILED: orphaned test file(s) above."
@@ -126,7 +137,7 @@ cmd_valgrind() {
     local preset="${1:-valgrind}"
     section "valgrind memcheck + DRD (${preset})"
     cmake --preset "$preset" >/dev/null
-    cmake --build --preset "$preset" -j"$(nproc)"
+    cmake --build --preset "$preset" -j"$(parallel_jobs)"
 
     local found=0 bin
     while IFS= read -r bin; do
@@ -148,7 +159,7 @@ cmd_fuzz() {
     rm -rf "$artifacts"
     mkdir -p "$artifacts"
     local found=0 failed=() target status
-    for target in build/fuzz/tests/linux/fuzz/fuzz_*; do
+    for target in build/fuzz/tests/host/fuzz/fuzz_*; do
         [[ -x "$target" && ! "$target" == *.o ]] || continue
         found=1
         echo "--- $(basename "$target") ---"
@@ -158,7 +169,7 @@ cmd_fuzz() {
         [[ $status -eq 0 || $status -eq 124 ]] ||
             failed+=("$(basename "$target") (exit ${status})")
     done
-    [[ $found -eq 1 ]] || { err "No fuzz targets in build/fuzz/tests/linux/fuzz/"; exit 1; }
+    [[ $found -eq 1 ]] || { err "No fuzz targets in build/fuzz/tests/host/fuzz/"; exit 1; }
     if [[ ${#failed[@]} -ne 0 ]]; then
         err "fuzz failed: ${failed[*]}"
         err "reproducers in ${artifacts}/"
@@ -172,8 +183,10 @@ cmd_format() {
     require clang-format; require git
     local check=false
     [[ "${1:-}" == "--check" ]] && check=true
-    local files=()
-    mapfile -t files < <(git ls-files '*.c' '*.h' ':!:backends/**')
+    local files=() file
+    while IFS= read -r file; do
+        files+=("$file")
+    done < <(git ls-files '*.c' '*.h' ':!:backends/**')
     [[ ${#files[@]} -gt 0 ]] || { err "No source files found."; exit 1; }
     if [[ "$check" == true ]]; then
         section "format --check"
@@ -191,7 +204,10 @@ cmd_cppcheck() {
     require cppcheck
     section "cppcheck"
     cmake --preset legacy -B build/cppcheck >/dev/null
+    # This command uses the generated host configuration. Zephyr is analysed
+    # by Twister with its real Kconfig values instead of a synthetic variant.
     cppcheck --enable=warning,style --inline-suppr --error-exitcode=1 \
+        -U__ZEPHYR__ \
         -I include/ -I library/internal/ -I backends/cbor/include/ \
         -I build/cppcheck/include/generated/ \
         library/core/*.c library/core/classic/*.c

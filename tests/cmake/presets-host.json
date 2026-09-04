@@ -139,7 +139,10 @@
       "displayName": "Clang + Ninja (all suites)",
       "inherits": "legacy",
       "binaryDir": "${sourceDir}/build/clang",
-      "cacheVariables": { "CMAKE_C_COMPILER": "clang-20" }
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-20",
+        "OQS_OPT_TARGET": "generic"
+      }
     },
     {
       "name": "clang-latest",

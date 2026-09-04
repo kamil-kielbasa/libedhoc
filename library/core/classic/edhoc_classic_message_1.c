@@ -265,8 +265,9 @@ int edhoc_classic_message_1_process(struct edhoc_context *ctx,
 	if (EDHOC_SM_START != ctx->state.machine ||
 	    EDHOC_TH_STATE_INVALID != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_INVALID != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -391,8 +392,9 @@ int edhoc_classic_message_1_process(struct edhoc_context *ctx,
 	}
 
 	default:
-		EDHOC_LOG_ERR("Invalid cipher suite: %d",
-			      cbor_dec_msg_1.message_1_SUITES_I.suites_choice);
+		EDHOC_LOG_ERR(
+			"Invalid cipher suite: %d",
+			(int)cbor_dec_msg_1.message_1_SUITES_I.suites_choice);
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 
@@ -426,7 +428,7 @@ int edhoc_classic_message_1_process(struct edhoc_context *ctx,
 
 	default:
 		EDHOC_LOG_ERR("Invalid C_I choice: %d",
-			      cbor_dec_msg_1.message_1_C_I_choice);
+			      (int)cbor_dec_msg_1.message_1_C_I_choice);
 		return EDHOC_ERROR_MSG_1_PROCESS_FAILURE;
 	}
 

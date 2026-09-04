@@ -160,8 +160,9 @@ int edhoc_classic_message_4_compose(struct edhoc_context *ctx, uint8_t *msg_4,
 	if (EDHOC_SM_COMPLETED != ctx->state.machine ||
 	    EDHOC_TH_STATE_4 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_4E3M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -374,8 +375,9 @@ int edhoc_classic_message_4_process(struct edhoc_context *ctx,
 	if (EDHOC_SM_COMPLETED != ctx->state.machine ||
 	    EDHOC_TH_STATE_4 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_4E3M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 

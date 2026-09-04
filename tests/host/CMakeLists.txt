@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux — Unity + CTest module tests, one small binary per suite/scenario.
+# tests/host — Unity + CTest module tests, one small binary per suite/scenario.
 #
 # A preset selects the configuration; each binary is guarded by the capability
 # it needs and drops out when its cipher suite is disabled.
@@ -18,4 +18,4 @@ add_subdirectory(draft-edhoc-psk-08)
 add_subdirectory(robustness)
 
 edhoc_assert_registry_nonempty()
-edhoc_reconcile_linux_tree(${CMAKE_CURRENT_SOURCE_DIR})
+edhoc_reconcile_host_tree(${CMAKE_CURRENT_SOURCE_DIR})

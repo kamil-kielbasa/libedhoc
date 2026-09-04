@@ -24,7 +24,7 @@ A C implementation of the Ephemeral Diffie-Hellman Over COSE (EDHOC) protocol �
 - **Clean interfaces** — separate callback groups for cryptography, credentials, platform and optional EAD, keeping your application code cleanly separated from the protocol engine.
 - **Transport-agnostic** — the library only produces and consumes CBOR message buffers, so you carry them over CoAP or any transport; all CBOR encoding/decoding is hidden.
 - **Predictable footprint** — handshake buffers come from a stack (VLA, default, no heap), heap or custom memory backend, and the protocol core keeps no static state, so RAM use is bounded and known up front.
-- **Portable** — builds with GCC and Clang; runs on Linux and Zephyr RTOS (as a west module).
+- **Portable** — builds with GCC and Clang; runs on Linux, macOS and Zephyr RTOS (as a west module).
 - **Quality-gated** — cppcheck, clang-tidy, ASan, UBSan, Valgrind and LibFuzzer in CI.
 
 ### Cipher Suites

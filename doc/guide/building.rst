@@ -20,6 +20,17 @@ List every preset with ``scripts/ci.sh list`` (or ``cmake --list-presets``).
 Preset names follow ``<suite-family>_<memory-backend>`` — e.g. ``p384_heap`` or
 ``mlkem512_custom``.
 
+On macOS, the ordinary host presets use Apple Clang. For example, to build and
+test all suites:
+
+.. code-block:: console
+
+   $ scripts/ci.sh ci legacy
+
+The functional matrix, formatting, header checks, cppcheck, and ASan/UBSan are
+also available on macOS. Coverage, Valgrind, clang-tidy, and fuzzing remain
+Linux CI jobs.
+
 Whole matrix and instrumentation
 --------------------------------
 

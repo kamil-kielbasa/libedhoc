@@ -171,8 +171,9 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	if (EDHOC_SM_VERIFIED_M2 != ctx->state.machine ||
 	    EDHOC_TH_STATE_3 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -295,8 +296,7 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 	}
 
 	/* 6b. Cborise items required by context_3. */
-	EDHOC_MEM_ALLOC(uint8_t, mac_3_context_buf,
-			sizeof(struct mac_context) + mac_context_length);
+	EDHOC_MEM_ALLOC(uint8_t, mac_3_context_buf, mac_context_length);
 	if (NULL == mac_3_context_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		edhoc_zeroize(ctx, aad, EDHOC_MEM_ALLOC_SIZE(aad));
@@ -306,8 +306,11 @@ int edhoc_classic_message_3_compose(struct edhoc_context *ctx, uint8_t *msg_3,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	struct mac_context *mac_context = (void *)mac_3_context_buf;
-	mac_context->buf_len = mac_context_length;
+	struct mac_context mac_context_storage = {
+		.buf = mac_3_context_buf,
+		.buf_len = mac_context_length,
+	};
+	struct mac_context *mac_context = &mac_context_storage;
 
 	ret = edhoc_mac_context_compose(ctx, &material, mac_context);
 	if (EDHOC_SUCCESS != ret) {
@@ -642,8 +645,9 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 	if (EDHOC_SM_WAIT_M3 != ctx->state.machine ||
 	    EDHOC_TH_STATE_3 != ctx->state.th.stage ||
 	    EDHOC_PRK_STATE_3E2M != ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d, %d", ctx->state.machine,
-			      ctx->state.th.stage, ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.th.stage,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 
@@ -829,8 +833,7 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 	}
 
 	/* 9b. Cborise items required by context_3. */
-	EDHOC_MEM_ALLOC(uint8_t, mac_3_context_buf,
-			sizeof(struct mac_context) + mac_context_len);
+	EDHOC_MEM_ALLOC(uint8_t, mac_3_context_buf, mac_context_len);
 	if (NULL == mac_3_context_buf) {
 		EDHOC_LOG_ERR("Memory allocation failed");
 		edhoc_zeroize(ctx, ptxt, EDHOC_MEM_ALLOC_SIZE(ptxt));
@@ -838,8 +841,11 @@ int edhoc_classic_message_3_process(struct edhoc_context *ctx,
 		return EDHOC_ERROR_NOT_ENOUGH_MEMORY;
 	}
 
-	struct mac_context *mac_context = (void *)mac_3_context_buf;
-	mac_context->buf_len = mac_context_len;
+	struct mac_context mac_context_storage = {
+		.buf = mac_3_context_buf,
+		.buf_len = mac_context_len,
+	};
+	struct mac_context *mac_context = &mac_context_storage;
 
 	ret = edhoc_mac_context_compose(ctx, &material, mac_context);
 	if (EDHOC_SUCCESS != ret) {

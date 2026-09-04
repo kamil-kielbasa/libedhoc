@@ -1,5 +1,5 @@
 # =============================================================================
-# tests/linux/robustness/oom_sweep — custom-backend out-of-memory sweep.
+# tests/host/robustness/oom_sweep — custom-backend out-of-memory sweep.
 #
 # An instrumented allocator drives a suite-0 handshake and fails the nth
 # allocation for every n, proving the library releases every buffer it acquired

@@ -182,8 +182,8 @@ STATIC int derive_exporter_output(struct edhoc_context *ctx, size_t label,
 		break;
 	case EXPORTER_OUTPUT_BYTES:
 		ret = edhoc_kdf_expand_raw(ctx, prk_exporter, (int32_t)label,
-					   context, context_len, output,
-					   output_length);
+					   context, context_len,
+					   (uint8_t *)output, output_length);
 		break;
 	default:
 		ret = EDHOC_ERROR_NOT_SUPPORTED;
@@ -311,7 +311,7 @@ int edhoc_exporter_export(struct edhoc_context *ctx, size_t label,
 		output_length = csuite->aead_key_length;
 		break;
 	default:
-		EDHOC_LOG_ERR("Invalid key usage: %d", usage);
+		EDHOC_LOG_ERR("Invalid key usage: %d", (int)usage);
 		return EDHOC_ERROR_INVALID_ARGUMENT;
 	}
 
@@ -351,8 +351,8 @@ int edhoc_exporter_key_update(struct edhoc_context *ctx, const uint8_t *context,
 
 	if (EDHOC_SM_COMPLETED > ctx->state.machine ||
 	    EDHOC_PRK_STATE_4E3M > ctx->state.prk_state) {
-		EDHOC_LOG_ERR("Bad state: %d, %d", ctx->state.machine,
-			      ctx->state.prk_state);
+		EDHOC_LOG_ERR("Bad state: %d, %d", (int)ctx->state.machine,
+			      (int)ctx->state.prk_state);
 		return EDHOC_ERROR_BAD_STATE;
 	}
 

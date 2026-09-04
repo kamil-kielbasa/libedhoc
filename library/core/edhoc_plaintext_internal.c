@@ -743,12 +743,12 @@ int edhoc_plaintext_length(const struct edhoc_context *ctx,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid plaintext: %d", input->id);
+		EDHOC_LOG_ERR("Invalid plaintext: %d", (int)input->id);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Plaintext %d length: %d", input->id, ret);
+		EDHOC_LOG_ERR("Plaintext %d length: %d", (int)input->id, ret);
 	}
 
 	return ret;
@@ -809,12 +809,12 @@ int edhoc_plaintext_compose(const struct edhoc_context *ctx,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid plaintext: %d", input->id);
+		EDHOC_LOG_ERR("Invalid plaintext: %d", (int)input->id);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Plaintext %d compose: %d", input->id, ret);
+		EDHOC_LOG_ERR("Plaintext %d compose: %d", (int)input->id, ret);
 	}
 
 	return ret;
@@ -879,12 +879,12 @@ int edhoc_plaintext_parse(struct edhoc_context *ctx, enum edhoc_plaintext_id id,
 		break;
 
 	default:
-		EDHOC_LOG_ERR("Invalid plaintext: %d", id);
+		EDHOC_LOG_ERR("Invalid plaintext: %d", (int)id);
 		return EDHOC_ERROR_NOT_PERMITTED;
 	}
 
 	if (EDHOC_SUCCESS != ret) {
-		EDHOC_LOG_ERR("Plaintext %d parse: %d", id, ret);
+		EDHOC_LOG_ERR("Plaintext %d parse: %d", (int)id, ret);
 	}
 
 	return ret;
