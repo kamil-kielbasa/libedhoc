@@ -1,0 +1,619 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="EDHOC Messages" href="messages.html"><link rel="prev" title="EDHOC Context" href="context.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Protocol Types - libedhoc v2.3.2</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=19d25e18" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">libedhoc v2.3.2</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">libedhoc v2.3.2</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quick_start.html">Quick Start</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/protocol_flow.html">Protocol Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/security.html">Security &amp; Key Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/building.html">Building &amp; testing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="context.html">EDHOC Context</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Protocol Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="messages.html">EDHOC Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="crypto.html">Cryptographic Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="credentials.html">Authentication Credentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ead.html">External Authorization Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="platform.html">Platform Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exporters.html">Exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html">EDHOC Error Codes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cipher_suites.html">Cipher Suites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coap.html">CoAP Integration</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/links.html">Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../project/changelog.html">Changelog</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/kamil-kielbasa/libedhoc/blob/main/doc/api/types.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/kamil-kielbasa/libedhoc/edit/main/doc/api/types.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="protocol-types">
+<h1>Protocol Types<a class="headerlink" href="#protocol-types" title="Link to this heading">¶</a></h1>
+<p>Types shared across the <em>libedhoc</em> API: the protocol enumerations of
+<a class="reference internal" href="../reference/glossary.html#term-RFC-9528"><span class="xref std std-term">RFC 9528</span></a> (message number, role, method), the byte-sequence view used
+throughout the interfaces, the context passed to application callbacks, and the
+EDHOC error reporting types.</p>
+<div class="line-block">
+<div class="line">Header file: <code class="file docutils literal notranslate"><span class="pre">include/edhoc/types.h</span></code></div>
+</div>
+<dl>
+<dt class="sig sig-object cpp">
+<span class="target" id="group__edhoc-types"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">EDHOC</span> <span class="pre">types</span></span></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-enums">Enums</p>
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv413edhoc_message">
+<span id="_CPPv313edhoc_message"></span><span id="_CPPv213edhoc_message"></span><span class="target" id="group__edhoc-types_1ga2f0b7124429cd74a4806e1398353ecb0"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_message</span></span></span><a class="headerlink" href="#_CPPv413edhoc_message" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC message number (RFC 9528: 5). </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N13edhoc_message15EDHOC_MESSAGE_1E">
+<span id="_CPPv3N13edhoc_message15EDHOC_MESSAGE_1E"></span><span id="_CPPv2N13edhoc_message15EDHOC_MESSAGE_1E"></span><span class="target" id="group__edhoc-types_1gga2f0b7124429cd74a4806e1398353ecb0acb4544418e2a2784ddeb42e9eae1f17f"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_MESSAGE_1</span></span></span><a class="headerlink" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_1E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC message 1. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N13edhoc_message15EDHOC_MESSAGE_2E">
+<span id="_CPPv3N13edhoc_message15EDHOC_MESSAGE_2E"></span><span id="_CPPv2N13edhoc_message15EDHOC_MESSAGE_2E"></span><span class="target" id="group__edhoc-types_1gga2f0b7124429cd74a4806e1398353ecb0a600fbcda2db1807f6fc8aedb98be3657"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_MESSAGE_2</span></span></span><a class="headerlink" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_2E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC message 2. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N13edhoc_message15EDHOC_MESSAGE_3E">
+<span id="_CPPv3N13edhoc_message15EDHOC_MESSAGE_3E"></span><span id="_CPPv2N13edhoc_message15EDHOC_MESSAGE_3E"></span><span class="target" id="group__edhoc-types_1gga2f0b7124429cd74a4806e1398353ecb0adb1c77d24e9362c3b37ee95d46f50bec"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_MESSAGE_3</span></span></span><a class="headerlink" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_3E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC message 3. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N13edhoc_message15EDHOC_MESSAGE_4E">
+<span id="_CPPv3N13edhoc_message15EDHOC_MESSAGE_4E"></span><span id="_CPPv2N13edhoc_message15EDHOC_MESSAGE_4E"></span><span class="target" id="group__edhoc-types_1gga2f0b7124429cd74a4806e1398353ecb0acb08c6b6b40fde417563a400165c8078"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_MESSAGE_4</span></span></span><a class="headerlink" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_4E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC message 4. </p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv410edhoc_role">
+<span id="_CPPv310edhoc_role"></span><span id="_CPPv210edhoc_role"></span><span class="target" id="group__edhoc-types_1ga451e126f0273803108aa47938473fd7f"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_role</span></span></span><a class="headerlink" href="#_CPPv410edhoc_role" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC role of the local peer (RFC 9528: 3.1). </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N10edhoc_role20EDHOC_ROLE_INITIATORE">
+<span id="_CPPv3N10edhoc_role20EDHOC_ROLE_INITIATORE"></span><span id="_CPPv2N10edhoc_role20EDHOC_ROLE_INITIATORE"></span><span class="target" id="group__edhoc-types_1gga451e126f0273803108aa47938473fd7fabdba9a9f7fc376486f6e32c4dcce5c09"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ROLE_INITIATOR</span></span></span><a class="headerlink" href="#_CPPv4N10edhoc_role20EDHOC_ROLE_INITIATORE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>The local peer sent message 1. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N10edhoc_role20EDHOC_ROLE_RESPONDERE">
+<span id="_CPPv3N10edhoc_role20EDHOC_ROLE_RESPONDERE"></span><span id="_CPPv2N10edhoc_role20EDHOC_ROLE_RESPONDERE"></span><span class="target" id="group__edhoc-types_1gga451e126f0273803108aa47938473fd7fa17aafcea6d96b38859a027bbff523c59"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ROLE_RESPONDER</span></span></span><a class="headerlink" href="#_CPPv4N10edhoc_role20EDHOC_ROLE_RESPONDERE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>The local peer received message 1. </p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv412edhoc_method">
+<span id="_CPPv312edhoc_method"></span><span id="_CPPv212edhoc_method"></span><span class="target" id="group__edhoc-types_1gadd1cc6ebebceddc8b6dab6f7bb650739"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_method</span></span></span><a class="headerlink" href="#_CPPv412edhoc_method" title="Link to this definition">¶</a><br /></dt>
+<dd><p>RFC 9528: 3.2. Method. </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_method14EDHOC_METHOD_0E">
+<span id="_CPPv3N12edhoc_method14EDHOC_METHOD_0E"></span><span id="_CPPv2N12edhoc_method14EDHOC_METHOD_0E"></span><span class="target" id="group__edhoc-types_1ggadd1cc6ebebceddc8b6dab6f7bb650739a475aab325a76f19d905f86a5a2e72bc0"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_METHOD_0</span></span></span><a class="headerlink" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_0E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Initiator signature key, Responder signature key. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_method14EDHOC_METHOD_1E">
+<span id="_CPPv3N12edhoc_method14EDHOC_METHOD_1E"></span><span id="_CPPv2N12edhoc_method14EDHOC_METHOD_1E"></span><span class="target" id="group__edhoc-types_1ggadd1cc6ebebceddc8b6dab6f7bb650739aaf99f17dac76f82973782e98ad9a9a13"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_METHOD_1</span></span></span><a class="headerlink" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_1E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Initiator signature key, Responder static DH key. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_method14EDHOC_METHOD_2E">
+<span id="_CPPv3N12edhoc_method14EDHOC_METHOD_2E"></span><span id="_CPPv2N12edhoc_method14EDHOC_METHOD_2E"></span><span class="target" id="group__edhoc-types_1ggadd1cc6ebebceddc8b6dab6f7bb650739aa2e0507b88fb5db6ac666d8e64866a7d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_METHOD_2</span></span></span><a class="headerlink" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_2E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Initiator static DH key, Responder signature key. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_method14EDHOC_METHOD_3E">
+<span id="_CPPv3N12edhoc_method14EDHOC_METHOD_3E"></span><span id="_CPPv2N12edhoc_method14EDHOC_METHOD_3E"></span><span class="target" id="group__edhoc-types_1ggadd1cc6ebebceddc8b6dab6f7bb650739a3209f5539ef94f38accbf1544fcbdb52"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_METHOD_3</span></span></span><a class="headerlink" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_3E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Initiator static DH key, Responder static DH key. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_method14EDHOC_METHOD_4E">
+<span id="_CPPv3N12edhoc_method14EDHOC_METHOD_4E"></span><span id="_CPPv2N12edhoc_method14EDHOC_METHOD_4E"></span><span class="target" id="group__edhoc-types_1ggadd1cc6ebebceddc8b6dab6f7bb650739a1a1cde7f31467bf4d28c2074b17c1781"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_METHOD_4</span></span></span><a class="headerlink" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_4E" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Both peers authenticate with a pre-shared key (draft-ietf-lake-edhoc-psk: 10.1). </p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv416edhoc_error_code">
+<span id="_CPPv316edhoc_error_code"></span><span id="_CPPv216edhoc_error_code"></span><span class="target" id="group__edhoc-types_1ga1a942c2f7dbd950ea98d46f3d746134b"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_error_code</span></span></span><a class="headerlink" href="#_CPPv416edhoc_error_code" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC error code. RFC 9528: 6. Error Handling. </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_code24EDHOC_ERROR_CODE_SUCCESSE">
+<span id="_CPPv3N16edhoc_error_code24EDHOC_ERROR_CODE_SUCCESSE"></span><span id="_CPPv2N16edhoc_error_code24EDHOC_ERROR_CODE_SUCCESSE"></span><span class="target" id="group__edhoc-types_1gga1a942c2f7dbd950ea98d46f3d746134baf824542a3b923dd028d433b1360e7462"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_CODE_SUCCESS</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_code24EDHOC_ERROR_CODE_SUCCESSE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>RFC 9528: 6.1. Success. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_code34EDHOC_ERROR_CODE_UNSPECIFIED_ERRORE">
+<span id="_CPPv3N16edhoc_error_code34EDHOC_ERROR_CODE_UNSPECIFIED_ERRORE"></span><span id="_CPPv2N16edhoc_error_code34EDHOC_ERROR_CODE_UNSPECIFIED_ERRORE"></span><span class="target" id="group__edhoc-types_1gga1a942c2f7dbd950ea98d46f3d746134baee4e866e93acc673ff66eb750a173bf6"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_CODE_UNSPECIFIED_ERROR</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_code34EDHOC_ERROR_CODE_UNSPECIFIED_ERRORE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>RFC 9528: 6.2. Unspecified Error. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_code44EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITEE">
+<span id="_CPPv3N16edhoc_error_code44EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITEE"></span><span id="_CPPv2N16edhoc_error_code44EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITEE"></span><span class="target" id="group__edhoc-types_1gga1a942c2f7dbd950ea98d46f3d746134ba8990cbf083784d69735b01c4be595f45"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_code44EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITEE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>RFC 9528: 6.3. Wrong Selected Cipher Suite. </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_code46EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCEDE">
+<span id="_CPPv3N16edhoc_error_code46EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCEDE"></span><span id="_CPPv2N16edhoc_error_code46EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCEDE"></span><span class="target" id="group__edhoc-types_1gga1a942c2f7dbd950ea98d46f3d746134baf92ae0aba5382725c1983d32f48b069c"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_code46EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCEDE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>RFC 9528: 6.4. Unknown Credential Referenced. </p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv412edhoc_buffer">
+<span id="_CPPv312edhoc_buffer"></span><span id="_CPPv212edhoc_buffer"></span><span id="edhoc_buffer"></span><span class="target" id="structedhoc__buffer"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_buffer</span></span></span><a class="headerlink" href="#_CPPv412edhoc_buffer" title="Link to this definition">¶</a><br /></dt>
+<dd><div class="docutils container">
+<em>#include &lt;types.h&gt;</em></div>
+<p>Immutable view of a byte sequence. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_buffer5valueE">
+<span id="_CPPv3N12edhoc_buffer5valueE"></span><span id="_CPPv2N12edhoc_buffer5valueE"></span><span id="edhoc_buffer::value__uint8_tCP"></span><span class="target" id="structedhoc__buffer_1ae117d41dd60cbc3a904406539dc65a5e"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">value</span></span></span><a class="headerlink" href="#_CPPv4N12edhoc_buffer5valueE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Start of the byte sequence. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_buffer6lengthE">
+<span id="_CPPv3N12edhoc_buffer6lengthE"></span><span id="_CPPv2N12edhoc_buffer6lengthE"></span><span id="edhoc_buffer::length__s"></span><span class="target" id="structedhoc__buffer_1a7065054f78c07e9fbce730418bd1cbf3"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">length</span></span></span><a class="headerlink" href="#_CPPv4N12edhoc_buffer6lengthE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Number of bytes in <code class="docutils literal notranslate"><span class="pre">value</span></code>. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv418edhoc_call_context">
+<span id="_CPPv318edhoc_call_context"></span><span id="_CPPv218edhoc_call_context"></span><span id="edhoc_call_context"></span><span class="target" id="structedhoc__call__context"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_call_context</span></span></span><a class="headerlink" href="#_CPPv418edhoc_call_context" title="Link to this definition">¶</a><br /></dt>
+<dd><div class="docutils container">
+<em>#include &lt;types.h&gt;</em></div>
+<p>Context of a call from the library into an application callback. </p>
+<p>Valid for the duration of the callback. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N18edhoc_call_context4roleE">
+<span id="_CPPv3N18edhoc_call_context4roleE"></span><span id="_CPPv2N18edhoc_call_context4roleE"></span><span id="edhoc_call_context::role__edhoc_role"></span><span class="target" id="structedhoc__call__context_1a2a3b1f5fa2020a0e6ded2ba47a923be6"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv410edhoc_role" title="edhoc_role"><span class="n"><span class="pre">edhoc_role</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">role</span></span></span><a class="headerlink" href="#_CPPv4N18edhoc_call_context4roleE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Role of the local peer. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N18edhoc_call_context6methodE">
+<span id="_CPPv3N18edhoc_call_context6methodE"></span><span id="_CPPv2N18edhoc_call_context6methodE"></span><span id="edhoc_call_context::method__edhoc_method"></span><span class="target" id="structedhoc__call__context_1a24b78285d91b2a380c7ac303f7eff84c"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv412edhoc_method" title="edhoc_method"><span class="n"><span class="pre">edhoc_method</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">method</span></span></span><a class="headerlink" href="#_CPPv4N18edhoc_call_context6methodE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Negotiated method. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N18edhoc_call_context21selected_cipher_suiteE">
+<span id="_CPPv3N18edhoc_call_context21selected_cipher_suiteE"></span><span id="_CPPv2N18edhoc_call_context21selected_cipher_suiteE"></span><span id="edhoc_call_context::selected_cipher_suite__int32_t"></span><span class="target" id="structedhoc__call__context_1a5e06cd7b1c8083c38294effdbef65339"></span><span class="n"><span class="pre">int32_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">selected_cipher_suite</span></span></span><a class="headerlink" href="#_CPPv4N18edhoc_call_context21selected_cipher_suiteE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Selected cipher suite. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N18edhoc_call_context7messageE">
+<span id="_CPPv3N18edhoc_call_context7messageE"></span><span id="_CPPv2N18edhoc_call_context7messageE"></span><span id="edhoc_call_context::message__edhoc_message"></span><span class="target" id="structedhoc__call__context_1a96cb4351268194ec809050a865e888db"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv413edhoc_message" title="edhoc_message"><span class="n"><span class="pre">edhoc_message</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">message</span></span></span><a class="headerlink" href="#_CPPv4N18edhoc_call_context7messageE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Message being composed or processed. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv416edhoc_error_info">
+<span id="_CPPv316edhoc_error_info"></span><span id="_CPPv216edhoc_error_info"></span><span id="edhoc_error_info"></span><span class="target" id="structedhoc__error__info"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_error_info</span></span></span><a class="headerlink" href="#_CPPv416edhoc_error_info" title="Link to this definition">¶</a><br /></dt>
+<dd><div class="docutils container">
+<em>#include &lt;types.h&gt;</em></div>
+<p>EDHOC error information. RFC 9528: 6. Error Handling. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_info11text_stringE">
+<span id="_CPPv3N16edhoc_error_info11text_stringE"></span><span id="_CPPv2N16edhoc_error_info11text_stringE"></span><span id="edhoc_error_info::text_string__cP"></span><span class="target" id="structedhoc__error__info_1a28b1fa48be5ea29ae9a0726ee52abb20"></span><span class="kt"><span class="pre">char</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">text_string</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_info11text_stringE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Caller-owned buffer for the diagnostic text of <a class="reference internal" href="#group__edhoc-types_1gga1a942c2f7dbd950ea98d46f3d746134baee4e866e93acc673ff66eb750a173bf6"><span class="std std-ref">EDHOC_ERROR_CODE_UNSPECIFIED_ERROR</span></a>. Not <code class="docutils literal notranslate"><span class="pre">const:</span></code> on processing the library writes the received text into it. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_info13cipher_suitesE">
+<span id="_CPPv3N16edhoc_error_info13cipher_suitesE"></span><span id="_CPPv2N16edhoc_error_info13cipher_suitesE"></span><span id="edhoc_error_info::cipher_suites__int32_tP"></span><span class="target" id="structedhoc__error__info_1a987f2c3bafba4386a9815de986bd9ea1"></span><span class="n"><span class="pre">int32_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">cipher_suites</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_info13cipher_suitesE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Caller-owned buffer for the suites of <a class="reference internal" href="#group__edhoc-types_1gga1a942c2f7dbd950ea98d46f3d746134ba8990cbf083784d69735b01c4be595f45"><span class="std std-ref">EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_info12entries_sizeE">
+<span id="_CPPv3N16edhoc_error_info12entries_sizeE"></span><span id="_CPPv2N16edhoc_error_info12entries_sizeE"></span><span id="edhoc_error_info::entries_size__s"></span><span class="target" id="structedhoc__error__info_1ad795fc956aeb97d2440f6395fe8e9ade"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">entries_size</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_info12entries_sizeE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Capacity of <code class="docutils literal notranslate"><span class="pre">text_string</span></code> in characters, or of <code class="docutils literal notranslate"><span class="pre">cipher_suites</span></code> in entries. </p>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N16edhoc_error_info14entries_lengthE">
+<span id="_CPPv3N16edhoc_error_info14entries_lengthE"></span><span id="_CPPv2N16edhoc_error_info14entries_lengthE"></span><span id="edhoc_error_info::entries_length__s"></span><span class="target" id="structedhoc__error__info_1a390d3fc42b553587d4f7796386c16e7d"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">entries_length</span></span></span><a class="headerlink" href="#_CPPv4N16edhoc_error_info14entries_lengthE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Valid part of <code class="docutils literal notranslate"><span class="pre">text_string</span></code> or <code class="docutils literal notranslate"><span class="pre">cipher_suites</span></code>, in the same unit as <code class="docutils literal notranslate"><span class="pre">entries_size</span></code> (set by the caller on compose, by the library on process). </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="messages.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">EDHOC Messages</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="context.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">EDHOC Context</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Kamil Kielbasa
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Protocol Types</a><ul>
+<li><a class="reference internal" href="#_CPPv413edhoc_message"><code class="docutils literal notranslate"><span class="pre">edhoc_message</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_1E"><code class="docutils literal notranslate"><span class="pre">EDHOC_MESSAGE_1</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_2E"><code class="docutils literal notranslate"><span class="pre">EDHOC_MESSAGE_2</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_3E"><code class="docutils literal notranslate"><span class="pre">EDHOC_MESSAGE_3</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N13edhoc_message15EDHOC_MESSAGE_4E"><code class="docutils literal notranslate"><span class="pre">EDHOC_MESSAGE_4</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#_CPPv410edhoc_role"><code class="docutils literal notranslate"><span class="pre">edhoc_role</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N10edhoc_role20EDHOC_ROLE_INITIATORE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ROLE_INITIATOR</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N10edhoc_role20EDHOC_ROLE_RESPONDERE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ROLE_RESPONDER</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#_CPPv412edhoc_method"><code class="docutils literal notranslate"><span class="pre">edhoc_method</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_0E"><code class="docutils literal notranslate"><span class="pre">EDHOC_METHOD_0</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_1E"><code class="docutils literal notranslate"><span class="pre">EDHOC_METHOD_1</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_2E"><code class="docutils literal notranslate"><span class="pre">EDHOC_METHOD_2</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_3E"><code class="docutils literal notranslate"><span class="pre">EDHOC_METHOD_3</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_method14EDHOC_METHOD_4E"><code class="docutils literal notranslate"><span class="pre">EDHOC_METHOD_4</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#_CPPv416edhoc_error_code"><code class="docutils literal notranslate"><span class="pre">edhoc_error_code</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_code24EDHOC_ERROR_CODE_SUCCESSE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_CODE_SUCCESS</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_code34EDHOC_ERROR_CODE_UNSPECIFIED_ERRORE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_CODE_UNSPECIFIED_ERROR</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_code44EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITEE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_code46EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCEDE"><code class="docutils literal notranslate"><span class="pre">EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#_CPPv412edhoc_buffer"><code class="docutils literal notranslate"><span class="pre">edhoc_buffer</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_buffer5valueE"><code class="docutils literal notranslate"><span class="pre">value</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_buffer6lengthE"><code class="docutils literal notranslate"><span class="pre">length</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#_CPPv418edhoc_call_context"><code class="docutils literal notranslate"><span class="pre">edhoc_call_context</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N18edhoc_call_context4roleE"><code class="docutils literal notranslate"><span class="pre">role</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N18edhoc_call_context6methodE"><code class="docutils literal notranslate"><span class="pre">method</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N18edhoc_call_context21selected_cipher_suiteE"><code class="docutils literal notranslate"><span class="pre">selected_cipher_suite</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N18edhoc_call_context7messageE"><code class="docutils literal notranslate"><span class="pre">message</span></code></a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#_CPPv416edhoc_error_info"><code class="docutils literal notranslate"><span class="pre">edhoc_error_info</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_info11text_stringE"><code class="docutils literal notranslate"><span class="pre">text_string</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_info13cipher_suitesE"><code class="docutils literal notranslate"><span class="pre">cipher_suites</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_info12entries_sizeE"><code class="docutils literal notranslate"><span class="pre">entries_size</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N16edhoc_error_info14entries_lengthE"><code class="docutils literal notranslate"><span class="pre">entries_length</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5d545b49"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

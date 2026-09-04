@@ -1,0 +1,991 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Authentication Credentials" href="credentials.html"><link rel="prev" title="EDHOC Messages" href="messages.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>Cryptographic Interface - libedhoc v2.3.2</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=19d25e18" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">libedhoc v2.3.2</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">libedhoc v2.3.2</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quick_start.html">Quick Start</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../guide/protocol_flow.html">Protocol Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/security.html">Security &amp; Key Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../guide/building.html">Building &amp; testing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="context.html">EDHOC Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="types.html">Protocol Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="messages.html">EDHOC Messages</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Cryptographic Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="credentials.html">Authentication Credentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ead.html">External Authorization Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="platform.html">Platform Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exporters.html">Exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="errors.html">EDHOC Error Codes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cipher_suites.html">Cipher Suites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="coap.html">CoAP Integration</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../reference/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/links.html">Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../project/changelog.html">Changelog</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="https://github.com/kamil-kielbasa/libedhoc/blob/main/doc/api/crypto.rst?plain=true" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/kamil-kielbasa/libedhoc/edit/main/doc/api/crypto.rst" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="cryptographic-interface">
+<h1>Cryptographic Interface<a class="headerlink" href="#cryptographic-interface" title="Link to this heading">¶</a></h1>
+<p><em>libedhoc</em> computes no cryptography itself: every primitive is reached through a
+single user-supplied callback interface, the <strong>operations interface</strong>:</p>
+<ul class="simple">
+<li><p><strong>Ephemeral key exchange</strong> — a <a class="reference internal" href="../reference/glossary.html#term-KEM"><span class="xref std std-term">KEM</span></a>: <code class="docutils literal notranslate"><span class="pre">generate_key_pair</span></code> /
+<code class="docutils literal notranslate"><span class="pre">encapsulate</span></code> / <code class="docutils literal notranslate"><span class="pre">decapsulate</span></code>.</p></li>
+<li><p><strong>Static Diffie-Hellman</strong> — <code class="docutils literal notranslate"><span class="pre">key_agreement</span></code> (<a class="reference internal" href="../reference/glossary.html#term-NIKE"><span class="xref std std-term">NIKE</span></a> suites, methods
+1/2/3).</p></li>
+<li><p><strong>AEAD</strong> — <code class="docutils literal notranslate"><span class="pre">aead_encrypt</span></code> / <code class="docutils literal notranslate"><span class="pre">aead_decrypt</span></code>.</p></li>
+<li><p><strong>Hash</strong> — multipart <code class="docutils literal notranslate"><span class="pre">hash_init</span></code> / <code class="docutils literal notranslate"><span class="pre">hash_update</span></code> / <code class="docutils literal notranslate"><span class="pre">hash_finish</span></code>.</p></li>
+<li><p><strong>Key derivation</strong> — <a class="reference internal" href="../reference/glossary.html#term-HKDF"><span class="xref std std-term">HKDF</span></a> <code class="docutils literal notranslate"><span class="pre">extract</span></code> / <code class="docutils literal notranslate"><span class="pre">expand</span></code> (handle and raw
+forms).</p></li>
+<li><p><strong>Signature</strong> — <code class="docutils literal notranslate"><span class="pre">sign</span></code> / <code class="docutils literal notranslate"><span class="pre">verify</span></code>.</p></li>
+</ul>
+<p>Keys never cross the boundary as raw bytes: they live in the backend
+<a class="reference internal" href="../reference/glossary.html#term-key-store"><span class="xref std std-term">key store</span></a> and are passed by opaque <a class="reference internal" href="../reference/glossary.html#term-handle"><span class="xref std std-term">handle</span></a> only, and each
+derived handle carries the key-usage policy it will serve.</p>
+<p>Ready-made, production-ready bindings for every supported suite live under
+<code class="docutils literal notranslate"><span class="pre">library/cipher_suites/</span></code>; see <a class="reference internal" href="cipher_suites.html"><span class="doc">Cipher Suites</span></a>.</p>
+<div class="line-block">
+<div class="line">Header file: <code class="file docutils literal notranslate"><span class="pre">include/edhoc/crypto.h</span></code></div>
+</div>
+<section id="key-usage">
+<h2>Key usage<a class="headerlink" href="#key-usage" title="Link to this heading">¶</a></h2>
+<dl>
+<dt class="sig sig-object cpp">
+<span class="target" id="group__edhoc-interface-crypto-usage"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">EDHOC</span> <span class="pre">interface</span> <span class="pre">for</span> <span class="pre">cryptographic</span> <span class="pre">key</span> <span class="pre">usage</span></span></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-enums">Enums</p>
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv415edhoc_key_usage">
+<span id="_CPPv315edhoc_key_usage"></span><span id="_CPPv215edhoc_key_usage"></span><span class="target" id="group__edhoc-interface-crypto-usage_1gaba143aae8e40a1359984117550922c8c"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_key_usage</span></span></span><a class="headerlink" href="#_CPPv415edhoc_key_usage" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Policy of a key handle produced by <a class="reference internal" href="#structedhoc__crypto_1ae4fd6c264e73baf705201d6883f090a4"><span class="std std-ref">edhoc_crypto::expand</span></a>. </p>
+<p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N15edhoc_key_usage19EDHOC_KEY_USAGE_KDFE">
+<span id="_CPPv3N15edhoc_key_usage19EDHOC_KEY_USAGE_KDFE"></span><span id="_CPPv2N15edhoc_key_usage19EDHOC_KEY_USAGE_KDFE"></span><span class="target" id="group__edhoc-interface-crypto-usage_1ggaba143aae8e40a1359984117550922c8ca95ae62b0eaf6ab81a98553255ec82c7a"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_KEY_USAGE_KDF</span></span></span><a class="headerlink" href="#_CPPv4N15edhoc_key_usage19EDHOC_KEY_USAGE_KDFE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Key used as input to key derivation (EDHOC_Extract / EDHOC_Expand). </p>
+</dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N15edhoc_key_usage20EDHOC_KEY_USAGE_AEADE">
+<span id="_CPPv3N15edhoc_key_usage20EDHOC_KEY_USAGE_AEADE"></span><span id="_CPPv2N15edhoc_key_usage20EDHOC_KEY_USAGE_AEADE"></span><span class="target" id="group__edhoc-interface-crypto-usage_1ggaba143aae8e40a1359984117550922c8ca1a802c77d2b2c6be278120e075d22526"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">EDHOC_KEY_USAGE_AEAD</span></span></span><a class="headerlink" href="#_CPPv4N15edhoc_key_usage20EDHOC_KEY_USAGE_AEADE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Key used for AEAD encryption and decryption. </p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="operations">
+<h2>Operations<a class="headerlink" href="#operations" title="Link to this heading">¶</a></h2>
+<dl>
+<dt class="sig sig-object cpp">
+<span class="target" id="group__edhoc-interface-crypto-operations"></span><em><span class="pre">group</span></em> <span class="sig-name descname"><span class="pre">EDHOC</span> <span class="pre">interface</span> <span class="pre">for</span> <span class="pre">cryptographic</span> <span class="pre">operations</span></span></dt>
+<dd><dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv412edhoc_crypto">
+<span id="_CPPv312edhoc_crypto"></span><span id="_CPPv212edhoc_crypto"></span><span id="edhoc_crypto"></span><span class="target" id="structedhoc__crypto"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">edhoc_crypto</span></span></span><a class="headerlink" href="#_CPPv412edhoc_crypto" title="Link to this definition">¶</a><br /></dt>
+<dd><div class="docutils container">
+<em>#include &lt;crypto.h&gt;</em></div>
+<p>Cryptographic operations vtable (handle-based). </p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="o">-</span> <span class="n">Every</span> <span class="n">entry</span> <span class="ow">is</span> <span class="n">mandatory</span><span class="p">;</span> \<span class="n">ref</span> <span class="n">edhoc_bind_crypto</span> <span class="n">rejects</span> <span class="n">a</span> <span class="n">vtable</span>
+    <span class="k">with</span> <span class="n">a</span> <span class="n">missing</span> <span class="n">one</span><span class="o">.</span> <span class="n">A</span> <span class="n">suite</span> <span class="n">that</span> <span class="n">cannot</span> <span class="n">perform</span> <span class="n">an</span> <span class="n">operation</span> <span class="n">still</span>
+    <span class="n">supplies</span> <span class="n">the</span> <span class="n">entry</span> <span class="ow">and</span> <span class="n">fails</span> <span class="n">it</span> <span class="k">with</span> <span class="c1">#EDHOC_ERROR_NOT_SUPPORTED.</span>
+  <span class="o">-</span> <span class="n">Every</span> <span class="n">long</span><span class="o">-</span><span class="n">lived</span> <span class="n">secret</span> <span class="ow">is</span> <span class="n">an</span> <span class="n">opaque</span> <span class="n">handle</span> <span class="n">into</span> <span class="n">the</span> <span class="n">backend</span> <span class="n">key</span>
+    <span class="n">store</span> <span class="p">(</span><span class="n">a</span> <span class="n">software</span> <span class="n">PSA</span> <span class="n">slot</span><span class="p">,</span> <span class="n">the</span> <span class="n">TrustZone</span> <span class="n">secure</span> <span class="n">world</span> <span class="ow">or</span> <span class="n">a</span> <span class="n">secure</span>
+    <span class="n">element</span><span class="p">);</span> <span class="n">it</span> <span class="ow">is</span> <span class="n">never</span> <span class="n">serialized</span> <span class="n">into</span> \<span class="n">ref</span> <span class="n">edhoc_context</span> <span class="ow">or</span> <span class="n">onto</span>
+    <span class="n">the</span> <span class="n">stack</span><span class="o">.</span>
+  <span class="o">-</span> <span class="n">Peer</span> <span class="n">public</span> <span class="n">keys</span> <span class="n">enter</span> <span class="k">as</span> <span class="n">raw</span> <span class="nb">bytes</span><span class="p">;</span> <span class="n">one</span><span class="o">-</span><span class="n">shot</span> <span class="n">public</span> <span class="n">outputs</span>
+    <span class="p">(</span><span class="n">keystreams</span><span class="p">,</span> <span class="n">IVs</span><span class="p">,</span> <span class="n">MACs</span><span class="p">)</span> <span class="n">leave</span> <span class="k">as</span> <span class="n">raw</span> <span class="nb">bytes</span><span class="o">.</span>
+  <span class="o">-</span> <span class="n">The</span> <span class="n">ephemeral</span> <span class="n">key</span> <span class="n">exchange</span> <span class="ow">is</span> <span class="n">modelled</span> <span class="k">as</span> <span class="n">a</span> <span class="n">KEM</span><span class="p">;</span> <span class="n">a</span> <span class="n">classical</span>
+    <span class="n">Diffie</span><span class="o">-</span><span class="n">Hellman</span> <span class="n">suite</span> <span class="n">implements</span> <span class="n">it</span> <span class="k">as</span> <span class="n">a</span> <span class="n">thin</span> <span class="n">NIKE</span><span class="o">-</span><span class="k">as</span><span class="o">-</span><span class="n">KEM</span> <span class="n">shim</span>
+    <span class="p">(</span>\<span class="n">c</span> <span class="n">G_X</span> <span class="n">carries</span> <span class="n">the</span> <span class="n">encapsulation</span> <span class="n">key</span><span class="p">,</span> \<span class="n">c</span> <span class="n">G_Y</span> <span class="n">the</span> <span class="n">ciphertext</span><span class="p">),</span> <span class="n">so</span>
+    <span class="n">ML</span><span class="o">-</span><span class="n">KEM</span> <span class="n">drops</span> <span class="ow">in</span> <span class="n">behind</span> <span class="n">the</span> <span class="n">same</span> <span class="n">interface</span> <span class="k">with</span> <span class="n">the</span> <span class="n">wire</span> <span class="n">unchanged</span><span class="o">.</span>
+</pre></div>
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto11destroy_keyE">
+<span id="_CPPv3N12edhoc_crypto11destroy_keyE"></span><span id="_CPPv2N12edhoc_crypto11destroy_keyE"></span><span class="target" id="structedhoc__crypto_1a6cc3bbb47061cad44600f251ba058855"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">destroy_key</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">key_id</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto11destroy_keyE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Destroy a key handle and free its key-store slot. </p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Destroying</span> <span class="n">a</span> <span class="n">zeroed</span> <span class="o">/</span> <span class="n">no</span><span class="o">-</span><span class="n">key</span> <span class="n">handle</span> <span class="ow">is</span> <span class="n">a</span> <span class="n">successful</span> <span class="n">no</span><span class="o">-</span><span class="n">op</span><span class="p">,</span> <span class="n">so</span>
+  \<span class="n">ref</span> <span class="n">edhoc_context_deinit</span> <span class="n">may</span> <span class="n">re</span><span class="o">-</span><span class="n">destroy</span> <span class="n">already</span><span class="o">-</span><span class="n">freed</span> <span class="n">slots</span><span class="o">.</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[inout]</strong> Key identifier to destroy.</p>
+</dd>
+<dt class="field-odd">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success. </p>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto17generate_key_pairE">
+<span id="_CPPv3N12edhoc_crypto17generate_key_pairE"></span><span id="_CPPv2N12edhoc_crypto17generate_key_pairE"></span><span class="target" id="structedhoc__crypto_1a83e281c0d75aaa7e6b802a55820b97e5"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">generate_key_pair</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">decapsulation_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">encapsulation_key</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">encapsulation_key_size</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">encapsulation_key_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto17generate_key_pairE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Generate an ephemeral key pair (Initiator, message_1). </p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">The</span> <span class="n">decapsulation</span> <span class="p">(</span><span class="n">private</span><span class="p">)</span> <span class="n">key</span> <span class="n">stays</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">key</span> <span class="n">store</span> <span class="k">as</span> <span class="n">a</span>
+  <span class="n">handle</span><span class="p">;</span> <span class="n">only</span> <span class="n">the</span> <span class="n">encapsulation</span> <span class="p">(</span><span class="n">public</span><span class="p">)</span> <span class="n">key</span> <span class="n">leaves</span><span class="p">,</span> <span class="n">to</span> <span class="n">be</span> <span class="n">sent</span>
+  <span class="ow">in</span> \<span class="n">c</span> <span class="n">G_X</span><span class="o">.</span> <span class="n">The</span> <span class="n">handle</span> <span class="ow">is</span> <span class="n">retained</span> <span class="k">for</span> \<span class="n">ref</span> <span class="n">decapsulate</span> <span class="ow">and</span><span class="p">,</span> <span class="n">on</span> <span class="n">a</span>
+  <span class="n">NIKE</span> <span class="n">suite</span><span class="p">,</span> <span class="k">for</span> <span class="n">the</span> <span class="n">static</span><span class="o">-</span><span class="n">DH</span> \<span class="n">c</span> <span class="n">G_RX</span> <span class="n">agreement</span> <span class="ow">in</span> <span class="n">message_2</span>
+  <span class="p">(</span><span class="n">methods</span> <span class="mi">1</span> <span class="ow">and</span> <span class="mi">3</span><span class="p">)</span><span class="o">.</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param decapsulation_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[out]</strong> Handle of the generated private key. </p>
+</dd>
+<dt class="field-odd">Param encapsulation_key<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Public key, sent in <code class="docutils literal notranslate"><span class="pre">G_X</span></code>. </p>
+</dd>
+<dt class="field-even">Param encapsulation_key_size<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">encapsulation_key</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param encapsulation_key_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> On success, the number of bytes that make up the encapsulation key.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto11encapsulateE">
+<span id="_CPPv3N12edhoc_crypto11encapsulateE"></span><span id="_CPPv2N12edhoc_crypto11encapsulateE"></span><span class="target" id="structedhoc__crypto_1a44b470c854767303c58f21fa9afad3d2"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">encapsulate</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">encapsulation_key</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">encapsulation_key_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">decapsulation_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">shared_secret_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ciphertext</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ciphertext_size</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ciphertext_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto11encapsulateE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Encapsulate to a peer’s ephemeral public key (Responder, message_2). </p>
+<p><ul class="simple">
+<li><p>KEM suite: encapsulate against <code class="docutils literal notranslate"><span class="pre">encapsulation_key</span></code> (<code class="docutils literal notranslate"><span class="pre">G_X</span></code>), yielding the shared-secret handle and the <code class="docutils literal notranslate"><span class="pre">ciphertext</span></code> (<code class="docutils literal notranslate"><span class="pre">G_Y</span></code>).</p></li>
+<li><p>NIKE (classical Diffie-Hellman) suite: the backend generates its own ephemeral key pair, runs the key agreement against <code class="docutils literal notranslate"><span class="pre">encapsulation_key</span></code>, and returns its own ephemeral public key as the <code class="docutils literal notranslate"><span class="pre">ciphertext</span></code> (<code class="docutils literal notranslate"><span class="pre">G_Y</span></code>).</p></li>
+</ul>
+</p>
+<p><code class="docutils literal notranslate"><span class="pre">decapsulation_key_id</span></code> returns the Responder’s ephemeral private key so it can be reused for the static-DH <code class="docutils literal notranslate"><span class="pre">G_IY</span></code> agreement in message_3 (methods 2 and 3); a KEM without static-DH support leaves it a null handle.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param encapsulation_key<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Peer public key from <code class="docutils literal notranslate"><span class="pre">G_X</span></code>. </p>
+</dd>
+<dt class="field-odd">Param encapsulation_key_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Size of the <code class="docutils literal notranslate"><span class="pre">encapsulation_key</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-even">Param decapsulation_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[out]</strong> Handle of the retained ephemeral private key. A KEM without static-DH support leaves it a null handle. </p>
+</dd>
+<dt class="field-odd">Param shared_secret_key_id<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Handle of the shared secret (<code class="docutils literal notranslate"><span class="pre">G_XY</span></code>). </p>
+</dd>
+<dt class="field-even">Param ciphertext<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[out]</strong> KEM ciphertext, sent in <code class="docutils literal notranslate"><span class="pre">G_Y</span></code>. </p>
+</dd>
+<dt class="field-odd">Param ciphertext_size<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Size of the <code class="docutils literal notranslate"><span class="pre">ciphertext</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-even">Param ciphertext_length<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[out]</strong> On success, the number of bytes that make up the ciphertext.</p>
+</dd>
+<dt class="field-odd">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success. </p>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto11decapsulateE">
+<span id="_CPPv3N12edhoc_crypto11decapsulateE"></span><span id="_CPPv2N12edhoc_crypto11decapsulateE"></span><span class="target" id="structedhoc__crypto_1a339bd3171de5bc29615b476836b6179f"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">decapsulate</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">decapsulation_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ciphertext</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ciphertext_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">shared_secret_key_id</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto11decapsulateE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Decapsulate a ciphertext (Initiator, after message_2). </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param decapsulation_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Handle of the private key from <a class="reference internal" href="#structedhoc__crypto_1a83e281c0d75aaa7e6b802a55820b97e5"><span class="std std-ref">generate_key_pair</span></a>. </p>
+</dd>
+<dt class="field-odd">Param ciphertext<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> KEM ciphertext from <code class="docutils literal notranslate"><span class="pre">G_Y</span></code>. </p>
+</dd>
+<dt class="field-even">Param ciphertext_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">ciphertext</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param shared_secret_key_id<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Handle of the shared secret (<code class="docutils literal notranslate"><span class="pre">G_XY</span></code>).</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto13key_agreementE">
+<span id="_CPPv3N12edhoc_crypto13key_agreementE"></span><span id="_CPPv2N12edhoc_crypto13key_agreementE"></span><span class="target" id="structedhoc__crypto_1a290119a36b58411a8d56d9911f37f4b1"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">key_agreement</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">private_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">peer_public_key</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">peer_public_key_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">shared_secret_key_id</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto13key_agreementE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Compute a static Diffie-Hellman shared secret (methods 1/2/3). </p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">Used</span> <span class="n">only</span> <span class="k">for</span> <span class="n">static</span><span class="o">-</span><span class="n">DH</span> <span class="n">authentication</span><span class="p">:</span> \<span class="n">c</span> <span class="n">G_RX</span> <span class="ow">in</span> <span class="n">message_2</span> <span class="ow">and</span>
+  \<span class="n">c</span> <span class="n">G_IY</span> <span class="ow">in</span> <span class="n">message_3</span><span class="o">.</span> <span class="n">Each</span> <span class="n">agreement</span> <span class="n">pairs</span> <span class="n">one</span> <span class="n">party</span><span class="s1">'s static</span>
+  <span class="n">authentication</span> <span class="n">key</span> <span class="k">with</span> <span class="n">the</span> <span class="n">other</span><span class="s1">'s ephemeral key, so which of</span>
+  <span class="n">the</span> <span class="n">two</span> <span class="n">arguments</span> <span class="ow">is</span> <span class="n">the</span> <span class="n">static</span> <span class="n">one</span> <span class="n">depends</span> <span class="n">on</span> <span class="n">the</span> <span class="n">local</span> <span class="n">role</span><span class="o">.</span>
+  <span class="n">A</span> <span class="n">suite</span> <span class="n">without</span> <span class="n">static</span><span class="o">-</span><span class="n">DH</span> <span class="n">support</span> <span class="n">fails</span> <span class="k">with</span>
+  <span class="c1">#EDHOC_ERROR_NOT_SUPPORTED.</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param private_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Handle of the local private key, static or ephemeral. </p>
+</dd>
+<dt class="field-odd">Param peer_public_key<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Peer public key (raw bytes), ephemeral or static. </p>
+</dd>
+<dt class="field-even">Param peer_public_key_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">peer_public_key</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param shared_secret_key_id<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Handle of the shared secret.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto4signE">
+<span id="_CPPv3N12edhoc_crypto4signE"></span><span id="_CPPv2N12edhoc_crypto4signE"></span><span class="target" id="structedhoc__crypto_1aa24414be572a598fd444790e37c27e94"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">sign</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">private_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">input_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">signature</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">signature_size</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">signature_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto4signE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Generate a digital signature. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param private_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Handle of the signing key. </p>
+</dd>
+<dt class="field-odd">Param input<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Full message to sign (not a digest). </p>
+</dd>
+<dt class="field-even">Param input_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">input</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param signature<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Buffer where the signature is to be written. </p>
+</dd>
+<dt class="field-even">Param signature_size<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">signature</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param signature_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> On success, the number of bytes that make up the signature.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto6verifyE">
+<span id="_CPPv3N12edhoc_crypto6verifyE"></span><span id="_CPPv2N12edhoc_crypto6verifyE"></span><span class="target" id="structedhoc__crypto_1ad4efd871d54f45246cc93d7557fb7049"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">verify</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">public_key</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">public_key_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">input_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">signature</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">signature_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto6verifyE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Verify a digital signature against a raw peer public key. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param public_key<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Peer public key (raw bytes). </p>
+</dd>
+<dt class="field-odd">Param public_key_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Size of the <code class="docutils literal notranslate"><span class="pre">public_key</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-even">Param input<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Full signed message (not a digest). </p>
+</dd>
+<dt class="field-odd">Param input_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Size of the <code class="docutils literal notranslate"><span class="pre">input</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-even">Param signature<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Buffer containing the signature to verify. </p>
+</dd>
+<dt class="field-odd">Param signature_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Size of the <code class="docutils literal notranslate"><span class="pre">signature</span></code> buffer in bytes.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto7extractE">
+<span id="_CPPv3N12edhoc_crypto7extractE"></span><span id="_CPPv2N12edhoc_crypto7extractE"></span><span class="target" id="structedhoc__crypto_1a241898a0fd3cbb637cd3d5c5ae3e2ab7"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">extract</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ikm_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">salt</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">salt_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">prk_key_id</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto7extractE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC_Extract: derive a pseudorandom key handle from a salt. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param ikm_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Input keying material handle. </p>
+</dd>
+<dt class="field-odd">Param salt<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Raw salt. </p>
+</dd>
+<dt class="field-even">Param salt_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">salt</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param prk_key_id<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Output pseudorandom key handle.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto6expandE">
+<span id="_CPPv3N12edhoc_crypto6expandE"></span><span id="_CPPv2N12edhoc_crypto6expandE"></span><span class="target" id="structedhoc__crypto_1ae4fd6c264e73baf705201d6883f090a4"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">expand</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">prk_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">info</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">info_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv415edhoc_key_usage" title="edhoc_key_usage"><span class="n"><span class="pre">edhoc_key_usage</span></span></a><span class="w"> </span><span class="n"><span class="pre">usage</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">output_key_id</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto6expandE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC_Expand producing a key handle (handle space). </p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">The</span> \<span class="n">p</span> <span class="n">usage</span> <span class="n">selects</span> <span class="n">the</span> <span class="n">policy</span> <span class="n">of</span> <span class="n">the</span> <span class="n">created</span> <span class="n">key</span><span class="p">,</span> <span class="n">since</span> <span class="n">a</span>
+  <span class="n">PSA</span> <span class="o">/</span> <span class="n">secure</span><span class="o">-</span><span class="n">element</span> <span class="n">key</span> <span class="n">must</span> <span class="n">receive</span> <span class="n">its</span> <span class="n">policy</span> <span class="n">at</span> <span class="n">creation</span><span class="o">.</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param prk_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Pseudorandom key handle. </p>
+</dd>
+<dt class="field-odd">Param info<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> CBOR-encoded info. </p>
+</dd>
+<dt class="field-even">Param info_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">info</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param usage<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Policy of the produced key. </p>
+</dd>
+<dt class="field-even">Param output_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[out]</strong> Output key handle.</p>
+</dd>
+<dt class="field-odd">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success. </p>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto10expand_rawE">
+<span id="_CPPv3N12edhoc_crypto10expand_rawE"></span><span id="_CPPv2N12edhoc_crypto10expand_rawE"></span><span class="target" id="structedhoc__crypto_1a60cb987a10b18f91893335d22facdb1a"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">expand_raw</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">prk_key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">info</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">info_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">output</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">output_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto10expand_rawE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>EDHOC_Expand producing raw output (keystream, IV, MAC, exporter). </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param prk_key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Pseudorandom key handle. </p>
+</dd>
+<dt class="field-odd">Param info<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> CBOR-encoded info. </p>
+</dd>
+<dt class="field-even">Param info_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">info</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param output<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Raw output keying material. </p>
+</dd>
+<dt class="field-even">Param output_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Requested output length in bytes.</p>
+</dd>
+<dt class="field-odd">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success. </p>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto12aead_encryptE">
+<span id="_CPPv3N12edhoc_crypto12aead_encryptE"></span><span id="_CPPv2N12edhoc_crypto12aead_encryptE"></span><span class="target" id="structedhoc__crypto_1abaee364ee160c9299a337365587c37c2"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">aead_encrypt</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">nonce</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">nonce_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">additional_data</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">additional_data_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">plaintext</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">plaintext_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ciphertext</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ciphertext_size</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ciphertext_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto12aead_encryptE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Encrypt with an AEAD. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> AEAD key handle. </p>
+</dd>
+<dt class="field-odd">Param nonce<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Nonce or IV to use. </p>
+</dd>
+<dt class="field-even">Param nonce_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">nonce</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param additional_data<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Additional data that will be authenticated but not encrypted. </p>
+</dd>
+<dt class="field-even">Param additional_data_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">additional_data</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param plaintext<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Data that will be authenticated and encrypted. </p>
+</dd>
+<dt class="field-even">Param plaintext_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">plaintext</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param ciphertext<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Buffer where the authenticated and encrypted data is to be written. </p>
+</dd>
+<dt class="field-even">Param ciphertext_size<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">ciphertext</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param ciphertext_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> On success, the number of bytes that make up the ciphertext.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto12aead_decryptE">
+<span id="_CPPv3N12edhoc_crypto12aead_decryptE"></span><span id="_CPPv2N12edhoc_crypto12aead_decryptE"></span><span class="target" id="structedhoc__crypto_1ad4d437d546557ca5164f68e222bf50bd"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">aead_decrypt</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">key_id</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">nonce</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">nonce_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">additional_data</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">additional_data_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">ciphertext</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">ciphertext_length</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">plaintext</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">plaintext_size</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">plaintext_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto12aead_decryptE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Decrypt with an AEAD. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param key_id<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> AEAD key handle. </p>
+</dd>
+<dt class="field-odd">Param nonce<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Nonce or IV to use. </p>
+</dd>
+<dt class="field-even">Param nonce_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">nonce</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param additional_data<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Additional data that will be authenticated but not encrypted. </p>
+</dd>
+<dt class="field-even">Param additional_data_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">additional_data</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param ciphertext<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Buffer containing the authenticated and encrypted data. </p>
+</dd>
+<dt class="field-even">Param ciphertext_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">ciphertext</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param plaintext<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Buffer where the decrypted data is to be written. </p>
+</dd>
+<dt class="field-even">Param plaintext_size<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">plaintext</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param plaintext_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> On success, the number of bytes that make up the plaintext.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto9hash_initE">
+<span id="_CPPv3N12edhoc_crypto9hash_initE"></span><span id="_CPPv2N12edhoc_crypto9hash_initE"></span><span class="target" id="structedhoc__crypto_1a5a79eb84ef60b4bc3ea0b0b2becc289e"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">hash_init</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto9hash_initE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Begin a multipart hash operation. </p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">The</span> <span class="n">operation</span> <span class="nb">object</span> <span class="ow">is</span> <span class="n">owned</span> <span class="n">by</span> <span class="n">the</span> <span class="n">backend</span> <span class="ow">and</span> <span class="n">released</span> <span class="n">by</span>
+  \<span class="n">ref</span> <span class="n">hash_finish</span> <span class="ow">or</span> \<span class="n">ref</span> <span class="n">hash_abort</span><span class="o">.</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param operation<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[out]</strong> On success, backend hash operation.</p>
+</dd>
+<dt class="field-odd">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success. </p>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto11hash_updateE">
+<span id="_CPPv3N12edhoc_crypto11hash_updateE"></span><span id="_CPPv2N12edhoc_crypto11hash_updateE"></span><span class="target" id="structedhoc__crypto_1a64ad971f294493f0c7912691f414d3af"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">hash_update</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">input</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">input_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto11hash_updateE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Add input to a multipart hash operation. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param operation<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Backend hash operation. </p>
+</dd>
+<dt class="field-odd">Param input<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> Input message chunk to hash. </p>
+</dd>
+<dt class="field-even">Param input_length<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">input</span></code> buffer in bytes.</p>
+</dd>
+<dt class="field-odd">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success. </p>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto11hash_finishE">
+<span id="_CPPv3N12edhoc_crypto11hash_finishE"></span><span id="_CPPv2N12edhoc_crypto11hash_finishE"></span><span class="target" id="structedhoc__crypto_1a84e209c9d8ff946774ddfcee81623380"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">hash_finish</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">hash</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n"><span class="pre">hash_size</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">hash_length</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto11hash_finishE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Finish a multipart hash operation and release it. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param operation<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Backend hash operation. </p>
+</dd>
+<dt class="field-odd">Param hash<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> Buffer where the hash is to be written. </p>
+</dd>
+<dt class="field-even">Param hash_size<span class="colon">:</span></dt>
+<dd class="field-even"><p>Size of the <code class="docutils literal notranslate"><span class="pre">hash</span></code> buffer in bytes. </p>
+</dd>
+<dt class="field-odd">Param hash_length<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[out]</strong> On success, the number of bytes that make up the hash.</p>
+</dd>
+<dt class="field-even">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-even"><p>Success. </p>
+</dd>
+<dt class="field-odd">Return<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N12edhoc_crypto10hash_abortE">
+<span id="_CPPv3N12edhoc_crypto10hash_abortE"></span><span id="_CPPv2N12edhoc_crypto10hash_abortE"></span><span class="target" id="structedhoc__crypto_1acc729958a95b1689b853fe544087e917"></span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="p"><span class="pre">(</span></span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="n"><span class="pre">hash_abort</span></span></span><span class="p"><span class="pre">)</span></span><span class="p"><span class="pre">(</span></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">user_context</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N12edhoc_crypto10hash_abortE" title="Link to this definition">¶</a><br /></dt>
+<dd><p>Abort a multipart hash operation and release it. </p>
+<dl class="field-list simple">
+<dt class="field-odd">Param user_context<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>[in]</strong> User context. </p>
+</dd>
+<dt class="field-even">Param operation<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>[in]</strong> Backend hash operation.</p>
+</dd>
+<dt class="field-odd">Retval EDHOC_SUCCESS<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Success. </p>
+</dd>
+<dt class="field-even">Return<span class="colon">:</span></dt>
+<dd class="field-even"><p>Negative error code on failure (<a class="reference internal" href="errors.html#group__edhoc-error-codes"><span class="std std-ref">EDHOC error codes</span></a>). </p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="credentials.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Authentication Credentials</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="messages.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">EDHOC Messages</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Kamil Kielbasa
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Cryptographic Interface</a><ul>
+<li><a class="reference internal" href="#key-usage">Key usage</a><ul>
+<li><a class="reference internal" href="#_CPPv415edhoc_key_usage"><code class="docutils literal notranslate"><span class="pre">edhoc_key_usage</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N15edhoc_key_usage19EDHOC_KEY_USAGE_KDFE"><code class="docutils literal notranslate"><span class="pre">EDHOC_KEY_USAGE_KDF</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N15edhoc_key_usage20EDHOC_KEY_USAGE_AEADE"><code class="docutils literal notranslate"><span class="pre">EDHOC_KEY_USAGE_AEAD</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#operations">Operations</a><ul>
+<li><a class="reference internal" href="#_CPPv412edhoc_crypto"><code class="docutils literal notranslate"><span class="pre">edhoc_crypto</span></code></a><ul>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto11destroy_keyE"><code class="docutils literal notranslate"><span class="pre">destroy_key</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto17generate_key_pairE"><code class="docutils literal notranslate"><span class="pre">generate_key_pair</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto11encapsulateE"><code class="docutils literal notranslate"><span class="pre">encapsulate</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto11decapsulateE"><code class="docutils literal notranslate"><span class="pre">decapsulate</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto13key_agreementE"><code class="docutils literal notranslate"><span class="pre">key_agreement</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto4signE"><code class="docutils literal notranslate"><span class="pre">sign</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto6verifyE"><code class="docutils literal notranslate"><span class="pre">verify</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto7extractE"><code class="docutils literal notranslate"><span class="pre">extract</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto6expandE"><code class="docutils literal notranslate"><span class="pre">expand</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto10expand_rawE"><code class="docutils literal notranslate"><span class="pre">expand_raw</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto12aead_encryptE"><code class="docutils literal notranslate"><span class="pre">aead_encrypt</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto12aead_decryptE"><code class="docutils literal notranslate"><span class="pre">aead_decrypt</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto9hash_initE"><code class="docutils literal notranslate"><span class="pre">hash_init</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto11hash_updateE"><code class="docutils literal notranslate"><span class="pre">hash_update</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto11hash_finishE"><code class="docutils literal notranslate"><span class="pre">hash_finish</span></code></a></li>
+<li><a class="reference internal" href="#_CPPv4N12edhoc_crypto10hash_abortE"><code class="docutils literal notranslate"><span class="pre">hash_abort</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=5d545b49"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>

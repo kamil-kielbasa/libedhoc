@@ -1,0 +1,1046 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#"><link rel="search" title="Search" href="search.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 --><title>Index - libedhoc v2.3.2</title>
+<link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=19d25e18" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">libedhoc v2.3.2</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <span class="sidebar-brand-text">libedhoc v2.3.2</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting_started/quick_start.html">Quick Start</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="guide/protocol_flow.html">Protocol Flow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/security.html">Security &amp; Key Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/configuration.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="guide/building.html">Building &amp; testing</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="api/index.html">API Reference</a><input aria-label="Toggle navigation of API Reference" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/context.html">EDHOC Context</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/types.html">Protocol Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/messages.html">EDHOC Messages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/crypto.html">Cryptographic Interface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/credentials.html">Authentication Credentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/ead.html">External Authorization Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/platform.html">Platform Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exporters.html">Exporters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/errors.html">EDHOC Error Codes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/cipher_suites.html">Cipher Suites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/coap.html">CoAP Integration</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Resources</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="reference/glossary.html">Glossary</a></li>
+<li class="toctree-l1"><a class="reference internal" href="reference/links.html">Links</a></li>
+<li class="toctree-l1"><a class="reference internal" href="project/changelog.html">Changelog</a></li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          
+<section class="genindex-section">
+  <h1 id="index">Index</h1>
+  <div class="genindex-jumpbox"><a href="#A"><strong>A</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#F"><strong>F</strong></a> | <a href="#H"><strong>H</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#K"><strong>K</strong></a> | <a href="#L"><strong>L</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#V"><strong>V</strong></a> | <a href="#X"><strong>X</strong></a> | <a href="#Z"><strong>Z</strong></a></div>
+</section>
+<section id="A" class="genindex-section">
+  <h2>A</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-AEAD"><strong>AEAD</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-authentication-method"><strong>authentication method</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="C" class="genindex-section">
+  <h2>C</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-CBOR"><strong>CBOR</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-CBOR-sequence"><strong>CBOR sequence</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-cipher-suite"><strong>cipher suite</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-CoAP"><strong>CoAP</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-connection-identifier"><strong>connection identifier</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-context"><strong>context</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-COSE"><strong>COSE</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-CRED_I"><strong>CRED_I</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-CRED_R"><strong>CRED_R</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-CRL"><strong>CRL</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="D" class="genindex-section">
+  <h2>D</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-DHKEM"><strong>DHKEM</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="E" class="genindex-section">
+  <h2>E</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-EAD"><strong>EAD</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-ECDH"><strong>ECDH</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-EdDSA"><strong>EdDSA</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-EDHOC"><strong>EDHOC</strong></a>
+</li>
+        <li><a href="api/context.html#c.EDHOC_API_VERSION_MAJOR">EDHOC_API_VERSION_MAJOR (C macro)</a>
+</li>
+        <li><a href="api/context.html#c.EDHOC_API_VERSION_MINOR">EDHOC_API_VERSION_MINOR (C macro)</a>
+</li>
+        <li><a href="api/context.html#c.EDHOC_API_VERSION_PATCH">EDHOC_API_VERSION_PATCH (C macro)</a>
+</li>
+        <li><a href="api/context.html#_CPPv422edhoc_bind_credentialsP13edhoc_contextPK17edhoc_credentials">edhoc_bind_credentials (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv417edhoc_bind_cryptoP13edhoc_contextPK12edhoc_crypto">edhoc_bind_crypto (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv414edhoc_bind_eadP13edhoc_contextPK9edhoc_ead">edhoc_bind_ead (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv419edhoc_bind_platformP13edhoc_contextPK14edhoc_platform">edhoc_bind_platform (C++ function)</a>
+</li>
+        <li><a href="api/types.html#_CPPv412edhoc_buffer">edhoc_buffer (C++ struct)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N12edhoc_buffer6lengthE">edhoc_buffer::length (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N12edhoc_buffer5valueE">edhoc_buffer::value (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv418edhoc_call_context">edhoc_call_context (C++ struct)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N18edhoc_call_context7messageE">edhoc_call_context::message (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N18edhoc_call_context6methodE">edhoc_call_context::method (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N18edhoc_call_context4roleE">edhoc_call_context::role (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N18edhoc_call_context21selected_cipher_suiteE">edhoc_call_context::selected_cipher_suite (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv424edhoc_cbor_int_or_string">edhoc_cbor_int_or_string (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N24edhoc_cbor_int_or_string11encode_typeE">edhoc_cbor_int_or_string::encode_type (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N24edhoc_cbor_int_or_string7integerE">edhoc_cbor_int_or_string::integer (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N24edhoc_cbor_int_or_string6stringE">edhoc_cbor_int_or_string::string (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv418edhoc_cipher_suite">edhoc_cipher_suite (C++ struct)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite14aead_iv_lengthE">edhoc_cipher_suite::aead_iv_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite15aead_key_lengthE">edhoc_cipher_suite::aead_key_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite15aead_tag_lengthE">edhoc_cipher_suite::aead_tag_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite11hash_lengthE">edhoc_cipher_suite::hash_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite21kem_ciphertext_lengthE">edhoc_cipher_suite::kem_ciphertext_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite28kem_encapsulation_key_lengthE">edhoc_cipher_suite::kem_encapsulation_key_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite10mac_lengthE">edhoc_cipher_suite::mac_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite15nike_key_lengthE">edhoc_cipher_suite::nike_key_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite11sign_lengthE">edhoc_cipher_suite::sign_length (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite16supports_dh_nikeE">edhoc_cipher_suite::supports_dh_nike (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N18edhoc_cipher_suite5valueE">edhoc_cipher_suite::value (C++ member)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv429edhoc_cipher_suite_get_crypto21edhoc_cipher_suite_id">edhoc_cipher_suite_get_crypto (C++ function)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv429edhoc_cipher_suite_get_params21edhoc_cipher_suite_id">edhoc_cipher_suite_get_params (C++ function)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv421edhoc_cipher_suite_id">edhoc_cipher_suite_id (C++ enum)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N21edhoc_cipher_suite_id20EDHOC_CIPHER_SUITE_0E">edhoc_cipher_suite_id::EDHOC_CIPHER_SUITE_0 (C++ enumerator)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N21edhoc_cipher_suite_id20EDHOC_CIPHER_SUITE_2E">edhoc_cipher_suite_id::EDHOC_CIPHER_SUITE_2 (C++ enumerator)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N21edhoc_cipher_suite_id21EDHOC_CIPHER_SUITE_24E">edhoc_cipher_suite_id::EDHOC_CIPHER_SUITE_24 (C++ enumerator)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N21edhoc_cipher_suite_id20EDHOC_CIPHER_SUITE_4E">edhoc_cipher_suite_id::EDHOC_CIPHER_SUITE_4 (C++ enumerator)</a>
+</li>
+        <li><a href="api/cipher_suites.html#_CPPv4N21edhoc_cipher_suite_id24EDHOC_CIPHER_SUITE_PQC_1E">edhoc_cipher_suite_id::EDHOC_CIPHER_SUITE_PQC_1 (C++ enumerator)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv430edhoc_coap_connection_id_equalPK12edhoc_bufferPK12edhoc_buffer">edhoc_coap_connection_id_equal (C++ function)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv432edhoc_coap_extract_connection_idP27edhoc_coap_extracted_fields">edhoc_coap_extract_connection_id (C++ function)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv428edhoc_coap_extract_flow_infoP27edhoc_coap_extracted_fields">edhoc_coap_extract_flow_info (C++ function)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv427edhoc_coap_extracted_fields">edhoc_coap_extracted_fields (C++ struct)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_extracted_fields6bufferE">edhoc_coap_extracted_fields::buffer (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_extracted_fields13connection_idE">edhoc_coap_extracted_fields::connection_id (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_extracted_fields8consumedE">edhoc_coap_extracted_fields::consumed (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_extracted_fields15is_forward_flowE">edhoc_coap_extracted_fields::is_forward_flow (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_extracted_fields15is_reverse_flowE">edhoc_coap_extracted_fields::is_reverse_flow (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_extracted_fields6lengthE">edhoc_coap_extracted_fields::length (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv432edhoc_coap_prepend_connection_idP27edhoc_coap_prepended_fieldsPK12edhoc_buffer">edhoc_coap_prepend_connection_id (C++ function)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv423edhoc_coap_prepend_flowP27edhoc_coap_prepended_fields">edhoc_coap_prepend_flow (C++ function)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv427edhoc_coap_prepended_fields">edhoc_coap_prepended_fields (C++ struct)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_prepended_fields6bufferE">edhoc_coap_prepended_fields::buffer (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_prepended_fields8capacityE">edhoc_coap_prepended_fields::capacity (C++ member)</a>
+</li>
+        <li><a href="api/coap.html#_CPPv4N27edhoc_coap_prepended_fields6lengthE">edhoc_coap_prepended_fields::length (C++ member)</a>
+</li>
+        <li><a href="api/context.html#_CPPv420edhoc_context_deinitP13edhoc_context">edhoc_context_deinit (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv418edhoc_context_initP13edhoc_context">edhoc_context_init (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv418edhoc_context_sizev">edhoc_context_size (C++ function)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv417edhoc_cose_header">edhoc_cose_header (C++ enum)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_cose_header21EDHOC_COSE_HEADER_KIDE">edhoc_cose_header::EDHOC_COSE_HEADER_KID (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_cose_header22EDHOC_COSE_HEADER_NONEE">edhoc_cose_header::EDHOC_COSE_HEADER_NONE (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_cose_header28EDHOC_COSE_HEADER_X509_CHAINE">edhoc_cose_header::EDHOC_COSE_HEADER_X509_CHAIN (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_cose_header27EDHOC_COSE_HEADER_X509_HASHE">edhoc_cose_header::EDHOC_COSE_HEADER_X509_HASH (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv423edhoc_credential_format">edhoc_credential_format (C++ enum)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N23edhoc_credential_format36EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODEDE">edhoc_credential_format::EDHOC_CREDENTIAL_FORMAT_CBOR_ENCODED (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N23edhoc_credential_format28EDHOC_CREDENTIAL_FORMAT_NONEE">edhoc_credential_format::EDHOC_CREDENTIAL_FORMAT_NONE (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N23edhoc_credential_format27EDHOC_CREDENTIAL_FORMAT_RAWE">edhoc_credential_format::EDHOC_CREDENTIAL_FORMAT_RAW (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv425edhoc_credential_received">edhoc_credential_received (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N25edhoc_credential_received3kidE">edhoc_credential_received::kid (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N25edhoc_credential_received5labelE">edhoc_credential_received::label (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N25edhoc_credential_received10x509_chainE">edhoc_credential_received::x509_chain (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N25edhoc_credential_received9x509_hashE">edhoc_credential_received::x509_hash (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv429edhoc_credential_received_kid">edhoc_credential_received_kid (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N29edhoc_credential_received_kid10identifierE">edhoc_credential_received_kid::identifier (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv436edhoc_credential_received_x509_chain">edhoc_credential_received_x509_chain (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N36edhoc_credential_received_x509_chain11certificateE">edhoc_credential_received_x509_chain::certificate (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N36edhoc_credential_received_x509_chain5countE">edhoc_credential_received_x509_chain::count (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv435edhoc_credential_received_x509_hash">edhoc_credential_received_x509_hash (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N35edhoc_credential_received_x509_hash9algorithmE">edhoc_credential_received_x509_hash::algorithm (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N35edhoc_credential_received_x509_hash11fingerprintE">edhoc_credential_received_x509_hash::fingerprint (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv425edhoc_credential_selected">edhoc_credential_selected (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N25edhoc_credential_selected10asymmetricE">edhoc_credential_selected::asymmetric (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N25edhoc_credential_selected3pskE">edhoc_credential_selected::psk (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv436edhoc_credential_selected_asymmetric">edhoc_credential_selected_asymmetric (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N36edhoc_credential_selected_asymmetric3kidE">edhoc_credential_selected_asymmetric::kid (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N36edhoc_credential_selected_asymmetric5labelE">edhoc_credential_selected_asymmetric::label (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N36edhoc_credential_selected_asymmetric14private_key_idE">edhoc_credential_selected_asymmetric::private_key_id (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N36edhoc_credential_selected_asymmetric10x509_chainE">edhoc_credential_selected_asymmetric::x509_chain (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N36edhoc_credential_selected_asymmetric9x509_hashE">edhoc_credential_selected_asymmetric::x509_hash (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv440edhoc_credential_selected_asymmetric_kid">edhoc_credential_selected_asymmetric_kid (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N40edhoc_credential_selected_asymmetric_kid10credentialE">edhoc_credential_selected_asymmetric_kid::credential (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N40edhoc_credential_selected_asymmetric_kid6formatE">edhoc_credential_selected_asymmetric_kid::format (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N40edhoc_credential_selected_asymmetric_kid10identifierE">edhoc_credential_selected_asymmetric_kid::identifier (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv447edhoc_credential_selected_asymmetric_x509_chain">edhoc_credential_selected_asymmetric_x509_chain (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N47edhoc_credential_selected_asymmetric_x509_chain11certificateE">edhoc_credential_selected_asymmetric_x509_chain::certificate (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N47edhoc_credential_selected_asymmetric_x509_chain5countE">edhoc_credential_selected_asymmetric_x509_chain::count (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv446edhoc_credential_selected_asymmetric_x509_hash">edhoc_credential_selected_asymmetric_x509_hash (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N46edhoc_credential_selected_asymmetric_x509_hash9algorithmE">edhoc_credential_selected_asymmetric_x509_hash::algorithm (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N46edhoc_credential_selected_asymmetric_x509_hash11certificateE">edhoc_credential_selected_asymmetric_x509_hash::certificate (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N46edhoc_credential_selected_asymmetric_x509_hash11fingerprintE">edhoc_credential_selected_asymmetric_x509_hash::fingerprint (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv429edhoc_credential_selected_psk">edhoc_credential_selected_psk (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N29edhoc_credential_selected_psk6cred_iE">edhoc_credential_selected_psk::cred_i (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N29edhoc_credential_selected_psk6cred_rE">edhoc_credential_selected_psk::cred_r (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N29edhoc_credential_selected_psk6formatE">edhoc_credential_selected_psk::format (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N29edhoc_credential_selected_psk3kidE">edhoc_credential_selected_psk::kid (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N29edhoc_credential_selected_psk5labelE">edhoc_credential_selected_psk::label (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N29edhoc_credential_selected_psk10psk_key_idE">edhoc_credential_selected_psk::psk_key_id (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv433edhoc_credential_selected_psk_kid">edhoc_credential_selected_psk_kid (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N33edhoc_credential_selected_psk_kid10identifierE">edhoc_credential_selected_psk_kid::identifier (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv424edhoc_credential_trusted">edhoc_credential_trusted (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N24edhoc_credential_trusted10asymmetricE">edhoc_credential_trusted::asymmetric (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N24edhoc_credential_trusted3pskE">edhoc_credential_trusted::psk (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv435edhoc_credential_trusted_asymmetric">edhoc_credential_trusted_asymmetric (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N35edhoc_credential_trusted_asymmetric10credentialE">edhoc_credential_trusted_asymmetric::credential (C++ member)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/credentials.html#_CPPv4N35edhoc_credential_trusted_asymmetric6formatE">edhoc_credential_trusted_asymmetric::format (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N35edhoc_credential_trusted_asymmetric10public_keyE">edhoc_credential_trusted_asymmetric::public_key (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv428edhoc_credential_trusted_psk">edhoc_credential_trusted_psk (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N28edhoc_credential_trusted_psk6cred_iE">edhoc_credential_trusted_psk::cred_i (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N28edhoc_credential_trusted_psk6cred_rE">edhoc_credential_trusted_psk::cred_r (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N28edhoc_credential_trusted_psk6formatE">edhoc_credential_trusted_psk::format (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N28edhoc_credential_trusted_psk10psk_key_idE">edhoc_credential_trusted_psk::psk_key_id (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv417edhoc_credentials">edhoc_credentials (C++ struct)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_credentials17authenticate_peerE">edhoc_credentials::authenticate_peer (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_credentials12select_localE">edhoc_credentials::select_local (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv412edhoc_crypto">edhoc_crypto (C++ struct)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto12aead_decryptE">edhoc_crypto::aead_decrypt (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto12aead_encryptE">edhoc_crypto::aead_encrypt (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto11decapsulateE">edhoc_crypto::decapsulate (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto11destroy_keyE">edhoc_crypto::destroy_key (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto11encapsulateE">edhoc_crypto::encapsulate (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto6expandE">edhoc_crypto::expand (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto10expand_rawE">edhoc_crypto::expand_raw (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto7extractE">edhoc_crypto::extract (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto17generate_key_pairE">edhoc_crypto::generate_key_pair (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto10hash_abortE">edhoc_crypto::hash_abort (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto11hash_finishE">edhoc_crypto::hash_finish (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto9hash_initE">edhoc_crypto::hash_init (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto11hash_updateE">edhoc_crypto::hash_update (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto13key_agreementE">edhoc_crypto::key_agreement (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto4signE">edhoc_crypto::sign (C++ member)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N12edhoc_crypto6verifyE">edhoc_crypto::verify (C++ member)</a>
+</li>
+        <li><a href="api/ead.html#_CPPv49edhoc_ead">edhoc_ead (C++ struct)</a>
+</li>
+        <li><a href="api/ead.html#_CPPv4N9edhoc_ead7composeE">edhoc_ead::compose (C++ member)</a>
+</li>
+        <li><a href="api/ead.html#_CPPv4N9edhoc_ead7processE">edhoc_ead::process (C++ member)</a>
+</li>
+        <li><a href="api/ead.html#_CPPv415edhoc_ead_token">edhoc_ead_token (C++ struct)</a>
+</li>
+        <li><a href="api/ead.html#_CPPv4N15edhoc_ead_token5labelE">edhoc_ead_token::label (C++ member)</a>
+</li>
+        <li><a href="api/ead.html#_CPPv4N15edhoc_ead_token5valueE">edhoc_ead_token::value (C++ member)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv417edhoc_encode_type">edhoc_encode_type (C++ enum)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_encode_type25EDHOC_ENCODE_TYPE_INTEGERE">edhoc_encode_type::EDHOC_ENCODE_TYPE_INTEGER (C++ enumerator)</a>
+</li>
+        <li><a href="api/credentials.html#_CPPv4N17edhoc_encode_type24EDHOC_ENCODE_TYPE_STRINGE">edhoc_encode_type::EDHOC_ENCODE_TYPE_STRING (C++ enumerator)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_BAD_STATE">EDHOC_ERROR_BAD_STATE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_BUFFER_TOO_SMALL">EDHOC_ERROR_BUFFER_TOO_SMALL (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_CBOR_FAILURE">EDHOC_ERROR_CBOR_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/types.html#_CPPv416edhoc_error_code">edhoc_error_code (C++ enum)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_code24EDHOC_ERROR_CODE_SUCCESSE">edhoc_error_code::EDHOC_ERROR_CODE_SUCCESS (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_code46EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCEDE">edhoc_error_code::EDHOC_ERROR_CODE_UNKNOWN_CREDENTIAL_REFERENCED (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_code34EDHOC_ERROR_CODE_UNSPECIFIED_ERRORE">edhoc_error_code::EDHOC_ERROR_CODE_UNSPECIFIED_ERROR (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_code44EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITEE">edhoc_error_code::EDHOC_ERROR_CODE_WRONG_SELECTED_CIPHER_SUITE (C++ enumerator)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_CREDENTIALS_FAILURE">EDHOC_ERROR_CREDENTIALS_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_CRYPTO_FAILURE">EDHOC_ERROR_CRYPTO_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_EAD_COMPOSE_FAILURE">EDHOC_ERROR_EAD_COMPOSE_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_EAD_PROCESS_FAILURE">EDHOC_ERROR_EAD_PROCESS_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE">EDHOC_ERROR_EPHEMERAL_KEY_EXCHANGE_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_GENERIC_ERROR">EDHOC_ERROR_GENERIC_ERROR (C macro)</a>
+</li>
+        <li><a href="api/errors.html#_CPPv429edhoc_error_get_cipher_suitesPK13edhoc_contextP7int32_t6size_tP6size_tP7int32_t6size_tP6size_t">edhoc_error_get_cipher_suites (C++ function)</a>
+</li>
+        <li><a href="api/errors.html#_CPPv420edhoc_error_get_codePK13edhoc_contextP16edhoc_error_code">edhoc_error_get_code (C++ function)</a>
+</li>
+        <li><a href="api/types.html#_CPPv416edhoc_error_info">edhoc_error_info (C++ struct)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_info13cipher_suitesE">edhoc_error_info::cipher_suites (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_info14entries_lengthE">edhoc_error_info::entries_length (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_info12entries_sizeE">edhoc_error_info::entries_size (C++ member)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N16edhoc_error_info11text_stringE">edhoc_error_info::text_string (C++ member)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_INVALID_ARGUMENT">EDHOC_ERROR_INVALID_ARGUMENT (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_2">EDHOC_ERROR_INVALID_SIGN_OR_MAC_2 (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_INVALID_SIGN_OR_MAC_3">EDHOC_ERROR_INVALID_SIGN_OR_MAC_3 (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_MSG_1_PROCESS_FAILURE">EDHOC_ERROR_MSG_1_PROCESS_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_MSG_2_PROCESS_FAILURE">EDHOC_ERROR_MSG_2_PROCESS_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_MSG_3_PROCESS_FAILURE">EDHOC_ERROR_MSG_3_PROCESS_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_MSG_4_PROCESS_FAILURE">EDHOC_ERROR_MSG_4_PROCESS_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_NOT_ENOUGH_MEMORY">EDHOC_ERROR_NOT_ENOUGH_MEMORY (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_NOT_PERMITTED">EDHOC_ERROR_NOT_PERMITTED (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_NOT_SUPPORTED">EDHOC_ERROR_NOT_SUPPORTED (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE">EDHOC_ERROR_PSEUDORANDOM_KEY_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE">EDHOC_ERROR_TRANSCRIPT_HASH_FAILURE (C macro)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv412edhoc_exportP13edhoc_context6size_tPK7uint8_t6size_t15edhoc_key_usagePv">edhoc_export (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv423edhoc_export_key_updateP13edhoc_contextPK7uint8_t6size_t">edhoc_export_key_update (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv427edhoc_export_oscore_contextP13edhoc_contextPvP7uint8_t6size_tP7uint8_t6size_tP6size_tP7uint8_t6size_tP6size_t">edhoc_export_oscore_context (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv431edhoc_export_oscore_context_rawP13edhoc_contextP7uint8_t6size_tP7uint8_t6size_tP7uint8_t6size_tP6size_tP7uint8_t6size_tP6size_t">edhoc_export_oscore_context_raw (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv416edhoc_export_rawP13edhoc_context6size_tPK7uint8_t6size_tP7uint8_t6size_t">edhoc_export_raw (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv431edhoc_export_resumption_kid_rawP13edhoc_contextP7uint8_t6size_t">edhoc_export_resumption_kid_raw (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv427edhoc_export_resumption_pskP13edhoc_context15edhoc_key_usagePv">edhoc_export_resumption_psk (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#_CPPv431edhoc_export_resumption_psk_rawP13edhoc_contextP7uint8_t6size_t">edhoc_export_resumption_psk_raw (C++ function)</a>
+</li>
+        <li><a href="api/exporters.html#c.EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT">EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SALT (C macro)</a>
+</li>
+        <li><a href="api/exporters.html#c.EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET">EDHOC_EXPORTER_LABEL_OSCORE_MASTER_SECRET (C macro)</a>
+</li>
+        <li><a href="api/exporters.html#c.EDHOC_EXPORTER_LABEL_RESUMPTION_KID">EDHOC_EXPORTER_LABEL_RESUMPTION_KID (C macro)</a>
+</li>
+        <li><a href="api/exporters.html#c.EDHOC_EXPORTER_LABEL_RESUMPTION_PSK">EDHOC_EXPORTER_LABEL_RESUMPTION_PSK (C macro)</a>
+</li>
+        <li><a href="api/exporters.html#c.EDHOC_EXPORTER_RESUMPTION_KID_DEFAULT_LEN">EDHOC_EXPORTER_RESUMPTION_KID_DEFAULT_LEN (C macro)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv415edhoc_key_usage">edhoc_key_usage (C++ enum)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N15edhoc_key_usage20EDHOC_KEY_USAGE_AEADE">edhoc_key_usage::EDHOC_KEY_USAGE_AEAD (C++ enumerator)</a>
+</li>
+        <li><a href="api/crypto.html#_CPPv4N15edhoc_key_usage19EDHOC_KEY_USAGE_KDFE">edhoc_key_usage::EDHOC_KEY_USAGE_KDF (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv413edhoc_message">edhoc_message (C++ enum)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N13edhoc_message15EDHOC_MESSAGE_1E">edhoc_message::EDHOC_MESSAGE_1 (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N13edhoc_message15EDHOC_MESSAGE_2E">edhoc_message::EDHOC_MESSAGE_2 (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N13edhoc_message15EDHOC_MESSAGE_3E">edhoc_message::EDHOC_MESSAGE_3 (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N13edhoc_message15EDHOC_MESSAGE_4E">edhoc_message::EDHOC_MESSAGE_4 (C++ enumerator)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_1_composeP13edhoc_contextP7uint8_t6size_tP6size_t">edhoc_message_1_compose (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_1_processP13edhoc_contextPK7uint8_t6size_t">edhoc_message_1_process (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_2_composeP13edhoc_contextP7uint8_t6size_tP6size_t">edhoc_message_2_compose (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_2_processP13edhoc_contextPK7uint8_t6size_t">edhoc_message_2_process (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_3_composeP13edhoc_contextP7uint8_t6size_tP6size_t">edhoc_message_3_compose (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_3_processP13edhoc_contextPK7uint8_t6size_t">edhoc_message_3_process (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_4_composeP13edhoc_contextP7uint8_t6size_tP6size_t">edhoc_message_4_compose (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv423edhoc_message_4_processP13edhoc_contextPK7uint8_t6size_t">edhoc_message_4_process (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv427edhoc_message_error_composeP13edhoc_contextP7uint8_t6size_tP6size_t16edhoc_error_codePK16edhoc_error_info">edhoc_message_error_compose (C++ function)</a>
+</li>
+        <li><a href="api/messages.html#_CPPv427edhoc_message_error_processP13edhoc_contextPK7uint8_t6size_tP16edhoc_error_codeP16edhoc_error_info">edhoc_message_error_process (C++ function)</a>
+</li>
+        <li><a href="api/types.html#_CPPv412edhoc_method">edhoc_method (C++ enum)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N12edhoc_method14EDHOC_METHOD_0E">edhoc_method::EDHOC_METHOD_0 (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N12edhoc_method14EDHOC_METHOD_1E">edhoc_method::EDHOC_METHOD_1 (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N12edhoc_method14EDHOC_METHOD_2E">edhoc_method::EDHOC_METHOD_2 (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N12edhoc_method14EDHOC_METHOD_3E">edhoc_method::EDHOC_METHOD_3 (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N12edhoc_method14EDHOC_METHOD_4E">edhoc_method::EDHOC_METHOD_4 (C++ enumerator)</a>
+</li>
+        <li><a href="api/platform.html#_CPPv414edhoc_platform">edhoc_platform (C++ struct)</a>
+</li>
+        <li><a href="api/platform.html#_CPPv4N14edhoc_platform7zeroizeE">edhoc_platform::zeroize (C++ member)</a>
+</li>
+        <li><a href="api/exporters.html#c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM">EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MAXIMUM (C macro)</a>
+</li>
+        <li><a href="api/exporters.html#c.EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM">EDHOC_PRK_EXPORTER_PRIVATE_LABEL_MINIMUM (C macro)</a>
+</li>
+        <li><a href="api/types.html#_CPPv410edhoc_role">edhoc_role (C++ enum)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N10edhoc_role20EDHOC_ROLE_INITIATORE">edhoc_role::EDHOC_ROLE_INITIATOR (C++ enumerator)</a>
+</li>
+        <li><a href="api/types.html#_CPPv4N10edhoc_role20EDHOC_ROLE_RESPONDERE">edhoc_role::EDHOC_ROLE_RESPONDER (C++ enumerator)</a>
+</li>
+        <li><a href="api/context.html#_CPPv423edhoc_set_cipher_suitesP13edhoc_contextPK18edhoc_cipher_suite6size_t">edhoc_set_cipher_suites (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv423edhoc_set_connection_idP13edhoc_contextPK12edhoc_buffer">edhoc_set_connection_id (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv417edhoc_set_methodsP13edhoc_contextPK12edhoc_method6size_t">edhoc_set_methods (C++ function)</a>
+</li>
+        <li><a href="api/context.html#_CPPv422edhoc_set_user_contextP13edhoc_contextPv">edhoc_set_user_context (C++ function)</a>
+</li>
+        <li><a href="api/errors.html#c.EDHOC_SUCCESS">EDHOC_SUCCESS (C macro)</a>
+</li>
+        <li><a href="reference/glossary.html#term-ES256"><strong>ES256</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="F" class="genindex-section">
+  <h2>F</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-forward-secrecy"><strong>forward secrecy</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="H" class="genindex-section">
+  <h2>H</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-handle"><strong>handle</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-HKDF"><strong>HKDF</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="I" class="genindex-section">
+  <h2>I</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-ID_CRED_I"><strong>ID_CRED_I</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-ID_CRED_R"><strong>ID_CRED_R</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-identity-protection"><strong>identity protection</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-Initiator"><strong>Initiator</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="K" class="genindex-section">
+  <h2>K</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-KEM"><strong>KEM</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-key-store"><strong>key store</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-kid"><strong>kid</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="L" class="genindex-section">
+  <h2>L</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-LAKE"><strong>LAKE</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="M" class="genindex-section">
+  <h2>M</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-ML-DSA"><strong>ML-DSA</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-ML-KEM"><strong>ML-KEM</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-mutual-authentication"><strong>mutual authentication</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="N" class="genindex-section">
+  <h2>N</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-NIKE"><strong>NIKE</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="O" class="genindex-section">
+  <h2>O</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-OSCORE"><strong>OSCORE</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="P" class="genindex-section">
+  <h2>P</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-PQC"><strong>PQC</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-PRK"><strong>PRK</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-PRK-exporter"><strong>PRK exporter</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-PSA"><strong>PSA</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="R" class="genindex-section">
+  <h2>R</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-Responder"><strong>Responder</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-RFC-9528"><strong>RFC 9528</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-RFC-9529"><strong>RFC 9529</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-RFC-9668"><strong>RFC 9668</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="S" class="genindex-section">
+  <h2>S</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-secure-element"><strong>secure element</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-SHAKE256"><strong>SHAKE256</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-signature-key"><strong>signature key</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-static-DH-key"><strong>static DH key</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="T" class="genindex-section">
+  <h2>T</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-TF-M"><strong>TF-M</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-transcript-hash"><strong>transcript hash</strong></a>
+</li>
+        <li><a href="reference/glossary.html#term-TrustZone"><strong>TrustZone</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="V" class="genindex-section">
+  <h2>V</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-VLA"><strong>VLA</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="X" class="genindex-section">
+  <h2>X</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-x5chain"><strong>x5chain</strong></a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-x5t"><strong>x5t</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="Z" class="genindex-section">
+  <h2>Z</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="reference/glossary.html#term-zeroize"><strong>zeroize</strong></a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
+          
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Kamil Kielbasa
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer no-toc">
+      
+      
+      
+    </aside>
+  </div>
+</div><script src="_static/documentation_options.js?v=5d545b49"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
