@@ -1,3 +1,15 @@
+Version 2.3.2
+-------------
+
+:Date: September 4, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI: the release
+  badge reads GitHub's API through Shields instead of a ``release.json`` served
+  from the documentation site. The site no longer has to be republished for the
+  badge to catch up, so the documentation workflow drops its ``release``
+  trigger and publishes once per merge to ``main`` rather than twice per
+  release.
+
 Version 2.3.1
 -------------
 
