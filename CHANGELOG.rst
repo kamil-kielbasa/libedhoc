@@ -1,3 +1,18 @@
+Version 2.3.1
+-------------
+
+:Date: September 4, 2026
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : CI: the macOS
+  workflow runs in the same fast-fail tiers as the Linux one. The quality
+  checks gate the smoke build, which gates the preset matrix, the sanitizers
+  and cppcheck; all three used to start unconditionally. No library code
+  changed.
+
+* `@kamil-kielbasa <https://github.com/kamil-kielbasa>`__ : the macOS pipeline
+  has a status badge in the README, and the project version in
+  ``CMakeLists.txt`` is back in step with the release (missed in 2.3.0).
+
 Version 2.3.0
 -------------
 
