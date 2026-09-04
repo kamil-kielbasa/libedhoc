@@ -1,3 +1,12 @@
+Version 2.3.0
+-------------
+
+:Date: September 3, 2026
+
+* `@emiltin <https://github.com/emiltin>`__ : libedhoc can now be built and
+  tested natively on macOS on both Apple silicon and Intel. Existing Linux and
+  Zephyr support is unchanged. No public API or protocol behaviour changed.
+
 Version 2.2.0
 -------------
 
