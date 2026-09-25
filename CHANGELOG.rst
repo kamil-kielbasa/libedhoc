@@ -1,3 +1,14 @@
+Version 2.3.3
+-------------
+
+:Date: September 25, 2026
+
+* `@SAY-5 <https://github.com/SAY-5>`__ : the COSE ``Enc_structure`` built in
+  ``edhoc_cipher_derive()`` points its empty protected header at a static
+  one byte buffer instead of ``NULL``. zcbor's ``str_encode()`` calls
+  ``memmove()`` on the value pointer even for a zero length string, and
+  passing ``NULL`` there is undefined behaviour.
+
 Version 2.3.2
 -------------
 
